@@ -1,6 +1,5 @@
 ﻿using LobotJR.Command.System.Gloat;
 using LobotJR.Data;
-using LobotJR.Shared.Client;
 using LobotJR.Test.Mocks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
@@ -20,7 +19,7 @@ namespace LobotJR.Test.Systems.Gloat
         public void Initialize()
         {
             Manager = new SqliteRepositoryManager(MockContext.Create());
-            var currency = new Currency(new ClientData());
+            var currency = new Currency();
             Wolfcoins = currency.coinList;
 
             GloatSystem = new GloatSystem(Manager, currency);

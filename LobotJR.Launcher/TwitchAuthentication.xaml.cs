@@ -18,8 +18,8 @@ namespace LobotJR.Launcher
     {
         private const string _cancelError = "error=access_denied";
 
-        private static readonly IEnumerable<string> _chatScopes = new List<string>(new string[] { "chat:read", "chat:edit", "whispers:read", "whispers:edit", "channel:moderate", "user:manage:whispers", "moderator:manage:banned_users" });
-        private static readonly IEnumerable<string> _broadcastScopes = new List<string>(new string[] { "channel:read:subscriptions" });
+        private static readonly IEnumerable<string> _chatScopes = new List<string>(new string[] { "chat:read", "chat:edit", "whispers:read", "whispers:edit", "channel:moderate", "user:manage:whispers", "moderator:manage:banned_users", "moderator:read:chatters" });
+        private static readonly IEnumerable<string> _broadcastScopes = new List<string>(new string[] { "channel:read:subscriptions", "moderation:read", "channel:read:vips" });
 
         private DispatcherTimer _timer;
         private int _chatUrlTimer;

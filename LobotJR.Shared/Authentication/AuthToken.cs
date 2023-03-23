@@ -22,7 +22,7 @@ namespace LobotJR.Shared.Authentication
         /// <param name="clientSecret">The client secret of your registered twitch app.</param>
         /// <param name="code">The auth code provided when the user logged in.</param>
         /// <param name="redirectUri">The redirect uri of your registered twitch app.</param>
-        /// <returns></returns>
+        /// <returns>The API response containing an OAuth token.</returns>
         public static async Task<TokenResponse> Fetch(string clientId, string clientSecret, string code, string redirectUri)
         {
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
@@ -70,10 +70,10 @@ namespace LobotJR.Shared.Authentication
         /// <summary>
         /// Refreshes an expired user access token.
         /// </summary>
-        /// <param name="clientId"></param>
-        /// <param name="clientSecret"></param>
-        /// <param name="refreshToken"></param>
-        /// <returns></returns>
+        /// <param name="clientId">The client id of your registered twitch app.</param>
+        /// <param name="clientSecret">The client secret of your registered twitch app.</param>
+        /// <param name="refreshToken">The refresh token to renew.</param>
+        /// <returns>The API containing a new OAuth token.</returns>
         public static async Task<RestResponse<TokenResponse>> Refresh(string clientId, string clientSecret, string refreshToken)
         {
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;

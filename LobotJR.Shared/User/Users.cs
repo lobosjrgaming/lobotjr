@@ -20,7 +20,7 @@ namespace LobotJR.Shared.User
         /// <summary>
         /// Calls the twitch Get Users API with no parameters.
         /// </summary>
-        /// <param name="token">A bearer token.</param>
+        /// <param name="token">An OAuth token.</param>
         /// <param name="clientId">The client id the app is running under.</param>
         /// <returns>The user data of the authenticated user.</returns>
         public static async Task<UserResponse> Get(string token, string clientId)
@@ -48,7 +48,7 @@ namespace LobotJR.Shared.User
         /// <summary>
         /// Calls the twitch Get Users API with a list of usernames
         /// </summary>
-        /// <param name="token">A bearer token.</param>
+        /// <param name="token">An OAuth token.</param>
         /// <param name="clientId">The clied id the app is running under.</param>
         /// <param name="users">A collection of usernames.</param>
         /// <returns>The user data of the users in the collection.</returns>

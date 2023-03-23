@@ -1,7 +1,6 @@
 ﻿using Adventures;
 using Classes;
 using Equipment;
-using LobotJR.Shared.Client;
 using LobotJR.Twitch;
 using Newtonsoft.Json;
 using NLog;
@@ -9,7 +8,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -80,14 +78,12 @@ namespace Wolfcoins
         public Dictionary<string, int> xpList = new Dictionary<string, int>();
         public Dictionary<string, CharClass> classList = new Dictionary<string, CharClass>();
 
-        public Data viewers = new Data();
-        List<string> viewerList = new List<string>();
+        public List<string> moderatorList = new List<string>();
+        public List<string> viewerList = new List<string>();
         public HashSet<string> subSet = new HashSet<string>();
         private readonly string path = "wolfcoins.json";
         private readonly string xpPath = "XP.json";
         private readonly string classPath = "classData.json";
-
-        private readonly ClientData clientData;
 
         private const int COINMAX = int.MaxValue;
 
@@ -103,9 +99,8 @@ namespace Wolfcoins
         public const string clientID = "c95v57t6nfrpts7dqk2urruyc8d0ln1";
         public const int baseRespecCost = 250;
 
-        public Currency(ClientData clientData)
+        public Currency()
         {
-            this.clientData = clientData;
             Init();
         }
 
@@ -571,59 +566,35 @@ namespace Wolfcoins
             Logger.Info("Subscriber list has been updated!");
         }
 
-        public void UpdateViewers(string channel)
+        public async Task UpdateViewers(TwitchClient twitchClient)
         {
-            viewerList = new List<string>();
-            bool updated = false;
-            while (!updated)
+            try
             {
-                using (var w = new WebClient())
+                viewerList.Clear();
+                moderatorList.Clear();
+                var chatters = await twitchClient.GetChatterListAsync();
+                if (chatters != null)
                 {
-                    w.Proxy = null;
-                    string url = "https://tmi.twitch.tv/group/user/" + channel + "/chatters";
-                    try
-                    {
-                        var json = w.DownloadString(string.Format(url));
-                        viewers = JsonConvert.DeserializeObject<Data>(json);
-
-                        for (int i = 0; i < viewers.chatters.vips.Count; i++)
-                        {
-                            if (!viewerList.Contains(viewers.chatters.vips[i]))
-                                viewerList.Add(viewers.chatters.vips[i]);
-                        }
-                        for (int i = 0; i < viewers.chatters.admins.Count; i++)
-                        {
-                            if (!viewerList.Contains(viewers.chatters.admins[i]))
-                                viewerList.Add(viewers.chatters.admins[i]);
-                        }
-
-                        for (int i = 0; i < viewers.chatters.moderators.Count; i++)
-                        {
-                            if (!viewerList.Contains(viewers.chatters.moderators[i]))
-                                viewerList.Add(viewers.chatters.moderators[i]);
-                        }
-
-                        for (int i = 0; i < viewers.chatters.viewers.Count; i++)
-                        {
-                            if (!viewerList.Contains(viewers.chatters.viewers[i]))
-                                viewerList.Add(viewers.chatters.viewers[i]);
-                        }
-
-                        for (int i = 0; i < viewers.chatters.staff.Count; i++)
-                        {
-                            if (!viewerList.Contains(viewers.chatters.staff[i]))
-                                viewerList.Add(viewers.chatters.staff[i]);
-                        }
-
-                        //Console.WriteLine("Updated viewer list.");
-                        updated = true;
-                    }
-                    catch (Exception e)
-                    {
-                        Logger.Error("Error updating viewers");
-                        Logger.Error(e);
-                    }
+                    viewerList = chatters.Where(x => x != null).Select(x => x.UserName).ToList();
                 }
+                else
+                {
+                    Logger.Warn("Null response attempting to retrieve viewer list.");
+                }
+                var moderators = await twitchClient.GetModeratorListAsync();
+                if (moderators != null)
+                {
+                    moderatorList = moderators.Where(x => x != null).Select(x => x.UserName).ToList();
+                }
+                else
+                {
+                    Logger.Warn("Null response attempting to retrieve moderator list.");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error("Error updating viewers");
+                Logger.Error(e);
             }
         }
 

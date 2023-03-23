@@ -70,8 +70,23 @@ namespace TwitchBot
 
         public void sendIrcMessage(string message)
         {
-            outputStream.WriteLine(message);
-            outputStream.Flush();
+            try
+            {
+                outputStream.WriteLine(message);
+                outputStream.Flush();
+            }
+            catch (IOException ex)
+            {
+                Reconnect();
+                outputStream.WriteLine(message);
+                outputStream.Flush();
+            }
+            catch (SocketException ex)
+            {
+                Reconnect();
+                outputStream.WriteLine(message);
+                outputStream.Flush();
+            }
         }
 
         public void sendChatMessage(string message)

@@ -18,7 +18,8 @@ namespace LobotJR.Shared.User
         /// <summary>
         /// Calls the twitch Ban User API to ban a user for a set duration.
         /// </summary>
-        /// <param name="token">The OAuth token for the user making the call.</param>
+        /// <param name="token">The OAuth token for the user making the call.
+        /// The token id must match the moderator id.</param>
         /// <param name="clientId">The client id of the application.</param>
         /// <param name="broadcasterId">The id of the channel to ban the user from.</param>
         /// <param name="moderatorId">The id of the user executing the ban (must be a moderator of the channel).</param>
