@@ -459,7 +459,7 @@ namespace TwitchBot
                     irc.joinRoom(channel);
                     group.joinRoom("jtv");
                     DateTime awardLast = DateTime.Now;
-                    wolfcoins.UpdateViewers(channel);
+                    wolfcoins.UpdateViewers(twitchClient).GetAwaiter().GetResult();
                     wolfcoins.UpdateSubs(twitchClient).GetAwaiter().GetResult();
 
                     #region System Setup
@@ -804,7 +804,7 @@ namespace TwitchBot
                             if (broadcasting)
                             {
                                 awardTotal = awardAmount * awardMultiplier;
-                                wolfcoins.UpdateViewers(channel);
+                                wolfcoins.UpdateViewers(twitchClient).GetAwaiter().GetResult();
 
                                 // Halloween Treats
                                 //Random rnd = new Random();
@@ -980,7 +980,7 @@ namespace TwitchBot
                                         continue;
                                     }
 
-                                    wolfcoins.UpdateViewers(channel);
+                                    wolfcoins.UpdateViewers(twitchClient).GetAwaiter().GetResult();
                                 }
                                 else if (whisperMessage == "!updateitems")
                                 {
@@ -3760,8 +3760,8 @@ namespace TwitchBot
 
                                     case "!xpon":
                                         {
-                                            wolfcoins.UpdateViewers(channel);
-                                            if (wolfcoins.viewers.chatters.moderators.Contains(sender) || sender == tokenData.BroadcastUser || sender == tokenData.ChatUser || sender == "lan5432")
+                                            wolfcoins.UpdateViewers(twitchClient).GetAwaiter().GetResult();
+                                            if (wolfcoins.moderatorList.Contains(sender) || sender == tokenData.BroadcastUser || sender == tokenData.ChatUser || sender == "lan5432")
                                             {
                                                 if (!broadcasting)
                                                 {
@@ -3783,8 +3783,8 @@ namespace TwitchBot
 
                                     case "!xpoff":
                                         {
-                                            wolfcoins.UpdateViewers(channel);
-                                            if (wolfcoins.viewers.chatters.moderators.Contains(sender) || sender == tokenData.BroadcastUser || sender == tokenData.ChatUser || sender == "lan5432")
+                                            wolfcoins.UpdateViewers(twitchClient).GetAwaiter().GetResult();
+                                            if (wolfcoins.moderatorList.Contains(sender) || sender == tokenData.BroadcastUser || sender == tokenData.ChatUser || sender == "lan5432")
                                             {
                                                 if (broadcasting)
                                                 {

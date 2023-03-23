@@ -36,7 +36,7 @@ namespace LobotJR.Shared.Chat
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             var client = new RestClient("https://api.twitch.tv");
             client.UseNewtonsoftJson(SerializerSettings.Default);
-            var request = new RestRequest("helix/chat/chatters", Method.Post);
+            var request = new RestRequest("helix/chat/chatters", Method.Get);
             request.AddHeader("Accept", "application/json");
             request.AddHeader("Authorization", $"Bearer {token}");
             request.AddHeader("Client-ID", clientId);

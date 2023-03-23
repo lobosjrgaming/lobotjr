@@ -1,5 +1,4 @@
-﻿using LobotJR.Shared.Client;
-using LobotJR.Trigger;
+﻿using LobotJR.Trigger;
 using LobotJR.Trigger.Responder;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
@@ -16,7 +15,7 @@ namespace LobotJR.Test.Trigger
         [TestInitialize]
         public void Initialize()
         {
-            Currency = new Currency(new ClientData());
+            Currency = new Currency();
             Currency.xpList = new Dictionary<string, int>
             {
                 { "Level1", Currency.XPForLevel(1) },

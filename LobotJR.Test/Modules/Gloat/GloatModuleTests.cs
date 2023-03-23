@@ -2,7 +2,6 @@
 using LobotJR.Command.System.Gloat;
 using LobotJR.Data;
 using LobotJR.Data.User;
-using LobotJR.Shared.Client;
 using LobotJR.Test.Mocks;
 using LobotJR.Utils;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -31,7 +30,7 @@ namespace LobotJR.Test.Modules.Gloat
 
             var userLookup = new UserLookup(Manager);
             userLookup.UpdateTime = Manager.AppSettings.Read().First().GeneralCacheUpdateTime;
-            var currency = new Currency(new ClientData());
+            var currency = new Currency();
             Wolfcoins = currency.coinList;
             GloatSystem = new GloatSystem(Manager, currency);
             GloatModule = new GloatModule(GloatSystem, userLookup);
