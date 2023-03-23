@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 
-namespace LobotJR.Shared.Subscription
+namespace LobotJR.Shared.Channel
 {
     /// <summary>
     /// Provides methods to access the twitch Ban User API.
@@ -21,7 +21,8 @@ namespace LobotJR.Shared.Subscription
         /// of all subscribers to a channel. Retrieves the first 100 users
         /// starting from the specified value.
         /// </summary>
-        /// <param name="token">The OAuth token for the user making the call.</param>
+        /// <param name="token">The OAuth token for the user making the call.
+        /// The token id must match the broadcaster id.</param>
         /// <param name="clientId">The client id of the application.</param>
         /// <param name="broadcasterId">The id of the channel to get subscribers for.</param>
         /// <param name="start">The pagination cursor value to start from. If
@@ -49,10 +50,11 @@ namespace LobotJR.Shared.Subscription
         /// <summary>
         /// Gets all users subscribed to a given channel.
         /// </summary>
-        /// <param name="token">The OAuth token for the user making the call.</param>
+        /// <param name="token">The OAuth token for the user making the call.
+        /// The token id must match the broadcaster id.</param>
         /// <param name="clientId">The client id of the application.</param>
         /// <param name="broadcasterId">The id of the channel to ban the user from.</param>
-        /// <returns></returns>
+        /// <returns>A list of rest responses containing pages of all subscribers for the channel.</returns>
         public static async Task<IEnumerable<RestResponse<SubscriptionResponse>>> GetAll(string token, string clientId, string broadcasterId)
         {
             List<RestResponse<SubscriptionResponse>> data = new List<RestResponse<SubscriptionResponse>>();

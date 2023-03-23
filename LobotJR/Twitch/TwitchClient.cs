@@ -1,9 +1,9 @@
 ﻿using LobotJR.Data;
 using LobotJR.Data.User;
 using LobotJR.Shared.Authentication;
+using LobotJR.Shared.Channel;
 using LobotJR.Shared.Chat;
 using LobotJR.Shared.Client;
-using LobotJR.Shared.Subscription;
 using LobotJR.Shared.User;
 using LobotJR.Shared.Utility;
 using NLog;
@@ -119,7 +119,7 @@ namespace LobotJR.Twitch
         /// <returns>True if the whisper was sent successfully.</returns>
         private async Task<HttpStatusCode> WhisperAsync(string userId, string message)
         {
-            var result = await SendWhisper.Post(TokenData.ChatToken.AccessToken, ClientData.ClientId, ChatId, userId, message);
+            var result = await Whisper.Post(TokenData.ChatToken.AccessToken, ClientData.ClientId, ChatId, userId, message);
             return result;
         }
 
@@ -258,7 +258,7 @@ namespace LobotJR.Twitch
 
                 Logger.Info("Encountered a 401 (Unauthorized) response retrieving subscriber list. Attempting to refresh tokens.");
                 await RefreshTokens();
-                results = await Subscriptions.GetAll(TokenData.ChatToken.AccessToken, ClientData.ClientId, BroadcasterId);
+                results = await Subscriptions.GetAll(TokenData.BroadcastToken.AccessToken, ClientData.ClientId, BroadcasterId);
                 if (results.Any(x => x.StatusCode == HttpStatusCode.Unauthorized))
                 {
                     Logger.Error("Token lefresh failed. Something may be wrong with the access token, please delete your token.json and relaunch the application.");

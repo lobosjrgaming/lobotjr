@@ -1,7 +1,7 @@
 ﻿using LobotJR.Shared.Utility;
 using System.Collections.Generic;
 
-namespace LobotJR.Shared.Subscription
+namespace LobotJR.Shared.Channel
 {
     /// <summary>
     /// Response object for the Get Broadcaster Subscription endpoint.
