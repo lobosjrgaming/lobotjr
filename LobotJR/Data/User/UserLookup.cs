@@ -86,21 +86,21 @@ namespace LobotJR.Data.User
                     Logger.Warn("Null response attempting to fetch user ids while updating user cache.");
                     return results;
                 }
-                results.UpdatedUsers.AddRange(response.Data.Data.Where(x => x != null).Select(x => x.DisplayName));
+                results.UpdatedUsers.AddRange(response.Data.Data.Where(x => x != null).Select(x => x.Login));
                 results.FailedUsers.AddRange(removed.Except(results.UpdatedUsers));
                 foreach (var entry in response.Data.Data)
                 {
                     var existing = UserMap.Read(x => x.TwitchId.Equals(entry.Id)).FirstOrDefault();
                     if (existing != null)
                     {
-                        existing.Username = entry.DisplayName;
+                        existing.Username = entry.Login;
                         UserMap.Update(existing);
                     }
                     else
                     {
                         UserMap.Create(new UserMap()
                         {
-                            Username = entry.DisplayName,
+                            Username = entry.Login,
                             TwitchId = entry.Id
                         });
                     }

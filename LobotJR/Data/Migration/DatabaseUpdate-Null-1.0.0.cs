@@ -73,7 +73,7 @@ namespace LobotJR.Data.Migration
             {
                 if (id != null && !string.IsNullOrWhiteSpace(id.Id))
                 {
-                    idMap.Add(id.DisplayName, id.Id);
+                    idMap.Add(id.Login, id.Id);
                 }
             }
 
