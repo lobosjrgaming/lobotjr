@@ -63,7 +63,7 @@ namespace LobotJR.Command.Module.Fishing
                 {
                     return new CompactCollection<Catch>(records, selectFunc);
                 }
-                return new CompactCollection<Catch>(new Catch[0], null);
+                return new CompactCollection<Catch>(new Catch[0], selectFunc);
             }
             else
             {
