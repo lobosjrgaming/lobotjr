@@ -1,4 +1,6 @@
-﻿using LobotJR.Shared.User;
+﻿using LobotJR.Shared.Authentication;
+using LobotJR.Shared.Client;
+using LobotJR.Shared.User;
 using NLog;
 using System;
 using System.Collections.Generic;
@@ -69,8 +71,8 @@ namespace LobotJR.Data.User
         /// not found in the cache.
         /// </summary>
         /// <param name="token">A valid twitch OAuth token.</param>
-        /// <param name="clientId">The client id the app is running under.</param>
-        public async Task<CacheUpdateResult> UpdateCache(string token, string clientId)
+        /// <param name="clientData">The client id the app is running under.</param>
+        public async Task<CacheUpdateResult> UpdateCache(TokenResponse token, ClientData clientData)
         {
             var results = new CacheUpdateResult();
             while (cacheMisses.Count > 0)
@@ -78,15 +80,15 @@ namespace LobotJR.Data.User
                 var limit = Math.Min(cacheMisses.Count, 100);
                 var removed = cacheMisses.GetRange(0, limit);
                 cacheMisses.RemoveRange(0, limit);
-                var response = await Users.Get(token, clientId, removed);
+                var response = await Users.Get(token, clientData, removed);
                 if (response == null || response.Data == null)
                 {
                     Logger.Warn("Null response attempting to fetch user ids while updating user cache.");
                     return results;
                 }
-                results.UpdatedUsers.AddRange(response.Data.Where(x => x != null).Select(x => x.DisplayName));
+                results.UpdatedUsers.AddRange(response.Data.Data.Where(x => x != null).Select(x => x.DisplayName));
                 results.FailedUsers.AddRange(removed.Except(results.UpdatedUsers));
-                foreach (var entry in response.Data)
+                foreach (var entry in response.Data.Data)
                 {
                     var existing = UserMap.Read(x => x.TwitchId.Equals(entry.Id)).FirstOrDefault();
                     if (existing != null)

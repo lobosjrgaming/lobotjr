@@ -51,7 +51,7 @@ namespace LobotJR.Twitch
             ChatId = UserLookup.GetId(TokenData.ChatUser);
             if (string.IsNullOrWhiteSpace(BroadcasterId) || string.IsNullOrWhiteSpace(ChatId))
             {
-                UserLookup.UpdateCache(TokenData.ChatToken.AccessToken, ClientData.ClientId).GetAwaiter().GetResult();
+                UserLookup.UpdateCache(TokenData.ChatToken, ClientData).GetAwaiter().GetResult();
                 BroadcasterId = UserLookup.GetId(TokenData.BroadcastUser);
                 ChatId = UserLookup.GetId(TokenData.ChatUser);
                 if (string.IsNullOrWhiteSpace(BroadcasterId) || string.IsNullOrWhiteSpace(ChatId))
@@ -119,8 +119,8 @@ namespace LobotJR.Twitch
         /// <returns>True if the whisper was sent successfully.</returns>
         private async Task<HttpStatusCode> WhisperAsync(string userId, string message)
         {
-            var result = await Whisper.Post(TokenData.ChatToken.AccessToken, ClientData.ClientId, ChatId, userId, message);
-            return result;
+            var result = await Whisper.Post(TokenData.ChatToken, ClientData, ChatId, userId, message);
+            return result?.StatusCode ?? (HttpStatusCode)0;
         }
 
         /// <summary>
@@ -168,12 +168,6 @@ namespace LobotJR.Twitch
                 {
                     Queue.ReportSuccess(message);
                 }
-                else if (result == HttpStatusCode.Unauthorized)
-                {
-                    Logger.Info("Token for chat user {user} has expired. Refreshing token.", TokenData.ChatUser);
-                    Queue.ReportFailure(message);
-                    await RefreshTokens();
-                }
                 else if (result == HttpStatusCode.NotFound)
                 {
                     Logger.Warn("User name {user} returned id {id} from Twitch. Twitch says this user id doesn't exist. User {user} has been blacklisted from whispers.", message.Username, message.UserId);
@@ -210,7 +204,7 @@ namespace LobotJR.Twitch
             var userId = UserLookup.GetId(user);
             if (userId == null)
             {
-                await UserLookup.UpdateCache(TokenData.ChatToken.AccessToken, ClientData.ClientId);
+                await UserLookup.UpdateCache(TokenData.ChatToken, ClientData);
                 userId = UserLookup.GetId(user);
                 if (userId == null)
                 {
@@ -218,12 +212,7 @@ namespace LobotJR.Twitch
                     return false;
                 }
             }
-            var result = await BanUser.Post(TokenData.ChatToken.AccessToken, ClientData.ClientId, BroadcasterId, ChatId, userId, duration, message);
-            if (result == HttpStatusCode.Unauthorized)
-            {
-                await RefreshTokens();
-                result = await BanUser.Post(TokenData.ChatToken.AccessToken, ClientData.ClientId, BroadcasterId, ChatId, userId, duration, message);
-            }
+            var result = await BanUser.Post(TokenData.ChatToken, ClientData, BroadcasterId, ChatId, userId, duration, message);
             return result == HttpStatusCode.OK;
         }
 
@@ -246,30 +235,12 @@ namespace LobotJR.Twitch
         /// <returns>A collection of subscription responses from Twitch.</returns>
         public async Task<IEnumerable<SubscriptionResponseData>> GetSubscriberListAsync()
         {
-            var results = await Subscriptions.GetAll(TokenData.BroadcastToken.AccessToken, ClientData.ClientId, BroadcasterId);
+            var results = await Subscriptions.GetAll(TokenData.BroadcastToken, ClientData, BroadcasterId);
             if (results.Any(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized))
             {
                 var failure = results.FirstOrDefault(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized);
                 Logger.Warn("Encountered an unexpected response retrieving subscribers: {statusCode}: {content}", failure.StatusCode, failure.Content);
                 return null;
-            }
-            else if (results.Any(x => x.StatusCode == HttpStatusCode.Unauthorized))
-            {
-
-                Logger.Info("Encountered a 401 (Unauthorized) response retrieving subscriber list. Attempting to refresh tokens.");
-                await RefreshTokens();
-                results = await Subscriptions.GetAll(TokenData.BroadcastToken.AccessToken, ClientData.ClientId, BroadcasterId);
-                if (results.Any(x => x.StatusCode == HttpStatusCode.Unauthorized))
-                {
-                    Logger.Error("Token refresh failed. Something may be wrong with the access token, please delete token.json and relaunch the application.");
-                    return null;
-                }
-                else if (results.Any(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized))
-                {
-                    var failure = results.FirstOrDefault(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized);
-                    Logger.Error("Encountered an unexpected response retrieving subscribers: {statusCode}: {content}", failure.StatusCode, failure.Content);
-                    return null;
-                }
             }
             return results.Where(x => x.Data != null && x.Data.Data != null).SelectMany(x => x.Data.Data);
         }
@@ -280,30 +251,12 @@ namespace LobotJR.Twitch
         /// <returns>A collection of chatter responses from Twitch.</returns>
         public async Task<IEnumerable<TwitchUserData>> GetChatterListAsync()
         {
-            var results = await Chatters.GetAll(TokenData.ChatToken.AccessToken, ClientData.ClientId, BroadcasterId, ChatId);
+            var results = await Chatters.GetAll(TokenData.ChatToken, ClientData, BroadcasterId, ChatId);
             if (results.Any(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized))
             {
                 var failure = results.FirstOrDefault(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized);
                 Logger.Warn("Encountered an unexpected response retrieving chatters: {statusCode}: {content}", failure.StatusCode, failure.Content);
                 return null;
-            }
-            else if (results.Any(x => x.StatusCode == HttpStatusCode.Unauthorized))
-            {
-
-                Logger.Info("Encountered a 401 (Unauthorized) response retrieving chatter list. Attempting to refresh tokens.");
-                await RefreshTokens();
-                results = await Chatters.GetAll(TokenData.ChatToken.AccessToken, ClientData.ClientId, BroadcasterId, ChatId);
-                if (results.Any(x => x.StatusCode == HttpStatusCode.Unauthorized))
-                {
-                    Logger.Error("Token refresh failed. Something may be wrong with the access token, please delete token.json and relaunch the application.");
-                    return null;
-                }
-                else if (results.Any(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized))
-                {
-                    var failure = results.FirstOrDefault(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized);
-                    Logger.Error("Encountered an unexpected response retrieving chatters: {statusCode}: {content}", failure.StatusCode, failure.Content);
-                    return null;
-                }
             }
             return results.Where(x => x.Data != null && x.Data.Data != null).SelectMany(x => x.Data.Data);
         }
@@ -314,30 +267,12 @@ namespace LobotJR.Twitch
         /// <returns>A collection of moderator users from Twitch.</returns>
         public async Task<IEnumerable<TwitchUserData>> GetModeratorListAsync()
         {
-            var results = await Moderators.GetAll(TokenData.BroadcastToken.AccessToken, ClientData.ClientId, BroadcasterId);
+            var results = await Moderators.GetAll(TokenData.BroadcastToken, ClientData, BroadcasterId);
             if (results.Any(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized))
             {
                 var failure = results.FirstOrDefault(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized);
                 Logger.Warn("Encountered an unexpected response retrieving moderators: {statusCode}: {content}", failure.StatusCode, failure.Content);
                 return null;
-            }
-            else if (results.Any(x => x.StatusCode == HttpStatusCode.Unauthorized))
-            {
-
-                Logger.Info("Encountered a 401 (Unauthorized) response retrieving moderator list. Attempting to refresh tokens.");
-                await RefreshTokens();
-                results = await Moderators.GetAll(TokenData.BroadcastToken.AccessToken, ClientData.ClientId, BroadcasterId);
-                if (results.Any(x => x.StatusCode == HttpStatusCode.Unauthorized))
-                {
-                    Logger.Error("Token refresh failed. Something may be wrong with the access token, please delete token.json and relaunch the application.");
-                    return null;
-                }
-                else if (results.Any(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized))
-                {
-                    var failure = results.FirstOrDefault(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized);
-                    Logger.Error("Encountered an unexpected response retrieving moderators: {statusCode}: {content}", failure.StatusCode, failure.Content);
-                    return null;
-                }
             }
             return results.Where(x => x.Data != null && x.Data.Data != null).SelectMany(x => x.Data.Data);
         }
@@ -348,30 +283,12 @@ namespace LobotJR.Twitch
         /// <returns>A collection of VIP users from Twitch.</returns>
         public async Task<IEnumerable<TwitchUserData>> GetVipListAsync()
         {
-            var results = await VIPs.GetAll(TokenData.BroadcastToken.AccessToken, ClientData.ClientId, BroadcasterId);
+            var results = await VIPs.GetAll(TokenData.BroadcastToken, ClientData, BroadcasterId);
             if (results.Any(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized))
             {
                 var failure = results.FirstOrDefault(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized);
                 Logger.Warn("Encountered an unexpected response retrieving VIPs: {statusCode}: {content}", failure.StatusCode, failure.Content);
                 return null;
-            }
-            else if (results.Any(x => x.StatusCode == HttpStatusCode.Unauthorized))
-            {
-
-                Logger.Info("Encountered a 401 (Unauthorized) response retrieving VIP list. Attempting to refresh tokens.");
-                await RefreshTokens();
-                results = await VIPs.GetAll(TokenData.BroadcastToken.AccessToken, ClientData.ClientId, BroadcasterId);
-                if (results.Any(x => x.StatusCode == HttpStatusCode.Unauthorized))
-                {
-                    Logger.Error("Token refresh failed. Something may be wrong with the access token, please delete token.json and relaunch the application.");
-                    return null;
-                }
-                else if (results.Any(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized))
-                {
-                    var failure = results.FirstOrDefault(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized);
-                    Logger.Error("Encountered an unexpected response retrieving VIPs: {statusCode}: {content}", failure.StatusCode, failure.Content);
-                    return null;
-                }
             }
             return results.Where(x => x.Data != null && x.Data.Data != null).SelectMany(x => x.Data.Data);
         }

@@ -1,5 +1,7 @@
 ﻿using LobotJR.Command.Model.Fishing;
 using LobotJR.Data.User;
+using LobotJR.Shared.Authentication;
+using LobotJR.Shared.Client;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -67,15 +69,15 @@ namespace LobotJR.Data.Import
         /// </summary>
         /// <param name="usernames">A collection of twitch usernames.</param>
         /// <param name="userLookup">The user lookup system to convert usernames into user ids.</param>
-        /// <param name="token">The OAuth token for making twitch API calls.</param>
-        /// <param name="clientId">The client id used to identify the call to fetch the user ids.</param>
-        public static void FetchUserIds(IEnumerable<string> usernames, UserLookup userLookup, string token, string clientId)
+        /// <param name="token">The OAuth token object for making twitch API calls.</param>
+        /// <param name="clientData">The client data for the app executing the request.</param>
+        public static void FetchUserIds(IEnumerable<string> usernames, UserLookup userLookup, TokenResponse token, ClientData clientData)
         {
             foreach (var fisher in usernames)
             {
                 userLookup.GetId(fisher);
             }
-            userLookup.UpdateCache(token, clientId).GetAwaiter().GetResult();
+            userLookup.UpdateCache(token, clientData).GetAwaiter().GetResult();
         }
 
         /// <summary>

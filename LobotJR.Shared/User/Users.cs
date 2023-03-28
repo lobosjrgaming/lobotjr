@@ -1,10 +1,9 @@
-﻿using LobotJR.Shared.Utility;
+﻿using LobotJR.Shared.Authentication;
+using LobotJR.Shared.Client;
+using LobotJR.Shared.Utility;
 using NLog;
 using RestSharp;
-using RestSharp.Serializers.NewtonsoftJson;
-using System;
 using System.Collections.Generic;
-using System.Net;
 using System.Threading.Tasks;
 
 namespace LobotJR.Shared.User
@@ -20,62 +19,32 @@ namespace LobotJR.Shared.User
         /// <summary>
         /// Calls the twitch Get Users API with no parameters.
         /// </summary>
-        /// <param name="token">An OAuth token.</param>
-        /// <param name="clientId">The client id the app is running under.</param>
+        /// <param name="token">The OAuth token object to use for authentication.</param>
+        /// <param name="clientData">The client data for the app executing the request.</param>
         /// <returns>The user data of the authenticated user.</returns>
-        public static async Task<UserResponse> Get(string token, string clientId)
+        public static async Task<RestResponse<UserResponse>> Get(TokenResponse token, ClientData clientData)
         {
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-            var client = new RestClient("https://api.twitch.tv");
-            client.UseNewtonsoftJson(SerializerSettings.Default);
-            var request = new RestRequest("helix/users", Method.Get);
-            request.AddHeader("Accept", "application/json");
-            request.AddHeader("Authorization", $"Bearer {token}");
-            request.AddHeader("Client-ID", clientId);
-            RestLogger.AddLogging(request, Logger);
-            var response = await client.ExecuteAsync<UserResponse>(request);
-            switch (response.StatusCode)
-            {
-                case HttpStatusCode.OK:
-                    return response.Data;
-                case HttpStatusCode.Unauthorized:
-                    throw new UnauthorizedAccessException();
-                default:
-                    return null;
-            }
+            var client = RestUtils.CreateStandardClient();
+            var request = RestUtils.CreateStandardRequest("helix/users", Method.Get, token.AccessToken, clientData.ClientId, Logger);
+            return await RestUtils.ExecuteWithRefresh<UserResponse>(token, clientData, client, request);
         }
 
         /// <summary>
         /// Calls the twitch Get Users API with a list of usernames
         /// </summary>
-        /// <param name="token">An OAuth token.</param>
-        /// <param name="clientId">The clied id the app is running under.</param>
+        /// <param name="token">The OAuth token object to use for authentication.</param>
+        /// <param name="clientData">The client data for the app executing the request.</param>
         /// <param name="users">A collection of usernames.</param>
         /// <returns>The user data of the users in the collection.</returns>
-        public static async Task<UserResponse> Get(string token, string clientId, IEnumerable<string> users)
+        public static async Task<RestResponse<UserResponse>> Get(TokenResponse token, ClientData clientData, IEnumerable<string> users)
         {
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-            var client = new RestClient("https://api.twitch.tv");
-            client.UseNewtonsoftJson(SerializerSettings.Default);
-            var request = new RestRequest("helix/users", Method.Get);
-            request.AddHeader("Accept", "application/json");
-            request.AddHeader("Authorization", $"Bearer {token}");
-            request.AddHeader("Client-ID", clientId);
+            var client = RestUtils.CreateStandardClient();
+            var request = RestUtils.CreateStandardRequest("helix/users", Method.Get, token.AccessToken, clientData.ClientId, Logger);
             foreach (var user in users)
             {
                 request.AddParameter("login", user, ParameterType.QueryString);
             }
-            RestLogger.AddLogging(request, Logger);
-            var response = await client.ExecuteAsync<UserResponse>(request);
-            switch (response.StatusCode)
-            {
-                case HttpStatusCode.OK:
-                    return response.Data;
-                case HttpStatusCode.Unauthorized:
-                    throw new UnauthorizedAccessException();
-                default:
-                    return null;
-            }
+            return await RestUtils.ExecuteWithRefresh<UserResponse>(token, clientData, client, request);
         }
     }
 }
