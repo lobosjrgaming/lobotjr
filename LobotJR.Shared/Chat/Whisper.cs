@@ -31,7 +31,6 @@ namespace LobotJR.Shared.Chat
             request.AddParameter("from_user_id", senderId, ParameterType.QueryString);
             request.AddParameter("to_user_id", userId, ParameterType.QueryString);
             request.AddBody(new WhisperRequest(message));
-            var response = await client.ExecuteAsync(request);
             return await RestUtils.ExecuteWithRefresh(token, clientData, client, request);
         }
     }
