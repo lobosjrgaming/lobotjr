@@ -1,6 +1,7 @@
 ﻿using LobotJR.Shared.Utility;
 using NLog;
 using RestSharp;
+using RestSharp.Serializers.NewtonsoftJson;
 using System;
 using System.Net;
 using System.Threading.Tasks;
@@ -24,7 +25,9 @@ namespace LobotJR.Shared.Authentication
         /// <returns>The API response containing an OAuth token.</returns>
         public static async Task<TokenResponse> Fetch(string clientId, string clientSecret, string code, string redirectUri)
         {
-            var client = RestUtils.CreateStandardClient();
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+            var client = new RestClient("https://id.twitch.tv");
+            client.UseNewtonsoftJson(SerializerSettings.Default);
             var request = new RestRequest("oauth2/token", Method.Post);
             RestLogger.AddLogging(request, Logger, true);
             request.AddHeader("Accept", "application/json");
@@ -49,7 +52,9 @@ namespace LobotJR.Shared.Authentication
         /// <returns>The validation response.</returns>
         public static async Task<ValidationResponse> Validate(string token)
         {
-            var client = RestUtils.CreateStandardClient();
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+            var client = new RestClient("https://id.twitch.tv");
+            client.UseNewtonsoftJson(SerializerSettings.Default);
             var request = new RestRequest("oauth2/validate", Method.Get);
             RestLogger.AddLogging(request, Logger, true);
             request.AddHeader("Accept", "application/json");
@@ -71,7 +76,9 @@ namespace LobotJR.Shared.Authentication
         /// <returns>The API containing a new OAuth token.</returns>
         public static async Task<RestResponse<TokenResponse>> Refresh(string clientId, string clientSecret, string refreshToken)
         {
-            var client = RestUtils.CreateStandardClient();
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+            var client = new RestClient("https://id.twitch.tv");
+            client.UseNewtonsoftJson(SerializerSettings.Default);
             var request = new RestRequest("oauth2/token", Method.Post);
             RestLogger.AddLogging(request, Logger, true);
             request.AddHeader("Accept", "application/json");
