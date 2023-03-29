@@ -431,10 +431,30 @@ namespace TwitchBot
                 var contentManager = scope.Resolve<IContentManager>();
                 var userLookup = scope.Resolve<UserLookup>();
                 userLookup.UpdateTime = appSettings.GeneralCacheUpdateTime;
+                #endregion
+
+                #region Logging Setup
                 LogManager.Setup().LoadConfiguration(builder =>
                 {
-                    builder.ForLogger().FilterMinLevel(LogLevel.Debug).WriteToFile(fileName: appSettings.LoggingFile);
+                    builder.ForLogger().FilterMinLevel(LogLevel.Debug)
+                        .WriteToFile(fileName: appSettings.LoggingFile,
+                        archiveAboveSize: 1024 * 1024 * appSettings.LoggingMaxSize,
+                        maxArchiveFiles: appSettings.LoggingMaxArchives);
                 });
+                var crashDumps = Directory.GetFiles(Directory.GetCurrentDirectory(), "CrashDump.*.log", SearchOption.TopDirectoryOnly);
+                var toDelete = crashDumps.OrderByDescending(x => x).Skip(10);
+                foreach (var file in toDelete)
+                {
+                    try
+                    {
+                        File.Delete(file);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error("Error attempting to delete crash dump {file}", file);
+                        Logger.Error(ex);
+                    }
+                }
                 #endregion
 
                 #region Twitch API Setup

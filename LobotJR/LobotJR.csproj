@@ -161,6 +161,7 @@
     <Compile Include="Data\Import\FileSystem.cs" />
     <Compile Include="Data\Import\IFileSystem.cs" />
     <Compile Include="Data\Metadata.cs" />
+    <Compile Include="Data\Migration\DatabaseUpdate-1.0.3-1.0.4.cs" />
     <Compile Include="Data\Migration\DatabaseUpdate-1.0.2-1.0.3.cs" />
     <Compile Include="Data\Migration\DatabaseUpdate-1.0.1-1.0.2.cs" />
     <Compile Include="Data\Migration\DatabaseUpdate-Null-1.0.0.cs" />

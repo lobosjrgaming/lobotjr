@@ -68,5 +68,13 @@
         /// The name of the logging file to write output data to.
         /// </summary>
         public string LoggingFile { get; set; } = "output.log";
+        /// <summary>
+        /// The max size of the logging file in megabytes.
+        /// </summary>
+        public int LoggingMaxSize { get; set; } = 8;
+        /// <summary>
+        /// The number of archived logging files and crash dumps to keep.
+        /// </summary>
+        public int LoggingMaxArchives { get; set; } = 8;
     }
 }
