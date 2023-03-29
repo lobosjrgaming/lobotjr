@@ -18,7 +18,7 @@
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>true</MapFileExtensions>
     <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>1.0.7.0</ApplicationVersion>
+    <ApplicationVersion>1.0.8.0</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
@@ -161,6 +161,7 @@
     <Compile Include="Data\Import\FileSystem.cs" />
     <Compile Include="Data\Import\IFileSystem.cs" />
     <Compile Include="Data\Metadata.cs" />
+    <Compile Include="Data\Migration\DatabaseUpdate-1.0.3-1.0.4.cs" />
     <Compile Include="Data\Migration\DatabaseUpdate-1.0.2-1.0.3.cs" />
     <Compile Include="Data\Migration\DatabaseUpdate-1.0.1-1.0.2.cs" />
     <Compile Include="Data\Migration\DatabaseUpdate-Null-1.0.0.cs" />

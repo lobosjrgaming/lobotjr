@@ -11,8 +11,8 @@ namespace LobotJR.Data.Migration
 {
     public class DatabaseUpdate_Null_1_0_0 : IDatabaseUpdate
     {
-        private readonly string Token;
-        private readonly string ClientId;
+        private readonly TokenData TokenData;
+        private readonly ClientData ClientData;
 
         public SemanticVersion FromVersion => null;
         public SemanticVersion ToVersion => new SemanticVersion(1, 0, 0);
@@ -21,8 +21,8 @@ namespace LobotJR.Data.Migration
 
         public DatabaseUpdate_Null_1_0_0(TokenData token, ClientData client)
         {
-            Token = token.BroadcastToken.AccessToken;
-            ClientId = client.ClientId;
+            TokenData = token;
+            ClientData = client;
         }
 
         public DatabaseMigrationResult Update(DbContext context)
@@ -63,13 +63,17 @@ namespace LobotJR.Data.Migration
             var roleNames = roleNameLists.SelectMany(x => x.Split(','));
             var allNames = new List<string>(tournamentNames);
             allNames.AddRange(roleNames);
-            var ids = Users.Get(Token, ClientId, allNames.Distinct()).GetAwaiter().GetResult();
+            var ids = Users.Get(TokenData.BroadcastToken, ClientData, allNames.Distinct()).GetAwaiter().GetResult();
+            if (ids == null || ids.Data == null)
+            {
+                return new DatabaseMigrationResult { Success = false };
+            }
             var idMap = new Dictionary<string, string>();
-            foreach (var id in ids.Data)
+            foreach (var id in ids.Data.Data)
             {
                 if (id != null && !string.IsNullOrWhiteSpace(id.Id))
                 {
-                    idMap.Add(id.DisplayName, id.Id);
+                    idMap.Add(id.Login, id.Id);
                 }
             }
 

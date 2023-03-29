@@ -431,10 +431,30 @@ namespace TwitchBot
                 var contentManager = scope.Resolve<IContentManager>();
                 var userLookup = scope.Resolve<UserLookup>();
                 userLookup.UpdateTime = appSettings.GeneralCacheUpdateTime;
+                #endregion
+
+                #region Logging Setup
                 LogManager.Setup().LoadConfiguration(builder =>
                 {
-                    builder.ForLogger().FilterMinLevel(LogLevel.Debug).WriteToFile(fileName: appSettings.LoggingFile);
+                    builder.ForLogger().FilterMinLevel(LogLevel.Debug)
+                        .WriteToFile(fileName: appSettings.LoggingFile,
+                        archiveAboveSize: 1024 * 1024 * appSettings.LoggingMaxSize,
+                        maxArchiveFiles: appSettings.LoggingMaxArchives);
                 });
+                var crashDumps = Directory.GetFiles(Directory.GetCurrentDirectory(), "CrashDump.*.log", SearchOption.TopDirectoryOnly);
+                var toDelete = crashDumps.OrderByDescending(x => x).Skip(10);
+                foreach (var file in toDelete)
+                {
+                    try
+                    {
+                        File.Delete(file);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error("Error attempting to delete crash dump {file}", file);
+                        Logger.Error(ex);
+                    }
+                }
                 #endregion
 
                 #region Twitch API Setup
@@ -500,7 +520,7 @@ namespace TwitchBot
                         Dictionary<string, LegacyFisher> legacyFisherData = FisherDataImport.LoadLegacyFisherData(FisherDataImport.FisherDataPath);
                         List<LegacyCatch> legacyLeaderboardData = FisherDataImport.LoadLegacyFishingLeaderboardData(FisherDataImport.FishingLeaderboardPath);
                         Logger.Info("Converting usernames to user ids...");
-                        FisherDataImport.FetchUserIds(legacyFisherData.Keys.Union(legacyLeaderboardData.Select(x => x.caughtBy)), userLookup, tokenData.BroadcastToken.AccessToken, clientData.ClientId);
+                        FisherDataImport.FetchUserIds(legacyFisherData.Keys.Union(legacyLeaderboardData.Select(x => x.caughtBy)), userLookup, tokenData.BroadcastToken, clientData);
                         if (hasFisherData)
                         {
                             Logger.Info("Importing user records...");
@@ -559,7 +579,7 @@ namespace TwitchBot
                         if (userLookup.IsUpdateTime(DateTime.Now))
                         {
                             cacheUpdate = true;
-                            var cacheUpdateResults = userLookup.UpdateCache(tokenData.BroadcastToken.AccessToken, clientData.ClientId).GetAwaiter().GetResult();
+                            var cacheUpdateResults = userLookup.UpdateCache(tokenData.BroadcastToken, clientData).GetAwaiter().GetResult();
                             foreach (var user in cacheUpdateResults.UpdatedUsers)
                             {
                                 twitchClient.QueueWhisper(user, "All done! Whisper me \"!cast\" to fish!");
@@ -3761,7 +3781,10 @@ namespace TwitchBot
                                     case "!xpon":
                                         {
                                             wolfcoins.UpdateViewers(twitchClient).GetAwaiter().GetResult();
-                                            if (wolfcoins.moderatorList.Contains(sender) || sender == tokenData.BroadcastUser || sender == tokenData.ChatUser || sender == "lan5432")
+                                            if (wolfcoins.moderatorList.Contains(sender, StringComparer.OrdinalIgnoreCase)
+                                                || sender.Equals(tokenData.BroadcastUser, StringComparison.OrdinalIgnoreCase)
+                                                || sender.Equals(tokenData.ChatUser, StringComparison.OrdinalIgnoreCase)
+                                                || sender.Equals("lan5432", StringComparison.OrdinalIgnoreCase))
                                             {
                                                 if (!broadcasting)
                                                 {
@@ -3784,7 +3807,10 @@ namespace TwitchBot
                                     case "!xpoff":
                                         {
                                             wolfcoins.UpdateViewers(twitchClient).GetAwaiter().GetResult();
-                                            if (wolfcoins.moderatorList.Contains(sender) || sender == tokenData.BroadcastUser || sender == tokenData.ChatUser || sender == "lan5432")
+                                            if (wolfcoins.moderatorList.Contains(sender, StringComparer.OrdinalIgnoreCase)
+                                                || sender.Equals(tokenData.BroadcastUser, StringComparison.OrdinalIgnoreCase)
+                                                || sender.Equals(tokenData.ChatUser, StringComparison.OrdinalIgnoreCase)
+                                                || sender.Equals("lan5432", StringComparison.OrdinalIgnoreCase))
                                             {
                                                 if (broadcasting)
                                                 {

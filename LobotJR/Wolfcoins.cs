@@ -575,7 +575,7 @@ namespace Wolfcoins
                 var chatters = await twitchClient.GetChatterListAsync();
                 if (chatters != null)
                 {
-                    viewerList = chatters.Where(x => x != null).Select(x => x.UserName).ToList();
+                    viewerList = chatters.Where(x => x != null).Select(x => x.UserLogin).ToList();
                 }
                 else
                 {
@@ -584,7 +584,7 @@ namespace Wolfcoins
                 var moderators = await twitchClient.GetModeratorListAsync();
                 if (moderators != null)
                 {
-                    moderatorList = moderators.Where(x => x != null).Select(x => x.UserName).ToList();
+                    moderatorList = moderators.Where(x => x != null).Select(x => x.UserLogin).ToList();
                 }
                 else
                 {

@@ -63,7 +63,7 @@ namespace LobotJR.Command.Module.Fishing
                 {
                     return new CompactCollection<Catch>(records, selectFunc);
                 }
-                return new CompactCollection<Catch>(new Catch[0], null);
+                return new CompactCollection<Catch>(new Catch[0], selectFunc);
             }
             else
             {
@@ -91,7 +91,7 @@ namespace LobotJR.Command.Module.Fishing
                     {
                         $"You've caught {items.Count} different types of fish: "
                     };
-                    responses.AddRange(items.Select((x, i) => $"{i}: {x.Fish.Name}"));
+                    responses.AddRange(items.Select((x, i) => $"{i + 1}: {x.Fish.Name}"));
                     return new CommandResult(responses.ToArray());
                 }
                 else

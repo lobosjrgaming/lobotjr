@@ -3,6 +3,7 @@ using LobotJR.Command.Module;
 using LobotJR.Command.Module.AccessControl;
 using LobotJR.Data;
 using LobotJR.Data.User;
+using NLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,6 +16,8 @@ namespace LobotJR.Command
     /// </summary>
     public class CommandManager : ICommandManager
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         public static readonly char Prefix = '!';
 
         private const int MessageLimit = 450;
@@ -265,6 +268,7 @@ namespace LobotJR.Command
         /// <returns>Whether a command was found and executed.</returns>
         public CommandResult ProcessMessage(string message, string user, bool isWhisper)
         {
+            Logger.Debug("Attempting to process {user}'s command: {message}", user, message);
             var request = CommandRequest.Parse(message);
             if (commandStringToIdMap.TryGetValue(request.CommandString, out var commandId))
             {

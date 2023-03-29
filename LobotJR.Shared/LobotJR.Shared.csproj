@@ -100,6 +100,7 @@
     <Compile Include="Chat\ChattersResponse.cs" />
     <Compile Include="Chat\Chatters.cs" />
     <Compile Include="Chat\Whisper.cs" />
+    <Compile Include="Chat\WhisperRequest.cs" />
     <Compile Include="Client\ClientData.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Channel\SubscriptionResponse.cs" />
@@ -112,6 +113,7 @@
     <Compile Include="Utility\FileUtils.cs" />
     <Compile Include="Utility\NewtonsoftDeserializer.cs" />
     <Compile Include="Utility\Pagination.cs" />
+    <Compile Include="Utility\RestUtils.cs" />
     <Compile Include="Utility\RestLogger.cs" />
     <Compile Include="Utility\SerializerSettings.cs" />
   </ItemGroup>

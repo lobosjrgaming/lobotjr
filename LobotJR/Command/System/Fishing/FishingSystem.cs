@@ -1,6 +1,7 @@
 ﻿using LobotJR.Command.Model.Fishing;
 using LobotJR.Data;
 using LobotJR.Utils;
+using NLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,6 +13,8 @@ namespace LobotJR.Command.System.Fishing
     /// </summary>
     public class FishingSystem : ISystem
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         private readonly Random Random = new Random();
         private readonly int[] Chances = new int[] { 40, 70, 95, 99, 100 };
 
@@ -203,6 +206,7 @@ namespace LobotJR.Command.System.Fishing
                 var fishList = FishData.Read(x => x.Rarity.Id == rarityId).ToList();
                 var fish = fishList[Random.Next(0, fishList.Count)];
                 fisher.Hooked = fish;
+                Logger.Debug("Fish {fish} hooked for user {userId}.", fish?.Name, fisher.UserId);
                 return true;
             }
             return false;
@@ -234,6 +238,7 @@ namespace LobotJR.Command.System.Fishing
                 fisher.IsFishing = false;
                 fisher.Hooked = null;
                 fisher.HookedTime = null;
+                Logger.Debug("User id {userId} catching fish {fish}", fisher.UserId, catchData?.Fish?.Name);
                 if (catchData != null)
                 {
                     OnFishCaught(fisher, catchData);
@@ -255,6 +260,7 @@ namespace LobotJR.Command.System.Fishing
                     && fisher.Hooked == null
                     && DateTime.Now >= fisher.HookedTime)
                 {
+                    Logger.Debug("Hooking fish for user {userId}.", fisher.UserId);
                     if (HookFish(fisher))
                     {
                         OnFishHooked(fisher);
@@ -265,6 +271,7 @@ namespace LobotJR.Command.System.Fishing
                     && fisher.HookedTime.HasValue
                     && DateTime.Now >= fisher.HookedTime.Value.AddSeconds(Settings.FishingHookLength))
                 {
+                    Logger.Debug("Fish got away for user {userId}.", fisher.UserId);
                     UnhookFish(fisher);
                     OnFishGotAway(fisher);
                 }
