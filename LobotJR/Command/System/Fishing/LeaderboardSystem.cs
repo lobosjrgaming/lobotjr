@@ -1,5 +1,6 @@
 ﻿using LobotJR.Command.Model.Fishing;
 using LobotJR.Data;
+using NLog;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -10,6 +11,8 @@ namespace LobotJR.Command.System.Fishing
     /// </summary>
     public class LeaderboardSystem : ISystem
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         private readonly IRepository<LeaderboardEntry> Leaderboard;
         private readonly IRepository<Catch> PersonalLeaderboard;
 
@@ -79,6 +82,7 @@ namespace LobotJR.Command.System.Fishing
             var record = PersonalLeaderboard.Read(x => x.UserId.Equals(userId) && x.Fish.Equals(catchData.Fish)).FirstOrDefault();
             if (record == null || record.Weight < catchData.Weight)
             {
+                Logger.Debug("Catch set a new personal record for user {userId}, fish {fish} at {weight} pounds.", userId, catchData.Fish?.Name, catchData.Weight);
                 if (record == null)
                 {
                     PersonalLeaderboard.Create(catchData);
@@ -107,6 +111,7 @@ namespace LobotJR.Command.System.Fishing
                 if (index >= 0 && records.Count() > index)
                 {
                     var record = records.ElementAt(index);
+                    Logger.Debug("Removed fish {fish} at index {index} for user id {userId}", record?.Fish?.Name, index, userId);
                     PersonalLeaderboard.Delete(record);
                     PersonalLeaderboard.Commit();
                 }
@@ -137,6 +142,7 @@ namespace LobotJR.Command.System.Fishing
             var record = Leaderboard.Read(x => x.Fish.Equals(catchData.Fish)).FirstOrDefault();
             if (record == null || record.Weight < catchData.Weight)
             {
+                Logger.Debug("Catch set a new global record for fish {fish} at {weight} pounds.", catchData.Fish?.Name, catchData.Weight);
                 if (record == null)
                 {
                     Leaderboard.Create(entry);

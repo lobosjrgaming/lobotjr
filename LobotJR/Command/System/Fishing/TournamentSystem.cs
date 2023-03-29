@@ -1,5 +1,6 @@
 ﻿using LobotJR.Command.Model.Fishing;
 using LobotJR.Data;
+using NLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,6 +12,8 @@ namespace LobotJR.Command.System.Fishing
     /// </summary>
     public class TournamentSystem : ISystem
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         private readonly IRepository<TournamentResult> TournamentResults;
         private readonly FishingSystem FishingSystem;
         private readonly LeaderboardSystem LeaderboardSystem;
@@ -68,6 +71,7 @@ namespace LobotJR.Command.System.Fishing
         {
             if (IsRunning)
             {
+                Logger.Debug("{userId} caught a fish worth {points} points.", fisher?.UserId, catchData?.Points);
                 LeaderboardSystem.UpdatePersonalLeaderboard(fisher.UserId, catchData);
                 LeaderboardSystem.UpdateGlobalLeaderboard(catchData);
                 AddTournamentPoints(fisher.UserId, catchData.Points);
@@ -132,6 +136,7 @@ namespace LobotJR.Command.System.Fishing
                     Date = DateTime.Now.AddMinutes(Settings.FishingTournamentDuration)
                 };
                 NextTournament = null;
+                Logger.Debug("Tournament started at {start}", DateTime.Now.ToString("G"));
                 TournamentStarted?.Invoke(CurrentTournament.Date);
             }
         }
@@ -158,6 +163,11 @@ namespace LobotJR.Command.System.Fishing
                     next = null;
                 }
                 NextTournament = next;
+                Logger.Debug("Tournament ended at {end} with {count} entrants, won by {userId}", DateTime.Now.ToString("G"), CurrentTournament.Entries?.Count(), CurrentTournament.Winner?.UserId);
+                foreach (var entry in CurrentTournament.Entries.OrderBy(x => x.Points))
+                {
+                    Logger.Debug("{userId} scored {points} points", entry?.UserId, entry?.Points);
+                }
                 TournamentEnded?.Invoke(CurrentTournament, next);
                 CurrentTournament = null;
             }
@@ -172,6 +182,7 @@ namespace LobotJR.Command.System.Fishing
             {
                 if (CurrentTournament != null)
                 {
+                    Logger.Debug("Tournament active when broadcasting ended.");
                     EndTournament(broadcasting);
                 }
                 NextTournament = null;
@@ -180,10 +191,12 @@ namespace LobotJR.Command.System.Fishing
             {
                 if (CurrentTournament != null && DateTime.Now >= CurrentTournament.Date)
                 {
+                    Logger.Debug("Tournament time expired.");
                     EndTournament(broadcasting);
                 }
                 else if (CurrentTournament == null && DateTime.Now >= NextTournament)
                 {
+                    Logger.Debug("Tournament start time arrived.");
                     StartTournament();
                 }
             }
