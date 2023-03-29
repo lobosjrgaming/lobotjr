@@ -91,7 +91,7 @@ namespace LobotJR.Command.Module.Fishing
                     {
                         $"You've caught {items.Count} different types of fish: "
                     };
-                    responses.AddRange(items.Select((x, i) => $"{i}: {x.Fish.Name}"));
+                    responses.AddRange(items.Select((x, i) => $"{i + 1}: {x.Fish.Name}"));
                     return new CommandResult(responses.ToArray());
                 }
                 else
