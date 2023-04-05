@@ -3246,8 +3246,7 @@ namespace TwitchBot
                                                 continue;
                                             }
 
-                                            string temp = gloatCost.ToString();
-                                            wolfcoins.RemoveCoins(whisperSender, temp);
+                                            wolfcoins.RemoveCoins(whisperSender, gloatCost);
 
 
                                             string petType = "";
@@ -3256,8 +3255,8 @@ namespace TwitchBot
                                             else
                                                 petType = toGloat.type;
 
-                                            irc.sendChatMessage(whisperSender + " watches proudly as their level " + toGloat.level + " " + petType + " named " + toGloat.name + " struts around!");
-                                            twitchClient.QueueWhisper(whisperSender, "You spent " + temp + " wolfcoins to brag about " + toGloat.name + ".");
+                                            irc.sendChatMessage($"{whisperSender} watches proudly as their level {toGloat.level} {petType} named {toGloat.name} struts around!");
+                                            twitchClient.QueueWhisper(whisperSender, $"You spent {gloatCost} wolfcoins to brag about {toGloat.name}.");
                                         }
                                     }
 
@@ -3271,11 +3270,10 @@ namespace TwitchBot
 
                                             if (wolfcoins.coinList[whisperSender] >= gloatCost)
                                             {
-                                                string temp = gloatCost.ToString();
                                                 string gloatMessage = "";
                                                 int level = wolfcoins.determineLevel(whisperSender);
                                                 string levelWithPrestige = wolfcoins.gloatWithPrestige(whisperSender);
-                                                wolfcoins.RemoveCoins(whisperSender, temp);
+                                                wolfcoins.RemoveCoins(whisperSender, gloatCost);
                                                 #region gloatMessages
                                                 switch (level)
                                                 {
@@ -3403,11 +3401,11 @@ namespace TwitchBot
                                                 }
                                                 #endregion
 
-                                                irc.sendChatMessage(whisperSender + " has spent " + gloatCost + " Wolfcoins to show off that they are " + levelWithPrestige + "! " + gloatMessage);
+                                                irc.sendChatMessage($"{whisperSender} has spent {gloatCost} Wolfcoins to show off that they are {levelWithPrestige}! {gloatMessage}");
                                             }
                                             else
                                             {
-                                                twitchClient.QueueWhisper(whisperSender, "You don't have enough coins to gloat (Cost: " + gloatCost + " Wolfcoins)");
+                                                twitchClient.QueueWhisper(whisperSender, $"You don't have enough coins to gloat (Cost: {gloatCost} Wolfcoins)");
                                             }
                                         }
                                         else
@@ -3435,7 +3433,7 @@ namespace TwitchBot
                                             betInfo.betAmount = betAmount;
                                             if (!betters.ContainsKey(user))
                                             {
-                                                wolfcoins.RemoveCoins(user, betAmount.ToString());
+                                                wolfcoins.RemoveCoins(user, betAmount);
                                                 if (vote == "succeed")
                                                 {
                                                     betInfo.vote = SUCCEED;
@@ -3548,7 +3546,7 @@ namespace TwitchBot
                                             if (wolfcoins.xpList.ContainsKey(desiredUser) && wolfcoins.coinList.ContainsKey(desiredUser))
                                             {
 
-                                                wolfcoins.RemoveCoins(whisperSender, pryCost.ToString());
+                                                wolfcoins.RemoveCoins(whisperSender, pryCost);
                                                 if (wolfcoins.Exists(wolfcoins.classList, desiredUser))
                                                 {
                                                     twitchClient.QueueWhisper(whisperSender, "" + desiredUser + " is a Level " + wolfcoins.determineLevel(desiredUser) + " " + wolfcoins.determineClass(desiredUser) + " (" + wolfcoins.xpList[desiredUser] + " XP), Prestige Level " + wolfcoins.classList[desiredUser].prestige + ", and has " +
@@ -3660,9 +3658,11 @@ namespace TwitchBot
                                     continue;
                                 }
                                 #endregion
+
                                 if (first[0] == "!stats" || first[0] == "!xp" || first[0] == "!lvl"
                                     || first[0] == "!level" || first[0] == "!exp")
                                 {
+                                    Logger.Debug(">>{user}: Timed out for checking stats or xp.", sender);
                                     twitchClient.Timeout(sender, 1, null);
                                     twitchClient.QueueWhisper(sender, "I see you're trying to check your stats! You'll need to WHISPER to me to get any information. Type '/w lobotjr' and then stats, xp, coins, etc. for that information.");
                                     twitchClient.QueueWhisper(sender, "Sorry for purging you. Just trying to do my job to keep chat clear! <3");
@@ -3672,50 +3672,81 @@ namespace TwitchBot
                                 {
                                     case "!nextaward":
                                         {
-                                            if (sender != tokenData.BroadcastUser && sender != tokenData.ChatUser)
-                                                break;
-                                            double totalSec = (DateTime.Now - awardLast).TotalSeconds;
-                                            int timeRemaining = (awardInterval * 60) - (int)(DateTime.Now - awardLast).TotalSeconds;
-                                            int secondsRemaining = timeRemaining % 60;
-                                            int minutesRemaining = timeRemaining / 60;
-                                            irc.sendChatMessage(minutesRemaining + " minutes and " + secondsRemaining + " seconds until next coins/xp are awarded.");
-
+                                            if (sender.Equals(tokenData.BroadcastUser, StringComparison.OrdinalIgnoreCase)
+                                                || sender.Equals(tokenData.ChatUser, StringComparison.OrdinalIgnoreCase))
+                                            {
+                                                double totalSec = (DateTime.Now - awardLast).TotalSeconds;
+                                                int timeRemaining = (awardInterval * 60) - (int)(DateTime.Now - awardLast).TotalSeconds;
+                                                int secondsRemaining = timeRemaining % 60;
+                                                int minutesRemaining = timeRemaining / 60;
+                                                Logger.Debug(">>{user}: Returning {minutesRemaining} minutes, {secondsRemaining} seconds remaining.", sender, minutesRemaining, secondsRemaining);
+                                                irc.sendChatMessage(minutesRemaining + " minutes and " + secondsRemaining + " seconds until next coins/xp are awarded.");
+                                            }
+                                            else
+                                            {
+                                                Logger.Debug(">>{user}: Ignoring next award command.", sender);
+                                            }
                                         }
                                         break;
 
                                     case "!setinterval":
                                         {
-                                            if (sender != tokenData.BroadcastUser && sender != tokenData.ChatUser)
-                                                break;
-
-                                            int newAmount = 0;
-                                            if (first.Count() > 1)
+                                            if (sender.Equals(tokenData.BroadcastUser, StringComparison.OrdinalIgnoreCase)
+                                                || sender.Equals(tokenData.ChatUser, StringComparison.OrdinalIgnoreCase))
                                             {
-                                                if (int.TryParse(first[1], out newAmount))
+                                                int newAmount = 0;
+                                                if (first.Length > 1)
                                                 {
-                                                    awardInterval = newAmount;
-                                                    irc.sendChatMessage("XP & Coins will now be awarded every " + newAmount + " minutes.");
+                                                    if (int.TryParse(first[1], out newAmount))
+                                                    {
+                                                        awardInterval = newAmount;
+                                                        Logger.Debug(">>{user}: Set interval to {newAmount} for {user}.", sender, newAmount);
+                                                        irc.sendChatMessage("XP & Coins will now be awarded every " + newAmount + " minutes.");
+                                                    }
+                                                    else
+                                                    {
+                                                        Logger.Debug(">>{user}: Failed to set interval, {param} failed to parse as integer.", sender, first[1]);
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    Logger.Debug(">>{user}: Failed to set interval because parameter was missing.", sender, first[1]);
                                                 }
                                             }
-
+                                            else
+                                            {
+                                                Logger.Debug(">>{user}: Ignoring set interval command.", sender);
+                                            }
                                         }
                                         break;
 
                                     case "!setmultiplier":
                                         {
-                                            if (sender != tokenData.BroadcastUser && sender != tokenData.ChatUser)
-                                                break;
-
-                                            int newAmount = 0;
-                                            if (first.Count() > 1)
+                                            if (sender.Equals(tokenData.BroadcastUser, StringComparison.OrdinalIgnoreCase)
+                                                || sender.Equals(tokenData.ChatUser, StringComparison.OrdinalIgnoreCase))
                                             {
-                                                if (int.TryParse(first[1], out newAmount))
+                                                int newAmount = 0;
+                                                if (first.Length > 1)
                                                 {
-                                                    awardMultiplier = newAmount;
-                                                    irc.sendChatMessage(newAmount + "x XP & Coins will now be awarded.");
+                                                    if (int.TryParse(first[1], out newAmount))
+                                                    {
+                                                        awardMultiplier = newAmount;
+                                                        irc.sendChatMessage(newAmount + "x XP & Coins will now be awarded.");
+                                                    }
+                                                    else
+                                                    {
+                                                        Logger.Debug(">>{user}: Failed to set multiplier, {param} failed to parse as integer.", sender, first[1]);
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    Logger.Debug(">>{user}: Failed to set multiplier because parameter was missing.", sender, first[1]);
                                                 }
                                             }
-
+                                            else
+                                            {
+                                                Logger.Debug(">>{user}: Ignoring set multiplier command.", sender);
+                                            }
                                         }
                                         break;
 
@@ -3781,10 +3812,9 @@ namespace TwitchBot
                                     case "!xpon":
                                         {
                                             wolfcoins.UpdateViewers(twitchClient).GetAwaiter().GetResult();
-                                            if (wolfcoins.moderatorList.Contains(sender, StringComparer.OrdinalIgnoreCase)
-                                                || sender.Equals(tokenData.BroadcastUser, StringComparison.OrdinalIgnoreCase)
-                                                || sender.Equals(tokenData.ChatUser, StringComparison.OrdinalIgnoreCase)
-                                                || sender.Equals("lan5432", StringComparison.OrdinalIgnoreCase))
+                                            var allowed = new List<string>(new string[] { tokenData.BroadcastUser, tokenData.ChatUser, "lan5432" });
+                                            allowed.AddRange(wolfcoins.moderatorList);
+                                            if (allowed.Any(x => x.Equals(sender, StringComparison.OrdinalIgnoreCase)))
                                             {
                                                 if (!broadcasting)
                                                 {
@@ -3794,12 +3824,18 @@ namespace TwitchBot
                                                     var tournamentSystem = systemManager.Get<TournamentSystem>();
                                                     tournamentSystem.NextTournament = DateTime.Now.AddMinutes(15);
 
+                                                    Logger.Debug(">>{user}: Xp turned on.", sender);
                                                     irc.sendChatMessage("Wolfcoins & XP will be awarded.");
                                                 }
                                                 else
                                                 {
+                                                    Logger.Debug(">>{user}: Xpon command ignored as xp already enabled by {broadcastSetting}.", sender, broadcastSetter);
                                                     irc.sendChatMessage($"XP has already been enabled by {broadcastSetter}");
                                                 }
+                                            }
+                                            else
+                                            {
+                                                Logger.Debug(">>{user}: Xpon command ignored from unauthorized sender. Authorized senders: {authorized}", sender, string.Join(", ", allowed));
                                             }
                                         }
                                         break;
@@ -3807,84 +3843,105 @@ namespace TwitchBot
                                     case "!xpoff":
                                         {
                                             wolfcoins.UpdateViewers(twitchClient).GetAwaiter().GetResult();
-                                            if (wolfcoins.moderatorList.Contains(sender, StringComparer.OrdinalIgnoreCase)
-                                                || sender.Equals(tokenData.BroadcastUser, StringComparison.OrdinalIgnoreCase)
-                                                || sender.Equals(tokenData.ChatUser, StringComparison.OrdinalIgnoreCase)
-                                                || sender.Equals("lan5432", StringComparison.OrdinalIgnoreCase))
+                                            var allowed = new List<string>(new string[] { tokenData.BroadcastUser, tokenData.ChatUser, "lan5432" });
+                                            allowed.AddRange(wolfcoins.moderatorList);
+                                            if (allowed.Any(x => x.Equals(sender, StringComparison.OrdinalIgnoreCase)))
                                             {
                                                 if (broadcasting)
                                                 {
                                                     broadcasting = false;
+                                                    Logger.Debug(">>{user}: Xp turned off.", sender);
                                                     irc.sendChatMessage("Wolfcoins & XP will no longer be awarded.");
                                                     wolfcoins.BackupData();
                                                 }
                                                 else
                                                 {
+                                                    Logger.Debug(">>{user}: Xpoff command ignored as xp already off.", sender);
                                                     irc.sendChatMessage("XP isn't on.");
                                                 }
+                                            }
+                                            else
+                                            {
+                                                Logger.Debug(">>{user}: Xpoff command ignored from unauthorized sender. Authorized senders: {authorized}", sender, string.Join(", ", allowed));
                                             }
                                         }
                                         break;
 
                                     case "!setxp":
                                         {
-                                            if (sender != tokenData.BroadcastUser && sender != tokenData.ChatUser)
-                                                break;
-
-                                            if (first.Length >= 3 && first[1] != null && first[2] != null)
+                                            if (sender.Equals(tokenData.BroadcastUser, StringComparison.OrdinalIgnoreCase)
+                                                || sender.Equals(tokenData.ChatUser, StringComparison.OrdinalIgnoreCase))
                                             {
-                                                if (int.TryParse(first[2], out int value))
+
+                                                if (first.Length >= 3 && !string.IsNullOrWhiteSpace(first[1]) && !string.IsNullOrWhiteSpace(first[2]))
                                                 {
-                                                    int newXp = wolfcoins.SetXP(value, first[1], twitchClient);
-                                                    if (newXp != -1)
+                                                    if (int.TryParse(first[2], out int value))
                                                     {
-                                                        irc.sendChatMessage("Set " + first[1] + "'s XP to " + newXp + ".");
+                                                        int newXp = wolfcoins.SetXP(value, first[1], twitchClient);
+                                                        if (newXp != -1)
+                                                        {
+                                                            Logger.Debug(">>{user}: Xp set to {xp} for {target}.", sender, value, first[1]);
+                                                            irc.sendChatMessage("Set " + first[1] + "'s XP to " + newXp + ".");
+                                                        }
+                                                        else
+                                                        {
+                                                            Logger.Debug(">>{user}: Unable to set xp to {xp} for {target}.", sender, value, first[1]);
+                                                            irc.sendChatMessage("Error updating XP amount.");
+                                                        }
                                                     }
                                                     else
                                                     {
-                                                        irc.sendChatMessage("Error updating XP amount.");
+                                                        Logger.Debug(">>{user}: Unable to parse xp amount {param} to set xp.", sender, first[2]);
+                                                        irc.sendChatMessage("Invalid data provided for !setxp command.");
                                                     }
                                                 }
                                                 else
                                                 {
-                                                    irc.sendChatMessage("Invalid data provided for !setxp command.");
+                                                    Logger.Debug(">>{user}: Invalid number of parameters for set xp command. Expected 2, received {count}.", sender, first.Length - 1);
+                                                    irc.sendChatMessage("Not enough data provided for !setxp command.");
                                                 }
                                             }
                                             else
                                             {
-                                                irc.sendChatMessage("Not enough data provided for !setxp command.");
+                                                Logger.Debug(">>{user}: Ignoring set xp command.", sender);
                                             }
-
                                         }
                                         break;
 
                                     case "!grantxp":
                                         {
-                                            if (sender != tokenData.BroadcastUser && sender != tokenData.ChatUser)
-                                                break;
-
-                                            if (first[0] != null && first[1] != null)
+                                            if (sender.Equals(tokenData.BroadcastUser, StringComparison.OrdinalIgnoreCase)
+                                                || sender.Equals(tokenData.ChatUser, StringComparison.OrdinalIgnoreCase))
                                             {
-                                                if (int.TryParse(first[1], out int value))
+                                                if (first.Length >= 2 && !string.IsNullOrWhiteSpace(first[0]) && !string.IsNullOrWhiteSpace(first[1]))
                                                 {
-                                                    wolfcoins.AwardXP(value, twitchClient);
+                                                    if (int.TryParse(first[1], out int value))
+                                                    {
+                                                        Logger.Debug(">>{user}: Granted {xp} xp to all viewers.", sender, value);
+                                                        wolfcoins.AwardXP(value, twitchClient);
+                                                    }
+                                                    else
+                                                    {
+                                                        Logger.Debug(">>{user}: Unable to parse xp amount {param} to grant xp.", sender, first[1]);
+                                                        irc.sendChatMessage("Invalid data provided for !givexp command.");
+                                                    }
                                                 }
                                                 else
                                                 {
-                                                    irc.sendChatMessage("Invalid data provided for !givexp command.");
+                                                    Logger.Debug(">>{user}: Invalid number of parameters for grant xp command. Expected 1, received {count}.", sender, first.Length - 1);
+                                                    irc.sendChatMessage("Not enough data provided for !givexp command.");
                                                 }
                                             }
                                             else
                                             {
-                                                irc.sendChatMessage("Not enough data provided for !givexp command.");
+                                                Logger.Debug(">>{user}: Ignoring grant xp command.", sender);
                                             }
-
                                         }
                                         break;
 
                                     case "!setcoins":
                                         {
-
+                                            Logger.Debug(">>{user}: Set coins command not implemented.", sender);
                                         }
                                         break;
 
@@ -3953,75 +4010,79 @@ namespace TwitchBot
                                     // remove coins from a target. Ex: !removecoins lobosjr 200
                                     case "!removecoins":
                                         {
-
-                                            if (first.Length < 3)
+                                            if (sender.Equals(tokenData.BroadcastUser, StringComparison.OrdinalIgnoreCase)
+                                                || sender.Equals(tokenData.ChatUser, StringComparison.OrdinalIgnoreCase))
                                             {
-                                                irc.sendChatMessage("Not enough information provided.");
-                                                break;
-                                            }
 
-                                            string target = first[1];
-                                            string coins = first[2];
-
-                                            if (sender == tokenData.BroadcastUser || sender == tokenData.ChatUser)
-                                            {
-                                                if (wolfcoins.RemoveCoins(target, coins))
+                                                if (first.Length >= 3 && first[1] != null && first[2] != null)
                                                 {
-                                                    var removeMessage = sender + " removed " + coins + " coins from " + target + ".";
-                                                    Logger.Info(removeMessage);
-                                                    irc.sendChatMessage(removeMessage);
+                                                    if (int.TryParse(first[2], out int value))
+                                                    {
+                                                        if (wolfcoins.RemoveCoins(first[1], value))
+                                                        {
+                                                            Logger.Debug(">>{user}: Removed {coins} coins from {target}.", sender, value, first[1]);
+                                                            irc.sendChatMessage($"{sender} removed {value} coins from {first[1]}.");
+                                                        }
+                                                        else
+                                                        {
+                                                            Logger.Debug(">>{user}: Unable to remove {coins} coins from {target}.", sender, value, first[1]);
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        Logger.Debug(">>{user}: Unable to parse coin amount {param} to remove coins.", sender, first[2]);
+                                                        irc.sendChatMessage("Invalid data provided for !removecoins command.");
+                                                    }
                                                 }
                                                 else
                                                 {
-                                                    Logger.Warn("Coin remove operation failed with the following information: ");
-                                                    Logger.Warn("Sender: {user}", sender);
-                                                    Logger.Warn("Target: {target}", target);
-                                                    Logger.Warn("Amount: {coins} coins.", coins);
+                                                    Logger.Debug(">>{user}: Invalid number of parameters for remove coins command. Expected 2, received {count}.", sender, first.Length - 1);
+                                                    irc.sendChatMessage("Not enough data provided for !removecoins command.");
                                                 }
                                             }
                                             else
                                             {
-                                                Logger.Warn("Non-Moderator {user} attempted to remove coins.", sender);
-                                                irc.sendChatMessage("Sorry, " + sender + ", AddCoins is a moderator-only command.");
+                                                Logger.Debug(">>{user}: Ignoring remove coins command.", sender);
                                             }
-
                                         }
                                         break;
 
                                     case "!addcoins":
                                         {
-
-                                            if (first.Length < 3)
+                                            if (sender.Equals(tokenData.BroadcastUser, StringComparison.OrdinalIgnoreCase)
+                                                || sender.Equals(tokenData.ChatUser, StringComparison.OrdinalIgnoreCase))
                                             {
-                                                irc.sendChatMessage("Not enough information provided.");
-                                                break;
-                                            }
 
-                                            string target = first[1];
-                                            string coins = first[2];
-
-                                            if (sender == tokenData.BroadcastUser || sender == tokenData.ChatUser)
-                                            {
-                                                if (wolfcoins.AddCoins(target, coins))
+                                                if (first.Length >= 3 && first[1] != null && first[2] != null)
                                                 {
-                                                    var addMessage = sender + " granted " + target + " " + coins + " coins.";
-                                                    Logger.Info(addMessage);
-                                                    irc.sendChatMessage(addMessage);
+                                                    if (int.TryParse(first[2], out int value))
+                                                    {
+                                                        if (wolfcoins.AddCoins(first[1], value))
+                                                        {
+                                                            Logger.Debug(">>{user}: Granted {coins} coins to {target}.", sender, value, first[1]);
+                                                            irc.sendChatMessage($"{sender} granted {first[1]} {value} coins.");
+                                                        }
+                                                        else
+                                                        {
+                                                            Logger.Debug(">>{user}: Unable to add {coins} coins to {target}.", sender, value, first[1]);
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        Logger.Debug(">>{user}: Unable to parse coin amount {param} to add coins.", sender, first[2]);
+                                                        irc.sendChatMessage("Invalid data provided for !addcoins command.");
+                                                    }
                                                 }
                                                 else
                                                 {
-                                                    Logger.Warn("Coin add operation failed with the following information: ");
-                                                    Logger.Warn("Sender: {user}", sender);
-                                                    Logger.Warn("Target: {target}", target);
-                                                    Logger.Warn("Amount: {coins} coins.", coins);
+                                                    Logger.Debug(">>{user}: Invalid number of parameters for add coins command. Expected 2, received {count}.", sender, first.Length - 1);
+                                                    irc.sendChatMessage("Not enough data provided for !addcoins command.");
                                                 }
                                             }
                                             else
                                             {
-                                                Logger.Warn("Non-Moderator {user} attempted to add coins.", sender);
-                                                irc.sendChatMessage("Sorry, " + sender + ", AddCoins is a moderator-only command.");
+                                                Logger.Debug(">>{user}: Ignoring add coins command.", sender);
                                             }
-
                                         }
                                         break;
 
