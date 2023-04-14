@@ -187,7 +187,6 @@
     <Compile Include="GroupFinder.cs" />
     <Compile Include="IrcClient.cs" />
     <Compile Include="Items.cs" />
-    <Compile Include="JSON.cs" />
     <Compile Include="Data\Import\FisherDataImport.cs" />
     <Compile Include="Data\Import\FishDataImport.cs" />
     <Compile Include="Command\Module\AccessControl\AccessControlAdmin.cs" />
@@ -212,6 +211,7 @@
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
     <Compile Include="Trigger\ITriggerResponder.cs" />
+    <Compile Include="Trigger\Responder\BadLobot.cs" />
     <Compile Include="Trigger\Responder\BlockLinks.cs" />
     <Compile Include="Trigger\Responder\NoceanMan.cs" />
     <Compile Include="Trigger\TriggerManager.cs" />

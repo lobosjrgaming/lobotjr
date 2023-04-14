@@ -1,6 +1,7 @@
 ﻿using LobotJR.Data;
 using LobotJR.Data.User;
 using LobotJR.Utils;
+using NLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -66,6 +67,8 @@ namespace LobotJR.Twitch
     /// </summary>
     public class WhisperQueue
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         private static readonly string TimerKey = "WhisperQueue";
         private IRepository<DataTimer> DataTimers;
         private TimeSpan UniqueWhisperTimer = TimeSpan.FromDays(1);
@@ -157,6 +160,17 @@ namespace LobotJR.Twitch
                 {
                     Queue.Remove(record);
                     return true;
+                }
+                else if (Queue.Any())
+                {
+                    Logger.Warn("Failed to fetch message from queue despite queue containing messages to send. Clearing whisper queue.");
+                    Logger.Debug("Current whisper recipients: {recipients}", string.Join(", ", WhisperRecipients));
+                    Logger.Debug("Current whisper queue: ");
+                    foreach (var item in Queue)
+                    {
+                        Logger.Debug("  To {username} ({userid}): {message}", item.Username, item.UserId, item.Message);
+                    }
+                    Queue.Clear();
                 }
             }
             return false;

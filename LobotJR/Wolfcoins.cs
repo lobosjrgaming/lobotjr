@@ -672,9 +672,9 @@ namespace Wolfcoins
 
             }
             {
-                if (!coinList.ContainsKey(user) && int.TryParse(coins, out value))
+                if (!coinList.ContainsKey(user))
                 {
-                    coinList.Add(user, value);
+                    coinList.Add(user, coins);
 
                 }
                 else
@@ -827,7 +827,7 @@ namespace Wolfcoins
                     {
                         classList[user].myItems = new List<Item>();
                         classList[user].classType = newClass;
-                        RemoveCoins(user, respecCost.ToString());
+                        RemoveCoins(user, respecCost);
 
                         string myClass = determineClass(user);
                         classList[user].className = myClass;
