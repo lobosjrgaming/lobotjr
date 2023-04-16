@@ -1,11 +1,11 @@
-﻿using NLog;
+﻿using LobotJR.Twitch;
+using NLog;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
-using TwitchBot;
 
 namespace LobotJR.Utils
 {
@@ -198,10 +198,8 @@ namespace LobotJR.Utils
             { "dd", new KeyPress('F') }
         };
 
-        public void Play(IrcClient irc)
+        public void Play(TwitchIrcClient irc)
         {
-            irc.joinRoom("lobosjr");
-
             Process[] p = Process.GetProcessesByName("DARKSOULS");
             IntPtr h = (IntPtr)0;
             if (p.Length > 0)
@@ -210,14 +208,13 @@ namespace LobotJR.Utils
                 SetForegroundWindow(h);
             }
 
-            while (irc.connected)
+            while (true)
             {
                 // message[0] has username, message[1] has message
-                string[] message = irc.readMessage();
-
-                if (message.Length > 1 && message[0] != null && message[1] != null)
+                IEnumerable<IrcMessage> messages = irc.Process().GetAwaiter().GetResult();
+                foreach (var message in messages.Where(x => !string.IsNullOrWhiteSpace(x.Message)))
                 {
-                    var command = message[1].Split(' ')[0].ToLower();
+                    var command = message.Message.Split(' ')[0].ToLower();
                     if (_commands.TryGetValue(command, out var keyPress))
                     {
                         keyPress.Send();

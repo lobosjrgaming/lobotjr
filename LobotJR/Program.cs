@@ -42,7 +42,7 @@ namespace TwitchBot
     class Program
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-        static void HandleCommandResult(string whisperSender, string whisperMessage, CommandResult result, IrcClient irc, TwitchClient twitchClient)
+        static void HandleCommandResult(string whisperSender, string whisperMessage, CommandResult result, TwitchIrcClient irc, TwitchClient twitchClient)
         {
             if (result.TimeoutSender)
             {
@@ -59,7 +59,7 @@ namespace TwitchBot
             {
                 foreach (var broadcastMessage in result.Messages)
                 {
-                    irc.sendChatMessage(broadcastMessage);
+                    irc.QueueMessage(broadcastMessage);
                 }
             }
             if (result.Errors?.Count > 0)
@@ -310,8 +310,12 @@ namespace TwitchBot
         {
             try
             {
+                LogManager.Setup().LoadConfiguration(builder =>
+                {
+                    builder.ForLogger().FilterMinLevel(LogLevel.Info).WriteToConsole(layout: "${time}|${level:uppercase=true}|${message:withexception=true}");
+                });
+
                 bool twitchPlays = false;
-                bool connected = true;
                 bool broadcasting = false;
                 string broadcastSetter = "";
 
@@ -378,15 +382,6 @@ namespace TwitchBot
                 var clientData = FileUtils.ReadClientData();
                 var tokenData = FileUtils.ReadTokenData();
                 RestLogger.SetSensitiveData(clientData, tokenData);
-                IrcClient irc = new IrcClient("irc.chat.twitch.tv", 80, tokenData.ChatUser, tokenData.ChatToken.AccessToken);
-                IrcClient group = new IrcClient("irc.chat.twitch.tv", 80, tokenData.ChatUser, tokenData.ChatToken.AccessToken);
-                // 199.9.253.119
-                connected = irc.connected;
-
-                LogManager.Setup().LoadConfiguration(builder =>
-                {
-                    builder.ForLogger().FilterMinLevel(LogLevel.Info).WriteToConsole(layout: "${time}|${level:uppercase=true}|${message:withexception=true}");
-                });
 
                 #region Database Update
                 var updaterContainer = AutofacSetup.SetupUpdater(clientData, tokenData);
@@ -442,7 +437,7 @@ namespace TwitchBot
                         maxArchiveFiles: appSettings.LoggingMaxArchives);
                 });
                 var crashDumps = Directory.GetFiles(Directory.GetCurrentDirectory(), "CrashDump.*.log", SearchOption.TopDirectoryOnly);
-                var toDelete = crashDumps.OrderByDescending(x => x).Skip(10);
+                var toDelete = crashDumps.OrderByDescending(x => x).Skip(appSettings.LoggingMaxArchives);
                 foreach (var file in toDelete)
                 {
                     try
@@ -457,27 +452,25 @@ namespace TwitchBot
                 }
                 #endregion
 
-                #region Twitch API Setup
+                #region Twitch Setup
                 var twitchClient = scope.Resolve<TwitchClient>();
                 twitchClient.GetBotIds();
+                var ircClient = scope.Resolve<TwitchIrcClient>();
+                var connected = ircClient.Connect().GetAwaiter().GetResult();
+                var attempts = 0;
+                while (!connected)
+                {
+                    Logger.Error($"IRC connection failed. Retrying in {Math.Pow(2, attempts)} seconds...");
+                    Thread.Sleep((int)Math.Pow(2, attempts) * 1000);
+                    attempts++;
+                }
+                Logger.Info($"Logged in as {tokenData.ChatUser}");
+                attempts = 0;
                 #endregion
 
-                if (connected)
-                {
-                    twitchClient.RefreshTokens().GetAwaiter().GetResult();
-                    Logger.Info($"Logged in as {tokenData.ChatUser}");
-                    irc.sendIrcMessage("twitch.tv/membership");
-                }
-                if (group.connected)
-                {
-                    group.sendIrcMessage("CAP REQ :twitch.tv/tags twitch.tv/commands twitch.tv/membership");
-                }
                 if (!twitchPlays)
                 {
                     #region NormalBot
-                    string channel = tokenData.BroadcastUser;
-                    irc.joinRoom(channel);
-                    group.joinRoom("jtv");
                     DateTime awardLast = DateTime.Now;
                     wolfcoins.UpdateViewers(twitchClient).GetAwaiter().GetResult();
                     wolfcoins.UpdateSubs(twitchClient).GetAwaiter().GetResult();
@@ -494,7 +487,7 @@ namespace TwitchBot
                         {
                             string username = userId == null ? null : userLookup.GetUsername(userId);
                             string message = "Push Notification";
-                            HandleCommandResult(username, message, commandResult, irc, twitchClient);
+                            HandleCommandResult(username, message, commandResult, ircClient, twitchClient);
                         };
                     #endregion
 
@@ -549,31 +542,8 @@ namespace TwitchBot
                     }
                     wolfcoins.SaveClassData();
 
-                    DateTime lastConnectAttempt = DateTime.Now;
-
                     while (true)
                     {
-                        if (!irc.connected)
-                        {
-                            twitchClient.RefreshTokens().GetAwaiter().GetResult();
-                            if ((DateTime.Now - lastConnectAttempt).TotalSeconds > 5)
-                            {
-                                irc = new IrcClient("irc.chat.twitch.tv", 80, tokenData.ChatUser, tokenData.ChatToken.AccessToken);
-                                group = new IrcClient("irc.chat.twitch.tv", 80, tokenData.ChatUser, tokenData.ChatToken.AccessToken);
-
-                                lastConnectAttempt = DateTime.Now;
-                                if (!connected)
-                                {
-                                    Logger.Warn("Disconnected from server. Attempting to reconnect in 30 seconds...");
-                                }
-                                else
-                                {
-                                    Logger.Info("Reconnected to server.");
-                                }
-                            }
-                            continue;
-                        }
-
                         #region System Processing
                         var cacheUpdate = false;
                         if (userLookup.IsUpdateTime(DateTime.Now))
@@ -594,21 +564,12 @@ namespace TwitchBot
                         twitchClient.ProcessQueue(cacheUpdate).GetAwaiter().GetResult();
                         #endregion
 
-                        // message[0] has username, message[1] has message
-                        string[] message = irc.readMessage(wolfcoins, channel);
-                        string[] whispers = group.readMessage(wolfcoins, channel);
+                        var ircMessages = ircClient.Process().GetAwaiter().GetResult();
+                        var whispers = ircMessages.Where(x => x.IsWhisper);
+                        var messages = ircMessages.Where(x => x.IsChat);
+                        var subs = ircMessages.Where(x => x.IsUserNotice);
                         string whisperSender;
                         string whisperMessage;
-
-                        if (irc.messageQueue.Count > 0)
-                        {
-                            irc.processQueue();
-                        }
-
-                        if (group.messageQueue.Count > 0)
-                        {
-                            group.processQueue();
-                        }
 
                         List<int> partiesToRemove = new List<int>();
 
@@ -695,7 +656,7 @@ namespace TwitchBot
                                         {
 
                                             Dictionary<int, Pet> allPets = new Dictionary<int, Pet>(petDatabase);
-                                            Pet newPet = GrantPet(member.name, wolfcoins, allPets, irc, twitchClient);
+                                            Pet newPet = GrantPet(member.name, wolfcoins, allPets, ircClient, twitchClient);
                                             if (newPet.stableID != -1)
                                             {
                                                 string logPath = "petlog.txt";
@@ -775,12 +736,12 @@ namespace TwitchBot
                                             //        if (newPet.isSparkly)
                                             //        {
                                             //            Console.WriteLine(DateTime.Now.ToString() + "WOW! " + ": " + member.name + " just found a SPARKLY pet " + newPet.name + "!");
-                                            //            irc.sendChatMessage("WOW! " + member.name + " just found a SPARKLY pet " + newPet.name + "! What luck!");
+                                            //            ircClient.QueueMessage("WOW! " + member.name + " just found a SPARKLY pet " + newPet.name + "! What luck!");
                                             //        }
                                             //        else
                                             //        {
                                             //            Console.WriteLine(DateTime.Now.ToString() + ": " + member.name + " just found a pet " + newPet.name + "!");
-                                            //            irc.sendChatMessage(member.name + " just found a pet " + newPet.name + "!");
+                                            //            ircClient.QueueMessage(member.name + " just found a pet " + newPet.name + "!");
                                             //        }
                                             //    }
                                             //}
@@ -840,8 +801,8 @@ namespace TwitchBot
                                 //File.Copy(@"C:\Users\Lobos\AppData\Roaming\DarkSoulsII\01100001004801af\DS2SOFS0000.sl2", @path2);
                                 //string path = "C:/Users/Lobos/AppData/Roaming/DarkSoulsIII/01100001004801af/Backups/DS30000_" + DateTime.Now.Ticks + ".sl2";
                                 //File.Copy(@"C:/Users/Lobos/AppData/Roaming/DarkSoulsIII/01100001004801af/DS30000.sl2", @path);
-                                irc.sendChatMessage("Thanks for watching! Viewers awarded " + awardTotal + " XP & " + (awardTotal * 3) + " Wolfcoins. Subscribers earn double that amount!");
-                                //irc.sendChatMessage("Happy Halloween! Viewer " + winnerName + " just won a treat of " + coinsToAward + " wolfcoins!");
+                                ircClient.QueueMessage($"Thanks for watching! Viewers awarded {awardTotal} XP & {awardTotal * 3} Wolfcoins. Subscribers earn double that amount!");
+                                //ircClient.QueueMessage("Happy Halloween! Viewer " + winnerName + " just won a treat of " + coinsToAward + " wolfcoins!");
                             }
 
                             wolfcoins.SaveCoins();
@@ -850,14 +811,51 @@ namespace TwitchBot
                             awardLast = DateTime.Now;
                         }
 
-                        #region whisperRegion
-                        if (whispers.Length > 1)
+                        #region userNoticeRegion
+                        // This code updates subcounter.txt for Subathon. Problem is having to recode the modifier update when the goal is met
+                        //var text = File.ReadAllText(@"C:\Users\Lobos\Dropbox\Stream\subcounter.txt");
+                        //int count = int.Parse(text);
+                        //count--;
+                        //File.WriteAllText(@"C:\Users\Lobos\Dropbox\Stream\subcounter.txt", count.ToString());
+                        foreach (var sub in subs)
                         {
-                            if (whispers[0] != null && whispers[1] != null)
+                            if (sub.Tags.TryGetValue("msg-id", out var subMessage))
+                            {
+                                if (subMessage.Equals("sub", StringComparison.OrdinalIgnoreCase)
+                                    || subMessage.Equals("resub", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    if (sub.Tags.TryGetValue("login", out var user))
+                                    {
+                                        if (!wolfcoins.subSet.Contains(user))
+                                        {
+                                            wolfcoins.subSet.Add(user);
+                                            Logger.Info("Added {user} to the subs list.", user);
+                                        }
+                                    }
+                                }
+                                else if (subMessage.Equals("subgift", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    if (sub.Tags.TryGetValue("msg-param-recipient-name", out var user))
+                                    {
+                                        if (!wolfcoins.subSet.Contains(user))
+                                        {
+                                            wolfcoins.subSet.Add(user);
+                                            Logger.Info("Added {user} to the subs list.", user);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        #endregion
+
+                        #region whisperRegion
+                        foreach (var whisper in whispers)
+                        {
+                            if (!string.IsNullOrWhiteSpace(whisper.Message))
                             {
 
-                                whisperSender = whispers[0];
-                                whisperMessage = whispers[1];
+                                whisperSender = whisper.UserName;
+                                whisperMessage = whisper.Message;
 
 
                                 if (wolfcoins.Exists(wolfcoins.classList, whisperSender))
@@ -875,7 +873,7 @@ namespace TwitchBot
                                     var result = commandManager.ProcessMessage(whisperMessage.Substring(1), whisperSender, true);
                                     if (result != null && result.Processed)
                                     {
-                                        HandleCommandResult(whisperSender, whisperMessage, result, irc, twitchClient);
+                                        HandleCommandResult(whisperSender, whisperMessage, result, ircClient, twitchClient);
                                         continue;
                                     }
                                 }
@@ -911,7 +909,7 @@ namespace TwitchBot
                                 {
                                     if (wolfcoins.Exists(wolfcoins.classList, whisperSender))
                                     {
-                                        string[] msgData = whispers[1].Split(' ');
+                                        string[] msgData = whisperMessage.Split(' ');
                                         int dungeonID = -1;
                                         if (msgData.Count() > 1)
                                         {
@@ -943,7 +941,7 @@ namespace TwitchBot
                                 {
                                     if (wolfcoins.Exists(wolfcoins.classList, whisperSender))
                                     {
-                                        string[] msgData = whispers[1].Split(' ');
+                                        string[] msgData = whisperMessage.Split(' ');
                                         if (msgData.Count() > 1)
                                         {
                                             string bugMessage = "";
@@ -981,7 +979,7 @@ namespace TwitchBot
                                             continue;
                                         }
 
-                                        string[] msgData = whispers[1].Split(' ');
+                                        string[] msgData = whisperMessage.Split(' ');
                                         int invID = -1;
                                         if (msgData.Count() > 1)
                                         {
@@ -1081,7 +1079,7 @@ namespace TwitchBot
                                         continue;
                                     }
 
-                                    string[] msgData = whispers[1].Split(' ');
+                                    string[] msgData = whisperMessage.Split(' ');
                                     if (msgData.Count() == 2)
                                     {
                                         string name = msgData[1];
@@ -1120,7 +1118,7 @@ namespace TwitchBot
                                         continue;
                                     }
 
-                                    string[] msgData = whispers[1].Split(' ');
+                                    string[] msgData = whisperMessage.Split(' ');
                                     if (msgData.Count() > 2 && msgData.Count() < 4)
                                     {
                                         string prevName = msgData[1];
@@ -1175,7 +1173,7 @@ namespace TwitchBot
                                         continue;
                                     }
 
-                                    string[] msgData = whispers[1].Split(' ');
+                                    string[] msgData = whisperMessage.Split(' ');
                                     if (msgData.Count() > 1)
                                     {
                                         string toCheck = msgData[1];
@@ -1199,7 +1197,7 @@ namespace TwitchBot
                                         continue;
                                     }
 
-                                    string[] msgData = whispers[1].Split(' ');
+                                    string[] msgData = whisperMessage.Split(' ');
                                     if (msgData.Count() > 1)
                                     {
                                         int rarity = -1;
@@ -1214,7 +1212,7 @@ namespace TwitchBot
                                         wolfcoins.classList[whisperSender].petEarned = rng.Next(1, 6);
                                     }
                                     Dictionary<int, Pet> allPets = petDatabase;
-                                    GrantPet(whisperSender, wolfcoins, allPets, irc, twitchClient);
+                                    GrantPet(whisperSender, wolfcoins, allPets, ircClient, twitchClient);
                                     Logger.Debug(">>{user}: Grant pets command executed with rarity {rarity}", whisperSender, wolfcoins.classList[whisperSender].petEarned);
 
                                     //Random RNG = new Random();
@@ -1268,7 +1266,7 @@ namespace TwitchBot
                                     {
                                         if (wolfcoins.classList[whisperSender].groupID != -1)
                                         {
-                                            string[] msgData = whispers[1].Split(' ');
+                                            string[] msgData = whisperMessage.Split(' ');
                                             if (msgData.Count() > 1)
                                             {
                                                 string partyMessage = "";
@@ -1414,7 +1412,7 @@ namespace TwitchBot
                                         continue;
                                     }
 
-                                    //string[] msgData = whispers[1].Split(' ');
+                                    //string[] msgData = whisperMessage.Split(' ');
                                     //if (msgData.Count() != 2)
                                     //{
                                     //    Whisper(whisperSender, "Invalid number of parameters. Syntax: !feed <stable ID>", group);
@@ -1444,7 +1442,7 @@ namespace TwitchBot
                                     {
                                         if (wolfcoins.classList[whisperSender].myPets.Count > 0)
                                         {
-                                            string[] msgData = whispers[1].Split(' ');
+                                            string[] msgData = whisperMessage.Split(' ');
                                             if (msgData.Count() != 2)
                                             {
                                                 Logger.Debug(">>{user}: Feed command failed due to invalid parameter count. Expected 1, actual {count}.", whisperSender, msgData.Length - 1);
@@ -1537,7 +1535,7 @@ namespace TwitchBot
                                         continue;
                                     }
 
-                                    string[] msgData = whispers[1].Split(' ');
+                                    string[] msgData = whisperMessage.Split(' ');
                                     if (msgData.Count() > 3)
                                     {
                                         Logger.Debug(">>{user}: Set hunger command failed due to invalid parameter count. Expected 2, actual {count}.", whisperSender, msgData.Length - 1);
@@ -1564,7 +1562,7 @@ namespace TwitchBot
                                     {
                                         if (wolfcoins.classList[whisperSender].myPets.Count > 0)
                                         {
-                                            string[] msgData = whispers[1].Split(' ');
+                                            string[] msgData = whisperMessage.Split(' ');
                                             if (msgData.Count() != 2)
                                             {
                                                 Logger.Debug(">>{user}: Release command failed due to invalid parameter count. Expected 1, actual {count}.", whisperSender, msgData.Length - 1);
@@ -1607,7 +1605,7 @@ namespace TwitchBot
                                     {
                                         if (wolfcoins.classList[whisperSender].myPets.Count > 0)
                                         {
-                                            string[] msgData = whispers[1].Split(' ');
+                                            string[] msgData = whisperMessage.Split(' ');
                                             if (msgData.Count() != 2)
                                             {
                                                 Logger.Debug(">>{user}: Dismiss command failed due to invalid parameter count. Expected 1, actual {count}.", whisperSender, msgData.Length - 1);
@@ -1655,7 +1653,7 @@ namespace TwitchBot
                                     {
                                         if (wolfcoins.classList[whisperSender].myPets.Count > 0)
                                         {
-                                            string[] msgData = whispers[1].Split(' ');
+                                            string[] msgData = whisperMessage.Split(' ');
                                             if (msgData.Count() != 2)
                                             {
                                                 Logger.Debug(">>{user}: Summon command failed due to invalid parameter count. Expected 1, actual {count}.", whisperSender, msgData.Length - 1);
@@ -1717,7 +1715,7 @@ namespace TwitchBot
                                     {
                                         if (wolfcoins.classList[whisperSender].myPets.Count > 0)
                                         {
-                                            string[] msgData = whispers[1].Split(' ');
+                                            string[] msgData = whisperMessage.Split(' ');
                                             if (msgData.Count() != 2)
                                             {
                                                 Logger.Debug(">>{user}: Pet command failed due to invalid parameter count. Expected 1, actual {count}.", whisperSender, msgData.Length - 1);
@@ -1758,7 +1756,7 @@ namespace TwitchBot
                                     {
                                         if (wolfcoins.classList[whisperSender].myPets.Count > 0)
                                         {
-                                            string[] msgData = whispers[1].Split(' ');
+                                            string[] msgData = whisperMessage.Split(' ');
                                             if (msgData.Count() != 3)
                                             {
                                                 Logger.Debug(">>{user}: Rename command failed due to invalid parameter count. Expected 2, actual {count}.", whisperSender, msgData.Length - 1);
@@ -1825,7 +1823,7 @@ namespace TwitchBot
                                                     twitchClient.QueueWhisper(whisperSender, "You are not the party leader!");
                                                     continue;
                                                 }
-                                                string[] msgData = whispers[1].Split(' ');
+                                                string[] msgData = whisperMessage.Split(' ');
                                                 int dungeonID = -1;
                                                 if (msgData.Count() > 1)
                                                 {
@@ -1866,7 +1864,7 @@ namespace TwitchBot
                                                         }
                                                     }
 
-                                                    Dungeon newDungeon = new Dungeon(dungeonPath, channel, itemDatabase);
+                                                    Dungeon newDungeon = new Dungeon(dungeonPath, tokenData.BroadcastUser, itemDatabase);
                                                     bool outOfLevelRange = false;
                                                     foreach (var member in parties[partyID].members)
                                                     {
@@ -2120,9 +2118,9 @@ namespace TwitchBot
                                                 twitchClient.QueueWhisper(whisperSender, "You can't kick a party member in the middle of a dungeon!");
                                                 continue;
                                             }
-                                            if (whispers[1] != null)
+                                            if (!string.IsNullOrWhiteSpace(whisperMessage))
                                             {
-                                                string[] msgData = whispers[1].Split(' ');
+                                                string[] msgData = whisperMessage.Split(' ');
 
                                                 if (msgData.Count() > 1)
                                                 {
@@ -2202,9 +2200,9 @@ namespace TwitchBot
                                                 continue;
                                             }
 
-                                            if (whispers[1] != null)
+                                            if (!string.IsNullOrWhiteSpace(whisperMessage))
                                             {
-                                                string[] msgData = whispers[1].Split(' ');
+                                                string[] msgData = whisperMessage.Split(' ');
 
                                                 if (msgData.Count() > 1)
                                                 {
@@ -2321,9 +2319,9 @@ namespace TwitchBot
                                             continue;
                                         }
 
-                                        if (whispers[1] != null)
+                                        if (!string.IsNullOrWhiteSpace(whisperMessage))
                                         {
-                                            string[] msgData = whispers[1].Split(' ');
+                                            string[] msgData = whisperMessage.Split(' ');
 
                                             if (msgData.Count() > 1 && msgData.Count() <= 3)
                                             {
@@ -2615,7 +2613,7 @@ namespace TwitchBot
                                         if (!wolfcoins.classList[whisperSender].pendingInvite && wolfcoins.classList[whisperSender].groupID == -1)
                                         {
 
-                                            string[] msgData = whispers[1].Split(' ');
+                                            string[] msgData = whisperMessage.Split(' ');
                                             string[] tempDungeonData;
                                             bool didRequest = false;
                                             if (msgData.Count() > 1)
@@ -3061,7 +3059,7 @@ namespace TwitchBot
                                                             break;
                                                     }
                                                     Logger.Debug(">>{user}: Party data command executed.", whisperSender);
-                                                    irc.sendChatMessage(whisperSender + " requested his Party Data. Group ID: " + wolfcoins.classList[whisperSender].groupID + "; Members: " + partyMembers + "; Status: " + status);
+                                                    ircClient.QueueMessage(whisperSender + " requested his Party Data. Group ID: " + wolfcoins.classList[whisperSender].groupID + "; Members: " + partyMembers + "; Status: " + status);
                                                 }
                                                 else
                                                 {
@@ -3091,7 +3089,7 @@ namespace TwitchBot
                                         continue;
                                     }
 
-                                    string[] whisperMSG = whispers[1].Split();
+                                    string[] whisperMSG = whisperMessage.Split(' ');
                                     if (whisperMSG.Length > 1)
                                     {
                                         string target = whisperMSG[1];
@@ -3198,7 +3196,7 @@ namespace TwitchBot
                                         continue;
                                     }
 
-                                    string[] whisperMSG = whispers[1].Split();
+                                    string[] whisperMSG = whisperMessage.Split(' ');
                                     if (whisperMSG.Length > 2)
                                     {
                                         string temp = whisperMSG[2];
@@ -3258,7 +3256,7 @@ namespace TwitchBot
                                 else if (whisperMessage.StartsWith("!activate") || whisperMessage.StartsWith("activate") || whisperMessage.StartsWith("!equip")
                                     || whisperMessage.StartsWith("equip"))
                                 {
-                                    string[] whisperMSG = whispers[1].Split();
+                                    string[] whisperMSG = whisperMessage.Split(' ');
                                     if (whisperMSG.Length > 1)
                                     {
 
@@ -3325,7 +3323,7 @@ namespace TwitchBot
                                 else if (whisperMessage.StartsWith("!deactivate") || whisperMessage.StartsWith("deactivate") || whisperMessage.StartsWith("!unequip")
                                 || whisperMessage.StartsWith("unequip"))
                                 {
-                                    string[] whisperMSG = whispers[1].Split();
+                                    string[] whisperMSG = whisperMessage.Split(' ');
                                     if (whisperMSG.Length > 1)
                                     {
 
@@ -3381,9 +3379,9 @@ namespace TwitchBot
                                         continue;
                                     }
                                     // first[1] is the user to print info for
-                                    if (whispers.Length >= 2 && whispers[1] != null)
+                                    string[] whisperMSG = whisperMessage.Split(' ');
+                                    if (whisperMSG.Length >= 2)
                                     {
-                                        string[] whisperMSG = whispers[1].Split();
                                         string player = whisperMSG[1].ToString();
                                         if (wolfcoins.Exists(wolfcoins.classList, player))
                                         {
@@ -3420,7 +3418,7 @@ namespace TwitchBot
                                         continue;
                                     }
 
-                                    string[] whisperMSG = whispers[1].Split();
+                                    string[] whisperMSG = whisperMessage.Split(' ');
                                     if (whisperMSG.Length > 2)
                                     {
                                         if (int.TryParse(whisperMSG[2], out int value))
@@ -3457,7 +3455,7 @@ namespace TwitchBot
                                         continue;
                                     }
 
-                                    string[] whisperMSG = whispers[1].Split();
+                                    string[] whisperMSG = whisperMessage.Split(' ');
                                     if (whisperMSG.Length > 2)
                                     {
                                         int value = -1;
@@ -3604,7 +3602,7 @@ namespace TwitchBot
                                 {
                                     if (whisperSender == tokenData.BroadcastUser || whisperSender == tokenData.ChatUser)
                                     {
-                                        string[] whisperMSG = whispers[1].Split();
+                                        string[] whisperMSG = whisperMessage.Split(' ');
                                         if (whisperMSG.Length > 1)
                                         {
                                             string user = whisperMSG[1];
@@ -3639,7 +3637,7 @@ namespace TwitchBot
                                     {
                                         if (wolfcoins.classList != null)
                                         {
-                                            string[] whisperMSG = whispers[1].Split();
+                                            string[] whisperMSG = whisperMessage.Split(' ');
                                             if (whisperMSG.Length > 1)
                                             {
                                                 string user = whisperMSG[1];
@@ -3679,7 +3677,7 @@ namespace TwitchBot
                                         continue;
                                     }
 
-                                    string[] whisperMSG = whispers[1].Split();
+                                    string[] whisperMSG = whisperMessage.Split(' ');
                                     if (whisperMSG.Length > 2)
                                     {
                                         if (int.TryParse(whisperMSG[2], out int value))
@@ -3774,7 +3772,7 @@ namespace TwitchBot
                                                 petType = toGloat.type;
 
                                             Logger.Debug(">>{user}: Gloat pet command executed for pet {pet}.", whisperSender, toGloat.name);
-                                            irc.sendChatMessage($"{whisperSender} watches proudly as their level {toGloat.level} {petType} named {toGloat.name} struts around!");
+                                            ircClient.QueueMessage($"{whisperSender} watches proudly as their level {toGloat.level} {petType} named {toGloat.name} struts around!");
                                             twitchClient.QueueWhisper(whisperSender, $"You spent {gloatCost} wolfcoins to brag about {toGloat.name}.");
                                         }
                                     }
@@ -3920,7 +3918,7 @@ namespace TwitchBot
                                                 #endregion
 
                                                 Logger.Debug(">>{user}: Gloat command executed.", whisperSender, gloatCost, wolfcoins.coinList[whisperSender]);
-                                                irc.sendChatMessage($"{whisperSender} has spent {gloatCost} Wolfcoins to show off that they are {levelWithPrestige}! {gloatMessage}");
+                                                ircClient.QueueMessage($"{whisperSender} has spent {gloatCost} Wolfcoins to show off that they are {levelWithPrestige}! {gloatMessage}");
                                             }
                                             else
                                             {
@@ -3941,14 +3939,14 @@ namespace TwitchBot
                                 }
                                 else if ((whisperMessage.StartsWith("!bet") || whisperMessage.StartsWith("bet")) && betsAllowed && betActive && wolfcoins.Exists(wolfcoins.coinList, whisperSender))
                                 {
-                                    string[] whisperMSG = whispers[1].Split();
+                                    string[] whisperMSG = whisperMessage.Split();
                                     if (whisperMSG.Length > 1)
                                     {
                                         Better betInfo = new Better();
-                                        string user = whispers[1];
-                                        string vote = whispers[2].ToLower();
+                                        string user = whisperSender;
+                                        string vote = whisperMSG[1].ToLower();
                                         int betAmount = -1;
-                                        if (int.TryParse(whispers[3], out betAmount))
+                                        if (int.TryParse(whisperMSG[2], out betAmount))
                                         {
                                             if (!wolfcoins.CheckCoins(user, betAmount))
                                             {
@@ -3981,7 +3979,7 @@ namespace TwitchBot
                                         }
                                         else
                                         {
-                                            Logger.Debug(">>{user}: Bet command failed due to parameter {parameter} failed to parse as int.", whisperSender, whispers[3]);
+                                            Logger.Debug(">>{user}: Bet command failed due to parameter {parameter} failed to parse as int.", whisperSender, whisperMSG[2]);
                                         }
                                     }
                                     else
@@ -3997,7 +3995,7 @@ namespace TwitchBot
                                         continue;
                                     }
 
-                                    string[] whisperMSG = whispers[1].Split();
+                                    string[] whisperMSG = whisperMessage.Split(' ');
 
                                     if (whisperMSG[0] != null && whisperMSG[1] != null && whisperMSG[2] != null)
                                     {
@@ -4017,7 +4015,7 @@ namespace TwitchBot
                                     else
                                     {
                                         Logger.Debug(">>{user}: Give xp command failed due to missing parameters.", whisperSender);
-                                        irc.sendChatMessage("Not enough data provided for !givexp command.");
+                                        ircClient.QueueMessage("Not enough data provided for !givexp command.");
                                     }
                                 }
                                 else if (whisperMessage.StartsWith("!xp") || whisperMessage.StartsWith("xp") || whisperMessage.StartsWith("level") || whisperMessage.StartsWith("!level") ||
@@ -4075,7 +4073,7 @@ namespace TwitchBot
                                         continue;
                                     }
 
-                                    string[] temp = whispers[1].Split(' ');
+                                    string[] temp = whisperMessage.Split(' ');
                                     if (temp.Count() > 1)
                                     {
                                         int numMinutes = -1;
@@ -4101,7 +4099,7 @@ namespace TwitchBot
                                 {
                                     if (wolfcoins.coinList != null && wolfcoins.xpList != null)
                                     {
-                                        string[] temp = whispers[1].Split(' ');
+                                        string[] temp = whisperMessage.Split(' ');
                                         if (temp.Count() > 1)
                                         {
                                             string desiredUser = temp[1].ToLower();
@@ -4167,28 +4165,13 @@ namespace TwitchBot
                         }
                         #endregion
                         #region messageRegion
-                        if (message.Length > 1)
+                        foreach (var message in messages)
                         {
-                            if (message[0] != null && message[1] != null)
+                            if (!string.IsNullOrWhiteSpace(message.Message))
                             {
-                                string[] first = message[1].Split(' ');
-                                string chatMessage = message[1];
-                                string sender = message[0];
-
-                                if (sender == "twitchnotify" && first.Last() == "subscribed!")
-                                {
-                                    // This code updates subcounter.txt for Subathon. Problem is having to recode the modifier update when the goal is met
-                                    //var text = File.ReadAllText(@"C:\Users\Lobos\Dropbox\Stream\subcounter.txt");
-                                    //int count = int.Parse(text);
-                                    //count--;
-                                    //File.WriteAllText(@"C:\Users\Lobos\Dropbox\Stream\subcounter.txt", count.ToString());
-                                    string newSub = first[0].ToLower();
-                                    if (!wolfcoins.subSet.Contains(newSub))
-                                    {
-                                        wolfcoins.subSet.Add(newSub);
-                                        Logger.Info("Added {user} to the subs list.", first[0]);
-                                    }
-                                }
+                                string[] first = message.Message.Split(' ');
+                                string chatMessage = message.Message;
+                                string sender = message.UserName;
 
                                 #region Command Module Processing
                                 if (chatMessage[0] == CommandManager.Prefix)
@@ -4196,7 +4179,7 @@ namespace TwitchBot
                                     var result = commandManager.ProcessMessage(chatMessage.Substring(1), sender, false);
                                     if (result != null && result.Processed)
                                     {
-                                        HandleCommandResult(sender, chatMessage, result, irc, twitchClient);
+                                        HandleCommandResult(sender, chatMessage, result, ircClient, twitchClient);
                                         continue;
                                     }
                                 }
@@ -4210,7 +4193,7 @@ namespace TwitchBot
                                     {
                                         foreach (var responseMessage in triggerResult.Messages)
                                         {
-                                            irc.sendChatMessage(responseMessage);
+                                            ircClient.QueueMessage(responseMessage);
                                         }
                                     }
                                     if (triggerResult.Whispers != null)
@@ -4249,7 +4232,7 @@ namespace TwitchBot
                                                 int secondsRemaining = timeRemaining % 60;
                                                 int minutesRemaining = timeRemaining / 60;
                                                 Logger.Debug(">>{user}: Returning {minutesRemaining} minutes, {secondsRemaining} seconds remaining.", sender, minutesRemaining, secondsRemaining);
-                                                irc.sendChatMessage(minutesRemaining + " minutes and " + secondsRemaining + " seconds until next coins/xp are awarded.");
+                                                ircClient.QueueMessage(minutesRemaining + " minutes and " + secondsRemaining + " seconds until next coins/xp are awarded.");
                                             }
                                             else
                                             {
@@ -4270,7 +4253,7 @@ namespace TwitchBot
                                                     {
                                                         awardInterval = newAmount;
                                                         Logger.Debug(">>{user}: Set interval to {newAmount} for {user}.", sender, newAmount);
-                                                        irc.sendChatMessage("XP & Coins will now be awarded every " + newAmount + " minutes.");
+                                                        ircClient.QueueMessage("XP & Coins will now be awarded every " + newAmount + " minutes.");
                                                     }
                                                     else
                                                     {
@@ -4300,7 +4283,7 @@ namespace TwitchBot
                                                     if (int.TryParse(first[1], out newAmount))
                                                     {
                                                         awardMultiplier = newAmount;
-                                                        irc.sendChatMessage(newAmount + "x XP & Coins will now be awarded.");
+                                                        ircClient.QueueMessage(newAmount + "x XP & Coins will now be awarded.");
                                                     }
                                                     else
                                                     {
@@ -4354,7 +4337,7 @@ namespace TwitchBot
                                     //        if (wolfcoins.viewers.chatters.moderators.Contains(sender))
                                     //        {
                                     //            betsAllowed = false;
-                                    //            irc.sendChatMessage("Bets are now closed! Good luck FrankerZ");
+                                    //            ircClient.QueueMessage("Bets are now closed! Good luck FrankerZ");
                                     //        }
                                     //    } break;
 
@@ -4372,7 +4355,7 @@ namespace TwitchBot
                                     //                {
                                     //                    betStatement += first[i + 1];
                                     //                }
-                                    //                irc.sendChatMessage("New bet started: " + betStatement + " Type '!bet succeed' or '!bet fail' to bet.");
+                                    //                ircClient.QueueMessage("New bet started: " + betStatement + " Type '!bet succeed' or '!bet fail' to bet.");
 
                                     //            }
                                     //        }
@@ -4394,12 +4377,12 @@ namespace TwitchBot
                                                     tournamentSystem.NextTournament = DateTime.Now.AddMinutes(15);
 
                                                     Logger.Debug(">>{user}: Xp turned on.", sender);
-                                                    irc.sendChatMessage("Wolfcoins & XP will be awarded.");
+                                                    ircClient.QueueMessage("Wolfcoins & XP will be awarded.");
                                                 }
                                                 else
                                                 {
                                                     Logger.Debug(">>{user}: Xpon command ignored as xp already enabled by {broadcastSetting}.", sender, broadcastSetter);
-                                                    irc.sendChatMessage($"XP has already been enabled by {broadcastSetter}");
+                                                    ircClient.QueueMessage($"XP has already been enabled by {broadcastSetter}");
                                                 }
                                             }
                                             else
@@ -4420,13 +4403,13 @@ namespace TwitchBot
                                                 {
                                                     broadcasting = false;
                                                     Logger.Debug(">>{user}: Xp turned off.", sender);
-                                                    irc.sendChatMessage("Wolfcoins & XP will no longer be awarded.");
+                                                    ircClient.QueueMessage("Wolfcoins & XP will no longer be awarded.");
                                                     wolfcoins.BackupData();
                                                 }
                                                 else
                                                 {
                                                     Logger.Debug(">>{user}: Xpoff command ignored as xp already off.", sender);
-                                                    irc.sendChatMessage("XP isn't on.");
+                                                    ircClient.QueueMessage("XP isn't on.");
                                                 }
                                             }
                                             else
@@ -4450,24 +4433,24 @@ namespace TwitchBot
                                                         if (newXp != -1)
                                                         {
                                                             Logger.Debug(">>{user}: Xp set to {xp} for {target}.", sender, value, first[1]);
-                                                            irc.sendChatMessage("Set " + first[1] + "'s XP to " + newXp + ".");
+                                                            ircClient.QueueMessage("Set " + first[1] + "'s XP to " + newXp + ".");
                                                         }
                                                         else
                                                         {
                                                             Logger.Debug(">>{user}: Unable to set xp to {xp} for {target}.", sender, value, first[1]);
-                                                            irc.sendChatMessage("Error updating XP amount.");
+                                                            ircClient.QueueMessage("Error updating XP amount.");
                                                         }
                                                     }
                                                     else
                                                     {
                                                         Logger.Debug(">>{user}: Unable to parse xp amount {param} to set xp.", sender, first[2]);
-                                                        irc.sendChatMessage("Invalid data provided for !setxp command.");
+                                                        ircClient.QueueMessage("Invalid data provided for !setxp command.");
                                                     }
                                                 }
                                                 else
                                                 {
                                                     Logger.Debug(">>{user}: Invalid number of parameters for set xp command. Expected 2, received {count}.", sender, first.Length - 1);
-                                                    irc.sendChatMessage("Not enough data provided for !setxp command.");
+                                                    ircClient.QueueMessage("Not enough data provided for !setxp command.");
                                                 }
                                             }
                                             else
@@ -4492,13 +4475,13 @@ namespace TwitchBot
                                                     else
                                                     {
                                                         Logger.Debug(">>{user}: Unable to parse xp amount {param} to grant xp.", sender, first[1]);
-                                                        irc.sendChatMessage("Invalid data provided for !givexp command.");
+                                                        ircClient.QueueMessage("Invalid data provided for !givexp command.");
                                                     }
                                                 }
                                                 else
                                                 {
                                                     Logger.Debug(">>{user}: Invalid number of parameters for grant xp command. Expected 1, received {count}.", sender, first.Length - 1);
-                                                    irc.sendChatMessage("Not enough data provided for !givexp command.");
+                                                    ircClient.QueueMessage("Not enough data provided for !givexp command.");
                                                 }
                                             }
                                             else
@@ -4517,17 +4500,17 @@ namespace TwitchBot
                                     #region NormalBotStuff
                                     //case "!hug":
                                     //    {
-                                    //        irc.sendChatMessage("/me gives " + sender + " a big hug!");
+                                    //        ircClient.QueueMessage("/me gives " + sender + " a big hug!");
                                     //    } break;
 
                                     //case "!playlist":
                                     //    {
-                                    //        irc.sendChatMessage("Lobos' Spotify Playlist: http://open.spotify.com/user/1251282601/playlist/2j1FVSjJ4zdJiqGQgXgW3t");
+                                    //        ircClient.QueueMessage("Lobos' Spotify Playlist: http://open.spotify.com/user/1251282601/playlist/2j1FVSjJ4zdJiqGQgXgW3t");
                                     //    } break;
 
                                     //case "!opinion":
                                     //    {
-                                    //        irc.sendChatMessage("Opinions go here: http:////i.imgur.com/3jRQ2fa.jpg");
+                                    //        ircClient.QueueMessage("Opinions go here: http:////i.imgur.com/3jRQ2fa.jpg");
                                     //    } break;
 
                                     //case "!quote":
@@ -4541,11 +4524,11 @@ namespace TwitchBot
                                     //            int numQuotes = quotes.Length;
                                     //            Random random = new Random();
                                     //            int randomNumber = random.Next(0, numQuotes);
-                                    //            irc.sendChatMessage(quotes[randomNumber]);
+                                    //            ircClient.QueueMessage(quotes[randomNumber]);
                                     //        }
                                     //        else
                                     //        {
-                                    //            irc.sendChatMessage("Quotes file does not exist.");
+                                    //            ircClient.QueueMessage("Quotes file does not exist.");
                                     //        }
                                     //    } break;
 
@@ -4560,11 +4543,11 @@ namespace TwitchBot
                                     //            int numPuns = puns.Length;
                                     //            Random random = new Random();
                                     //            int randomNumber = random.Next(0, numPuns);
-                                    //            irc.sendChatMessage(puns[randomNumber]);
+                                    //            ircClient.QueueMessage(puns[randomNumber]);
                                     //        }
                                     //        else
                                     //        {
-                                    //            irc.sendChatMessage("Puns file does not exist.");
+                                    //            ircClient.QueueMessage("Puns file does not exist.");
                                     //        }
                                     //    } break;
 
@@ -4590,7 +4573,7 @@ namespace TwitchBot
                                                         if (wolfcoins.RemoveCoins(first[1], value))
                                                         {
                                                             Logger.Debug(">>{user}: Removed {coins} coins from {target}.", sender, value, first[1]);
-                                                            irc.sendChatMessage($"{sender} removed {value} coins from {first[1]}.");
+                                                            ircClient.QueueMessage($"{sender} removed {value} coins from {first[1]}.");
                                                         }
                                                         else
                                                         {
@@ -4600,13 +4583,13 @@ namespace TwitchBot
                                                     else
                                                     {
                                                         Logger.Debug(">>{user}: Unable to parse coin amount {param} to remove coins.", sender, first[2]);
-                                                        irc.sendChatMessage("Invalid data provided for !removecoins command.");
+                                                        ircClient.QueueMessage("Invalid data provided for !removecoins command.");
                                                     }
                                                 }
                                                 else
                                                 {
                                                     Logger.Debug(">>{user}: Invalid number of parameters for remove coins command. Expected 2, received {count}.", sender, first.Length - 1);
-                                                    irc.sendChatMessage("Not enough data provided for !removecoins command.");
+                                                    ircClient.QueueMessage("Not enough data provided for !removecoins command.");
                                                 }
                                             }
                                             else
@@ -4629,7 +4612,7 @@ namespace TwitchBot
                                                         if (wolfcoins.AddCoins(first[1], value))
                                                         {
                                                             Logger.Debug(">>{user}: Granted {coins} coins to {target}.", sender, value, first[1]);
-                                                            irc.sendChatMessage($"{sender} granted {first[1]} {value} coins.");
+                                                            ircClient.QueueMessage($"{sender} granted {first[1]} {value} coins.");
                                                         }
                                                         else
                                                         {
@@ -4639,13 +4622,13 @@ namespace TwitchBot
                                                     else
                                                     {
                                                         Logger.Debug(">>{user}: Unable to parse coin amount {param} to add coins.", sender, first[2]);
-                                                        irc.sendChatMessage("Invalid data provided for !addcoins command.");
+                                                        ircClient.QueueMessage("Invalid data provided for !addcoins command.");
                                                     }
                                                 }
                                                 else
                                                 {
                                                     Logger.Debug(">>{user}: Invalid number of parameters for add coins command. Expected 2, received {count}.", sender, first.Length - 1);
-                                                    irc.sendChatMessage("Not enough data provided for !addcoins command.");
+                                                    ircClient.QueueMessage("Not enough data provided for !addcoins command.");
                                                 }
                                             }
                                             else
@@ -4670,7 +4653,7 @@ namespace TwitchBot
                 }
                 else
                 {
-                    new ChatController().Play(irc);
+                    new ChatController().Play(ircClient);
                 }
             }
             catch (Exception ex)
@@ -4684,7 +4667,7 @@ namespace TwitchBot
                 while (true) { Thread.Sleep(1000); }
             }
         }
-        static Pet GrantPet(string playerName, Currency wolfcoins, Dictionary<int, Pet> petDatabase, IrcClient irc, TwitchClient twitchClient)
+        static Pet GrantPet(string playerName, Currency wolfcoins, Dictionary<int, Pet> petDatabase, TwitchIrcClient irc, TwitchClient twitchClient)
         {
             List<Pet> toAward = new List<Pet>();
             // figure out the rarity of pet to give and build a list of non-duplicate pets to award
@@ -4754,12 +4737,12 @@ namespace TwitchBot
                 if (newPet.isSparkly)
                 {
                     Logger.Info("WOW! {user} just found a SPARKLY pet {pet}", playerName, newPet.name);
-                    irc.sendChatMessage("WOW! " + playerName + " just found a SPARKLY pet " + newPet.name + "! What luck!");
+                    irc.QueueMessage("WOW! " + playerName + " just found a SPARKLY pet " + newPet.name + "! What luck!");
                 }
                 else
                 {
                     Logger.Info("{user} just found a pet {pet}!", playerName, newPet.name);
-                    irc.sendChatMessage(playerName + " just found a pet " + newPet.name + "!");
+                    irc.QueueMessage(playerName + " just found a pet " + newPet.name + "!");
                 }
 
                 if (wolfcoins.classList[playerName].myPets.Count == petDatabase.Count)
