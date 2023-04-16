@@ -217,7 +217,7 @@ namespace Wolfcoins
                 //int value = 0;
                 if (coinList != null)
                 {
-                    AddCoins(viewerList[i], coins.ToString());
+                    AddCoins(viewerList[i], coins);
                 }
 
             }
@@ -635,12 +635,12 @@ namespace Wolfcoins
             return false;
         }
 
-        public bool AddCoins(string user, string coins)
+        public bool AddCoins(string user, int coins)
         {
             if (coinList == null)
                 return false;
 
-            if (coinList.ContainsKey(user) && int.TryParse(coins, out int value))
+            if (coinList.ContainsKey(user))
             {
                 try
                 {
@@ -649,9 +649,9 @@ namespace Wolfcoins
                     {
                         if (subSet.Contains(user))
                         {
-                            value *= 2;
+                            coins *= 2;
                         }
-                        coinList[user] += value;
+                        coinList[user] += coins;
                     }
                     if (coinList[user] > COINMAX)
                     {
@@ -672,9 +672,9 @@ namespace Wolfcoins
 
             }
             {
-                if (!coinList.ContainsKey(user) && int.TryParse(coins, out value))
+                if (!coinList.ContainsKey(user))
                 {
-                    coinList.Add(user, value);
+                    coinList.Add(user, coins);
 
                 }
                 else
@@ -761,21 +761,21 @@ namespace Wolfcoins
 
         }
 
-        public bool RemoveCoins(string user, string coins)
+        public bool RemoveCoins(string user, int coins)
         {
             if (coinList == null)
                 return false;
 
-            if (coinList.ContainsKey(user) && int.TryParse(coins, out int value))
+            if (coinList.ContainsKey(user))
             {
-                if (value > 0)
+                if (coins > 0)
                 {
                     try
                     {
                         int prevCoins = coinList[user];
                         checked
                         {
-                            coinList[user] -= value;
+                            coinList[user] -= coins;
                         }
                         if (coinList[user] > COINMAX)
                             coinList[user] = COINMAX;
@@ -827,7 +827,7 @@ namespace Wolfcoins
                     {
                         classList[user].myItems = new List<Item>();
                         classList[user].classType = newClass;
-                        RemoveCoins(user, respecCost.ToString());
+                        RemoveCoins(user, respecCost);
 
                         string myClass = determineClass(user);
                         classList[user].className = myClass;

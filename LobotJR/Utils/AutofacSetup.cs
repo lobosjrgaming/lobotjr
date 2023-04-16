@@ -72,16 +72,20 @@ namespace LobotJR.Utils
             builder.RegisterType<GloatModule>().AsSelf().As<ICommandModule>().InstancePerLifetimeScope();
         }
 
-        private static void RegisterTriggers(ContainerBuilder builder)
+        private static void RegisterTriggers(ContainerBuilder builder, TokenData tokenData)
         {
             builder.RegisterType<BlockLinks>().AsSelf().As<ITriggerResponder>().InstancePerLifetimeScope();
             builder.RegisterType<NoceanMan>().AsSelf().As<ITriggerResponder>().InstancePerLifetimeScope();
+            builder.RegisterType<BadLobot>().AsSelf().As<ITriggerResponder>().InstancePerLifetimeScope()
+                .WithParameters(new Parameter[] { new TypedParameter(typeof(TokenData), tokenData) });
         }
 
         private static void RegisterManagers(ContainerBuilder builder, ClientData clientData, TokenData tokenData)
         {
             builder.RegisterType<TwitchClient>().AsSelf().InstancePerLifetimeScope()
                 .WithParameters(new Parameter[] { new TypedParameter(typeof(ClientData), clientData), new TypedParameter(typeof(TokenData), tokenData) });
+            builder.RegisterType<TwitchIrcClient>().AsSelf().InstancePerLifetimeScope()
+                .WithParameters(new Parameter[] { new TypedParameter(typeof(TokenData), tokenData) });
             builder.RegisterType<SystemManager>().AsSelf().As<ISystemManager>().InstancePerLifetimeScope();
             builder.RegisterType<CommandManager>().AsSelf().As<ICommandManager>().InstancePerLifetimeScope();
             builder.RegisterType<TriggerManager>().AsSelf().InstancePerLifetimeScope();
@@ -95,7 +99,7 @@ namespace LobotJR.Utils
             RegisterRpg(builder, clientData, tokenData);
             RegisterSystems(builder);
             RegisterModules(builder);
-            RegisterTriggers(builder);
+            RegisterTriggers(builder, tokenData);
             RegisterManagers(builder, clientData, tokenData);
 
             return builder.Build();
