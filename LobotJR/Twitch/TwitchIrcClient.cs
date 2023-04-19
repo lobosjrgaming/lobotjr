@@ -111,7 +111,6 @@ namespace LobotJR.Twitch
 
         private async Task WriteLine(string line)
         {
-            Logger.Debug($">>{line}");
             await OutputStream.WriteLineAsync(line);
             await OutputStream.FlushAsync();
         }
@@ -120,7 +119,6 @@ namespace LobotJR.Twitch
         {
             foreach (var line in lines)
             {
-                Logger.Debug($">>{line}");
                 await OutputStream.WriteLineAsync(line);
             }
             await OutputStream.FlushAsync();
@@ -131,7 +129,6 @@ namespace LobotJR.Twitch
             if (Client.GetStream().DataAvailable)
             {
                 var content = await InputStream.ReadLineAsync();
-                Logger.Debug(content);
                 return content;
             }
             return null;
