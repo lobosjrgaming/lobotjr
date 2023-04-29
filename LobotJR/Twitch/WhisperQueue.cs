@@ -43,7 +43,7 @@ namespace LobotJR.Twitch
         /// <summary>
         /// The names of every recipient of a whisper sent. This is used to ensure we do not exceed the limit on unique recipents of 40 per day.
         /// </summary>
-        public List<string> WhisperRecipients { get; set; } = new List<string>();
+        public HashSet<string> WhisperRecipients { get; set; } = new HashSet<string>();
 
         public WhisperQueue(IRepositoryManager repositoryManager, int maxPerSecond, int maxPerMinute, int uniquePerDay)
         {
@@ -114,14 +114,15 @@ namespace LobotJR.Twitch
                 }
                 else if (Queue.Any(x => !string.IsNullOrWhiteSpace(x.UserId)))
                 {
-                    Logger.Warn("Failed to fetch message from queue despite queue containing messages to send. Clearing whisper queue.");
+                    Logger.Warn("Failed to fetch message from queue despite queue containing messages to send. Cleaning up whisper queue.");
                     Logger.Debug("Current whisper recipients: {recipients}", string.Join(", ", WhisperRecipients));
                     Logger.Debug("Current whisper queue: ");
                     foreach (var item in Queue)
                     {
                         Logger.Debug("  To {username} ({userid}): {message}", item.Username, item.UserId, item.Message);
                     }
-                    Queue.Clear();
+                    var toRemove = Queue.Where(x => !WhisperRecipients.Contains(x.Username));
+                    Queue = Queue.Except(toRemove).ToList();
                 }
             }
             return false;
@@ -157,10 +158,7 @@ namespace LobotJR.Twitch
 
             MinuteTimer.AddOccurrence(DateTime.Now);
             SecondTimer.AddOccurrence(DateTime.Now);
-            if (!WhisperRecipients.Contains(record.Username))
-            {
-                WhisperRecipients.Add(record.Username);
-            }
+            WhisperRecipients.Add(record.Username);
         }
 
         /// <summary>
