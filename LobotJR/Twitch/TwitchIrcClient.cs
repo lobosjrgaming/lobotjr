@@ -23,6 +23,7 @@ namespace LobotJR.Twitch
         private static readonly int NonSslPort = 6667;
         private static readonly TimeSpan IdleLimit = TimeSpan.FromMinutes(1);
         private static readonly TimeSpan ResponseLimit = TimeSpan.FromSeconds(10);
+        private static readonly TimeSpan ReconnectTimerBase = TimeSpan.FromSeconds(1);
 
         private TcpClient Client;
         private StreamReader InputStream;
@@ -32,6 +33,9 @@ namespace LobotJR.Twitch
         private bool IsSecure;
 
         private CancellationTokenSource CancellationTokenSource;
+
+        private DateTime? LastReconnect;
+        private TimeSpan ReconnectTimer = ReconnectTimerBase;
 
         private DateTime LastMessage;
         private bool PingSent;
@@ -101,7 +105,18 @@ namespace LobotJR.Twitch
         {
             Client.Dispose();
             Client = new TcpClient();
-            await Connect(IsSecure);
+            var connected = await Connect(IsSecure);
+            if (!connected)
+            {
+                LastReconnect = DateTime.Now;
+                ReconnectTimer = TimeSpan.FromSeconds(ReconnectTimer.TotalSeconds * 2);
+                Logger.Error("Connection failed. Retrying in {seconds} seconds.", ReconnectTimer.TotalSeconds);
+            }
+            else
+            {
+                LastReconnect = null;
+                ReconnectTimer = ReconnectTimerBase;
+            }
         }
 
         private void ExpectResponse()
@@ -111,7 +126,6 @@ namespace LobotJR.Twitch
 
         private async Task WriteLine(string line)
         {
-            Logger.Debug($">>{line}");
             await OutputStream.WriteLineAsync(line);
             await OutputStream.FlushAsync();
         }
@@ -120,7 +134,6 @@ namespace LobotJR.Twitch
         {
             foreach (var line in lines)
             {
-                Logger.Debug($">>{line}");
                 await OutputStream.WriteLineAsync(line);
             }
             await OutputStream.FlushAsync();
@@ -131,7 +144,6 @@ namespace LobotJR.Twitch
             if (Client.GetStream().DataAvailable)
             {
                 var content = await InputStream.ReadLineAsync();
-                Logger.Debug(content);
                 return content;
             }
             return null;
@@ -168,44 +180,47 @@ namespace LobotJR.Twitch
         /// last time this method was called.</returns>
         public async Task<IEnumerable<IrcMessage>> Process()
         {
-            if (this.MessageQueue.Count > 0)
-            {
-                var toSend = this.MessageQueue.Dequeue();
-                if (toSend != null && Timer.AvailableOccurrences() > 0)
-                {
-                    await WriteLine($"PRIVMSG #{TokenData.BroadcastUser} :{toSend}");
-                    Timer.AddOccurrence(DateTime.Now);
-                    ExpectResponse();
-                }
-            }
-
             var output = new List<IrcMessage>();
-            var input = await Read();
-            while (input != null)
+            if (Client.Connected)
             {
-                LastMessage = DateTime.Now;
-                var message = IrcMessage.Parse(input);
-                if (message != null)
+                if (this.MessageQueue.Count > 0)
                 {
-                    if (message.IsChat || message.IsWhisper || message.IsUserNotice)
+                    var toSend = this.MessageQueue.Dequeue();
+                    if (toSend != null && Timer.AvailableOccurrences() > 0)
                     {
-                        output.Add(message);
-                    }
-                    else if ("notice".Equals(message.Command, StringComparison.OrdinalIgnoreCase))
-                    {
-                        await TwitchClient.RefreshTokens();
-                        await Reconnect();
-                    }
-                    else if ("pong".Equals(message.Command, StringComparison.OrdinalIgnoreCase))
-                    {
-                        PingSent = false;
-                    }
-                    else if ("ping".Equals(message.Command, StringComparison.OrdinalIgnoreCase))
-                    {
-                        await WriteLine($"PONG :{message.Message}");
+                        await WriteLine($"PRIVMSG #{TokenData.BroadcastUser} :{toSend}");
+                        Timer.AddOccurrence(DateTime.Now);
+                        ExpectResponse();
                     }
                 }
-                input = await Read();
+
+                var input = await Read();
+                while (input != null)
+                {
+                    LastMessage = DateTime.Now;
+                    var message = IrcMessage.Parse(input);
+                    if (message != null)
+                    {
+                        if (message.IsChat || message.IsWhisper || message.IsUserNotice)
+                        {
+                            output.Add(message);
+                        }
+                        else if ("notice".Equals(message.Command, StringComparison.OrdinalIgnoreCase))
+                        {
+                            await TwitchClient.RefreshTokens();
+                            await Reconnect();
+                        }
+                        else if ("pong".Equals(message.Command, StringComparison.OrdinalIgnoreCase))
+                        {
+                            PingSent = false;
+                        }
+                        else if ("ping".Equals(message.Command, StringComparison.OrdinalIgnoreCase))
+                        {
+                            await WriteLine($"PONG :{message.Message}");
+                        }
+                    }
+                    input = await Read();
+                }
             }
 
             if (DateTime.Now - LastMessage > IdleLimit && !PingSent)
@@ -216,6 +231,10 @@ namespace LobotJR.Twitch
             else if (DateTime.Now - LastMessage > IdleLimit + ResponseLimit && PingSent)
             {
                 Logger.Info("IRC client disconnected. Reconnecting...");
+                await Reconnect();
+            }
+            else if (LastReconnect != null && DateTime.Now - LastReconnect > ReconnectTimer)
+            {
                 await Reconnect();
             }
             return output;

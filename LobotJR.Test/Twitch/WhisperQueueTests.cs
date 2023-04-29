@@ -109,6 +109,25 @@ namespace LobotJR.Test.Twitch
         }
 
         [TestMethod]
+        public void GetMessagesAllowsExistUsersWhenAtLimit()
+        {
+            var queue = new WhisperQueue(RepositoryManager, 10, 10, 1);
+            queue.Enqueue("Test", "0", "test", DateTime.Now);
+            queue.Enqueue("Second", "1", "fail", DateTime.Now + TimeSpan.FromMilliseconds(1));
+            var canSendFirst = queue.TryGetMessage(out var toSendFirst);
+            queue.ReportSuccess(toSendFirst);
+            var canSendSecond = queue.TryGetMessage(out var toSendSecond);
+            Assert.IsTrue(canSendFirst);
+            Assert.IsTrue(toSendFirst.Message.Equals("test"));
+            Assert.IsFalse(canSendSecond);
+            Assert.IsNull(toSendSecond);
+            queue.Enqueue("Test", "0", "test two", DateTime.Now + TimeSpan.FromMilliseconds(2));
+            var canSendAgain = queue.TryGetMessage(out var toSendAgain);
+            Assert.IsTrue(canSendAgain);
+            Assert.IsTrue(toSendAgain.Message.Equals("test two"));
+        }
+
+        [TestMethod]
         public void GetMessagesExcludesMessagesWithNoUserId()
         {
             var queue = new WhisperQueue(RepositoryManager, 1, 1, 1);
@@ -150,7 +169,45 @@ namespace LobotJR.Test.Twitch
         }
 
         [TestMethod]
-        public void ReportSuccessClearsWhisperRecipients()
+        public void ReportSuccessAddsToRecipients()
+        {
+            var queue = new WhisperQueue(RepositoryManager, 1, 1, 1);
+            queue.Enqueue("Test", "0", "test", DateTime.Now);
+            var canSend = queue.TryGetMessage(out var toSend);
+            queue.ReportSuccess(toSend);
+            Assert.IsTrue(queue.WhisperRecipients.Contains("Test"));
+            Assert.AreEqual(1, queue.WhisperRecipients.Count);
+        }
+
+        [TestMethod]
+        public void ReportSuccessDoesNotAddDuplicateRecipients()
+        {
+            var queue = new WhisperQueue(RepositoryManager, 10, 10, 10);
+            queue.Enqueue("Test", "0", "test", DateTime.Now);
+            queue.TryGetMessage(out var toSend);
+            queue.ReportSuccess(toSend);
+            queue.Enqueue("Test", "0", "test 2", DateTime.Now);
+            queue.TryGetMessage(out toSend);
+            queue.ReportSuccess(toSend);
+            Assert.IsTrue(queue.WhisperRecipients.Contains("Test"));
+            Assert.AreEqual(1, queue.WhisperRecipients.Count);
+        }
+
+        [TestMethod]
+        public void ReportSuccessAddsToRollingTimers()
+        {
+            var queue = new WhisperQueue(RepositoryManager, 2, 2, 1);
+            queue.Enqueue("Test", "0", "test", DateTime.Now);
+            queue.TryGetMessage(out var toSend);
+            queue.ReportSuccess(toSend);
+            var secondAvailable = queue.SecondTimer.AvailableOccurrences();
+            var minuteAvailable = queue.SecondTimer.AvailableOccurrences();
+            Assert.AreEqual(1, secondAvailable);
+            Assert.AreEqual(1, minuteAvailable);
+        }
+
+        [TestMethod]
+        public void ReportSuccessClearsWhisperRecipientsOnRollover()
         {
             var queue = new WhisperQueue(RepositoryManager, 10, 10, 2);
             queue.Enqueue("Test", "0", "test", DateTime.Now);

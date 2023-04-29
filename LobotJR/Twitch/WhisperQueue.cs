@@ -9,59 +9,6 @@ using System.Linq;
 namespace LobotJR.Twitch
 {
     /// <summary>
-    /// A record of a whisper to be sent.
-    /// </summary>
-    public class WhisperRecord
-    {
-        /// <summary>
-        /// The name of the user to send the whisper to.
-        /// </summary>
-        public string Username { get; private set; }
-        /// <summary>
-        /// The Twitch id of the user.
-        /// </summary>
-        public string UserId { get; set; }
-        /// <summary>
-        /// The content of the whisper.
-        /// </summary>
-        public string Message { get; private set; }
-        /// <summary>
-        /// The time the message was queued.
-        /// </summary>
-        public DateTime QueueTime { get; private set; }
-
-        public WhisperRecord(string userName, string userId, string message, DateTime queueTime)
-        {
-            Username = userName;
-            UserId = userId;
-            Message = message;
-            QueueTime = queueTime;
-        }
-
-        public override bool Equals(object obj)
-        {
-            var other = obj as WhisperRecord;
-            return other != null
-                && (string.Equals(Username, other.Username, StringComparison.OrdinalIgnoreCase))
-                && (string.Equals(Message, other.Message, StringComparison.OrdinalIgnoreCase))
-                && QueueTime.Equals(other.QueueTime);
-        }
-
-        private int GetStringHash(string str)
-        {
-            return str == null ? 0 : str.GetHashCode();
-        }
-
-        public override int GetHashCode()
-        {
-            var hash = GetStringHash(Username) * 17;
-            hash = (hash + GetStringHash(Message)) * 17;
-            hash = (hash + QueueTime.GetHashCode()) * 17;
-            return hash;
-        }
-    }
-
-    /// <summary>
     /// This class handles the whisper queue, ensuring messages can be sent as
     /// quickly as possible while still conforming to the twitch rate limits.
     /// </summary>
@@ -96,7 +43,7 @@ namespace LobotJR.Twitch
         /// <summary>
         /// The names of every recipient of a whisper sent. This is used to ensure we do not exceed the limit on unique recipents of 40 per day.
         /// </summary>
-        public List<string> WhisperRecipients { get; set; } = new List<string>();
+        public HashSet<string> WhisperRecipients { get; set; } = new HashSet<string>();
 
         public WhisperQueue(IRepositoryManager repositoryManager, int maxPerSecond, int maxPerMinute, int uniquePerDay)
         {
@@ -116,10 +63,14 @@ namespace LobotJR.Twitch
         public void Enqueue(string user, string userId, string message, DateTime dateTime)
         {
             var allowed = WhisperRecipients.Contains(user) ||
-                WhisperRecipients.Count < MaxRecipients && NewRecipientsAllowed;
+                (WhisperRecipients.Count < MaxRecipients && NewRecipientsAllowed);
             if (allowed)
             {
                 Queue.Add(new WhisperRecord(user, userId, message, dateTime));
+            }
+            else
+            {
+                Logger.Warn("Failed to queue whisper. {details}", Debug());
             }
         }
 
@@ -161,16 +112,17 @@ namespace LobotJR.Twitch
                     Queue.Remove(record);
                     return true;
                 }
-                else if (Queue.Any())
+                else if (Queue.Any(x => !string.IsNullOrWhiteSpace(x.UserId)))
                 {
-                    Logger.Warn("Failed to fetch message from queue despite queue containing messages to send. Clearing whisper queue.");
+                    Logger.Warn("Failed to fetch message from queue despite queue containing messages to send. Cleaning up whisper queue.");
                     Logger.Debug("Current whisper recipients: {recipients}", string.Join(", ", WhisperRecipients));
                     Logger.Debug("Current whisper queue: ");
                     foreach (var item in Queue)
                     {
                         Logger.Debug("  To {username} ({userid}): {message}", item.Username, item.UserId, item.Message);
                     }
-                    Queue.Clear();
+                    var toRemove = Queue.Where(x => !WhisperRecipients.Contains(x.Username));
+                    Queue = Queue.Except(toRemove).ToList();
                 }
             }
             return false;

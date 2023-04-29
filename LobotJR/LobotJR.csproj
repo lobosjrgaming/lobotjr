@@ -18,7 +18,7 @@
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>true</MapFileExtensions>
     <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>1.0.9.0</ApplicationVersion>
+    <ApplicationVersion>1.0.10.0</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
@@ -220,6 +220,7 @@
     <Compile Include="Twitch\TwitchIrcClient.cs" />
     <Compile Include="Twitch\TwitchClient.cs" />
     <Compile Include="Twitch\WhisperQueue.cs" />
+    <Compile Include="Twitch\WhisperRecord.cs" />
     <Compile Include="Utils\AutofacSetup.cs" />
     <Compile Include="Utils\ChatController.cs" />
     <Compile Include="Utils\Extensions.cs" />
