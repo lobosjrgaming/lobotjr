@@ -175,7 +175,7 @@ namespace LobotJR.Test.Twitch
             queue.Enqueue("Test", "0", "test", DateTime.Now);
             var canSend = queue.TryGetMessage(out var toSend);
             queue.ReportSuccess(toSend);
-            Assert.IsTrue(queue.WhisperRecipients.Contains("Test"));
+            Assert.IsTrue(queue.WhisperRecipients.Contains("0"));
             Assert.AreEqual(1, queue.WhisperRecipients.Count);
         }
 
@@ -189,7 +189,7 @@ namespace LobotJR.Test.Twitch
             queue.Enqueue("Test", "0", "test 2", DateTime.Now);
             queue.TryGetMessage(out toSend);
             queue.ReportSuccess(toSend);
-            Assert.IsTrue(queue.WhisperRecipients.Contains("Test"));
+            Assert.IsTrue(queue.WhisperRecipients.Contains("0"));
             Assert.AreEqual(1, queue.WhisperRecipients.Count);
         }
 

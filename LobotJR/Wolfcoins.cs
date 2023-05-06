@@ -129,6 +129,15 @@ namespace Wolfcoins
             return 0;
         }
 
+        public int determinePrestige(string user)
+        {
+            if (Exists(classList, user))
+            {
+                return classList[user].prestige;
+            }
+            return 0;
+        }
+
         public string gloatWithPrestige(string user)
         {
 

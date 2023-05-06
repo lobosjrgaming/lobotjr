@@ -176,11 +176,10 @@ namespace LobotJR.Twitch
                 else if (result == (HttpStatusCode)429)
                 {
                     Logger.Error("We sent too many whispers. Whispers have been turned off for one minute, and no more unique recipients will be allowed.");
+                    Logger.Debug("Max whisper recipient limit has been updated to {count}.", Queue.WhisperRecipients.Count);
                     Logger.Debug("See below for details on the current state of the whisper queue.");
                     Logger.Debug(Queue.Debug());
                     Queue.FreezeQueue();
-                    Queue.NewRecipientsAllowed = false;
-                    Queue.ReportFailure(message);
                     break;
                 }
                 else

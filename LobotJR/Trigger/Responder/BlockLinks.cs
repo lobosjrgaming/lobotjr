@@ -15,10 +15,11 @@ namespace LobotJR.Trigger.Responder
 
         public TriggerResult Process(Match match, string user)
         {
-            var userHasXp = UserList.xpList.ContainsKey(user);
             if (!match.Groups[0].Value.Equals("d.va")
                 && !UserList.subSet.Contains(user)
-                && (userHasXp && (UserList.determineLevel(user) < 2) || !userHasXp))
+                && !UserList.moderatorList.Contains(user)
+                && UserList.determineLevel(user) < 2
+                && UserList.determinePrestige(user) < 1)
             {
                 return new TriggerResult()
                 {

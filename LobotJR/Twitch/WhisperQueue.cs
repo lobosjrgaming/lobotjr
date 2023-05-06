@@ -18,13 +18,9 @@ namespace LobotJR.Twitch
 
         private static readonly string TimerKey = "WhisperQueue";
         private IRepository<DataTimer> DataTimers;
+        private IRepository<AppSettings> AppSettings;
         private TimeSpan UniqueWhisperTimer = TimeSpan.FromDays(1);
-        private int MaxRecipients = 40;
-
-        /// <summary>
-        /// Whether or not the queue is accepting new recipients.
-        /// </summary>
-        public bool NewRecipientsAllowed { get; set; } = true;
+        private int MaxRecipients;
 
         /// <summary>
         /// A collection of whisper records waiting to be sent.
@@ -41,16 +37,22 @@ namespace LobotJR.Twitch
         /// </summary>
         public RollingTimer MinuteTimer { get; set; }
         /// <summary>
-        /// The names of every recipient of a whisper sent. This is used to ensure we do not exceed the limit on unique recipents of 40 per day.
+        /// The ids of every recipient of a whisper sent. This is used to ensure we do not exceed the limit on unique recipents of 40 per day.
         /// </summary>
         public HashSet<string> WhisperRecipients { get; set; } = new HashSet<string>();
 
-        public WhisperQueue(IRepositoryManager repositoryManager, int maxPerSecond, int maxPerMinute, int uniquePerDay)
+        public WhisperQueue(IRepositoryManager repositoryManager, int maxPerSecond, int maxPerMinute)
         {
+            AppSettings = repositoryManager.AppSettings;
+            var currentSettings = AppSettings.Read().First();
             DataTimers = repositoryManager.DataTimers;
             SecondTimer = new RollingTimer(TimeSpan.FromSeconds(1), maxPerSecond);
             MinuteTimer = new RollingTimer(TimeSpan.FromMinutes(1), maxPerMinute);
-            MaxRecipients = uniquePerDay;
+            MaxRecipients = currentSettings.MaxWhisperRecipients;
+            if (MaxRecipients == 0)
+            {
+                MaxRecipients = int.MaxValue;
+            }
         }
 
         /// <summary>
@@ -62,8 +64,7 @@ namespace LobotJR.Twitch
         /// <param name="dateTime">The time the message was queued.</param>
         public void Enqueue(string user, string userId, string message, DateTime dateTime)
         {
-            var allowed = WhisperRecipients.Contains(user) ||
-                (WhisperRecipients.Count < MaxRecipients && NewRecipientsAllowed);
+            var allowed = WhisperRecipients.Contains(userId) || WhisperRecipients.Count < MaxRecipients;
             if (allowed)
             {
                 Queue.Add(new WhisperRecord(user, userId, message, dateTime));
@@ -105,7 +106,7 @@ namespace LobotJR.Twitch
                 }
                 else
                 {
-                    record = Queue.Where(x => !string.IsNullOrWhiteSpace(x.UserId) && WhisperRecipients.Contains(x.Username)).OrderBy(x => x.QueueTime).FirstOrDefault();
+                    record = Queue.Where(x => !string.IsNullOrWhiteSpace(x.UserId) && WhisperRecipients.Contains(x.UserId)).OrderBy(x => x.QueueTime).FirstOrDefault();
                 }
                 if (record != null)
                 {
@@ -121,7 +122,7 @@ namespace LobotJR.Twitch
                     {
                         Logger.Debug("  To {username} ({userid}): {message}", item.Username, item.UserId, item.Message);
                     }
-                    var toRemove = Queue.Where(x => !WhisperRecipients.Contains(x.Username));
+                    var toRemove = Queue.Where(x => !WhisperRecipients.Contains(x.UserId));
                     Queue = Queue.Except(toRemove).ToList();
                 }
             }
@@ -153,24 +154,11 @@ namespace LobotJR.Twitch
             {
                 DataTimers.Commit();
                 WhisperRecipients.Clear();
-                NewRecipientsAllowed = true;
             }
 
             MinuteTimer.AddOccurrence(DateTime.Now);
             SecondTimer.AddOccurrence(DateTime.Now);
             WhisperRecipients.Add(record.Username);
-        }
-
-        /// <summary>
-        /// Reports that a whisper failed to send, but not for a reason that
-        /// would prevent it from being sent again in the future (e.g. token
-        /// expired, rate limit exceeded).
-        /// The essentially just requeues the record.
-        /// </summary>
-        /// <param name="record">The record that failed to send.</param>
-        public void ReportFailure(WhisperRecord record)
-        {
-            Queue.Add(record);
         }
 
         /// <summary>
@@ -183,6 +171,13 @@ namespace LobotJR.Twitch
             {
                 MinuteTimer.AddOccurrence(now);
             }
+            MaxRecipients = WhisperRecipients.Count;
+            var currentSettings = AppSettings.Read().First();
+            currentSettings.MaxWhisperRecipients = MaxRecipients;
+            AppSettings.Update(currentSettings);
+            AppSettings.Commit();
+            var toRemove = Queue.Where(x => !WhisperRecipients.Contains(x.UserId));
+            Queue = Queue.Except(toRemove).ToList();
         }
 
         /// <summary>

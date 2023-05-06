@@ -4173,18 +4173,6 @@ namespace TwitchBot
                                 string chatMessage = message.Message;
                                 string sender = message.UserName;
 
-                                #region Command Module Processing
-                                if (chatMessage[0] == CommandManager.Prefix)
-                                {
-                                    var result = commandManager.ProcessMessage(chatMessage.Substring(1), sender, false);
-                                    if (result != null && result.Processed)
-                                    {
-                                        HandleCommandResult(sender, chatMessage, result, ircClient, twitchClient);
-                                        continue;
-                                    }
-                                }
-                                #endregion
-
                                 #region Trigger Processing
                                 var triggerResult = triggerManager.ProcessTrigger(chatMessage, sender);
                                 if (triggerResult != null && triggerResult.Processed)
@@ -4210,15 +4198,6 @@ namespace TwitchBot
                                     continue;
                                 }
                                 #endregion
-
-                                if (first[0] == "!stats" || first[0] == "!xp" || first[0] == "!lvl"
-                                    || first[0] == "!level" || first[0] == "!exp")
-                                {
-                                    Logger.Debug(">>{user}: Timed out for checking stats or xp.", sender);
-                                    twitchClient.Timeout(sender, 1, null);
-                                    twitchClient.QueueWhisper(sender, "I see you're trying to check your stats! You'll need to WHISPER to me to get any information. Type '/w lobotjr' and then stats, xp, coins, etc. for that information.");
-                                    twitchClient.QueueWhisper(sender, "Sorry for purging you. Just trying to do my job to keep chat clear! <3");
-                                }
 
                                 switch (first[0])
                                 {

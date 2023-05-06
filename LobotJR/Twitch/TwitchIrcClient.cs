@@ -114,6 +114,7 @@ namespace LobotJR.Twitch
             }
             else
             {
+                await WriteLine("PING");
                 LastReconnect = null;
                 ReconnectTimer = ReconnectTimerBase;
             }
@@ -121,7 +122,8 @@ namespace LobotJR.Twitch
 
         private void ExpectResponse()
         {
-            LastMessage = DateTime.Now - IdleLimit + ResponseLimit;
+            LastMessage = DateTime.Now - IdleLimit;
+            PingSent = true;
         }
 
         private async Task WriteLine(string line)
@@ -207,16 +209,23 @@ namespace LobotJR.Twitch
                         }
                         else if ("notice".Equals(message.Command, StringComparison.OrdinalIgnoreCase))
                         {
+                            Logger.Info("Ping from received from Twitch, sending pong.");
                             await TwitchClient.RefreshTokens();
                             await Reconnect();
                         }
                         else if ("pong".Equals(message.Command, StringComparison.OrdinalIgnoreCase))
                         {
+                            Logger.Info("Pong received, connection confirmed.");
                             PingSent = false;
                         }
                         else if ("ping".Equals(message.Command, StringComparison.OrdinalIgnoreCase))
                         {
+                            Logger.Info("Ping from received from Twitch, sending pong.");
                             await WriteLine($"PONG :{message.Message}");
+                        }
+                        else
+                        {
+                            Logger.Debug("Received {command} type message from Twitch.", message.Command);
                         }
                     }
                     input = await Read();
@@ -225,6 +234,7 @@ namespace LobotJR.Twitch
 
             if (DateTime.Now - LastMessage > IdleLimit && !PingSent)
             {
+                Logger.Info("No messages in {seconds} seconds, sending ping to Twitch.", IdleLimit.TotalSeconds);
                 await WriteLine("PING");
                 PingSent = true;
             }

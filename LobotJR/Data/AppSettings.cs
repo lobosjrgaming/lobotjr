@@ -10,6 +10,13 @@
         /// ids for users not found in the id cache.
         /// </summary>
         public int GeneralCacheUpdateTime { get; set; } = 5;
+        /// <summary>
+        /// The maximum number of unique recipients that can be whispered in a
+        /// 24-hour period. This is supposed to be 40, according to the twitch
+        /// documentation, but lobot appears to have a higher max. This will
+        /// update once we get a 429 response from twitch to set our new max.
+        /// </summary>
+        public int MaxWhisperRecipients { get; set; } = 0;
 
         /// <summary>
         /// The shortest time, in seconds, it can take to hook a fish. Default
