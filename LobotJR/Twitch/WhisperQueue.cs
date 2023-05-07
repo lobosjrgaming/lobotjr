@@ -158,7 +158,14 @@ namespace LobotJR.Twitch
 
             MinuteTimer.AddOccurrence(DateTime.Now);
             SecondTimer.AddOccurrence(DateTime.Now);
-            WhisperRecipients.Add(record.Username);
+            if (record.UserId != null)
+            {
+                WhisperRecipients.Add(record.UserId);
+            }
+            else
+            {
+                Logger.Warn("Whisper sucessfully sent to null user id. This shouldn't be possible.");
+            }
         }
 
         /// <summary>

@@ -135,6 +135,7 @@ namespace LobotJR.Test.Mocks
             appSettings.FishingUseNormalRarity = false;
             appSettings.FishingUseNormalSizes = false;
             appSettings.GeneralCacheUpdateTime = 2;
+            appSettings.MaxWhisperRecipients = 10;
             context.AppSettings.Add(appSettings);
         }
 

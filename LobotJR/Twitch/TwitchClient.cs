@@ -34,7 +34,7 @@ namespace LobotJR.Twitch
 
         public TwitchClient(IRepositoryManager repositoryManager, UserLookup userLookup, ClientData clientData, TokenData tokenData)
         {
-            Queue = new WhisperQueue(repositoryManager, 3, 100, 40);
+            Queue = new WhisperQueue(repositoryManager, 3, 100);
             UserLookup = userLookup;
             ClientData = clientData;
             TokenData = tokenData;
