@@ -29,7 +29,7 @@ namespace LobotJR.Data.User
         private readonly List<string> cacheMisses = new List<string>();
 
         public int UpdateTime { get; set; }
-        public IRepository<UserMap> UserMap { get; private set; }
+        public IRepository<Twitch.Model.User> UserMap { get; private set; }
 
         public UserLookup(IRepositoryManager repositoryManager)
         {
@@ -98,7 +98,7 @@ namespace LobotJR.Data.User
                     }
                     else
                     {
-                        UserMap.Create(new UserMap()
+                        UserMap.Create(new Twitch.Model.User()
                         {
                             Username = entry.Login,
                             TwitchId = entry.Id

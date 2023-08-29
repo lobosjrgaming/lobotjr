@@ -2,6 +2,7 @@
 using LobotJR.Data;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Wolfcoins;
 
 namespace LobotJR.Command.System.Gloat
@@ -58,8 +59,9 @@ namespace LobotJR.Command.System.Gloat
             return null;
         }
 
-        public void Process(bool broadcasting)
+        public Task Process(bool broadcasting)
         {
+            return Task.CompletedTask;
         }
     }
 }

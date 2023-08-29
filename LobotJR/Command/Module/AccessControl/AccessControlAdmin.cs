@@ -1,5 +1,5 @@
-﻿using LobotJR.Data;
-using LobotJR.Data.User;
+﻿using LobotJR.Command.System.Twitch;
+using LobotJR.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,8 +12,8 @@ namespace LobotJR.Command.Module.AccessControl
     public class AccessControlAdmin : ICommandModule
     {
         //private readonly ICommandManager CommandManager;
-        private readonly IRepository<UserRole> UserRoles;
-        private readonly UserLookup UserLookup;
+        private readonly IRepository<AccessGroup> UserRoles;
+        private readonly UserSystem UserSystem;
 
         public ICommandManager CommandManager;
 
@@ -32,10 +32,10 @@ namespace LobotJR.Command.Module.AccessControl
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public AccessControlAdmin(IRepositoryManager repositoryManager, UserLookup userLookup)
+        public AccessControlAdmin(IRepositoryManager repositoryManager, UserSystem userSystem)
         {
             UserRoles = repositoryManager.UserRoles;
-            UserLookup = userLookup;
+            UserSystem = userSystem;
             Commands = new CommandHandler[]
             {
                 new CommandHandler("ListRoles", ListRoles, "ListRoles", "list-roles"),
@@ -65,7 +65,7 @@ namespace LobotJR.Command.Module.AccessControl
                 return new CommandResult($"Error: Unable to create role, \"{data}\" already exists.");
             }
 
-            UserRoles.Create(new UserRole(data));
+            UserRoles.Create(new AccessGroup(data));
             UserRoles.Commit();
             return new CommandResult($"Role \"{data}\" created successfully!");
         }
@@ -110,13 +110,13 @@ namespace LobotJR.Command.Module.AccessControl
                 return new CommandResult("Error: Invalid number of parameters. Expected parameters: {username} {role name}.");
             }
 
-            var userToAdd = data.Substring(0, space);
-            if (userToAdd.Length == 0)
+            var userNameToAdd = data.Substring(0, space);
+            if (userNameToAdd.Length == 0)
             {
                 return new CommandResult("Error: Username cannot be empty.");
             }
-            var userId = UserLookup.GetId(userToAdd);
-            if (userId == null)
+            var userToAdd = UserSystem.GetUserByName(userNameToAdd);
+            if (userToAdd == null)
             {
                 return new CommandResult("Error: User id not present in id cache, please try again in a few minutes.");
             }
@@ -131,15 +131,15 @@ namespace LobotJR.Command.Module.AccessControl
             {
                 return new CommandResult($"Error: No role with name \"{roleName}\" was found.");
             }
-            if (role.UserIds.Contains(userId))
+            if (role.UserIds.Contains(userToAdd.TwitchId))
             {
-                return new CommandResult($"Error: User \"{userToAdd}\" is already a member of \"{roleName}\".");
+                return new CommandResult($"Error: User \"{userNameToAdd}\" is already a member of \"{roleName}\".");
             }
-            role.AddUser(userId);
+            role.AddUser(userToAdd.TwitchId);
             UserRoles.Update(role);
             UserRoles.Commit();
 
-            return new CommandResult($"User \"{userToAdd}\" was added to role \"{role.Name}\" successfully!");
+            return new CommandResult($"User \"{userNameToAdd}\" was added to role \"{role.Name}\" successfully!");
         }
 
         private CommandResult RemoveUserFromRole(string data)
@@ -150,33 +150,33 @@ namespace LobotJR.Command.Module.AccessControl
                 return new CommandResult("Error: Invalid number of parameters. Expected parameters: {username} {role name}.");
             }
 
-            var userToRemove = data.Substring(0, space);
-            if (userToRemove.Length == 0)
+            var userNameToRemove = data.Substring(0, space);
+            if (userNameToRemove.Length == 0)
             {
                 return new CommandResult("Error: Username cannot be empty.");
             }
-            var userId = UserLookup.GetId(userToRemove);
             var roleName = data.Substring(space + 1);
             if (roleName.Length == 0)
             {
                 return new CommandResult("Error: Role name cannot be empty.");
             }
 
+            var userToRemove = UserSystem.GetUserByName(userNameToRemove);
             var role = UserRoles.Read(x => x.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
             if (role == null)
             {
                 return new CommandResult($"Error: No role with name \"{roleName}\" was found.");
             }
 
-            if (!role.UserIds.Contains(userId))
+            if (!role.UserIds.Contains(userToRemove.TwitchId))
             {
-                return new CommandResult($"Error: User \"{userToRemove}\" is not a member of \"{roleName}\".");
+                return new CommandResult($"Error: User \"{userNameToRemove}\" is not a member of \"{roleName}\".");
             }
-            role.RemoveUser(userId);
+            role.RemoveUser(userToRemove.TwitchId);
             UserRoles.Update(role);
             UserRoles.Commit();
 
-            return new CommandResult($"User \"{userToRemove}\" was removed from role \"{role.Name}\" successfully!");
+            return new CommandResult($"User \"{userNameToRemove}\" was removed from role \"{role.Name}\" successfully!");
         }
 
         private CommandResult AddCommandToRole(string data)
@@ -196,7 +196,6 @@ namespace LobotJR.Command.Module.AccessControl
             {
                 return new CommandResult($"Error: Command {commandName} does not match any commands.");
             }
-
 
             var roleName = data.Substring(space + 1);
             if (roleName.Length == 0)

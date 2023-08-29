@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace LobotJR.Twitch
+namespace LobotJR.Twitch.Model
 {
     /// <summary>
     /// A record of a whisper to be sent.
@@ -36,8 +36,8 @@ namespace LobotJR.Twitch
         {
             var other = obj as WhisperRecord;
             return other != null
-                && (string.Equals(Username, other.Username, StringComparison.OrdinalIgnoreCase))
-                && (string.Equals(Message, other.Message, StringComparison.OrdinalIgnoreCase))
+                && string.Equals(Username, other.Username, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(Message, other.Message, StringComparison.OrdinalIgnoreCase)
                 && QueueTime.Equals(other.QueueTime);
         }
 

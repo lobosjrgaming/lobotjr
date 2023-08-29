@@ -51,7 +51,7 @@ namespace LobotJR.Shared.Channel
         /// <returns>A list of rest responses containing pages of all VIPs for the channel.</returns>
         public static async Task<IEnumerable<RestResponse<ChannelUserResponse>>> GetAll(TokenResponse token, ClientData clientData, string broadcasterId)
         {
-            List<RestResponse<ChannelUserResponse>> data = new List<RestResponse<ChannelUserResponse>>();
+            var data = new List<RestResponse<ChannelUserResponse>>();
             string cursor = null;
             do
             {

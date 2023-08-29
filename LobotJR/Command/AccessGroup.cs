@@ -9,7 +9,7 @@ namespace LobotJR.Command
     /// <summary>
     /// Represents a user role, as well as the users who are members of it.
     /// </summary>
-    public class UserRole : TableObject
+    public class AccessGroup : TableObject
     {
         private static Regex RegexFromCommand(string command)
         {
@@ -82,7 +82,7 @@ namespace LobotJR.Command
         /// <summary>
         /// Creates an empty user role.
         /// </summary>
-        public UserRole()
+        public AccessGroup()
         {
         }
 
@@ -90,7 +90,7 @@ namespace LobotJR.Command
         /// Creates a user role with a name.
         /// </summary>
         /// <param name="name">The name of the role.</param>
-        public UserRole(string name)
+        public AccessGroup(string name)
         {
             Name = name;
         }
@@ -99,7 +99,7 @@ namespace LobotJR.Command
         /// Creates a user role with a name.
         /// </summary>
         /// <param name="name">The name of the role.</param>
-        public UserRole(string name, IEnumerable<string> userIds, IEnumerable<string> commands)
+        public AccessGroup(string name, IEnumerable<string> userIds, IEnumerable<string> commands)
         {
             Name = name;
             if (userIds != null)

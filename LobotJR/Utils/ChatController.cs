@@ -1,4 +1,5 @@
 ﻿using LobotJR.Twitch;
+using LobotJR.Twitch.Model;
 using NLog;
 using System;
 using System.Collections.Generic;

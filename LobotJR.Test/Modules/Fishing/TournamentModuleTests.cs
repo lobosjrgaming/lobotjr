@@ -63,7 +63,7 @@ namespace LobotJR.Test.Modules.Fishing
         {
             Manager = new SqliteRepositoryManager(MockContext.Create());
             UserLookup = new UserLookup(Manager);
-            UserLookup.UpdateTime = Manager.AppSettings.Read().First().GeneralCacheUpdateTime;
+            UserLookup.UpdateTime = Manager.AppSettings.Read().First().UserDatabaseUpdateTime;
 
             var fishingSystem = new FishingSystem(Manager, Manager);
             var leaderboardSystem = new LeaderboardSystem(Manager);

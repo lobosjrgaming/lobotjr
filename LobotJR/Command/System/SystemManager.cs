@@ -2,6 +2,7 @@
 using LobotJR.Data;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace LobotJR.Command.System
 {
@@ -45,11 +46,11 @@ namespace LobotJR.Command.System
         /// Processes all loaded systems.
         /// </summary>
         /// <param name="broadcasting">Whether or not the streamer is currently live.</param>
-        public void Process(bool broadcasting)
+        public async Task Process(bool broadcasting)
         {
             foreach (var system in Systems)
             {
-                system.Process(broadcasting);
+                await system.Process(broadcasting);
             }
         }
     }

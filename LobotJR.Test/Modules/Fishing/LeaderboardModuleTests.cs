@@ -42,7 +42,7 @@ namespace LobotJR.Test.Modules.Fishing
                 TournamentSystem,
                 LeaderboardSystem);
             var userLookup = new UserLookup(Manager);
-            userLookup.UpdateTime = Manager.AppSettings.Read().First().GeneralCacheUpdateTime;
+            userLookup.UpdateTime = Manager.AppSettings.Read().First().UserDatabaseUpdateTime;
             LeaderboardModule = new LeaderboardModule(LeaderboardSystem, userLookup);
         }
 

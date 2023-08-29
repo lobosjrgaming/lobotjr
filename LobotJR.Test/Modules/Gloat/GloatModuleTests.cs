@@ -29,7 +29,7 @@ namespace LobotJR.Test.Modules.Gloat
             Manager = new SqliteRepositoryManager(MockContext.Create());
 
             var userLookup = new UserLookup(Manager);
-            userLookup.UpdateTime = Manager.AppSettings.Read().First().GeneralCacheUpdateTime;
+            userLookup.UpdateTime = Manager.AppSettings.Read().First().UserDatabaseUpdateTime;
             var currency = new Currency();
             Wolfcoins = currency.coinList;
             GloatSystem = new GloatSystem(Manager, currency);

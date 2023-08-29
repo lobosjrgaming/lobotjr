@@ -14,6 +14,7 @@ using LobotJR.Data.User;
 using LobotJR.Shared.Utility;
 using LobotJR.Trigger;
 using LobotJR.Twitch;
+using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using NLog;
 using System;
@@ -425,7 +426,7 @@ namespace TwitchBot
                 var wolfcoins = scope.Resolve<Currency>();
                 var contentManager = scope.Resolve<IContentManager>();
                 var userLookup = scope.Resolve<UserLookup>();
-                userLookup.UpdateTime = appSettings.GeneralCacheUpdateTime;
+                userLookup.UpdateTime = appSettings.UserDatabaseUpdateTime;
                 #endregion
 
                 #region Logging Setup
@@ -483,9 +484,9 @@ namespace TwitchBot
                     var commandManager = scope.Resolve<ICommandManager>();
                     commandManager.InitializeModules();
                     commandManager.PushNotifications +=
-                        (string userId, CommandResult commandResult) =>
+                        (User user, CommandResult commandResult) =>
                         {
-                            string username = userId == null ? null : userLookup.GetUsername(userId);
+                            string username = user == null ? null : user.Username;
                             string message = "Push Notification";
                             HandleCommandResult(username, message, commandResult, ircClient, twitchClient);
                         };
@@ -856,7 +857,7 @@ namespace TwitchBot
 
                                 whisperSender = whisper.UserName;
                                 whisperMessage = whisper.Message;
-
+                                // TODO: Need to add user system here, with a get/add user based on the whisper sender
 
                                 if (wolfcoins.Exists(wolfcoins.classList, whisperSender))
                                 {

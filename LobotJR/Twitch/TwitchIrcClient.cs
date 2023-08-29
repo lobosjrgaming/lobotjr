@@ -1,4 +1,5 @@
 ﻿using LobotJR.Shared.Authentication;
+using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using NLog;
 using System;
@@ -24,6 +25,7 @@ namespace LobotJR.Twitch
         private static readonly TimeSpan IdleLimit = TimeSpan.FromMinutes(1);
         private static readonly TimeSpan ResponseLimit = TimeSpan.FromSeconds(10);
         private static readonly TimeSpan ReconnectTimerBase = TimeSpan.FromSeconds(1);
+        private static readonly TimeSpan ReconnectTimerMax = TimeSpan.FromMinutes(5);
 
         private TcpClient Client;
         private StreamReader InputStream;
@@ -110,6 +112,10 @@ namespace LobotJR.Twitch
             {
                 LastReconnect = DateTime.Now;
                 ReconnectTimer = TimeSpan.FromSeconds(ReconnectTimer.TotalSeconds * 2);
+                if (ReconnectTimer > ReconnectTimerMax)
+                {
+                    ReconnectTimer = ReconnectTimerMax;
+                }
                 Logger.Error("Connection failed. Retrying in {seconds} seconds.", ReconnectTimer.TotalSeconds);
             }
             else
@@ -209,7 +215,7 @@ namespace LobotJR.Twitch
                         }
                         else if ("notice".Equals(message.Command, StringComparison.OrdinalIgnoreCase))
                         {
-                            Logger.Info("Ping from received from Twitch, sending pong.");
+                            Logger.Info("Notice received, likely due to expired OAuth token. Refreshing tokens and reconnecting.");
                             await TwitchClient.RefreshTokens();
                             await Reconnect();
                         }

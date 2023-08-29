@@ -1,4 +1,6 @@
-﻿namespace LobotJR.Command.System
+﻿using System.Threading.Tasks;
+
+namespace LobotJR.Command.System
 {
     public interface ISystemManager
     {
@@ -13,6 +15,6 @@
         /// Processes all loaded systems.
         /// </summary>
         /// <param name="broadcasting">Whether or not the streamer is currently live.</param>
-        void Process(bool broadcasting);
+        Task Process(bool broadcasting);
     }
 }

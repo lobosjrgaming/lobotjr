@@ -92,7 +92,7 @@ namespace LobotJR.Test.Command
             var module = CommandModuleMock.Object;
             var role = UserRoles.First();
             role.CommandList = "CommandMock.SubMock.*";
-            UserRoles.Add(new UserRole("OtherRole", null, new List<string>(new string[] { "CommandMock.*" })));
+            UserRoles.Add(new AccessGroup("OtherRole", null, new List<string>(new string[] { "CommandMock.*" })));
             var result = CommandManager.ProcessMessage("Foo", "Auth", true);
             Assert.IsTrue(result.Processed);
             Assert.IsTrue(result.Errors.Any());
@@ -105,7 +105,7 @@ namespace LobotJR.Test.Command
             var module = CommandModuleMock.Object;
             var role = UserRoles.First();
             role.CommandList = "CommandMock.SubMock.*";
-            UserRoles.Add(new UserRole("OtherRole", null, new List<string>(new string[] { "CommandMock.*" })));
+            UserRoles.Add(new AccessGroup("OtherRole", null, new List<string>(new string[] { "CommandMock.*" })));
             var result = CommandManager.ProcessMessage("Foobar", "Auth", true);
             Assert.IsTrue(result.Processed);
             Assert.IsNull(result.Errors);

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LobotJR.Twitch.Model;
+using System;
 using System.Collections.Generic;
 
 namespace LobotJR.Command
@@ -8,6 +9,10 @@ namespace LobotJR.Command
     /// </summary>
     public class CommandResult
     {
+        /// <summary>
+        /// The user who sent the command that triggered this result.
+        /// </summary>
+        public User Sender { get; set; }
         /// <summary>
         /// Whether or not the message matched a loaded command, and that command was executed.
         /// </summary>
@@ -42,13 +47,13 @@ namespace LobotJR.Command
             Processed = false;
         }
 
-        public CommandResult(params string[] responses)
+        public CommandResult(User sender, params string[] responses)
         {
             Processed = true;
             Responses = new List<string>(responses);
         }
 
-        public CommandResult(bool processed, IEnumerable<Exception> errors)
+        public CommandResult(User sender, bool processed, IEnumerable<Exception> errors)
         {
             Processed = processed;
             if (errors != null)

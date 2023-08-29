@@ -5,6 +5,7 @@ using NLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace LobotJR.Command.System.Fishing
 {
@@ -250,7 +251,7 @@ namespace LobotJR.Command.System.Fishing
         /// <summary>
         /// Runs all active fishers to process hooking and releasing events.
         /// </summary>
-        public void Process(bool broadcasting)
+        public Task Process(bool broadcasting)
         {
             var messages = new Dictionary<string, IEnumerable<string>>();
             foreach (var fisher in Fishers.Where(x => x.IsFishing))
@@ -276,6 +277,7 @@ namespace LobotJR.Command.System.Fishing
                     OnFishGotAway(fisher);
                 }
             }
+            return Task.CompletedTask;
         }
     }
 }

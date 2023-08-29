@@ -10,7 +10,7 @@ namespace LobotJR.Command.Module.AccessControl
     /// </summary>
     public class AccessControlModule : ICommandModule
     {
-        private readonly IRepository<UserRole> repository;
+        private readonly IRepository<AccessGroup> repository;
         /// <summary>
         /// Prefix applied to names of commands within this module.
         /// </summary>

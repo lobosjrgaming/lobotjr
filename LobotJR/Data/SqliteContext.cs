@@ -1,6 +1,5 @@
 ﻿using LobotJR.Command;
 using LobotJR.Command.Model.Fishing;
-using LobotJR.Data.User;
 using LobotJR.Twitch;
 using System.Data.Common;
 using System.Data.Entity;
@@ -17,8 +16,8 @@ namespace LobotJR.Data
         public DbSet<DataTimer> DataTimers { get; set; }
 
         /** User data */
-        public DbSet<UserMap> Users { get; set; }
-        public DbSet<UserRole> UserRoles { get; set; }
+        public DbSet<Twitch.Model.User> Users { get; set; }
+        public DbSet<AccessGroup> UserRoles { get; set; }
         public DbSet<Catch> Catches { get; set; }
         public DbSet<LeaderboardEntry> FishingLeaderboard { get; set; }
         public DbSet<TournamentResult> FishingTournaments { get; set; }

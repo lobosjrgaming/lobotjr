@@ -56,8 +56,8 @@ namespace LobotJR.Test.Mocks
             var streamer = context.Users.First(x => x.Username.Equals("Streamer"));
             var bot = context.Users.First(x => x.Username.Equals("Bot"));
             var dev = context.Users.First(x => x.Username.Equals("Dev"));
-            context.UserRoles.Add(new UserRole("Streamer", new string[] { streamer.TwitchId, bot.TwitchId }, new string[] { "*.Admin.*" }));
-            context.UserRoles.Add(new UserRole("UIDev", new string[] { streamer.TwitchId, bot.TwitchId, dev.TwitchId }, new string[] { }));
+            context.UserRoles.Add(new AccessGroup("Streamer", new string[] { streamer.TwitchId, bot.TwitchId }, new string[] { "*.Admin.*" }));
+            context.UserRoles.Add(new AccessGroup("UIDev", new string[] { streamer.TwitchId, bot.TwitchId, dev.TwitchId }, new string[] { }));
         }
 
         public static void InitializeFish(MockContext context)
@@ -134,7 +134,7 @@ namespace LobotJR.Test.Mocks
             appSettings.FishingTournamentInterval = 10;
             appSettings.FishingUseNormalRarity = false;
             appSettings.FishingUseNormalSizes = false;
-            appSettings.GeneralCacheUpdateTime = 2;
+            appSettings.UserDatabaseUpdateTime = 2;
             appSettings.MaxWhisperRecipients = 10;
             context.AppSettings.Add(appSettings);
         }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LobotJR.Twitch.Model;
+using System;
 
 namespace LobotJR.Command.Model.Fishing
 {
@@ -7,6 +8,10 @@ namespace LobotJR.Command.Model.Fishing
     /// </summary>
     public class Fisher
     {
+        /// <summary>
+        /// The user object for the user.
+        /// </summary>
+        public User User { get; set; }
         /// <summary>
         /// The twitch id for the user.
         /// </summary>

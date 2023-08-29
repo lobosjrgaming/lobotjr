@@ -64,16 +64,19 @@ namespace LobotJR.Data.Migration
             var allNames = new List<string>(tournamentNames);
             allNames.AddRange(roleNames);
             var ids = Users.Get(TokenData.BroadcastToken, ClientData, allNames.Distinct()).GetAwaiter().GetResult();
-            if (ids == null || ids.Data == null)
+            if (ids == null || ids.Any(x => x.Data == null))
             {
                 return new DatabaseMigrationResult { Success = false };
             }
             var idMap = new Dictionary<string, string>();
-            foreach (var id in ids.Data.Data)
+            foreach (var group in ids)
             {
-                if (id != null && !string.IsNullOrWhiteSpace(id.Id))
+                foreach (var id in group.Data.Data)
                 {
-                    idMap.Add(id.Login, id.Id);
+                    if (id != null && !string.IsNullOrWhiteSpace(id.Id))
+                    {
+                        idMap.Add(id.Login, id.Id);
+                    }
                 }
             }
 

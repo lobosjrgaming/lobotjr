@@ -1,5 +1,6 @@
 ﻿using LobotJR.Data;
 using LobotJR.Data.User;
+using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using NLog;
 using System;

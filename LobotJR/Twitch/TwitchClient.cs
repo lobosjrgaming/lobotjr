@@ -291,5 +291,22 @@ namespace LobotJR.Twitch
             }
             return results.Where(x => x.Data != null && x.Data.Data != null).SelectMany(x => x.Data.Data);
         }
+
+        /// <summary>
+        /// Gets the Twitch ids for a collection usernames.
+        /// </summary>
+        /// <param name="usernames">A collection of usernames.</param>
+        /// <returns>A collection of Twitch user data responses.</returns>
+        public async Task<IEnumerable<UserResponseData>> GetTwitchUsers(IEnumerable<string> usernames)
+        {
+            var results = await Users.Get(TokenData.BroadcastToken, ClientData, usernames);
+            if (results.Any(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized))
+            {
+                var failure = results.FirstOrDefault(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized);
+                Logger.Warn("Encountered an unexpected response looking up userids: {statusCode}: {content}", failure.StatusCode, failure.Content);
+                return null;
+            }
+            return results.Where(x => x.Data != null && x.Data.Data != null).SelectMany(x => x.Data.Data);
+        }
     }
 }

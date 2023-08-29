@@ -4,6 +4,7 @@ using NLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace LobotJR.Command.System.Fishing
 {
@@ -176,7 +177,7 @@ namespace LobotJR.Command.System.Fishing
         /// <summary>
         /// Processes the tournament system, starting or ending the tournament as necessary.
         /// </summary>
-        public void Process(bool broadcasting)
+        public Task Process(bool broadcasting)
         {
             if (!broadcasting)
             {
@@ -200,6 +201,7 @@ namespace LobotJR.Command.System.Fishing
                     StartTournament();
                 }
             }
+            return Task.CompletedTask;
         }
     }
 }

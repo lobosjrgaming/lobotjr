@@ -88,7 +88,7 @@ namespace LobotJR.Command.Module.Fishing
                         responses.Add($"This is the biggest {catchData.Fish.Name} you've ever caught!");
                     }
                     var userEntry = TournamentSystem.CurrentTournament.Entries.Where(x => x.UserId.Equals(userId)).FirstOrDefault();
-                    var sorted = TournamentSystem.CurrentTournament.Entries.OrderBy(x => x.Points).ToList().IndexOf(userEntry) + 1;
+                    var sorted = TournamentSystem.CurrentTournament.Entries.OrderByDescending(x => x.Points).ToList().IndexOf(userEntry) + 1;
                     responses.Add($"You caught a {catchData.Length} inch, {catchData.Weight} pound {catchData.Fish.Name} worth {catchData.Points} points! You are in {sorted.ToOrdinal()} place with {userEntry.Points} total points.");
                     return new CommandResult(responses.ToArray());
                 }
