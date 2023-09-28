@@ -1,5 +1,5 @@
 ﻿using LobotJR.Command.System.Gloat;
-using LobotJR.Data.User;
+using LobotJR.Twitch.Model;
 using System.Collections.Generic;
 
 namespace LobotJR.Command.Module.Gloat
@@ -10,7 +10,6 @@ namespace LobotJR.Command.Module.Gloat
     public class GloatModule : ICommandModule
     {
         private readonly GloatSystem GloatSystem;
-        private readonly UserLookup UserLookup;
 
         /// <summary>
         /// Prefix applied to names of commands within this module.
@@ -27,35 +26,34 @@ namespace LobotJR.Command.Module.Gloat
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public GloatModule(GloatSystem gloatSystem, UserLookup userLookup)
+        public GloatModule(GloatSystem gloatSystem)
         {
             GloatSystem = gloatSystem;
-            UserLookup = userLookup;
             Commands = new CommandHandler[]
             {
                 new CommandHandler("GloatFish", GloatFish, "gloatfish", "fishgloat", "gloat-fish")
             };
         }
 
-        public CommandResult GloatFish(string data, string userId)
+        public CommandResult GloatFish(string data, User user)
         {
-            if (int.TryParse(data, out var id))
+            if (int.TryParse(data, out var index))
             {
-                if (GloatSystem.CanGloatFishing(userId))
+                if (GloatSystem.CanGloatFishing(user))
                 {
-                    var record = GloatSystem.FishingGloat(userId, id - 1);
+                    var record = GloatSystem.FishingGloat(user, index - 1);
                     if (record != null)
                     {
-                        return new CommandResult($"You spent {GloatSystem.FishingGloatCost} wolfcoins to brag about your biggest {record.Fish.Name}.")
+                        return new CommandResult(user, $"You spent {GloatSystem.FishingGloatCost} wolfcoins to brag about your biggest {record.Fish.Name}.")
                         {
-                            Messages = new string[] { $"{UserLookup.GetUsername(userId)} gloats about the time they caught a {record.Length} in. long, {record.Weight} pound {record.Fish.Name} lobosSmug" }
+                            Messages = new string[] { $"{user.Username} gloats about the time they caught a {record.Length} in. long, {record.Weight} pound {record.Fish.Name} lobosSmug" }
                         };
                     }
-                    return new CommandResult("You don't have any fish! Type !cast to try and fish for some!");
+                    return new CommandResult(user, "You don't have any fish! Type !cast to try and fish for some!");
                 }
-                return new CommandResult("You don't have enough coins to gloat!");
+                return new CommandResult(user, "You don't have enough coins to gloat!");
             }
-            return new CommandResult("Invalid request. Syntax: !gloatfish <Fish #>");
+            return new CommandResult(user, "Invalid request. Syntax: !gloatfish <Fish #>");
         }
     }
 }

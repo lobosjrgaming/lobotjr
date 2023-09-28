@@ -36,8 +36,10 @@ namespace LobotJR.Command.System.Twitch
         private DateTime? LookupTimer = null;
         private List<LookupRequest> LookupRequests = new List<LookupRequest>();
 
-        private DateTime LastUpdate = DateTime.Now;
-
+        /// <summary>
+        /// The time the user system last fetched user ids from Twitch's API.
+        /// </summary>
+        public DateTime LastUpdate { get; set; } = DateTime.Now;
         public IEnumerable<string> Viewers { get; private set; } = Enumerable.Empty<string>();
 
         public UserSystem(IRepositoryManager repositoryManager, TwitchClient twitchClient)
@@ -56,6 +58,24 @@ namespace LobotJR.Command.System.Twitch
         public User GetUserByName(string username)
         {
             return Users.Read(x => x.Username.Equals(username, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+        }
+
+        /// <summary>
+        /// Gets a collection of user objects from a list of usernames.
+        /// </summary>
+        /// <param name="names">The names of all users to lookup.</param>
+        /// <returns>The user object for each user provided.</returns>
+        public async Task<IEnumerable<User>> GetUsersByNames(params string[] names)
+        {
+            var known = Users.Read(x => names.Contains(x.Username, StringComparer.OrdinalIgnoreCase));
+            var missing = names.Except(known.Select(x => x.Username), StringComparer.OrdinalIgnoreCase);
+            if (missing.Any())
+            {
+                var lookup = await TwitchClient.GetTwitchUsers(missing);
+                var users = CreateUsers(lookup);
+                known = known.Concat(users);
+            }
+            return known;
         }
 
         private void RequestLookup(LookupRequest request)
@@ -198,9 +218,9 @@ namespace LobotJR.Command.System.Twitch
             Logger.Info("User database updated in {time} milliseconds.", (DateTime.Now - LastUpdate).TotalMilliseconds);
         }
 
-        private void ProcessLookups(IEnumerable<UserResponseData> users)
+        private IEnumerable<User> CreateUsers(IEnumerable<UserResponseData> users)
         {
-            LookupTimer = null;
+            var output = new List<User>();
             foreach (var user in users)
             {
                 var request = LookupRequests.FirstOrDefault(x => x.Username.Equals(user.DisplayName));
@@ -209,6 +229,7 @@ namespace LobotJR.Command.System.Twitch
                 {
                     existing.Username = user.DisplayName;
                     Users.Update(existing);
+                    output.Add(existing);
                 }
                 else
                 {
@@ -218,12 +239,22 @@ namespace LobotJR.Command.System.Twitch
                         Username = user.DisplayName,
                     };
                     Users.Create(newUser);
+                    output.Add(newUser);
                 }
             }
             Users.Commit();
+            return output;
+        }
+
+        private void ProcessLookups(IEnumerable<UserResponseData> users)
+        {
+            LookupTimer = null;
+
+            var newUsers = CreateUsers(users);
+
             foreach (var request in LookupRequests)
             {
-                var match = users.FirstOrDefault(x => x.Login.Equals(request.Username, StringComparison.OrdinalIgnoreCase));
+                var match = newUsers.FirstOrDefault(x => x.Username.Equals(request.Username, StringComparison.OrdinalIgnoreCase));
                 if (match != null)
                 {
                     var user = Users.Read(x => match.Id.Equals(x.TwitchId)).FirstOrDefault();

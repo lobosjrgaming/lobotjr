@@ -1,5 +1,7 @@
 ﻿using LobotJR.Command.Model.Fishing;
 using LobotJR.Data;
+using LobotJR.Twitch.Model;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -28,11 +30,12 @@ namespace LobotJR.Command.System.Gloat
         /// <summary>
         /// Checks if the user has the coins to gloat about a fishing record.
         /// </summary>
-        /// <param name="userId">The user attempting to gloat.</param>
+        /// <param name="user">The Twitch object for the user attempting to
+        /// gloat.</param>
         /// <returns>True if the user has the coins to gloat, false if not.</returns>
-        public bool CanGloatFishing(string userId)
+        public bool CanGloatFishing(User user)
         {
-            if (Wolfcoins.TryGetValue(userId, out var coins))
+            if (Wolfcoins.TryGetValue(user.Username, out var coins))
             {
                 return coins >= FishingGloatCost;
             }
@@ -42,18 +45,20 @@ namespace LobotJR.Command.System.Gloat
         /// <summary>
         /// Attempts to gloat about a specific fishing record.
         /// </summary>
-        /// <param name="userId">The user attempting to gloat.</param>
-        /// <param name="fishId">The id of the fish to gloat about.</param>
+        /// <param name="user">The Twitch object for the user attempting to
+        /// gloat.</param>
+        /// <param name="index">The id of the fish to gloat about.</param>
         /// <returns>The details of the record to gloat about.</returns>
-        public Catch FishingGloat(string userId, int fishId)
+        public Catch FishingGloat(User user, int index)
         {
-            if (Wolfcoins.TryGetValue(userId, out var coins))
+            if (Wolfcoins.TryGetValue(user.Username, out var coins))
             {
-                var records = PersonalLeaderboard.Read(x => x.UserId.Equals(userId)).OrderBy(x => x.FishId);
-                if (fishId >= 0 && fishId < records.Count())
+                var records = PersonalLeaderboard.Read(x => x.UserId.Equals(user.TwitchId)).OrderBy(x => x.FishId);
+                var key = Wolfcoins.Keys.FirstOrDefault(x => x.Equals(user.Username, StringComparison.OrdinalIgnoreCase));
+                if (index >= 0 && index < records.Count() && !string.IsNullOrWhiteSpace(key))
                 {
-                    Wolfcoins[userId] = coins - FishingGloatCost;
-                    return records.ElementAt(fishId);
+                    Wolfcoins[key] = coins - FishingGloatCost;
+                    return records.ElementAt(index);
                 }
             }
             return null;

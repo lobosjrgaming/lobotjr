@@ -1,5 +1,5 @@
-﻿using LobotJR.Data;
-using LobotJR.Data.User;
+﻿using LobotJR.Command.System.Twitch;
+using LobotJR.Data;
 using LobotJR.Shared.Authentication;
 using LobotJR.Shared.Channel;
 using LobotJR.Shared.Chat;
@@ -25,17 +25,17 @@ namespace LobotJR.Twitch
         private List<string> Blacklist = new List<string>();
 
         private WhisperQueue Queue;
-        private UserLookup UserLookup;
+        private UserSystem UserSystem;
         private string BroadcasterId;
         private string ChatId;
         private ClientData ClientData;
         private TokenData TokenData;
 
 
-        public TwitchClient(IRepositoryManager repositoryManager, UserLookup userLookup, ClientData clientData, TokenData tokenData)
+        public TwitchClient(IRepositoryManager repositoryManager, UserSystem userSystem, ClientData clientData, TokenData tokenData)
         {
             Queue = new WhisperQueue(repositoryManager, 3, 100);
-            UserLookup = userLookup;
+            UserSystem = userSystem;
             ClientData = clientData;
             TokenData = tokenData;
         }
@@ -47,17 +47,12 @@ namespace LobotJR.Twitch
         /// be retrieved from Twitch.</exception>
         public void GetBotIds()
         {
-            BroadcasterId = UserLookup.GetId(TokenData.BroadcastUser);
-            ChatId = UserLookup.GetId(TokenData.ChatUser);
+            var botUsers = UserSystem.GetUsersByNames(TokenData.ChatUser, TokenData.BroadcastUser).GetAwaiter().GetResult();
+            ChatId = botUsers.FirstOrDefault(x => x.Username.Equals(TokenData.ChatUser, StringComparison.OrdinalIgnoreCase))?.TwitchId;
+            BroadcasterId = botUsers.FirstOrDefault(x => x.Username.Equals(TokenData.BroadcastUser, StringComparison.OrdinalIgnoreCase))?.TwitchId;
             if (string.IsNullOrWhiteSpace(BroadcasterId) || string.IsNullOrWhiteSpace(ChatId))
             {
-                UserLookup.UpdateCache(TokenData.ChatToken, ClientData).GetAwaiter().GetResult();
-                BroadcasterId = UserLookup.GetId(TokenData.BroadcastUser);
-                ChatId = UserLookup.GetId(TokenData.ChatUser);
-                if (string.IsNullOrWhiteSpace(BroadcasterId) || string.IsNullOrWhiteSpace(ChatId))
-                {
-                    throw new Exception($"Unable to retrieve required twitch ids: {TokenData.BroadcastUser}: {BroadcasterId}, {TokenData.ChatUser}: {ChatId}");
-                }
+                throw new Exception($"Unable to retrieve required twitch ids: {TokenData.BroadcastUser}: {BroadcasterId}, {TokenData.ChatUser}: {ChatId}");
             }
         }
 
@@ -131,9 +126,10 @@ namespace LobotJR.Twitch
         /// <returns>True if the whisper was sent successfully.</returns>
         public void QueueWhisper(string user, string message)
         {
-            if (!Blacklist.Contains(user))
+            var userObject = UserSystem.GetUserByName(user);
+            if (!Blacklist.Contains(user) && userObject != null)
             {
-                Queue.Enqueue(user, UserLookup.GetId(user), message, DateTime.Now);
+                Queue.Enqueue(user, userObject.TwitchId, message, DateTime.Now);
             }
         }
 
@@ -154,12 +150,8 @@ namespace LobotJR.Twitch
         /// <summary>
         /// Attempts to re-send all whispers that failed due to the id not being in the cache.
         /// </summary>
-        public async Task ProcessQueue(bool cacheUpdated)
+        public async Task ProcessQueue()
         {
-            if (cacheUpdated)
-            {
-                Queue.UpdateUserIds(UserLookup);
-            }
             var canSend = Queue.TryGetMessage(out var message);
             while (canSend)
             {
@@ -200,32 +192,31 @@ namespace LobotJR.Twitch
         /// <exception cref="Exception">If the Twitch user id cannot be retrieved.</exception>
         public async Task<bool> TimeoutAsync(string user, int? duration, string message)
         {
-            var userId = UserLookup.GetId(user);
+            var userId = UserSystem.GetUserByName(user);
             if (userId == null)
             {
-                await UserLookup.UpdateCache(TokenData.ChatToken, ClientData);
-                userId = UserLookup.GetId(user);
+                userId = (await UserSystem.GetUsersByNames(user)).FirstOrDefault();
                 if (userId == null)
                 {
                     Logger.Error("Failed to get user id for timeout of user {user} with reason {message}", user, message ?? "null");
                     return false;
                 }
             }
-            var result = await BanUser.Post(TokenData.ChatToken, ClientData, BroadcasterId, ChatId, userId, duration, message);
+            var result = await BanUser.Post(TokenData.ChatToken, ClientData, BroadcasterId, ChatId, userId.TwitchId, duration, message);
             return result == HttpStatusCode.OK;
         }
 
         /// <summary>
         /// Times out a user synchronously.
         /// </summary>
-        /// <param name="user">The user to timeout.</param>
+        /// <param name="userId">The user to timeout.</param>
         /// <param name="duration">The duration of the timeout. Null for a permanent ban.</param>
         /// <param name="message">The message to send along with the timeout.</param>
         /// <returns>True if the timeout was executed successfully.</returns>
         /// <exception cref="Exception">If the Twitch user id cannot be retrieved.</exception>
-        public bool Timeout(string user, int? duration, string message)
+        public bool Timeout(string userId, int? duration, string message)
         {
-            return TimeoutAsync(user, duration, message).GetAwaiter().GetResult();
+            return TimeoutAsync(userId, duration, message).GetAwaiter().GetResult();
         }
 
         /// <summary>

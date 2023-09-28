@@ -1,5 +1,4 @@
 ﻿using LobotJR.Data;
-using LobotJR.Data.User;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using NLog;
@@ -74,20 +73,6 @@ namespace LobotJR.Twitch
             {
                 Logger.Warn("Failed to queue whisper. {details}", Debug());
             }
-        }
-
-        /// <summary>
-        /// Updates all queued messages with no user id. Any messages from
-        /// users that still have no id will be removed from the queue.
-        /// </summary>
-        /// <param name="userLookup">The UserLookup object to use to fetch new
-        /// user ids.</param>
-        public void UpdateUserIds(UserLookup userLookup)
-        {
-            var nullIds = Queue.Where(x => string.IsNullOrWhiteSpace(x.UserId)).ToList();
-            nullIds.ForEach(x => x.UserId = userLookup.GetId(x.Username));
-            nullIds = Queue.Where(x => string.IsNullOrWhiteSpace(x.UserId)).ToList();
-            Queue = Queue.Except(nullIds).ToList();
         }
 
         /// <summary>

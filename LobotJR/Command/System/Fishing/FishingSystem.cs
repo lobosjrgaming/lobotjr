@@ -1,5 +1,6 @@
 ﻿using LobotJR.Command.Model.Fishing;
 using LobotJR.Data;
+using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using NLog;
 using System;
@@ -59,7 +60,7 @@ namespace LobotJR.Command.System.Fishing
         public FishingSystem(IRepositoryManager repositoryManager,
             IContentManager contentManager)
         {
-            Fishers = repositoryManager.Users.Read().Select(x => new Fisher() { UserId = x.TwitchId }).ToList();
+            Fishers = repositoryManager.Users.Read().Select(x => new Fisher() { User = x }).ToList();
             FishData = contentManager.FishData;
             Settings = repositoryManager.AppSettings.Read().First();
             CastTimeMinimum = Settings.FishingCastMinimum;
@@ -84,14 +85,14 @@ namespace LobotJR.Command.System.Fishing
         /// <summary>
         /// Gets or creates a fisher object for a given user id.
         /// </summary>
-        /// <param name="userId">The twitch id for the user.</param>
+        /// <param name="user">The Twitch user object for the user.</param>
         /// <returns>The fisher object for the user.</returns>
-        public Fisher GetFisherById(string userId)
+        public Fisher GetFisherByUser(User user)
         {
-            var fisher = Fishers.FirstOrDefault(x => x.UserId.Equals(userId));
+            var fisher = Fishers.FirstOrDefault(x => x.User.TwitchId.Equals(user.TwitchId));
             if (fisher == null)
             {
-                fisher = new Fisher() { UserId = userId };
+                fisher = new Fisher() { User = user };
                 Fishers.Add(fisher);
             }
             return fisher;
@@ -127,7 +128,7 @@ namespace LobotJR.Command.System.Fishing
             var fish = fisher.Hooked;
             var catchData = new Catch
             {
-                UserId = fisher.UserId,
+                UserId = fisher.User.TwitchId,
                 Fish = fish
             };
 
@@ -162,17 +163,18 @@ namespace LobotJR.Command.System.Fishing
         /// <summary>
         /// Casts the line out for a user, starting the fishing process.
         /// </summary>
-        /// <param name="userId">The twitch id of the user to begin fishing for.</param>
-        public void Cast(string userId)
+        /// <param name="user">The Twitch user object of the user to begin
+        /// fishing for.</param>
+        public void Cast(User user)
         {
-            var fisher = GetFisherById(userId);
+            var fisher = GetFisherByUser(user);
             var hookTime = DateTime.Now;
             hookTime = hookTime.AddSeconds(Random.Next(CastTimeMinimum, CastTimeMaximum + 1));
             if (fisher == null)
             {
                 Fishers.Add(new Fisher()
                 {
-                    UserId = userId,
+                    User = user,
                     IsFishing = true,
                     HookedTime = hookTime
                 });
@@ -207,7 +209,7 @@ namespace LobotJR.Command.System.Fishing
                 var fishList = FishData.Read(x => x.Rarity.Id == rarityId).ToList();
                 var fish = fishList[Random.Next(0, fishList.Count)];
                 fisher.Hooked = fish;
-                Logger.Debug("Fish {fish} hooked for user {userId}.", fish?.Name, fisher.UserId);
+                Logger.Debug("Fish {fish} hooked for user {userId}.", fish?.Name, fisher.User.TwitchId);
                 return true;
             }
             return false;
@@ -239,7 +241,7 @@ namespace LobotJR.Command.System.Fishing
                 fisher.IsFishing = false;
                 fisher.Hooked = null;
                 fisher.HookedTime = null;
-                Logger.Debug("User id {userId} catching fish {fish}", fisher.UserId, catchData?.Fish?.Name);
+                Logger.Debug("User id {userId} catching fish {fish}", fisher.User.TwitchId, catchData?.Fish?.Name);
                 if (catchData != null)
                 {
                     OnFishCaught(fisher, catchData);
@@ -261,7 +263,7 @@ namespace LobotJR.Command.System.Fishing
                     && fisher.Hooked == null
                     && DateTime.Now >= fisher.HookedTime)
                 {
-                    Logger.Debug("Hooking fish for user {userId}.", fisher.UserId);
+                    Logger.Debug("Hooking fish for user {userId}.", fisher.User.TwitchId);
                     if (HookFish(fisher))
                     {
                         OnFishHooked(fisher);
@@ -272,7 +274,7 @@ namespace LobotJR.Command.System.Fishing
                     && fisher.HookedTime.HasValue
                     && DateTime.Now >= fisher.HookedTime.Value.AddSeconds(Settings.FishingHookLength))
                 {
-                    Logger.Debug("Fish got away for user {userId}.", fisher.UserId);
+                    Logger.Debug("Fish got away for user {userId}.", fisher.User.TwitchId);
                     UnhookFish(fisher);
                     OnFishGotAway(fisher);
                 }

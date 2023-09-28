@@ -47,15 +47,23 @@ namespace LobotJR.Command
             Processed = false;
         }
 
+        /*        public CommandResult(params string[] responses)
+                {
+                    Processed = true;
+                    Responses = new List<string>(responses);
+                }*/
+
         public CommandResult(User sender, params string[] responses)
         {
             Processed = true;
+            Sender = sender;
             Responses = new List<string>(responses);
         }
 
         public CommandResult(User sender, bool processed, IEnumerable<Exception> errors)
         {
             Processed = processed;
+            Sender = sender;
             if (errors != null)
             {
                 Errors = new List<Exception>(errors);

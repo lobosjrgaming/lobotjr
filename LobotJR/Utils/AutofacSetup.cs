@@ -8,9 +8,9 @@ using LobotJR.Command.Module.Gloat;
 using LobotJR.Command.System;
 using LobotJR.Command.System.Fishing;
 using LobotJR.Command.System.Gloat;
+using LobotJR.Command.System.Twitch;
 using LobotJR.Data;
 using LobotJR.Data.Migration;
-using LobotJR.Data.User;
 using LobotJR.Shared.Authentication;
 using LobotJR.Shared.Client;
 using LobotJR.Trigger;
@@ -45,7 +45,7 @@ namespace LobotJR.Utils
             builder.RegisterType<SqliteContext>().AsSelf().As<DbContext>().InstancePerLifetimeScope();
 
             builder.RegisterType<SqliteRepositoryManager>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
-            builder.RegisterType<UserLookup>().AsSelf().InstancePerLifetimeScope();
+            // builder.RegisterType<UserLookup>().AsSelf().InstancePerLifetimeScope();
         }
 
         private static void RegisterRpg(ContainerBuilder builder, ClientData clientData, TokenData tokenData)
@@ -56,6 +56,7 @@ namespace LobotJR.Utils
 
         private static void RegisterSystems(ContainerBuilder builder)
         {
+            builder.RegisterType<UserSystem>().AsSelf().As<ISystem>().InstancePerLifetimeScope();
             builder.RegisterType<FishingSystem>().AsSelf().As<ISystem>().InstancePerLifetimeScope();
             builder.RegisterType<LeaderboardSystem>().AsSelf().As<ISystem>().InstancePerLifetimeScope();
             builder.RegisterType<TournamentSystem>().AsSelf().As<ISystem>().InstancePerLifetimeScope();

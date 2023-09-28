@@ -26,7 +26,7 @@ namespace LobotJR.Test.Modules.AccessControl
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].Contains("success", StringComparison.OrdinalIgnoreCase));
             Assert.AreEqual(baseIdCount + 1, role.UserIds.Count);
-            Assert.IsTrue(role.UserIds.Contains(CommandManager.UserLookup.GetId("NotAuth")));
+            Assert.IsTrue(role.UserIds.Contains(CommandManager.UserSystem.GetId("NotAuth")));
         }
 
         [TestMethod]
@@ -90,7 +90,7 @@ namespace LobotJR.Test.Modules.AccessControl
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].Contains("success", StringComparison.OrdinalIgnoreCase));
-            Assert.IsFalse(role.UserIds.Contains(CommandManager.UserLookup.GetId("Foo")));
+            Assert.IsFalse(role.UserIds.Contains(CommandManager.UserSystem.GetId("Foo")));
         }
 
         [TestMethod]

@@ -1,4 +1,5 @@
 ﻿using LobotJR.Data;
+using LobotJR.Twitch.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,31 +36,31 @@ namespace LobotJR.Command.Module.AccessControl
             };
         }
 
-        private CommandResult CheckAccess(string data, string userId)
+        private CommandResult CheckAccess(string data, User user)
         {
             var roleName = data;
             if (roleName == null || roleName.Length == 0)
             {
-                var roles = repository.Read(x => x.UserIds.Any(y => y.Equals(userId, StringComparison.OrdinalIgnoreCase)));
+                var roles = repository.Read(x => x.UserIds.Any(y => y.Equals(user.TwitchId, StringComparison.OrdinalIgnoreCase)));
                 if (roles.Any())
                 {
                     var count = roles.Count();
-                    return new CommandResult($"You are a member of the following role{(count == 1 ? "" : "s")}: {string.Join(", ", roles.Select(x => x.Name))}.");
+                    return new CommandResult(user, $"You are a member of the following role{(count == 1 ? "" : "s")}: {string.Join(", ", roles.Select(x => x.Name))}.");
                 }
                 else
                 {
-                    return new CommandResult("You are not a member of any roles.");
+                    return new CommandResult(user, "You are not a member of any roles.");
                 }
             }
 
             var role = repository.Read(x => x.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
             if (role == null)
             {
-                return new CommandResult($"Error: No role with name \"{roleName}\" was found.");
+                return new CommandResult(user, $"Error: No role with name \"{roleName}\" was found.");
             }
 
-            var access = role.UserIds.Contains(userId) ? "are" : "are not";
-            return new CommandResult($"You {access} a member of \"{role.Name}\"!");
+            var access = role.UserIds.Contains(user.TwitchId) ? "are" : "are not";
+            return new CommandResult(user, $"You {access} a member of \"{role.Name}\"!");
         }
     }
 }

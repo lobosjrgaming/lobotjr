@@ -1,8 +1,9 @@
 ﻿using Autofac;
 using LobotJR.Command.Module;
 using LobotJR.Command.Module.AccessControl;
+using LobotJR.Command.System.Twitch;
 using LobotJR.Data;
-using LobotJR.Data.User;
+using LobotJR.Twitch.Model;
 using NLog;
 using System;
 using System.Collections.Generic;
@@ -24,7 +25,6 @@ namespace LobotJR.Command
 
         private readonly Dictionary<string, string> commandStringToIdMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, CommandExecutor> commandIdToExecutorMap = new Dictionary<string, CommandExecutor>();
-        private readonly Dictionary<string, AnonymousExecutor> anonymousIdToExecutorMap = new Dictionary<string, AnonymousExecutor>();
         private readonly Dictionary<string, CompactExecutor> compactIdToExecutorMap = new Dictionary<string, CompactExecutor>();
         private readonly List<string> whisperOnlyCommands = new List<string>();
         private readonly Dictionary<string, Regex> commandStringRegexMap = new Dictionary<string, Regex>();
@@ -45,7 +45,7 @@ namespace LobotJR.Command
         /// <summary>
         /// User lookup service used to translate between usernames and user ids.
         /// </summary>
-        public UserLookup UserLookup { get; private set; }
+        public UserSystem UserSystem { get; private set; }
         /// <summary>
         /// List of ids for registered commands.
         /// </summary>
@@ -55,7 +55,6 @@ namespace LobotJR.Command
             {
                 return commandIdToExecutorMap.Keys
                     .Union(compactIdToExecutorMap.Keys)
-                    .Union(anonymousIdToExecutorMap.Keys)
                     .ToArray();
             }
         }
@@ -63,10 +62,6 @@ namespace LobotJR.Command
         private void AddCommand(CommandHandler command, string prefix)
         {
             var commandId = $"{prefix}.{command.Name}";
-            if (command.AnonymousExecutor != null)
-            {
-                anonymousIdToExecutorMap.Add(commandId, command.AnonymousExecutor);
-            }
             if (command.Executor != null)
             {
                 commandIdToExecutorMap.Add(commandId, command.Executor);
@@ -127,21 +122,15 @@ namespace LobotJR.Command
             }
         }
 
-        private void Module_PushNotification(string userId, CommandResult commandResult)
+        private void Module_PushNotification(User user, CommandResult commandResult)
         {
-            PushNotifications?.Invoke(userId, commandResult);
+            PushNotifications?.Invoke(user, commandResult);
         }
 
-        private bool CanUserExecute(string commandId, string userId)
+        private bool CanUserExecute(string commandId, User user)
         {
             var roles = RepositoryManager.UserRoles.Read().Where(x => x.CoversCommand(commandId));
-            return !roles.Any() || roles.Any(x => x.UserIds.Contains(userId));
-        }
-
-        private bool CanExecuteAnonymously(string commandId)
-        {
-            var roles = RepositoryManager.UserRoles.Read().Where(x => x.CoversCommand(commandId));
-            return !roles.Any() && anonymousIdToExecutorMap.ContainsKey(commandId);
+            return !roles.Any() || roles.Any(x => x.UserIds.Contains(user.TwitchId));
         }
 
         private bool CanExecuteInChat(string commandId)
@@ -149,11 +138,11 @@ namespace LobotJR.Command
             return !whisperOnlyCommands.Contains(commandId);
         }
 
-        public CommandManager(IEnumerable<ICommandModule> modules, IRepositoryManager repositoryManager, UserLookup userLookup)
+        public CommandManager(IEnumerable<ICommandModule> modules, IRepositoryManager repositoryManager, UserSystem userSystem)
         {
             CommandModules = modules;
             RepositoryManager = repositoryManager;
-            UserLookup = userLookup;
+            UserSystem = userSystem;
         }
 
         /// <summary>
@@ -201,7 +190,7 @@ namespace LobotJR.Command
             return Commands.Any(x => x.Equals(commandId));
         }
 
-        private CommandResult PrepareCompactResponse(CommandRequest request, ICompactResponse response)
+        private CommandResult PrepareCompactResponse(CommandRequest request, User user, ICompactResponse response)
         {
             var entries = response.ToCompact();
             var prefix = $"{request.CommandString}: ";
@@ -217,10 +206,10 @@ namespace LobotJR.Command
                 toSend += entry;
             }
             responses.Add(toSend);
-            return new CommandResult(responses.ToArray());
+            return new CommandResult(user, responses.ToArray());
         }
 
-        private CommandResult TryExecuteCommand(CommandRequest request)
+        private CommandResult TryExecuteCommand(CommandRequest request, User user)
         {
             try
             {
@@ -228,33 +217,29 @@ namespace LobotJR.Command
                 {
                     if (compactIdToExecutorMap.TryGetValue(request.CommandId, out var compactExecutor))
                     {
-                        var compactResponse = compactExecutor.Invoke(request.Data, request.UserId);
+                        var compactResponse = compactExecutor.Invoke(request.Data, request.User);
                         if (compactResponse != null)
                         {
-                            return PrepareCompactResponse(request, compactResponse);
+                            return PrepareCompactResponse(request, user, compactResponse);
                         }
-                        return new CommandResult($"Command requested produced no results.");
+                        return new CommandResult(user, $"Command requested produced no results.");
                     }
                     else
                     {
-                        return new CommandResult($"Command {request.CommandId} does not support compact mode.");
+                        return new CommandResult(user, $"Command {request.CommandId} does not support compact mode.");
                     }
                 }
                 else
                 {
                     if (commandIdToExecutorMap.TryGetValue(request.CommandId, out var executor))
                     {
-                        return executor.Invoke(request.Data, request.UserId);
-                    }
-                    if (anonymousIdToExecutorMap.TryGetValue(request.CommandId, out var anonymousExecutor))
-                    {
-                        return anonymousExecutor.Invoke(request.Data);
+                        return executor.Invoke(request.Data, request.User);
                     }
                 }
             }
             catch (Exception e)
             {
-                return new CommandResult(true, new Exception[] { e });
+                return new CommandResult(request.User, true, new Exception[] { e });
             }
             return new CommandResult();
         }
@@ -263,12 +248,12 @@ namespace LobotJR.Command
         /// Processes a message from a user to check for and execute a command.
         /// </summary>
         /// <param name="message">The message the user sent.</param>
-        /// <param name="user">The user's name.</param>
+        /// <param name="user">The Twitch user object.</param>
         /// <param name="isWhisper">Whether or not the message was sent as a whisper.</param>
         /// <returns>Whether a command was found and executed.</returns>
-        public CommandResult ProcessMessage(string message, string user, bool isWhisper)
+        public CommandResult ProcessMessage(string message, User user, bool isWhisper)
         {
-            Logger.Debug("Attempting to process {user}'s command: {message}", user, message);
+            Logger.Debug("Attempting to process {user}'s command: {message}", user.Username, message);
             var request = CommandRequest.Parse(message);
             if (commandStringToIdMap.TryGetValue(request.CommandString, out var commandId))
             {
@@ -277,6 +262,7 @@ namespace LobotJR.Command
                     return new CommandResult()
                     {
                         Processed = true,
+                        Sender = user,
                         TimeoutSender = true,
                         Responses = new string[]
                         {
@@ -286,17 +272,13 @@ namespace LobotJR.Command
                     };
                 }
                 request.CommandId = commandId;
-                request.UserId = UserLookup.GetId(user);
-                if (request.UserId == null && !CanExecuteAnonymously(request.CommandId))
+                request.User = user;
+
+                if (CanUserExecute(request.CommandId, request.User))
                 {
-                    return new CommandResult("It looks like we don't have your user ID. Give me some time to set up your character. "
-                        + $"This can take up to {UserLookup.UpdateTime} minutes.");
+                    return TryExecuteCommand(request, user);
                 }
-                if (CanUserExecute(request.CommandId, request.UserId))
-                {
-                    return TryExecuteCommand(request);
-                }
-                return new CommandResult(true, new Exception[] { new UnauthorizedAccessException($"User \"{user}\" attempted to execute unauthorized command \"{message}\"") });
+                return new CommandResult(user, true, new Exception[] { new UnauthorizedAccessException($"User \"{user.Username}\" attempted to execute unauthorized command \"{message}\"") });
             }
             return new CommandResult();
         }

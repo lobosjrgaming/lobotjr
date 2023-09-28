@@ -1,6 +1,7 @@
 ﻿using LobotJR.Command.Model.Fishing;
 using LobotJR.Command.System.Fishing;
-using LobotJR.Data.User;
+using LobotJR.Command.System.Twitch;
+using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using System;
 using System.Collections.Generic;
@@ -14,7 +15,7 @@ namespace LobotJR.Command.Module.Fishing
     public class TournamentModule : ICommandModule
     {
         private readonly TournamentSystem TournamentSystem;
-        private readonly UserLookup UserLookup;
+        private readonly UserSystem UserSystem;
 
         /// <summary>
         /// Prefix applied to names of commands within this module.
@@ -36,12 +37,12 @@ namespace LobotJR.Command.Module.Fishing
         /// </summary>
         public IEnumerable<ICommandModule> SubModules => null;
 
-        public TournamentModule(TournamentSystem system, UserLookup userLookup)
+        public TournamentModule(TournamentSystem system, UserSystem userSystem)
         {
             TournamentSystem = system;
             system.TournamentStarted += System_TournamentStarted;
             system.TournamentEnded += System_TournamentEnded;
-            UserLookup = userLookup;
+            UserSystem = userSystem;
             Commands = new CommandHandler[]
             {
                 new CommandHandler("TournamentResults", TournamentResults, TournamentResultsCompact, "TournamentResults", "tournament-results"),
@@ -65,7 +66,7 @@ namespace LobotJR.Command.Module.Fishing
                 message = "Stream has gone offline, so the fishing tournament was ended early. D:";
                 if (result.Entries.Count > 0)
                 {
-                    message += $" Winner at the time of conclusion: {UserLookup.GetUsername(result.Winner.UserId)} with a score of {result.Winner.Points}.";
+                    message += $" Winner at the time of conclusion: {UserSystem.GetUserById(result.Winner.UserId).Username} with a score of {result.Winner.Points}.";
 
                 }
             }
@@ -73,7 +74,7 @@ namespace LobotJR.Command.Module.Fishing
             {
                 if (result.Entries.Count > 0)
                 {
-                    message = $"The fishing tournament has ended! Out of {result.Entries.Count} participants, {UserLookup.GetUsername(result.Winner.UserId)} won with {result.Winner.Points} points!";
+                    message = $"The fishing tournament has ended! Out of {result.Entries.Count} participants, {UserSystem.GetUserById(result.Winner.UserId).Username} won with {result.Winner.Points} points!";
                 }
                 else
                 {
@@ -83,12 +84,12 @@ namespace LobotJR.Command.Module.Fishing
             PushNotification?.Invoke(null, new CommandResult { Processed = true, Messages = new string[] { message } });
         }
 
-        public CommandResult TournamentResults(string data, string userId)
+        public CommandResult TournamentResults(string data, User user)
         {
-            var result = TournamentResultsCompact(data, userId);
+            var result = TournamentResultsCompact(data, user);
             if (result == null)
             {
-                return new CommandResult("No fishing tournaments have completed.");
+                return new CommandResult(user, "No fishing tournaments have completed.");
             }
             var sinceEnded = DateTime.Now - result.Ended;
             var pluralized = "participant";
@@ -99,7 +100,7 @@ namespace LobotJR.Command.Module.Fishing
             var responses = new List<string>(new string[] { $"The most recent tournament ended {sinceEnded.ToCommonString()} ago with {result.Participants} {pluralized}." });
             if (result.Rank > 0)
             {
-                if (result.Winner.Equals(UserLookup.GetUsername(userId), StringComparison.OrdinalIgnoreCase))
+                if (result.Winner.Equals(user.Username, StringComparison.OrdinalIgnoreCase))
                 {
                     responses.Add($"You won the tournament with {result.WinnerPoints} points.");
                 }
@@ -113,10 +114,10 @@ namespace LobotJR.Command.Module.Fishing
             {
                 responses.Add($"The tournament was won by {result.Winner} with {result.WinnerPoints} points.");
             }
-            return new CommandResult(responses.ToArray());
+            return new CommandResult(user, responses.ToArray());
         }
 
-        public TournamentResultsResponse TournamentResultsCompact(string data, string userId)
+        public TournamentResultsResponse TournamentResultsCompact(string data, User user)
         {
             var tournament = TournamentSystem.GetLatestResults();
             if (tournament != null)
@@ -128,10 +129,10 @@ namespace LobotJR.Command.Module.Fishing
                     {
                         Ended = tournament.Date,
                         Participants = tournament.Entries.Count,
-                        Winner = UserLookup.GetUsername(winner.UserId),
+                        Winner = UserSystem.GetUserById(winner.UserId).Username,
                         WinnerPoints = winner.Points
                     };
-                    var userEntry = tournament.GetEntryById(userId);
+                    var userEntry = tournament.GetEntryById(user.TwitchId);
                     if (userEntry != null)
                     {
                         output.Rank = tournament.GetRankById(userEntry.UserId);
@@ -143,54 +144,54 @@ namespace LobotJR.Command.Module.Fishing
             return null;
         }
 
-        public CommandResult TournamentRecords(string data, string userId)
+        public CommandResult TournamentRecords(string data, User user)
         {
-            var records = TournamentRecordsCompact(data, userId);
+            var records = TournamentRecordsCompact(data, user);
             if (records == null)
             {
-                return new CommandResult("You have not entered any fishing tournaments.");
+                return new CommandResult(user, "You have not entered any fishing tournaments.");
             }
-            return new CommandResult($"Your highest score in a tournament was {records.TopScore} points, earning you {records.TopScoreRank.ToOrdinal()} place.",
+            return new CommandResult(user, $"Your highest score in a tournament was {records.TopScore} points, earning you {records.TopScoreRank.ToOrdinal()} place.",
                 $"Your best tournament placement was {records.TopRank.ToOrdinal()} place, with {records.TopRankScore} points.");
         }
 
-        public TournamentRecordsResponse TournamentRecordsCompact(string data, string userId)
+        public TournamentRecordsResponse TournamentRecordsCompact(string data, User user)
         {
             var output = new Dictionary<string, string>();
-            var tournaments = TournamentSystem.GetResultsForUser(userId);
+            var tournaments = TournamentSystem.GetResultsForUser(user.TwitchId);
             if (!tournaments.Any())
             {
                 return null;
             }
-            var topRank = tournaments.OrderBy(x => x.GetRankById(userId)).First();
-            var topRankAndScore = tournaments.Where(x => x.GetRankById(userId) == topRank.GetRankById(userId)).OrderByDescending(x => x.GetEntryById(userId).Points).First();
-            var topScore = tournaments.OrderByDescending(x => x.GetEntryById(userId).Points).First();
-            var topScoreAndRank = tournaments.Where(x => x.GetEntryById(userId).Points == topScore.GetEntryById(userId).Points).OrderBy(x => x.GetRankById(userId)).First();
+            var topRank = tournaments.OrderBy(x => x.GetRankById(user.TwitchId)).First();
+            var topRankAndScore = tournaments.Where(x => x.GetRankById(user.TwitchId) == topRank.GetRankById(user.TwitchId)).OrderByDescending(x => x.GetEntryById(user.TwitchId).Points).First();
+            var topScore = tournaments.OrderByDescending(x => x.GetEntryById(user.TwitchId).Points).First();
+            var topScoreAndRank = tournaments.Where(x => x.GetEntryById(user.TwitchId).Points == topScore.GetEntryById(user.TwitchId).Points).OrderBy(x => x.GetRankById(user.TwitchId)).First();
             return new TournamentRecordsResponse()
             {
-                TopRank = topRankAndScore.GetRankById(userId),
-                TopRankScore = topRankAndScore.GetEntryById(userId).Points,
-                TopScore = topScoreAndRank.GetEntryById(userId).Points,
-                TopScoreRank = topScoreAndRank.GetRankById(userId)
+                TopRank = topRankAndScore.GetRankById(user.TwitchId),
+                TopRankScore = topRankAndScore.GetEntryById(user.TwitchId).Points,
+                TopScore = topScoreAndRank.GetEntryById(user.TwitchId).Points,
+                TopScoreRank = topScoreAndRank.GetRankById(user.TwitchId)
             };
         }
 
-        public CommandResult NextTournament(string data)
+        public CommandResult NextTournament(string data, User user)
         {
-            var compact = NextTournamentCompact(data, null);
+            var compact = NextTournamentCompact(data, user);
             if (compact.Items.Count() == 0)
             {
-                return new CommandResult("Stream is offline. Next fishing tournament will begin 15m after the beginning of next stream.");
+                return new CommandResult(user, "Stream is offline. Next fishing tournament will begin 15m after the beginning of next stream.");
             }
             var toNext = compact.Items.FirstOrDefault();
             if (toNext.TotalMilliseconds > 0)
             {
-                return new CommandResult($"Next fishing tournament begins in {toNext.TotalMinutes} minutes.");
+                return new CommandResult(user, $"Next fishing tournament begins in {toNext.TotalMinutes} minutes.");
             }
-            return new CommandResult($"A fishing tournament is active now! Go catch fish at: https://tinyurl.com/PlayWolfpackRPG !");
+            return new CommandResult(user, $"A fishing tournament is active now! Go catch fish at: https://tinyurl.com/PlayWolfpackRPG !");
         }
 
-        public CompactCollection<TimeSpan> NextTournamentCompact(string data, string userId)
+        public CompactCollection<TimeSpan> NextTournamentCompact(string data, User user)
         {
             if (TournamentSystem.NextTournament == null)
             {

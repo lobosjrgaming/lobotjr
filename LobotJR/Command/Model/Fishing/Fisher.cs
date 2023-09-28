@@ -13,10 +13,6 @@ namespace LobotJR.Command.Model.Fishing
         /// </summary>
         public User User { get; set; }
         /// <summary>
-        /// The twitch id for the user.
-        /// </summary>
-        public string UserId { get; set; }
-        /// <summary>
         /// Whether the user has their line out to try and catch a fish.
         /// </summary>
         public bool IsFishing { get; set; }

@@ -7,10 +7,10 @@ using GroupFinder;
 using LobotJR.Command;
 using LobotJR.Command.System;
 using LobotJR.Command.System.Fishing;
+using LobotJR.Command.System.Twitch;
 using LobotJR.Data;
 using LobotJR.Data.Import;
 using LobotJR.Data.Migration;
-using LobotJR.Data.User;
 using LobotJR.Shared.Utility;
 using LobotJR.Trigger;
 using LobotJR.Twitch;
@@ -47,7 +47,7 @@ namespace TwitchBot
         {
             if (result.TimeoutSender)
             {
-                twitchClient.Timeout(whisperSender, 1, result.TimeoutMessage);
+                twitchClient.Timeout(result.Sender.TwitchId, 1, result.TimeoutMessage);
             }
             if (result.Responses?.Count > 0)
             {
@@ -425,8 +425,8 @@ namespace TwitchBot
                 }
                 var wolfcoins = scope.Resolve<Currency>();
                 var contentManager = scope.Resolve<IContentManager>();
-                var userLookup = scope.Resolve<UserLookup>();
-                userLookup.UpdateTime = appSettings.UserDatabaseUpdateTime;
+                var userSystem = scope.Resolve<UserSystem>();
+                userSystem.LastUpdate = DateTime.Now - TimeSpan.FromMinutes(appSettings.UserDatabaseUpdateTime);
                 #endregion
 
                 #region Logging Setup
@@ -514,17 +514,17 @@ namespace TwitchBot
                         Dictionary<string, LegacyFisher> legacyFisherData = FisherDataImport.LoadLegacyFisherData(FisherDataImport.FisherDataPath);
                         List<LegacyCatch> legacyLeaderboardData = FisherDataImport.LoadLegacyFishingLeaderboardData(FisherDataImport.FishingLeaderboardPath);
                         Logger.Info("Converting usernames to user ids...");
-                        FisherDataImport.FetchUserIds(legacyFisherData.Keys.Union(legacyLeaderboardData.Select(x => x.caughtBy)), userLookup, tokenData.BroadcastToken, clientData);
+                        FisherDataImport.FetchUserIds(legacyFisherData.Keys.Union(legacyLeaderboardData.Select(x => x.caughtBy)), userSystem, tokenData.BroadcastToken, clientData);
                         if (hasFisherData)
                         {
                             Logger.Info("Importing user records...");
-                            FisherDataImport.ImportFisherDataIntoSql(legacyFisherData, contentManager.FishData, repoManager.Catches, userLookup);
+                            FisherDataImport.ImportFisherDataIntoSql(legacyFisherData, contentManager.FishData, repoManager.Catches, userSystem);
                             File.Move(FisherDataImport.FisherDataPath, $"{FisherDataImport.FisherDataPath}.{DateTime.Now.ToFileTimeUtc()}.backup");
                         }
                         if (hasLeaderboardData)
                         {
                             Logger.Info("Importing leaderboard...");
-                            FisherDataImport.ImportLeaderboardDataIntoSql(legacyLeaderboardData, repoManager.FishingLeaderboard, contentManager.FishData, userLookup);
+                            FisherDataImport.ImportLeaderboardDataIntoSql(legacyLeaderboardData, repoManager.FishingLeaderboard, contentManager.FishData, userSystem);
                             File.Move(FisherDataImport.FishingLeaderboardPath, $"{FisherDataImport.FishingLeaderboardPath}.{DateTime.Now.ToFileTimeUtc()}.backup");
                         }
                         Logger.Info("Fisher data migration complete!");
@@ -546,23 +546,8 @@ namespace TwitchBot
                     while (true)
                     {
                         #region System Processing
-                        var cacheUpdate = false;
-                        if (userLookup.IsUpdateTime(DateTime.Now))
-                        {
-                            cacheUpdate = true;
-                            var cacheUpdateResults = userLookup.UpdateCache(tokenData.BroadcastToken, clientData).GetAwaiter().GetResult();
-                            foreach (var user in cacheUpdateResults.UpdatedUsers)
-                            {
-                                twitchClient.QueueWhisper(user, "All done! Whisper me \"!cast\" to fish!");
-                            }
-                            foreach (var user in cacheUpdateResults.FailedUsers)
-                            {
-                                twitchClient.QueueWhisper(user, "Uh oh, we couldn't get your user id from twitch. Let the streamer know as there may be a problem.");
-                                Logger.Warn("Failed to lookup id for user {user}. It's possible the username we're getting from IRC doesn't match, maybe due to special characters or something? Not sure...", user);
-                            }
-                        }
                         systemManager.Process(broadcasting);
-                        twitchClient.ProcessQueue(cacheUpdate).GetAwaiter().GetResult();
+                        twitchClient.ProcessQueue().GetAwaiter().GetResult();
                         #endregion
 
                         var ircMessages = ircClient.Process().GetAwaiter().GetResult();
@@ -857,6 +842,7 @@ namespace TwitchBot
 
                                 whisperSender = whisper.UserName;
                                 whisperMessage = whisper.Message;
+                                var whisperer = userSystem.GetOrCreateUser(whisper.UserId, whisper.UserName);
                                 // TODO: Need to add user system here, with a get/add user based on the whisper sender
 
                                 if (wolfcoins.Exists(wolfcoins.classList, whisperSender))
@@ -871,7 +857,7 @@ namespace TwitchBot
                                 #region Command Module Processing
                                 if (whisperMessage[0] == CommandManager.Prefix)
                                 {
-                                    var result = commandManager.ProcessMessage(whisperMessage.Substring(1), whisperSender, true);
+                                    var result = commandManager.ProcessMessage(whisperMessage.Substring(1), whisperer, true);
                                     if (result != null && result.Processed)
                                     {
                                         HandleCommandResult(whisperSender, whisperMessage, result, ircClient, twitchClient);

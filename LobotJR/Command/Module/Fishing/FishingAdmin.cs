@@ -1,5 +1,6 @@
 ﻿using LobotJR.Command.Model.Fishing;
 using LobotJR.Command.System.Fishing;
+using LobotJR.Twitch.Model;
 using System.Collections.Generic;
 
 namespace LobotJR.Command.Module.Fishing
@@ -28,13 +29,13 @@ namespace LobotJR.Command.Module.Fishing
             }); ;
         }
 
-        public CommandResult DebugTournament(string data)
+        public CommandResult DebugTournament(string data, User user)
         {
             TournamentSystem.StartTournament();
-            return new CommandResult() { Processed = true };
+            return new CommandResult() { Sender = user, Processed = true };
         }
 
-        public CommandResult DebugCatch(string data)
+        public CommandResult DebugCatch(string data, User user)
         {
             var fisher = new Fisher();
             var output = new List<string>();
@@ -44,7 +45,7 @@ namespace LobotJR.Command.Module.Fishing
                 var fish = FishingSystem.CalculateFishSizes(fisher);
                 output.Add($"{fish.Fish.Name} ({fish.Fish.Rarity.Name}) caght.");
             }
-            return new CommandResult() { Processed = true, Debug = output };
+            return new CommandResult() { Sender = user, Processed = true, Debug = output };
         }
     }
 }
