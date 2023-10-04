@@ -84,9 +84,9 @@ namespace LobotJR.Test.TournamentSystems.Fishing
         [TestMethod]
         public void StartTournamentCancelsFishingUsers()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
-            var fisher = FishingSystem.GetFisherById(userId);
-            FishingSystem.Cast(userId);
+            var user = Manager.Users.Read().First();
+            var fisher = FishingSystem.GetFisherByUser(user);
+            FishingSystem.Cast(user);
             FishingSystem.HookFish(fisher);
             TournamentSystem.StartTournament();
             Assert.IsNotNull(TournamentSystem.CurrentTournament);
@@ -98,12 +98,12 @@ namespace LobotJR.Test.TournamentSystems.Fishing
         [TestMethod]
         public void StartTournamentUpdatesCastTimes()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
-            var fisher = FishingSystem.GetFisherById(userId);
+            var user = Manager.Users.Read().First();
+            var fisher = FishingSystem.GetFisherByUser(user);
             var appSettings = Manager.AppSettings.Read().First();
             fisher.IsFishing = false;
             TournamentSystem.StartTournament();
-            FishingSystem.Cast(fisher.UserId);
+            FishingSystem.Cast(fisher.User);
             Assert.IsTrue(fisher.IsFishing);
             Assert.IsTrue(fisher.HookedTime >= DateTime.Now.AddSeconds(appSettings.FishingTournamentCastMinimum));
             Assert.IsTrue(fisher.HookedTime <= DateTime.Now.AddSeconds(appSettings.FishingTournamentCastMaximum));
@@ -137,13 +137,13 @@ namespace LobotJR.Test.TournamentSystems.Fishing
         [TestMethod]
         public void EndTournamentResetsCastTimes()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
-            var fisher = FishingSystem.GetFisherById(userId);
+            var user = Manager.Users.Read().First();
+            var fisher = FishingSystem.GetFisherByUser(user);
             var appSettings = Manager.AppSettings.Read().First();
             fisher.IsFishing = false;
             TournamentSystem.StartTournament();
             TournamentSystem.EndTournament(true);
-            FishingSystem.Cast(fisher.UserId);
+            FishingSystem.Cast(fisher.User);
             Assert.IsTrue(fisher.IsFishing);
             Assert.IsTrue(fisher.HookedTime >= DateTime.Now.AddSeconds(appSettings.FishingCastMinimum));
             Assert.IsTrue(fisher.HookedTime <= DateTime.Now.AddSeconds(appSettings.FishingCastMaximum));

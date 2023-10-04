@@ -4154,6 +4154,7 @@ namespace TwitchBot
                         #region messageRegion
                         foreach (var message in messages)
                         {
+                            var chatter = userSystem.GetOrCreateUser(message.UserId, message.UserName);
                             if (!string.IsNullOrWhiteSpace(message.Message))
                             {
                                 string[] first = message.Message.Split(' ');
@@ -4161,7 +4162,7 @@ namespace TwitchBot
                                 string sender = message.UserName;
 
                                 #region Trigger Processing
-                                var triggerResult = triggerManager.ProcessTrigger(chatMessage, sender);
+                                var triggerResult = triggerManager.ProcessTrigger(chatMessage, chatter);
                                 if (triggerResult != null && triggerResult.Processed)
                                 {
                                     if (triggerResult.Messages != null)

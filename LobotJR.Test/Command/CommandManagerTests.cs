@@ -1,4 +1,5 @@
 ﻿using LobotJR.Command;
+using LobotJR.Twitch.Model;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Newtonsoft.Json;
@@ -64,11 +65,12 @@ namespace LobotJR.Test.Command
             var module = CommandModuleMock.Object;
             var command = module.Commands.First();
             var commandStrings = command.CommandStrings;
+            var user = IdCache.FirstOrDefault(x => x.Username.Equals("Auth"));
             foreach (var commandString in commandStrings)
             {
-                CommandManager.ProcessMessage(commandString, "Auth", true);
+                CommandManager.ProcessMessage(commandString, user, true);
             }
-            ExecutorMocks[command.Name].Verify(x => x(It.IsAny<string>(), It.IsAny<string>()),
+            ExecutorMocks[command.Name].Verify(x => x(It.IsAny<string>(), It.IsAny<User>()),
                 Times.Exactly(commandStrings.Count()));
         }
 
@@ -79,10 +81,11 @@ namespace LobotJR.Test.Command
             var role = UserRoles.First();
             role.CommandList = "CommandMock.*";
             role.UserList = "12345";
-            var result = CommandManager.ProcessMessage("Foobar", "Auth", true);
+            var user = IdCache.FirstOrDefault(x => x.Username.Equals("Auth"));
+            var result = CommandManager.ProcessMessage("Foobar", user, true);
             Assert.IsTrue(result.Processed);
             Assert.IsNull(result.Errors);
-            ExecutorMocks["Foobar"].Verify(x => x(It.IsAny<string>(), It.IsAny<string>()),
+            ExecutorMocks["Foobar"].Verify(x => x(It.IsAny<string>(), It.IsAny<User>()),
                 Times.Once());
         }
 
@@ -93,10 +96,11 @@ namespace LobotJR.Test.Command
             var role = UserRoles.First();
             role.CommandList = "CommandMock.SubMock.*";
             UserRoles.Add(new AccessGroup("OtherRole", null, new List<string>(new string[] { "CommandMock.*" })));
-            var result = CommandManager.ProcessMessage("Foo", "Auth", true);
+            var user = IdCache.FirstOrDefault(x => x.Username.Equals("Auth"));
+            var result = CommandManager.ProcessMessage("Foo", user, true);
             Assert.IsTrue(result.Processed);
             Assert.IsTrue(result.Errors.Any());
-            ExecutorMocks["Foo"].Verify(x => x(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+            ExecutorMocks["Foo"].Verify(x => x(It.IsAny<string>(), It.IsAny<User>()), Times.Never);
         }
 
         [TestMethod]
@@ -106,28 +110,31 @@ namespace LobotJR.Test.Command
             var role = UserRoles.First();
             role.CommandList = "CommandMock.SubMock.*";
             UserRoles.Add(new AccessGroup("OtherRole", null, new List<string>(new string[] { "CommandMock.*" })));
-            var result = CommandManager.ProcessMessage("Foobar", "Auth", true);
+            var user = IdCache.FirstOrDefault(x => x.Username.Equals("Auth"));
+            var result = CommandManager.ProcessMessage("Foobar", user, true);
             Assert.IsTrue(result.Processed);
             Assert.IsNull(result.Errors);
-            ExecutorMocks["Foobar"].Verify(x => x(It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+            ExecutorMocks["Foobar"].Verify(x => x(It.IsAny<string>(), It.IsAny<User>()), Times.Once);
         }
 
         [TestMethod]
         public void ProcessMessageRestrictsAccessToUnauthorizedUsers()
         {
-            var result = CommandManager.ProcessMessage("Foo", "NotAuth", true);
+            var user = IdCache.FirstOrDefault(x => x.Username.Equals("NotAuth"));
+            var result = CommandManager.ProcessMessage("Foo", user, true);
             Assert.IsTrue(result.Processed);
             Assert.IsTrue(result.Errors.Any());
-            ExecutorMocks["Foo"].Verify(x => x(It.IsAny<string>(), It.IsAny<string>()), Times.Never());
+            ExecutorMocks["Foo"].Verify(x => x(It.IsAny<string>(), It.IsAny<User>()), Times.Never());
         }
 
         [TestMethod]
         public void ProcessMessageAllowsAccessToAuthorizedUsers()
         {
-            var result = CommandManager.ProcessMessage("Foo", "Auth", true);
+            var user = IdCache.FirstOrDefault(x => x.Username.Equals("Auth"));
+            var result = CommandManager.ProcessMessage("Foo", user, true);
             Assert.IsTrue(result.Processed);
             Assert.IsNull(result.Errors);
-            ExecutorMocks["Foo"].Verify(x => x(It.IsAny<string>(), It.IsAny<string>()), Times.Once());
+            ExecutorMocks["Foo"].Verify(x => x(It.IsAny<string>(), It.IsAny<User>()), Times.Once());
         }
 
         [TestMethod]
@@ -135,16 +142,18 @@ namespace LobotJR.Test.Command
         {
             var role = UserRoles.First();
             role.CommandList = "CommandMock.*";
-            var result = CommandManager.ProcessMessage("Foo", "NotAuth", true);
+            var user = IdCache.FirstOrDefault(x => x.Username.Equals("NotAuth"));
+            var result = CommandManager.ProcessMessage("Foo", user, true);
             Assert.IsTrue(result.Processed);
             Assert.IsTrue(result.Errors.Any());
-            ExecutorMocks["Foo"].Verify(x => x(It.IsAny<string>(), It.IsAny<string>()), Times.Never());
+            ExecutorMocks["Foo"].Verify(x => x(It.IsAny<string>(), It.IsAny<User>()), Times.Never());
         }
 
         [TestMethod]
         public void ProcessMessageProcessesCompactCommands()
         {
-            var result = CommandManager.ProcessMessage("Foo -c", "Auth", true);
+            var user = IdCache.FirstOrDefault(x => x.Username.Equals("Auth"));
+            var result = CommandManager.ProcessMessage("Foo -c", user, true);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(@"Foo: Foo|Bar;", result.Responses.First());
             Assert.IsNull(result.Errors);
@@ -153,7 +162,8 @@ namespace LobotJR.Test.Command
         [TestMethod]
         public void ProcessMessageCompactCommandsPassParameters()
         {
-            var result = CommandManager.ProcessMessage("Foo -c value", "Auth", true);
+            var user = IdCache.FirstOrDefault(x => x.Username.Equals("Auth"));
+            var result = CommandManager.ProcessMessage("Foo -c value", user, true);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(@"Foo: Foo|value;", result.Responses.First());
             Assert.IsNull(result.Errors);
@@ -162,48 +172,50 @@ namespace LobotJR.Test.Command
         [TestMethod]
         public void ProcessMessageDoesNotProcessNonAnonymousCommandsForUncachedUsers()
         {
-            var result = CommandManager.ProcessMessage("Foo", "Uncached", true);
+            var result = CommandManager.ProcessMessage("Foo", null, true);
             Assert.IsTrue(result.Processed);
             Assert.IsTrue(result.Responses.Any());
-            ExecutorMocks["Foo"].Verify(x => x(It.IsAny<string>(), It.IsAny<string>()), Times.Never());
+            ExecutorMocks["Foo"].Verify(x => x(It.IsAny<string>(), It.IsAny<User>()), Times.Never());
         }
 
         [TestMethod]
         public void ProcessMessageAllowsAnonymousCommandsForUncachedUsers()
         {
-            var result = CommandManager.ProcessMessage("Unrestricted", "Uncached", true);
+            var result = CommandManager.ProcessMessage("Unrestricted", null, true);
             Assert.IsTrue(result.Processed);
             Assert.IsTrue(result.Responses.Any());
-            AnonymousExecutorMock.Verify(x => x(It.IsAny<string>()), Times.Once());
+            ExecutorMocks["Unrestricted"].Verify(x => x(It.IsAny<string>(), It.IsAny<User>()), Times.Once());
         }
 
         [TestMethod]
         public void ProcessMessageDoesNotAllowRestrictedAnonymousCommandsForUncachedUsers()
         {
             UserRoles[0].AddCommand("CommandMock.Unrestricted");
-            var result = CommandManager.ProcessMessage("Unrestricted", "Uncached", true);
+            var result = CommandManager.ProcessMessage("Unrestricted", null, true);
             Assert.IsTrue(result.Processed);
             Assert.IsTrue(result.Responses.Any());
-            AnonymousExecutorMock.Verify(x => x(It.IsAny<string>()), Times.Never());
+            ExecutorMocks["Unrestricted"].Verify(x => x(It.IsAny<string>(), It.IsAny<User>()), Times.Once());
         }
 
         [TestMethod]
         public void ProcessMessageDoesNotAllowWhisperOnlyMessageInPublicChat()
         {
-            var result = CommandManager.ProcessMessage("Foo", "Auth", false);
+            var user = IdCache.FirstOrDefault(x => x.Username.Equals("Auth"));
+            var result = CommandManager.ProcessMessage("Foo", user, false);
             Assert.IsTrue(result.TimeoutSender);
             Assert.IsTrue(result.Processed);
             Assert.IsNull(result.Errors);
-            ExecutorMocks["Foo"].Verify(x => x(It.IsAny<string>(), It.IsAny<string>()), Times.Never());
+            ExecutorMocks["Foo"].Verify(x => x(It.IsAny<string>(), It.IsAny<User>()), Times.Never());
         }
 
         [TestMethod]
         public void ProcessMessageDoesAllowNonWhisperOnlyMessageInPublicChat()
         {
-            var result = CommandManager.ProcessMessage("Public", "Auth", false);
+            var user = IdCache.FirstOrDefault(x => x.Username.Equals("Auth"));
+            var result = CommandManager.ProcessMessage("Public", user, false);
             Assert.IsTrue(result.Processed);
             Assert.IsNull(result.Errors);
-            ExecutorMocks["Public"].Verify(x => x(It.IsAny<string>(), It.IsAny<string>()), Times.Once());
+            ExecutorMocks["Public"].Verify(x => x(It.IsAny<string>(), It.IsAny<User>()), Times.Once());
         }
     }
 }

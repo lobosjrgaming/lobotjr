@@ -1,41 +1,35 @@
-﻿using LobotJR.Shared.Authentication;
+﻿using LobotJR.Twitch.Model;
 using System;
-using System.Linq;
 using System.Text.RegularExpressions;
-using Wolfcoins;
 
 namespace LobotJR.Trigger.Responder
 {
     internal class BadLobot : ITriggerResponder
     {
         public Regex Pattern { get; private set; } = new Regex("^Bad lobot", RegexOptions.IgnoreCase);
-        private Currency UserList;
-        private TokenData TokenData;
 
-        public BadLobot(Currency currency, TokenData tokenData)
+        public BadLobot()
         {
-            UserList = currency;
-            TokenData = tokenData;
         }
 
-        public TriggerResult Process(Match match, string user)
+        public TriggerResult Process(Match match, User user)
         {
-            if (user.Equals("empyrealhell", StringComparison.OrdinalIgnoreCase)
-            || user.Equals("celesteenfer", StringComparison.OrdinalIgnoreCase))
+            if (user.Username.Equals("empyrealhell", StringComparison.OrdinalIgnoreCase)
+            || user.Username.Equals("celesteenfer", StringComparison.OrdinalIgnoreCase))
             {
                 return new TriggerResult()
                 {
                     Messages = new string[] { "Sorry mistress! lobosS" }
                 };
             }
-            else if (user.Equals(TokenData.BroadcastUser, StringComparison.OrdinalIgnoreCase))
+            else if (user.IsAdmin)
             {
                 return new TriggerResult()
                 {
                     Messages = new string[] { "Leave me alone, dad!" }
                 };
             }
-            else if (UserList.moderatorList.Contains(user, StringComparer.OrdinalIgnoreCase))
+            else if (user.IsMod)
             {
                 return new TriggerResult()
                 {

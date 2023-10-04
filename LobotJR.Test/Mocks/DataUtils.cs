@@ -1,4 +1,5 @@
 ﻿using LobotJR.Data;
+using LobotJR.Twitch.Model;
 
 namespace LobotJR.Test.Mocks
 {
@@ -9,10 +10,10 @@ namespace LobotJR.Test.Mocks
         /// Clears personal leaderboard records for a specific user.
         /// </summary>
         /// <param name="manager">The data manager to manipulate.</param>
-        /// <param name="userId">The id of the user to clear.</param>
-        public static void ClearFisherRecords(SqliteRepositoryManager manager, string userId)
+        /// <param name="user">The Twitch object of the user to clear.</param>
+        public static void ClearFisherRecords(SqliteRepositoryManager manager, User user)
         {
-            var records = manager.Catches.Read(x => x.UserId.Equals(userId));
+            var records = manager.Catches.Read(x => x.UserId.Equals(user.TwitchId));
             foreach (var record in records)
             {
                 manager.Catches.Delete(record);

@@ -1,7 +1,6 @@
 ﻿using LobotJR.Command.Module.Gloat;
 using LobotJR.Command.System.Gloat;
 using LobotJR.Data;
-using LobotJR.Data.User;
 using LobotJR.Test.Mocks;
 using LobotJR.Utils;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -28,12 +27,10 @@ namespace LobotJR.Test.Modules.Gloat
         {
             Manager = new SqliteRepositoryManager(MockContext.Create());
 
-            var userLookup = new UserLookup(Manager);
-            userLookup.UpdateTime = Manager.AppSettings.Read().First().UserDatabaseUpdateTime;
             var currency = new Currency();
             Wolfcoins = currency.coinList;
             GloatSystem = new GloatSystem(Manager, currency);
-            GloatModule = new GloatModule(GloatSystem, userLookup);
+            GloatModule = new GloatModule(GloatSystem);
         }
 
         [TestMethod]
@@ -42,7 +39,7 @@ namespace LobotJR.Test.Modules.Gloat
             var user = Manager.Users.Read().First();
             var userId = user.TwitchId;
             Wolfcoins.Add(userId, GloatSystem.FishingGloatCost);
-            var response = GloatModule.GloatFish("1", userId);
+            var response = GloatModule.GloatFish("1", user);
             var responses = response.Responses;
             var messages = response.Messages;
             var record = Manager.Catches.Read(x => x.UserId.Equals(userId)).OrderBy(x => x.FishId).First();
@@ -61,9 +58,10 @@ namespace LobotJR.Test.Modules.Gloat
         [TestMethod]
         public void GloatFailsWithInvalidFish()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
+            var user = Manager.Users.Read().First();
+            var userId = user.TwitchId;
             Wolfcoins.Add(userId, GloatSystem.FishingGloatCost);
-            var response = GloatModule.GloatFish("", userId);
+            var response = GloatModule.GloatFish("", user);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
             Assert.IsNull(response.Errors);
@@ -75,10 +73,11 @@ namespace LobotJR.Test.Modules.Gloat
         [TestMethod]
         public void GloatFailsWithNoFish()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
+            var user = Manager.Users.Read().First();
+            var userId = user.TwitchId;
             Wolfcoins.Add(userId, GloatSystem.FishingGloatCost);
-            DataUtils.ClearFisherRecords(Manager, userId);
-            var response = GloatModule.GloatFish("1", userId);
+            DataUtils.ClearFisherRecords(Manager, user);
+            var response = GloatModule.GloatFish("1", user);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
             Assert.IsNull(response.Errors);
@@ -90,8 +89,8 @@ namespace LobotJR.Test.Modules.Gloat
         [TestMethod]
         public void GloatFailsWithInsufficientCoins()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
-            var response = GloatModule.GloatFish("1", userId);
+            var user = Manager.Users.Read().First();
+            var response = GloatModule.GloatFish("1", user);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
             Assert.IsNull(response.Errors);

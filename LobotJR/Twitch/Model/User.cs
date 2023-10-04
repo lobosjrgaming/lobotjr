@@ -32,5 +32,13 @@ namespace LobotJR.Twitch.Model
         /// will be for the streamer and bot accounts.
         /// </summary>
         public bool IsAdmin { get; set; }
+
+        public User() { }
+
+        public User(string name, string id)
+        {
+            Username = name;
+            TwitchId = id;
+        }
     }
 }

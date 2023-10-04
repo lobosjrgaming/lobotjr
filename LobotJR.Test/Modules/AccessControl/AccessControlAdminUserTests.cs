@@ -21,12 +21,12 @@ namespace LobotJR.Test.Modules.AccessControl
             var command = Module.Commands.Where(x => x.Name.Equals("EnrollUser")).FirstOrDefault();
             var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var baseIdCount = role.UserIds.Count;
-            var result = command.AnonymousExecutor("NotAuth TestRole");
+            var result = command.Executor("NotAuth TestRole", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].Contains("success", StringComparison.OrdinalIgnoreCase));
             Assert.AreEqual(baseIdCount + 1, role.UserIds.Count);
-            Assert.IsTrue(role.UserIds.Contains(CommandManager.UserSystem.GetId("NotAuth")));
+            Assert.IsTrue(role.UserIds.Contains(CommandManager.UserSystem.GetUserByName("NotAuth").TwitchId));
         }
 
         [TestMethod]
@@ -37,17 +37,17 @@ namespace LobotJR.Test.Modules.AccessControl
             var wrongParameterCount = "BadInput";
             var userToAdd = "NotAuth";
             var roleToAdd = "TestRole";
-            var result = command.AnonymousExecutor(wrongParameterCount);
+            var result = command.Executor(wrongParameterCount, null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].StartsWith("Error:", StringComparison.OrdinalIgnoreCase));
             Assert.IsFalse(result.Responses[0].Contains(wrongParameterCount));
-            result = command.AnonymousExecutor($" {roleToAdd}");
+            result = command.Executor($" {roleToAdd}", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].StartsWith("Error:", StringComparison.OrdinalIgnoreCase));
             Assert.IsFalse(result.Responses[0].Contains(roleToAdd));
-            result = command.AnonymousExecutor($"{userToAdd} ");
+            result = command.Executor($"{userToAdd} ", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
@@ -60,7 +60,7 @@ namespace LobotJR.Test.Modules.AccessControl
             var command = Module.Commands.Where(x => x.Name.Equals("EnrollUser")).FirstOrDefault();
             var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var roleToAdd = "NotTestRole";
-            var result = command.AnonymousExecutor($"NotAuth {roleToAdd}");
+            var result = command.Executor($"NotAuth {roleToAdd}", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].StartsWith("Error:", StringComparison.OrdinalIgnoreCase));
@@ -73,7 +73,7 @@ namespace LobotJR.Test.Modules.AccessControl
             var command = Module.Commands.Where(x => x.Name.Equals("EnrollUser")).FirstOrDefault();
             var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var userToAdd = "Auth";
-            var result = command.AnonymousExecutor($"{userToAdd} TestRole");
+            var result = command.Executor($"{userToAdd} TestRole", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].StartsWith("Error:", StringComparison.OrdinalIgnoreCase));
@@ -86,11 +86,11 @@ namespace LobotJR.Test.Modules.AccessControl
             var command = Module.Commands.Where(x => x.Name.Equals("UnenrollUser")).FirstOrDefault();
             var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var userToRemove = "Auth";
-            var result = command.AnonymousExecutor($"{userToRemove} TestRole");
+            var result = command.Executor($"{userToRemove} TestRole", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].Contains("success", StringComparison.OrdinalIgnoreCase));
-            Assert.IsFalse(role.UserIds.Contains(CommandManager.UserSystem.GetId("Foo")));
+            Assert.IsFalse(role.UserIds.Contains(CommandManager.UserSystem.GetUserByName("Foo").TwitchId));
         }
 
         [TestMethod]
@@ -101,17 +101,17 @@ namespace LobotJR.Test.Modules.AccessControl
             var wrongParameterCount = "BadInput";
             var userToRemove = "NotAuth";
             var roleToRemove = "TestRole";
-            var result = command.AnonymousExecutor(wrongParameterCount);
+            var result = command.Executor(wrongParameterCount, null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].StartsWith("Error:", StringComparison.OrdinalIgnoreCase));
             Assert.IsFalse(result.Responses[0].Contains(wrongParameterCount));
-            result = command.AnonymousExecutor($" {userToRemove}");
+            result = command.Executor($" {userToRemove}", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].StartsWith("Error:", StringComparison.OrdinalIgnoreCase));
             Assert.IsFalse(result.Responses[0].Contains(userToRemove));
-            result = command.AnonymousExecutor($"{roleToRemove} ");
+            result = command.Executor($"{roleToRemove} ", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].StartsWith("Error:", StringComparison.OrdinalIgnoreCase));
@@ -124,7 +124,7 @@ namespace LobotJR.Test.Modules.AccessControl
             var command = Module.Commands.Where(x => x.Name.Equals("UnenrollUser")).FirstOrDefault();
             var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var userToRemove = "NotAuth";
-            var result = command.AnonymousExecutor($"{userToRemove} TestRole");
+            var result = command.Executor($"{userToRemove} TestRole", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].StartsWith("Error:", StringComparison.OrdinalIgnoreCase));
@@ -137,7 +137,7 @@ namespace LobotJR.Test.Modules.AccessControl
             var command = Module.Commands.Where(x => x.Name.Equals("UnenrollUser")).FirstOrDefault();
             var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var roleToRemove = "NotTestRole";
-            var result = command.AnonymousExecutor($"Auth {roleToRemove}");
+            var result = command.Executor($"Auth {roleToRemove}", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].StartsWith("Error:", StringComparison.OrdinalIgnoreCase));

@@ -1,8 +1,8 @@
 ﻿using LobotJR.Command;
 using LobotJR.Command.Model.Fishing;
 using LobotJR.Data;
-using LobotJR.Data.User;
 using LobotJR.Twitch;
+using LobotJR.Twitch.Model;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Linq;
@@ -42,13 +42,13 @@ namespace LobotJR.Test.Mocks
 
         public static void InitializeUsers(MockContext context)
         {
-            context.Users.Add(new UserMap() { TwitchId = "01", Username = "Streamer" });
-            context.Users.Add(new UserMap() { TwitchId = "02", Username = "Bot" });
-            context.Users.Add(new UserMap() { TwitchId = "03", Username = "Dev" });
-            context.Users.Add(new UserMap() { TwitchId = "10", Username = "Foo" });
-            context.Users.Add(new UserMap() { TwitchId = "11", Username = "Bar" });
-            context.Users.Add(new UserMap() { TwitchId = "12", Username = "Fizz" });
-            context.Users.Add(new UserMap() { TwitchId = "13", Username = "Buzz" });
+            context.Users.Add(new User() { TwitchId = "01", Username = "Streamer" });
+            context.Users.Add(new User() { TwitchId = "02", Username = "Bot" });
+            context.Users.Add(new User() { TwitchId = "03", Username = "Dev" });
+            context.Users.Add(new User() { TwitchId = "10", Username = "Foo" });
+            context.Users.Add(new User() { TwitchId = "11", Username = "Bar" });
+            context.Users.Add(new User() { TwitchId = "12", Username = "Fizz" });
+            context.Users.Add(new User() { TwitchId = "13", Username = "Buzz" });
         }
 
         public static void InitializeUserRoles(MockContext context)

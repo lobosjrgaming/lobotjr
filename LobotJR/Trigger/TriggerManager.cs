@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using LobotJR.Twitch.Model;
+using System.Collections.Generic;
 
 namespace LobotJR.Trigger
 {
@@ -22,9 +23,9 @@ namespace LobotJR.Trigger
         /// responder.
         /// </summary>
         /// <param name="message">A message sent by a user.</param>
-        /// <param name="user">The name of the user who sent the message.</param>
+        /// <param name="user">The Twitch object of the user who sent the message.</param>
         /// <returns>An object containing all actions resulting from the trigger.</returns>
-        public TriggerResult ProcessTrigger(string message, string user)
+        public TriggerResult ProcessTrigger(string message, User user)
         {
             foreach (var responder in Responders)
             {

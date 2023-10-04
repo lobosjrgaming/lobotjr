@@ -1,7 +1,7 @@
 ﻿using LobotJR.Command;
 using LobotJR.Command.Module;
 using LobotJR.Command.Module.AccessControl;
-using LobotJR.Data.User;
+using LobotJR.Command.System.Twitch;
 using LobotJR.Test.Command;
 
 namespace LobotJR.Test.Modules.AccessControl
@@ -13,9 +13,9 @@ namespace LobotJR.Test.Modules.AccessControl
         public void InitializeAccessControlModule()
         {
             InitializeCommandManager();
-            var userLookup = new UserLookup(RepositoryManagerMock.Object);
-            Module = new AccessControlAdmin(Manager, new UserLookup(Manager));
-            CommandManager = new CommandManager(new ICommandModule[] { CommandModuleMock.Object, SubCommandModuleMock.Object, Module }, RepositoryManagerMock.Object, userLookup);
+            var userSystem = new UserSystem(RepositoryManagerMock.Object, null);
+            Module = new AccessControlAdmin(Manager, userSystem);
+            CommandManager = new CommandManager(new ICommandModule[] { CommandModuleMock.Object, SubCommandModuleMock.Object, Module }, RepositoryManagerMock.Object, userSystem);
             CommandManager.InitializeModules();
         }
     }

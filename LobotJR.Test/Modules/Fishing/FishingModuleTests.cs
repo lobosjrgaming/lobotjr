@@ -4,6 +4,7 @@ using LobotJR.Command.Module.Fishing;
 using LobotJR.Command.System.Fishing;
 using LobotJR.Data;
 using LobotJR.Test.Mocks;
+using LobotJR.Twitch.Model;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using System;
@@ -45,12 +46,12 @@ namespace LobotJR.Test.Modules.Fishing
         {
             var handlerMock = new Mock<PushNotificationHandler>();
             FishingModule.PushNotification += handlerMock.Object;
-            var userId = Manager.Users.Read().First().TwitchId;
-            var fisher = FishingSystem.GetFisherById(userId);
+            var user = Manager.Users.Read().First();
+            var fisher = FishingSystem.GetFisherByUser(user);
             fisher.IsFishing = true;
             fisher.HookedTime = DateTime.Now;
             FishingSystem.Process(true);
-            handlerMock.Verify(x => x(It.IsAny<string>(), It.IsAny<CommandResult>()), Times.Once);
+            handlerMock.Verify(x => x(It.IsAny<User>(), It.IsAny<CommandResult>()), Times.Once);
             var result = handlerMock.Invocations[0].Arguments[1] as CommandResult;
             Assert.IsTrue(result.Responses.Any(x => x.Contains("!catch")));
         }
@@ -61,13 +62,13 @@ namespace LobotJR.Test.Modules.Fishing
             var handlerMock = new Mock<PushNotificationHandler>();
             var appSettings = Manager.AppSettings.Read().First();
             FishingModule.PushNotification += handlerMock.Object;
-            var userId = Manager.Users.Read().First().TwitchId;
-            var fisher = FishingSystem.GetFisherById(userId);
+            var user = Manager.Users.Read().First();
+            var fisher = FishingSystem.GetFisherByUser(user);
             fisher.IsFishing = true;
             fisher.Hooked = Manager.FishData.Read().First();
             fisher.HookedTime = DateTime.Now.AddSeconds(-appSettings.FishingHookLength);
             FishingSystem.Process(true);
-            handlerMock.Verify(x => x(It.IsAny<string>(), It.IsAny<CommandResult>()), Times.Once);
+            handlerMock.Verify(x => x(It.IsAny<User>(), It.IsAny<CommandResult>()), Times.Once);
             var result = handlerMock.Invocations[0].Arguments[1] as CommandResult;
             Assert.IsFalse(result.Responses.Any(x => x.Contains("!catch")));
         }
@@ -75,10 +76,10 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void CancelsCast()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
-            var fisher = FishingSystem.GetFisherById(userId);
+            var user = Manager.Users.Read().First();
+            var fisher = FishingSystem.GetFisherByUser(user);
             fisher.IsFishing = true;
-            var response = FishingModule.CancelCast("", userId);
+            var response = FishingModule.CancelCast("", user);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
             Assert.IsNull(response.Errors);
@@ -89,10 +90,10 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void CancelCastFailsIfLineNotCast()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
-            var fisher = FishingSystem.GetFisherById(userId);
+            var user = Manager.Users.Read().First();
+            var fisher = FishingSystem.GetFisherByUser(user);
             fisher.IsFishing = false;
-            var response = FishingModule.CancelCast("", userId);
+            var response = FishingModule.CancelCast("", user);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
             Assert.IsNull(response.Errors);
@@ -103,16 +104,16 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void CatchesFish()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
-            var fisher = FishingSystem.GetFisherById(userId);
+            var user = Manager.Users.Read().First();
+            var fisher = FishingSystem.GetFisherByUser(user);
             TournamentSystem.StartTournament();
-            DataUtils.ClearFisherRecords(Manager, userId);
+            DataUtils.ClearFisherRecords(Manager, user);
             fisher.IsFishing = true;
             fisher.HookedTime = DateTime.Now;
             fisher.Hooked = Manager.FishData.Read().First();
-            var response = FishingModule.CatchFish("", userId);
+            var response = FishingModule.CatchFish("", user);
             var responses = response.Responses;
-            var newRecords = LeaderboardSystem.GetPersonalLeaderboard(userId);
+            var newRecords = LeaderboardSystem.GetPersonalLeaderboard(user.TwitchId);
             Assert.IsTrue(response.Processed);
             Assert.IsNull(response.Errors);
             Assert.AreEqual(2, responses.Count);
@@ -125,49 +126,49 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void CatchFishFailsIfLineNotCast()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
-            var fisher = FishingSystem.GetFisherById(userId);
+            var user = Manager.Users.Read().First();
+            var fisher = FishingSystem.GetFisherByUser(user);
             TournamentSystem.StartTournament();
-            DataUtils.ClearFisherRecords(Manager, userId);
+            DataUtils.ClearFisherRecords(Manager, user);
             fisher.IsFishing = false;
             fisher.Hooked = null;
-            var response = FishingModule.CatchFish("", userId);
+            var response = FishingModule.CatchFish("", user);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
             Assert.IsNull(response.Errors);
             Assert.AreEqual(1, responses.Count);
             Assert.IsTrue(responses[0].Contains("!cast"));
             Assert.IsFalse(fisher.IsFishing);
-            Assert.AreEqual(0, LeaderboardSystem.GetPersonalLeaderboard(userId).Count());
+            Assert.AreEqual(0, LeaderboardSystem.GetPersonalLeaderboard(user.TwitchId).Count());
         }
 
         [TestMethod]
         public void CatchFishFailsIfNoFishBiting()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
-            var fisher = FishingSystem.GetFisherById(userId);
+            var user = Manager.Users.Read().First();
+            var fisher = FishingSystem.GetFisherByUser(user);
             TournamentSystem.StartTournament();
-            DataUtils.ClearFisherRecords(Manager, userId);
+            DataUtils.ClearFisherRecords(Manager, user);
             fisher.IsFishing = true;
             fisher.HookedTime = DateTime.Now;
             fisher.Hooked = null;
-            var response = FishingModule.CatchFish("", userId);
+            var response = FishingModule.CatchFish("", user);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
             Assert.IsNull(response.Errors);
             Assert.AreEqual(1, responses.Count);
             Assert.IsTrue(responses[0].Contains("!cancelcast"));
             Assert.IsFalse(fisher.IsFishing);
-            Assert.AreEqual(0, LeaderboardSystem.GetPersonalLeaderboard(userId).Count());
+            Assert.AreEqual(0, LeaderboardSystem.GetPersonalLeaderboard(user.TwitchId).Count());
         }
 
         [TestMethod]
         public void CastsLine()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
-            var fisher = FishingSystem.GetFisherById(userId);
+            var user = Manager.Users.Read().First();
+            var fisher = FishingSystem.GetFisherByUser(user);
             fisher.IsFishing = false;
-            var response = FishingModule.Cast("", userId);
+            var response = FishingModule.Cast("", user);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
             Assert.IsNull(response.Errors);
@@ -178,10 +179,10 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void CastLineFailsFailsIfLineAlreadyCast()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
-            var fisher = FishingSystem.GetFisherById(userId);
+            var user = Manager.Users.Read().First();
+            var fisher = FishingSystem.GetFisherByUser(user);
             fisher.IsFishing = true;
-            var response = FishingModule.Cast("", userId);
+            var response = FishingModule.Cast("", user);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
             Assert.IsNull(response.Errors);
@@ -193,11 +194,11 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void CastLineFailsIfFishIsBiting()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
-            var fisher = FishingSystem.GetFisherById(userId);
+            var user = Manager.Users.Read().First();
+            var fisher = FishingSystem.GetFisherByUser(user);
             fisher.IsFishing = true;
             fisher.Hooked = Manager.FishData.Read().First();
-            var response = FishingModule.Cast("", userId);
+            var response = FishingModule.Cast("", user);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
             Assert.IsNull(response.Errors);

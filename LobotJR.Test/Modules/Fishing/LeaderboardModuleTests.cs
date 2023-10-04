@@ -2,9 +2,10 @@
 using LobotJR.Command.Module;
 using LobotJR.Command.Module.Fishing;
 using LobotJR.Command.System.Fishing;
+using LobotJR.Command.System.Twitch;
 using LobotJR.Data;
-using LobotJR.Data.User;
 using LobotJR.Test.Mocks;
+using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
@@ -41,9 +42,8 @@ namespace LobotJR.Test.Modules.Fishing
                 FishingSystem,
                 TournamentSystem,
                 LeaderboardSystem);
-            var userLookup = new UserLookup(Manager);
-            userLookup.UpdateTime = Manager.AppSettings.Read().First().UserDatabaseUpdateTime;
-            LeaderboardModule = new LeaderboardModule(LeaderboardSystem, userLookup);
+            var userSystem = new UserSystem(Manager, null);
+            LeaderboardModule = new LeaderboardModule(LeaderboardSystem, userSystem);
         }
 
         [TestMethod]
@@ -61,12 +61,12 @@ namespace LobotJR.Test.Modules.Fishing
             var user = Manager.Users.Read().First();
             var userId = user.TwitchId;
             var userName = user.Username;
-            var fisher = FishingSystem.GetFisherById(userId);
+            var fisher = FishingSystem.GetFisherByUser(user);
             fisher.IsFishing = true;
             fisher.Hooked = Manager.FishData.Read().First();
             fisher.HookedTime = DateTime.Now;
-            FishingModule.CatchFish("", userId);
-            handlerMock.Verify(x => x(It.IsAny<string>(), It.IsAny<CommandResult>()), Times.Once);
+            FishingModule.CatchFish("", user);
+            handlerMock.Verify(x => x(It.IsAny<User>(), It.IsAny<CommandResult>()), Times.Once);
             var result = handlerMock.Invocations[0].Arguments[1] as CommandResult;
             Assert.IsNull(result.Responses);
             Assert.IsTrue(result.Messages.Any(x => x.Contains(userName)));
@@ -75,8 +75,8 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void RespondsWithPlayerLeaderboard()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
-            var response = LeaderboardModule.PlayerLeaderboard(null, userId);
+            var user = Manager.Users.Read().First();
+            var response = LeaderboardModule.PlayerLeaderboard(null, user);
             var responses = response.Responses;
             var fishData = Manager.FishData.Read();
             Assert.IsTrue(response.Processed);
@@ -91,9 +91,9 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void RespondsWithCompactPlayerLeaderboard()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
-            var records = Manager.Catches.Read(x => x.UserId.Equals(userId));
-            var responses = LeaderboardModule.PlayerLeaderboardCompact(null, userId);
+            var user = Manager.Users.Read().First();
+            var records = Manager.Catches.Read(x => x.UserId.Equals(user.TwitchId));
+            var responses = LeaderboardModule.PlayerLeaderboardCompact(null, user);
             Assert.AreEqual(3, responses.Items.Count());
             var compact = responses.ToCompact();
             foreach (var fish in records)
@@ -112,8 +112,8 @@ namespace LobotJR.Test.Modules.Fishing
         public void PlayerLeaderboardUserHasNoFishRecords()
         {
             var fishersWithRecords = Manager.Catches.Read().Select(x => x.UserId).Distinct();
-            var users = Manager.Users.Read().Select(x => x.TwitchId);
-            var noRecordsFisherId = users.Except(fishersWithRecords).FirstOrDefault();
+            var users = Manager.Users.Read();
+            var noRecordsFisherId = users.Where(x => !fishersWithRecords.Any(y => y.Equals(x.TwitchId))).FirstOrDefault();
             var response = LeaderboardModule.PlayerLeaderboard(null, noRecordsFisherId);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
@@ -126,10 +126,10 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void PlayerLeaderboardProvidesSpecificFishDetails()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
-            var fisher = FishingSystem.GetFisherById(userId);
-            var fish = LeaderboardSystem.GetPersonalLeaderboard(userId).FirstOrDefault();
-            var response = LeaderboardModule.PlayerLeaderboard("1", userId);
+            var user = Manager.Users.Read().First();
+            var fisher = FishingSystem.GetFisherByUser(user);
+            var fish = LeaderboardSystem.GetPersonalLeaderboard(user.TwitchId).FirstOrDefault();
+            var response = LeaderboardModule.PlayerLeaderboard("1", user);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
             Assert.IsNull(response.Errors);
@@ -143,7 +143,7 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void RespondsWithGlobalLeaderboard()
         {
-            var response = LeaderboardModule.GlobalLeaderboard("");
+            var response = LeaderboardModule.GlobalLeaderboard("", null);
             var responses = response.Responses;
             var leaderboard = Manager.FishingLeaderboard.Read();
             foreach (var entry in leaderboard)
@@ -162,8 +162,8 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void RespondsWithCompactGlobalLeaderboard()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
-            var responses = LeaderboardModule.GlobalLeaderboardCompact("", userId);
+            var user = Manager.Users.Read().First();
+            var responses = LeaderboardModule.GlobalLeaderboardCompact("", user);
             var compact = responses.ToCompact();
             var leaderboard = Manager.FishingLeaderboard.Read();
             foreach (var entry in leaderboard)
@@ -182,23 +182,23 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void ReleasesSpecificFish()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
-            var fisher = FishingSystem.GetFisherById(userId);
-            var fish = LeaderboardSystem.GetPersonalLeaderboard(userId).FirstOrDefault().Fish;
-            var response = LeaderboardModule.ReleaseFish("1", userId);
+            var user = Manager.Users.Read().First();
+            var fisher = FishingSystem.GetFisherByUser(user);
+            var fish = LeaderboardSystem.GetPersonalLeaderboard(user.TwitchId).FirstOrDefault().Fish;
+            var response = LeaderboardModule.ReleaseFish("1", user);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
             Assert.IsNull(response.Errors);
             Assert.AreEqual(1, responses.Count);
             Assert.IsTrue(responses[0].Contains(fish.Name));
-            Assert.IsFalse(LeaderboardSystem.GetPersonalLeaderboard(userId).Any(x => x.Fish.Id.Equals(fish.Id)));
+            Assert.IsFalse(LeaderboardSystem.GetPersonalLeaderboard(user.TwitchId).Any(x => x.Fish.Id.Equals(fish.Id)));
         }
 
         [TestMethod]
         public void ReleaseFishWithInvalidIndexCausesError()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
-            var response = LeaderboardModule.ReleaseFish("0", userId);
+            var user = Manager.Users.Read().First();
+            var response = LeaderboardModule.ReleaseFish("0", user);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
             Assert.IsNull(response.Errors);
@@ -209,8 +209,8 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void ReleaseFishWithNonNumericIndexCausesError()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
-            var response = LeaderboardModule.ReleaseFish("a", userId);
+            var user = Manager.Users.Read().First();
+            var response = LeaderboardModule.ReleaseFish("a", user);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
             Assert.IsNull(response.Errors);
@@ -221,9 +221,9 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void ReleaseFishWithNoIndexCausesError()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
-            var fisher = FishingSystem.GetFisherById(userId);
-            var response = LeaderboardModule.ReleaseFish("", userId);
+            var user = Manager.Users.Read().First();
+            var fisher = FishingSystem.GetFisherByUser(user);
+            var response = LeaderboardModule.ReleaseFish("", user);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
             Assert.IsNull(response.Errors);
@@ -235,8 +235,8 @@ namespace LobotJR.Test.Modules.Fishing
         public void ReleaseFishWithNoFishTellsPlayerToFish()
         {
             var usersWithFish = Manager.Catches.Read().Select(x => x.UserId).Distinct();
-            var userid = Manager.Users.Read(x => !usersWithFish.Contains(x.TwitchId)).First().TwitchId;
-            var response = LeaderboardModule.ReleaseFish("1", userid);
+            var user = Manager.Users.Read(x => !usersWithFish.Contains(x.TwitchId)).First();
+            var response = LeaderboardModule.ReleaseFish("1", user);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
             Assert.IsNull(response.Errors);
