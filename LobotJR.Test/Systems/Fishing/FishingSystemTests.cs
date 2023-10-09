@@ -47,6 +47,7 @@ namespace LobotJR.Test.Systems.Fishing
         {
             var fisher = new Fisher
             {
+                User = new User("", ""),
                 Hooked = new Fish()
                 {
                     MinimumWeight = 1,
@@ -65,7 +66,10 @@ namespace LobotJR.Test.Systems.Fishing
         [TestMethod]
         public void CalculateFishSizesRandomizesWithSteppedWeights()
         {
-            var fisher = new Fisher();
+            var fisher = new Fisher()
+            {
+                User = new User("", "")
+            };
             var fish = new Fish()
             {
                 MinimumWeight = 1,
@@ -93,7 +97,10 @@ namespace LobotJR.Test.Systems.Fishing
         [TestMethod]
         public void CalculateFishSizesRandomizesWithNormalDistribution()
         {
-            var fisher = new Fisher();
+            var fisher = new Fisher()
+            {
+                User = new User("", "")
+            };
             var fish = new Fish()
             {
                 MinimumWeight = 1,

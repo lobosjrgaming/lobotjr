@@ -38,7 +38,7 @@ namespace LobotJR.Test.Modules.Gloat
         {
             var user = Manager.Users.Read().First();
             var userId = user.TwitchId;
-            Wolfcoins.Add(userId, GloatSystem.FishingGloatCost);
+            Wolfcoins.Add(user.Username, GloatSystem.FishingGloatCost);
             var response = GloatModule.GloatFish("1", user);
             var responses = response.Responses;
             var messages = response.Messages;
@@ -60,7 +60,7 @@ namespace LobotJR.Test.Modules.Gloat
         {
             var user = Manager.Users.Read().First();
             var userId = user.TwitchId;
-            Wolfcoins.Add(userId, GloatSystem.FishingGloatCost);
+            Wolfcoins.Add(user.Username, GloatSystem.FishingGloatCost);
             var response = GloatModule.GloatFish("", user);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
@@ -75,7 +75,7 @@ namespace LobotJR.Test.Modules.Gloat
         {
             var user = Manager.Users.Read().First();
             var userId = user.TwitchId;
-            Wolfcoins.Add(userId, GloatSystem.FishingGloatCost);
+            Wolfcoins.Add(user.Username, GloatSystem.FishingGloatCost);
             DataUtils.ClearFisherRecords(Manager, user);
             var response = GloatModule.GloatFish("1", user);
             var responses = response.Responses;

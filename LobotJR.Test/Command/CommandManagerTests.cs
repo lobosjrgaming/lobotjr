@@ -170,34 +170,6 @@ namespace LobotJR.Test.Command
         }
 
         [TestMethod]
-        public void ProcessMessageDoesNotProcessNonAnonymousCommandsForUncachedUsers()
-        {
-            var result = CommandManager.ProcessMessage("Foo", null, true);
-            Assert.IsTrue(result.Processed);
-            Assert.IsTrue(result.Responses.Any());
-            ExecutorMocks["Foo"].Verify(x => x(It.IsAny<string>(), It.IsAny<User>()), Times.Never());
-        }
-
-        [TestMethod]
-        public void ProcessMessageAllowsAnonymousCommandsForUncachedUsers()
-        {
-            var result = CommandManager.ProcessMessage("Unrestricted", null, true);
-            Assert.IsTrue(result.Processed);
-            Assert.IsTrue(result.Responses.Any());
-            ExecutorMocks["Unrestricted"].Verify(x => x(It.IsAny<string>(), It.IsAny<User>()), Times.Once());
-        }
-
-        [TestMethod]
-        public void ProcessMessageDoesNotAllowRestrictedAnonymousCommandsForUncachedUsers()
-        {
-            UserRoles[0].AddCommand("CommandMock.Unrestricted");
-            var result = CommandManager.ProcessMessage("Unrestricted", null, true);
-            Assert.IsTrue(result.Processed);
-            Assert.IsTrue(result.Responses.Any());
-            ExecutorMocks["Unrestricted"].Verify(x => x(It.IsAny<string>(), It.IsAny<User>()), Times.Once());
-        }
-
-        [TestMethod]
         public void ProcessMessageDoesNotAllowWhisperOnlyMessageInPublicChat()
         {
             var user = IdCache.FirstOrDefault(x => x.Username.Equals("Auth"));

@@ -101,7 +101,7 @@ namespace LobotJR.Test.Systems.Fishing
                 Weight = 100
             };
             var result = LeaderboardSystem.UpdatePersonalLeaderboard(user.TwitchId, catchData);
-            var updatedRecords = Manager.Catches.Read(x => x.UserId.Equals(user));
+            var updatedRecords = Manager.Catches.Read(x => x.UserId.Equals(user.TwitchId));
             Assert.IsTrue(result);
             Assert.AreEqual(1, updatedRecords.Count());
             Assert.AreEqual(catchData.Fish.Id, updatedRecords.ElementAt(0).Fish.Id);

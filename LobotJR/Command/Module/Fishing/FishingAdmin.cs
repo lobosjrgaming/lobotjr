@@ -37,7 +37,7 @@ namespace LobotJR.Command.Module.Fishing
 
         public CommandResult DebugCatch(string data, User user)
         {
-            var fisher = new Fisher();
+            var fisher = new Fisher() { User = new User("", "") };
             var output = new List<string>();
             for (var i = 0; i < 50; i++)
             {

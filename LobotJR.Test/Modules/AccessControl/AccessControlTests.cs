@@ -28,7 +28,8 @@ namespace LobotJR.Test.Modules.AccessControl
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsFalse(result.Responses[0].Contains("not", StringComparison.OrdinalIgnoreCase));
-            result = command.Executor("TestRole", CommandManager.UserSystem.GetUserByName("NewUser"));
+            var user = new User() { TwitchId = "999", Username = "NewUser" };
+            result = command.Executor("TestRole", user);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].Contains("not", StringComparison.OrdinalIgnoreCase));
@@ -38,8 +39,8 @@ namespace LobotJR.Test.Modules.AccessControl
         public void CheckAccessGivesNoRoleMessage()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("CheckAccess")).FirstOrDefault();
-            var username = new User() { TwitchId = "999", Username = "NewUser" };
-            var result = command.Executor(null, username);
+            var user = new User() { TwitchId = "999", Username = "NewUser" };
+            var result = command.Executor(null, user);
             var roles = CommandManager.RepositoryManager.UserRoles.Read().Select(x => x.Name);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());

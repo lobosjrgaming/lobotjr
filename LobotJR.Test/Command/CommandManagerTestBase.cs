@@ -34,6 +34,7 @@ namespace LobotJR.Test.Command
         protected Mock<IRepositoryManager> RepositoryManagerMock;
         protected Mock<IRepository<User>> UserMapMock;
         protected Mock<IRepository<AccessGroup>> UserRoleMock;
+        protected Mock<IRepository<AppSettings>> AppSettingsMock;
 
         /// <summary>
         /// Initializes a command manager object with all internals mocked out.
@@ -44,7 +45,7 @@ namespace LobotJR.Test.Command
         public void InitializeCommandManager()
         {
             ExecutorMocks = new Dictionary<string, Mock<CommandExecutor>>();
-            var commands = new string[] { "Foobar", "Foo", "Bar", "Public" };
+            var commands = new string[] { "Foobar", "Foo", "Bar", "Unrestricted", "Public" };
             foreach (var command in commands)
             {
                 var executorMock = new Mock<CommandExecutor>();
@@ -70,6 +71,7 @@ namespace LobotJR.Test.Command
                     return new CompactCollection<string>(items, x => $"Foo|{x};");
                 }, "Foo"),
                 new CommandHandler("Bar", ExecutorMocks["Bar"].Object, "Bar"),
+                new CommandHandler("Unrestricted", ExecutorMocks["Unrestricted"].Object, "Unrestricted"),
                 new CommandHandler("Public", ExecutorMocks["Public"].Object, "Public") { WhisperOnly = false }
             };
             CommandModuleMock = new Mock<ICommandModule>();
@@ -106,12 +108,16 @@ namespace LobotJR.Test.Command
                 .Returns((AccessGroup param) => { UserRoles.Remove(UserRoles.Where(x => x.Id == param.Id).FirstOrDefault()); UserRoles.Add(param); return param; });
             UserRoleMock.Setup(x => x.Delete(It.IsAny<AccessGroup>()))
                 .Returns((AccessGroup param) => { UserRoles.Remove(UserRoles.Where(x => x.Id == param.Id).FirstOrDefault()); return param; });
+            var Settings = new List<AppSettings>(new AppSettings[] { new AppSettings() });
+            AppSettingsMock = new Mock<IRepository<AppSettings>>();
+            AppSettingsMock.Setup(x => x.Read()).Returns(Settings);
             RepositoryManagerMock = new Mock<IRepositoryManager>();
             RepositoryManagerMock.Setup(x => x.Users).Returns(UserMapMock.Object);
             RepositoryManagerMock.Setup(x => x.UserRoles).Returns(UserRoleMock.Object);
+            RepositoryManagerMock.Setup(x => x.AppSettings).Returns(AppSettingsMock.Object);
             Manager = RepositoryManagerMock.Object;
 
-            RepositoryManagerMock.Setup(x => x.AppSettings).Returns(Manager.AppSettings);
+
             var userLookup = new UserSystem(RepositoryManagerMock.Object, null);
             CommandManager = new CommandManager(new ICommandModule[] { CommandModuleMock.Object, SubCommandModuleMock.Object }, RepositoryManagerMock.Object, userLookup);
             CommandManager.InitializeModules();

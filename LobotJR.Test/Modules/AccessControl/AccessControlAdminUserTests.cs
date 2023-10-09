@@ -90,7 +90,7 @@ namespace LobotJR.Test.Modules.AccessControl
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].Contains("success", StringComparison.OrdinalIgnoreCase));
-            Assert.IsFalse(role.UserIds.Contains(CommandManager.UserSystem.GetUserByName("Foo").TwitchId));
+            Assert.IsFalse(role.UserIds.Contains(CommandManager.UserSystem.GetUserByName(userToRemove).TwitchId));
         }
 
         [TestMethod]

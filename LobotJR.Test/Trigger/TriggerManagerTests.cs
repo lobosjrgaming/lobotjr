@@ -36,7 +36,7 @@ namespace LobotJR.Test.Trigger
         [TestMethod]
         public void TriggerManagerBlocksLinksForNewUsers()
         {
-            var response = Manager.ProcessTrigger("butt.ass", new User());
+            var response = Manager.ProcessTrigger("butt.ass", new User("NewUser", "999"));
             Assert.IsTrue(response.Processed);
             Assert.IsTrue(response.TimeoutSender);
         }
