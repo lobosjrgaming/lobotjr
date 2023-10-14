@@ -17,12 +17,12 @@ namespace LobotJR.Data.Migration
             var commands = new string[]
             {
                 "ALTER TABLE \"AppSettings\" RENAME COLUMN [GeneralCacheUpdateTime] to [UserDatabaseUpdateTime]",
-                "ALTER TABLE \"AppSettings\" ADD COLUMN [UserLookupBatchTime] int NOT NULL",
+                "ALTER TABLE \"AppSettings\" ADD COLUMN [UserLookupBatchTime] int NOT NULL DEFAULT 5",
                 "ALTER TABLE \"UserMaps\" RENAME TO \"Users\"",
-                "ALTER TABLE \"Users\" ADD COLUMN [IsMod] bit NOT NULL",
-                "ALTER TABLE \"Users\" ADD COLUMN [IsVip] bit NOT NULL",
-                "ALTER TABLE \"Users\" ADD COLUMN [IsSub] bit NOT NULL",
-                "ALTER TABLE \"Users\" ADD COLUMN [IsAdmin] bit NOT NULL",
+                "ALTER TABLE \"Users\" ADD COLUMN [IsMod] bit NOT NULL DEFAULT 0",
+                "ALTER TABLE \"Users\" ADD COLUMN [IsVip] bit NOT NULL DEFAULT 0",
+                "ALTER TABLE \"Users\" ADD COLUMN [IsSub] bit NOT NULL DEFAULT 0",
+                "ALTER TABLE \"Users\" ADD COLUMN [IsAdmin] bit NOT NULL DEFAULT 0",
                 "ALTER TABLE \"UserRoles\" RENAME TO \"AccessGroups\"",
                 "UPDATE \"AppSettings\" SET [UserDatabaseUpdateTime] = 15"
             };

@@ -389,9 +389,9 @@ namespace TwitchBot
                 var updaterScope = updaterContainer.BeginLifetimeScope();
                 var updater = updaterScope.Resolve<SqliteDatabaseUpdater>();
                 updater.Initialize();
-                if (updater.CurrentVersion < SqliteDatabaseUpdater.LatestVersion)
+                if (updater.CurrentVersion < updater.LatestVersion)
                 {
-                    Logger.Info("Database is out of date, updating to {version}. This could take a few minutes.", SqliteDatabaseUpdater.LatestVersion);
+                    Logger.Info("Database is out of date, updating to {version}. This could take a few minutes.", updater.LatestVersion);
                     var updateResult = updater.UpdateDatabase();
                     if (!updateResult.Success)
                     {

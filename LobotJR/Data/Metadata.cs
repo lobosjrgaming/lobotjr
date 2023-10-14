@@ -1,5 +1,4 @@
-﻿using LobotJR.Data.Migration;
-using System;
+﻿using System;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace LobotJR.Data
@@ -10,7 +9,7 @@ namespace LobotJR.Data
         /// <summary>
         /// The version of the database that was last opened by this user.
         /// </summary>
-        public string DatabaseVersion { get; set; } = SqliteDatabaseUpdater.LatestVersion.ToString();
+        public string DatabaseVersion { get; set; }
         /// <summary>
         /// The timestamp of the last time the database was updated.
         /// </summary>
