@@ -25,7 +25,7 @@ namespace LobotJR.Twitch
         private static readonly TimeSpan IdleLimit = TimeSpan.FromMinutes(1);
         private static readonly TimeSpan ResponseLimit = TimeSpan.FromSeconds(10);
         private static readonly TimeSpan ReconnectTimerBase = TimeSpan.FromSeconds(1);
-        private static readonly TimeSpan ReconnectTimerMax = TimeSpan.FromMinutes(5);
+        private static readonly TimeSpan ReconnectTimerMax = TimeSpan.FromSeconds(2048);
 
         private TcpClient Client;
         private StreamReader InputStream;
@@ -111,18 +111,14 @@ namespace LobotJR.Twitch
             if (!connected)
             {
                 LastReconnect = DateTime.Now;
-                ReconnectTimer = TimeSpan.FromSeconds(ReconnectTimer.TotalSeconds * 2);
-                if (ReconnectTimer > ReconnectTimerMax)
-                {
-                    ReconnectTimer = ReconnectTimerMax;
-                }
+                ReconnectTimer = TimeSpan.FromSeconds(Math.Min(ReconnectTimer.TotalSeconds * 2, ReconnectTimerMax.TotalSeconds));
                 Logger.Error("Connection failed. Retrying in {seconds} seconds.", ReconnectTimer.TotalSeconds);
             }
             else
             {
                 await WriteLine("PING");
                 LastReconnect = null;
-                ReconnectTimer = ReconnectTimerBase;
+                ReconnectTimer = TimeSpan.FromSeconds(ReconnectTimerBase.TotalSeconds);
             }
         }
 
