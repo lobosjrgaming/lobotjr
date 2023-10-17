@@ -287,6 +287,7 @@ namespace LobotJR.Launcher
             {
                 var validationResponse = await AuthToken.Validate(_tokenData.ChatToken.AccessToken);
                 _tokenData.ChatUser = validationResponse.Login;
+                _tokenData.ChatId = validationResponse.UserId;
                 if (_tokenData.ChatToken != null)
                 {
                     resultText = "Token validated successfully!";
@@ -300,6 +301,7 @@ namespace LobotJR.Launcher
             {
                 var validationResponse = await AuthToken.Validate(_tokenData.BroadcastToken.AccessToken);
                 _tokenData.BroadcastUser = validationResponse.Login;
+                _tokenData.BroadcastId = validationResponse.UserId;
                 if (_tokenData.BroadcastToken != null)
                 {
                     resultText = "Token validated successfully!";
