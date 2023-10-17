@@ -109,13 +109,14 @@ namespace LobotJR.Twitch
             if (!connected)
             {
                 LastReconnect = DateTime.Now;
-                ReconnectTimer = TimeSpan.FromSeconds(ReconnectTimer.TotalSeconds * 2);
+                var newTime = Math.Min(ReconnectTimer.TotalSeconds * 2, 2048);
+                ReconnectTimer = TimeSpan.FromSeconds(newTime);
                 Logger.Error("Connection failed. Retrying in {seconds} seconds.", ReconnectTimer.TotalSeconds);
             }
             else
             {
                 LastReconnect = null;
-                ReconnectTimer = ReconnectTimerBase;
+                ReconnectTimer = TimeSpan.FromSeconds(ReconnectTimerBase.TotalSeconds);
             }
         }
 
