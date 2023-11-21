@@ -105,6 +105,7 @@ namespace LobotJR.Twitch
 
         private async Task Reconnect()
         {
+            PingSent = false;
             Client.Dispose();
             Client = new TcpClient();
             var connected = await Connect(IsSecure);
@@ -232,18 +233,18 @@ namespace LobotJR.Twitch
                     }
                     input = await Read();
                 }
-            }
 
-            if (DateTime.Now - LastMessage > IdleLimit && !PingSent)
-            {
-                Logger.Info("No messages in {seconds} seconds, sending ping to Twitch.", IdleLimit.TotalSeconds);
-                await WriteLine("PING");
-                PingSent = true;
-            }
-            else if (DateTime.Now - LastMessage > IdleLimit + ResponseLimit && PingSent)
-            {
-                Logger.Info("IRC client disconnected. Reconnecting...");
-                await Reconnect();
+                if (DateTime.Now - LastMessage > IdleLimit && !PingSent)
+                {
+                    Logger.Info("No messages in {seconds} seconds, sending ping to Twitch.", IdleLimit.TotalSeconds);
+                    await WriteLine("PING");
+                    PingSent = true;
+                }
+                else if (DateTime.Now - LastMessage > IdleLimit + ResponseLimit && PingSent)
+                {
+                    Logger.Info("IRC client disconnected. Reconnecting...");
+                    await Reconnect();
+                }
             }
             else if (LastReconnect != null && DateTime.Now - LastReconnect > ReconnectTimer)
             {

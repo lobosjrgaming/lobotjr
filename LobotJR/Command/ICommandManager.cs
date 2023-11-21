@@ -1,6 +1,7 @@
 ﻿using LobotJR.Command.Module;
 using LobotJR.Command.System.Twitch;
 using LobotJR.Data;
+using LobotJR.Twitch;
 using LobotJR.Twitch.Model;
 using System.Collections.Generic;
 
@@ -47,5 +48,14 @@ namespace LobotJR.Command
         /// <param name="isWhisper">Whether or not the message was sent as a whisper.</param>
         /// <returns>An object containing the results of the attempt to process the message.</returns>
         CommandResult ProcessMessage(string message, User user, bool isWhisper);
+        /// <summary>
+        /// Processes a command result object, adding all output to the logs
+        /// and sending any whispers or chat messages triggered by the command.
+        /// </summary>
+        /// <param name="whisperMessage">The initial message that triggered the commmand.</param>
+        /// <param name="result">The command result object.</param>
+        /// <param name="irc">The twitch irc client to send messages through.</param>
+        /// <param name="twitchClient">The twitch API client to send whispers through.</param>
+        void HandleCommandResult(string whisperMessage, CommandResult result, TwitchIrcClient irc, TwitchClient twitchClient);
     }
 }

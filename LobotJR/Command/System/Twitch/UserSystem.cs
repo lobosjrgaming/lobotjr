@@ -14,9 +14,9 @@ namespace LobotJR.Command.System.Twitch
     public class LookupRequest
     {
         public string Username { get; set; }
-        public Func<User, CommandResult> Callback { get; set; }
+        public Action<User> Callback { get; set; }
 
-        public LookupRequest(string username, Func<User, CommandResult> callback)
+        public LookupRequest(string username, Action<User> callback)
         {
             Username = username;
             Callback = callback;
@@ -40,7 +40,18 @@ namespace LobotJR.Command.System.Twitch
         /// The time the user system last fetched user ids from Twitch's API.
         /// </summary>
         public DateTime LastUpdate { get; set; } = DateTime.Now;
-        public IEnumerable<string> Viewers { get; private set; } = Enumerable.Empty<string>();
+        /// <summary>
+        /// Collection of all users currently in chat.
+        /// </summary>
+        public IEnumerable<User> Viewers { get; private set; } = Enumerable.Empty<User>();
+        /// <summary>
+        /// The user object for the broadcasting user.
+        /// </summary>
+        public User BroadcastUser { get; private set; }
+        /// <summary>
+        /// The user object for the chat user.
+        /// </summary>
+        public User ChatUser { get; private set; }
 
         public UserSystem(IRepositoryManager repositoryManager, TwitchClient twitchClient)
         {
@@ -88,23 +99,26 @@ namespace LobotJR.Command.System.Twitch
         }
 
         /// <summary>
-        /// Gets the user object for a given username. If it doesn't exist in
-        /// the database, add it to the next lookup batch.
+        /// Gets the user object for a given username and executes a callback
+        /// function with that user object. If the user already exists in the
+        /// database, the callback will be executed on the next frame. If it
+        /// doesn't exist in the database, it will be executed on the batched
+        /// lookup.
         /// </summary>
         /// <param name="username">The name of the user to retrieve.</param>
         /// <param name="callback">The callback method to execute after the
         /// user lookup call.</param>
-        /// <returns>The user object with the specified username, or null if
-        /// none exists.</returns>
-        public CommandResult GetUserByName(string username, Func<User, CommandResult> callback)
+        public void GetUserByNameAsync(string username, Action<User> callback)
         {
             var user = Users.Read(x => x.Username.Equals(username, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
             if (user != null)
             {
-                return callback(user);
+                callback(user);
             }
-            RequestLookup(new LookupRequest(username, callback));
-            return null;
+            else
+            {
+                RequestLookup(new LookupRequest(username, callback));
+            }
         }
 
         /// <summary>
@@ -143,6 +157,30 @@ namespace LobotJR.Command.System.Twitch
                 Users.Commit();
             }
             return existing;
+        }
+
+        /// <summary>
+        /// Sets the broadcast and chat user for the bot. Sets IsAdmin flag for
+        /// both users if unset.
+        /// </summary>
+        /// <param name="broadcastUser">The user object for the broadcasting user.</param>
+        /// <param name="chatUser">The user object for the chat user.</param>
+        public void SetBotUsers(User broadcastUser, User chatUser)
+        {
+            BroadcastUser = broadcastUser;
+            ChatUser = chatUser;
+            if (!broadcastUser.IsAdmin)
+            {
+                broadcastUser.IsAdmin = true;
+                Users.Update(broadcastUser);
+                Users.Commit();
+            }
+            if (!chatUser.IsAdmin)
+            {
+                chatUser.IsAdmin = true;
+                Users.Update(chatUser);
+                Users.Commit();
+            }
         }
 
         private void SyncLists(IEnumerable<string> target, Func<User, bool> checkLambda, Action<User, bool> updateLambda)
@@ -208,7 +246,8 @@ namespace LobotJR.Command.System.Twitch
 
             if (chatters != null)
             {
-                Viewers = chatters.Where(x => x != null).Select(x => x.UserId).ToList();
+                var chatterIds = chatters.Where(x => x != null).Select(x => x.UserId);
+                Viewers = Users.Read(x => chatterIds.Contains(x.TwitchId)).ToList();
             }
             else
             {

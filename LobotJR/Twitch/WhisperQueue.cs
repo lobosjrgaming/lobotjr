@@ -58,16 +58,16 @@ namespace LobotJR.Twitch
         /// <summary>
         /// Adds a message to the whisper queue.
         /// </summary>
-        /// <param name="user">The name of the user to send to.</param>
+        /// <param name="userName">The name of the user to send to.</param>
         /// <param name="userId">The Twitch id of the user to send to.</param>
         /// <param name="message">The content of the message to send.</param>
         /// <param name="dateTime">The time the message was queued.</param>
-        public void Enqueue(string user, string userId, string message, DateTime dateTime)
+        public void Enqueue(string userName, string userId, string message, DateTime dateTime)
         {
             var allowed = WhisperRecipients.Contains(userId) || WhisperRecipients.Count < MaxRecipients;
             if (allowed)
             {
-                Queue.Add(new WhisperRecord(user, userId, message, dateTime));
+                Queue.Add(new WhisperRecord(userName, userId, message, dateTime));
             }
             else
             {
