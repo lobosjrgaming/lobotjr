@@ -508,7 +508,7 @@ namespace TwitchBot
                     while (true)
                     {
                         #region System Processing
-                        systemManager.Process(broadcasting);
+                        systemManager.Process(broadcasting).GetAwaiter().GetResult();
                         twitchClient.ProcessQueue().GetAwaiter().GetResult();
                         #endregion
 

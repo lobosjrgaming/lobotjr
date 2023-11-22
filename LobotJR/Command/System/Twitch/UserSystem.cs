@@ -3,6 +3,7 @@ using LobotJR.Shared.Channel;
 using LobotJR.Shared.User;
 using LobotJR.Twitch;
 using LobotJR.Twitch.Model;
+using LobotJR.Utils;
 using NLog;
 using System;
 using System.Collections.Generic;
@@ -201,14 +202,17 @@ namespace LobotJR.Command.System.Twitch
 
         private void ProcessUpdate(IEnumerable<TwitchUserData> mods, IEnumerable<TwitchUserData> vips, IEnumerable<SubscriptionResponseData> subs, IEnumerable<TwitchUserData> chatters)
         {
-            LastUpdate = DateTime.Now;
             var allUsers = mods.ToDictionary(x => x.UserId, x => x.UserName)
-                .Concat(vips.ToDictionary(x => x.UserId, x => x.UserName))
-                .Concat(subs.ToDictionary(x => x.UserId, x => x.UserName))
-                .Concat(chatters.ToDictionary(x => x.UserId, x => x.UserName)).ToDictionary(x => x.Key, x => x.Value);
+                .Union(vips.ToDictionary(x => x.UserId, x => x.UserName))
+                .Union(subs.ToDictionary(x => x.UserId, x => x.UserName))
+                .Union(chatters.ToDictionary(x => x.UserId, x => x.UserName)).ToDictionary(x => x.Key, x => x.Value);
 
-            var existingUsers = Users.Read(x => allUsers.Keys.Contains(x.TwitchId));
-            var newUsers = allUsers.Except(existingUsers.ToDictionary(x => x.TwitchId, x => x.Username));
+            Logger.Info("All users: {allUsers}", string.Join(", ", allUsers));
+            Logger.Info("All keys: {allKeys}", string.Join(", ", allUsers.Keys));
+            var existingUsers = Users.Read(x => allUsers.Keys.Contains(x.TwitchId)).ToDictionary(x => x.TwitchId, x => x.Username);
+            Logger.Info("Existing users: {existingUsers}", string.Join(", ", existingUsers));
+            var newUsers = allUsers.Except(existingUsers, new KeyComparer<string, string>());
+            Logger.Info("New users: {newUsers}", string.Join(", ", newUsers));
 
             foreach (var user in newUsers)
             {
@@ -254,7 +258,12 @@ namespace LobotJR.Command.System.Twitch
                 Logger.Warn("Null response attempting to retrieve viewer list.");
             }
 
-            Logger.Info("User database updated in {time} milliseconds.", (DateTime.Now - LastUpdate).TotalMilliseconds);
+            var updateTime = (DateTime.Now - LastUpdate).TotalMilliseconds;
+            Logger.Info("User database updated in {time} milliseconds.", updateTime);
+            if (updateTime > 5000)
+            {
+                Logger.Warn("Database update took a long time, this might indicate a problem...");
+            }
         }
 
         private IEnumerable<User> CreateUsers(IEnumerable<UserResponseData> users)
@@ -307,6 +316,7 @@ namespace LobotJR.Command.System.Twitch
             var elapsed = DateTime.Now - LastUpdate;
             if (broadcasting && elapsed > TimeSpan.FromMinutes(Settings.UserDatabaseUpdateTime))
             {
+                LastUpdate = DateTime.Now;
                 var mods = await TwitchClient.GetModeratorListAsync();
                 var vips = await TwitchClient.GetVipListAsync();
                 var subs = await TwitchClient.GetSubscriberListAsync();

@@ -227,6 +227,7 @@
     <Compile Include="Utils\AutofacSetup.cs" />
     <Compile Include="Utils\ChatController.cs" />
     <Compile Include="Utils\Extensions.cs" />
+    <Compile Include="Utils\KeyComparer.cs" />
     <Compile Include="Utils\RollingTimer.cs" />
     <Compile Include="Wolfcoins.cs" />
   </ItemGroup>
