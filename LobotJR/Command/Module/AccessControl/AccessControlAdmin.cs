@@ -1,5 +1,6 @@
-﻿using LobotJR.Data;
-using LobotJR.Data.User;
+﻿using LobotJR.Command.System.Twitch;
+using LobotJR.Data;
+using LobotJR.Twitch.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,8 +13,8 @@ namespace LobotJR.Command.Module.AccessControl
     public class AccessControlAdmin : ICommandModule
     {
         //private readonly ICommandManager CommandManager;
-        private readonly IRepository<UserRole> UserRoles;
-        private readonly UserLookup UserLookup;
+        private readonly IRepository<AccessGroup> UserRoles;
+        private readonly UserSystem UserSystem;
 
         public ICommandManager CommandManager;
 
@@ -32,10 +33,10 @@ namespace LobotJR.Command.Module.AccessControl
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public AccessControlAdmin(IRepositoryManager repositoryManager, UserLookup userLookup)
+        public AccessControlAdmin(IRepositoryManager repositoryManager, UserSystem userSystem)
         {
             UserRoles = repositoryManager.UserRoles;
-            UserLookup = userLookup;
+            UserSystem = userSystem;
             Commands = new CommandHandler[]
             {
                 new CommandHandler("ListRoles", ListRoles, "ListRoles", "list-roles"),
@@ -52,176 +53,175 @@ namespace LobotJR.Command.Module.AccessControl
             };
         }
 
-        private CommandResult ListRoles(string data)
+        private CommandResult ListRoles(string data, User user)
         {
-            return new CommandResult($"There are {UserRoles.Read().Count()} roles: {string.Join(", ", UserRoles.Read().Select(x => x.Name))}");
+            return new CommandResult(user, $"There are {UserRoles.Read().Count()} roles: {string.Join(", ", UserRoles.Read().Select(x => x.Name))}");
         }
 
-        private CommandResult CreateRole(string data)
+        private CommandResult CreateRole(string data, User user)
         {
             var existingRole = UserRoles.Read(x => x.Name.Equals(data)).FirstOrDefault();
             if (existingRole != null)
             {
-                return new CommandResult($"Error: Unable to create role, \"{data}\" already exists.");
+                return new CommandResult(user, $"Error: Unable to create role, \"{data}\" already exists.");
             }
 
-            UserRoles.Create(new UserRole(data));
+            UserRoles.Create(new AccessGroup(data));
             UserRoles.Commit();
-            return new CommandResult($"Role \"{data}\" created successfully!");
+            return new CommandResult(user, $"Role \"{data}\" created successfully!");
         }
 
-        private CommandResult DescribeRole(string data)
+        private CommandResult DescribeRole(string data, User user)
         {
             var existingRole = UserRoles.Read(x => x.Name.Equals(data)).FirstOrDefault();
             if (existingRole == null)
             {
-                return new CommandResult($"Error: Role \"{data}\" not found.");
+                return new CommandResult(user, $"Error: Role \"{data}\" not found.");
             }
 
-            return new CommandResult(
+            return new CommandResult(user,
                 $"Role \"{data}\" contains the following commands: {string.Join(", ", existingRole.Commands)}.",
                 $"Role \"{data}\" contains the following users: {string.Join(", ", existingRole.UserIds)}."
             );
         }
 
-        private CommandResult DeleteRole(string data)
+        private CommandResult DeleteRole(string data, User user)
         {
             var existingRole = UserRoles.Read(x => x.Name.Equals(data)).FirstOrDefault();
             if (existingRole == null)
             {
-                return new CommandResult($"Error: Unable to delete role, \"{data}\" does not exist.");
+                return new CommandResult(user, $"Error: Unable to delete role, \"{data}\" does not exist.");
             }
 
             if (existingRole.Commands.Count > 0)
             {
-                return new CommandResult($"Error: Unable to delete role, please remove all commands first.");
+                return new CommandResult(user, $"Error: Unable to delete role, please remove all commands first.");
             }
 
             UserRoles.Delete(existingRole);
             UserRoles.Commit();
-            return new CommandResult($"Role \"{data}\" deleted successfully!");
+            return new CommandResult(user, $"Role \"{data}\" deleted successfully!");
         }
 
-        private CommandResult AddUserToRole(string data)
+        private CommandResult AddUserToRole(string data, User user)
         {
             var space = data.IndexOf(' ');
             if (space == -1)
             {
-                return new CommandResult("Error: Invalid number of parameters. Expected parameters: {username} {role name}.");
+                return new CommandResult(user, "Error: Invalid number of parameters. Expected parameters: {username} {role name}.");
             }
 
-            var userToAdd = data.Substring(0, space);
-            if (userToAdd.Length == 0)
+            var userNameToAdd = data.Substring(0, space);
+            if (userNameToAdd.Length == 0)
             {
-                return new CommandResult("Error: Username cannot be empty.");
+                return new CommandResult(user, "Error: Username cannot be empty.");
             }
-            var userId = UserLookup.GetId(userToAdd);
-            if (userId == null)
+            var userToAdd = UserSystem.GetUserByName(userNameToAdd);
+            if (userToAdd == null)
             {
-                return new CommandResult("Error: User id not present in id cache, please try again in a few minutes.");
+                return new CommandResult(user, "Error: User id not present in id cache, please try again in a few minutes.");
             }
             var roleName = data.Substring(space + 1);
             if (roleName.Length == 0)
             {
-                return new CommandResult("Error: Role name cannot be empty.");
+                return new CommandResult(user, "Error: Role name cannot be empty.");
             }
 
             var role = UserRoles.Read(x => x.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
             if (role == null)
             {
-                return new CommandResult($"Error: No role with name \"{roleName}\" was found.");
+                return new CommandResult(user, $"Error: No role with name \"{roleName}\" was found.");
             }
-            if (role.UserIds.Contains(userId))
+            if (role.UserIds.Contains(userToAdd.TwitchId))
             {
-                return new CommandResult($"Error: User \"{userToAdd}\" is already a member of \"{roleName}\".");
+                return new CommandResult(user, $"Error: User \"{userNameToAdd}\" is already a member of \"{roleName}\".");
             }
-            role.AddUser(userId);
+            role.AddUser(userToAdd.TwitchId);
             UserRoles.Update(role);
             UserRoles.Commit();
 
-            return new CommandResult($"User \"{userToAdd}\" was added to role \"{role.Name}\" successfully!");
+            return new CommandResult(user, $"User \"{userNameToAdd}\" was added to role \"{role.Name}\" successfully!");
         }
 
-        private CommandResult RemoveUserFromRole(string data)
+        private CommandResult RemoveUserFromRole(string data, User user)
         {
             var space = data.IndexOf(' ');
             if (space == -1)
             {
-                return new CommandResult("Error: Invalid number of parameters. Expected parameters: {username} {role name}.");
+                return new CommandResult(user, "Error: Invalid number of parameters. Expected parameters: {username} {role name}.");
             }
 
-            var userToRemove = data.Substring(0, space);
-            if (userToRemove.Length == 0)
+            var userNameToRemove = data.Substring(0, space);
+            if (userNameToRemove.Length == 0)
             {
-                return new CommandResult("Error: Username cannot be empty.");
+                return new CommandResult(user, "Error: Username cannot be empty.");
             }
-            var userId = UserLookup.GetId(userToRemove);
             var roleName = data.Substring(space + 1);
             if (roleName.Length == 0)
             {
-                return new CommandResult("Error: Role name cannot be empty.");
+                return new CommandResult(user, "Error: Role name cannot be empty.");
             }
 
+            var userToRemove = UserSystem.GetUserByName(userNameToRemove);
             var role = UserRoles.Read(x => x.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
             if (role == null)
             {
-                return new CommandResult($"Error: No role with name \"{roleName}\" was found.");
+                return new CommandResult(user, $"Error: No role with name \"{roleName}\" was found.");
             }
 
-            if (!role.UserIds.Contains(userId))
+            if (!role.UserIds.Contains(userToRemove.TwitchId))
             {
-                return new CommandResult($"Error: User \"{userToRemove}\" is not a member of \"{roleName}\".");
+                return new CommandResult(user, $"Error: User \"{userNameToRemove}\" is not a member of \"{roleName}\".");
             }
-            role.RemoveUser(userId);
+            role.RemoveUser(userToRemove.TwitchId);
             UserRoles.Update(role);
             UserRoles.Commit();
 
-            return new CommandResult($"User \"{userToRemove}\" was removed from role \"{role.Name}\" successfully!");
+            return new CommandResult(user, $"User \"{userNameToRemove}\" was removed from role \"{role.Name}\" successfully!");
         }
 
-        private CommandResult AddCommandToRole(string data)
+        private CommandResult AddCommandToRole(string data, User user)
         {
             var space = data.IndexOf(' ');
             if (space == -1)
             {
-                return new CommandResult("Error: Invalid number of parameters. Expected parameters: {command name} {role name}.");
+                return new CommandResult(user, "Error: Invalid number of parameters. Expected parameters: {command name} {role name}.");
             }
 
             var commandName = data.Substring(0, space);
             if (commandName.Length == 0)
             {
-                return new CommandResult("Error: Command name cannot be empty.");
+                return new CommandResult(user, "Error: Command name cannot be empty.");
             }
             if (!CommandManager.IsValidCommand(commandName))
             {
-                return new CommandResult($"Error: Command {commandName} does not match any commands.");
+                return new CommandResult(user, $"Error: Command {commandName} does not match any commands.");
             }
-
 
             var roleName = data.Substring(space + 1);
             if (roleName.Length == 0)
             {
-                return new CommandResult("Error: Role name cannot be empty.");
+                return new CommandResult(user, "Error: Role name cannot be empty.");
             }
             var role = UserRoles.Read(x => x.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
             if (role == null)
             {
-                return new CommandResult($"Error: Role \"{roleName}\" does not exist.");
+                return new CommandResult(user, $"Error: Role \"{roleName}\" does not exist.");
             }
 
             if (role.Commands.Contains(commandName))
             {
-                return new CommandResult($"Error: \"{roleName}\" already has access to \"{commandName}\".");
+                return new CommandResult(user, $"Error: \"{roleName}\" already has access to \"{commandName}\".");
             }
 
             role.AddCommand(commandName);
             UserRoles.Update(role);
             UserRoles.Commit();
 
-            return new CommandResult($"Command \"{commandName}\" was added to the role \"{role.Name}\" successfully!");
+            return new CommandResult(user, $"Command \"{commandName}\" was added to the role \"{role.Name}\" successfully!");
         }
 
-        private CommandResult ListCommands(string data)
+        private CommandResult ListCommands(string data, User user)
         {
             var commands = CommandManager.Commands;
             var modules = commands.Where(x => x.LastIndexOf('.') != -1).Select(x => x.Substring(0, x.LastIndexOf('.'))).Distinct().ToList();
@@ -231,48 +231,48 @@ namespace LobotJR.Command.Module.AccessControl
             {
                 response[i + 1] = $"{modules[i]}: {string.Join(", ", commands.Where(x => x.StartsWith(modules[i])))}";
             }
-            return new CommandResult(response);
+            return new CommandResult(user, response);
         }
 
-        private CommandResult RemoveCommandFromRole(string data)
+        private CommandResult RemoveCommandFromRole(string data, User user)
         {
             var space = data.IndexOf(' ');
             if (space == -1)
             {
-                return new CommandResult("Error: Invalid number of parameters. Expected paremeters: {command name} {role name}.");
+                return new CommandResult(user, "Error: Invalid number of parameters. Expected paremeters: {command name} {role name}.");
             }
 
             var commandName = data.Substring(0, space);
             if (commandName.Length == 0)
             {
-                return new CommandResult("Error: Command name cannot be empty.");
+                return new CommandResult(user, "Error: Command name cannot be empty.");
             }
             if (!CommandManager.IsValidCommand(commandName))
             {
-                return new CommandResult($"Error: Command {commandName} does not match any commands.");
+                return new CommandResult(user, $"Error: Command {commandName} does not match any commands.");
             }
 
             var roleName = data.Substring(space + 1);
             if (roleName.Length == 0)
             {
-                return new CommandResult("Error: Role name cannot be empty.");
+                return new CommandResult(user, "Error: Role name cannot be empty.");
             }
             var role = UserRoles.Read(x => x.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
             if (role == null)
             {
-                return new CommandResult($"Error: Role \"{roleName}\" does not exist.");
+                return new CommandResult(user, $"Error: Role \"{roleName}\" does not exist.");
             }
 
             if (!role.Commands.Contains(commandName))
             {
-                return new CommandResult($"Error: \"{roleName}\" doesn't have access to \"{commandName}\".");
+                return new CommandResult(user, $"Error: \"{roleName}\" doesn't have access to \"{commandName}\".");
             }
 
             role.RemoveCommand(commandName);
             UserRoles.Update(role);
             UserRoles.Commit();
 
-            return new CommandResult($"Command \"{commandName}\" was removed from role \"{role.Name}\" successfully!");
+            return new CommandResult(user, $"Command \"{commandName}\" was removed from role \"{role.Name}\" successfully!");
         }
     }
 }

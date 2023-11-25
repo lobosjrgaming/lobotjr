@@ -1,4 +1,6 @@
-﻿namespace LobotJR.Command
+﻿using LobotJR.Twitch.Model;
+
+namespace LobotJR.Command
 {
     /// <summary>
     /// Represents a request from a user to execute a command.
@@ -8,7 +10,7 @@
         /// <summary>
         /// The twitch id of the user making the request.
         /// </summary>
-        public string UserId { get; set; }
+        public User User { get; set; }
         /// <summary>
         /// The id of the command to execute.
         /// </summary>

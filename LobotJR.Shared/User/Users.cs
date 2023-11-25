@@ -4,6 +4,7 @@ using LobotJR.Shared.Utility;
 using NLog;
 using RestSharp;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace LobotJR.Shared.User
@@ -36,15 +37,25 @@ namespace LobotJR.Shared.User
         /// <param name="clientData">The client data for the app executing the request.</param>
         /// <param name="users">A collection of usernames.</param>
         /// <returns>The user data of the users in the collection.</returns>
-        public static async Task<RestResponse<UserResponse>> Get(TokenResponse token, ClientData clientData, IEnumerable<string> users)
+        public static async Task<IEnumerable<RestResponse<UserResponse>>> Get(TokenResponse token, ClientData clientData, IEnumerable<string> users)
         {
-            var client = RestUtils.CreateStandardClient();
-            var request = RestUtils.CreateStandardRequest("helix/users", Method.Get, token.AccessToken, clientData.ClientId, Logger);
-            foreach (var user in users)
+            var data = new List<RestResponse<UserResponse>>();
+            var cursor = 0;
+            var userBatch = users.Take(100);
+            do
             {
-                request.AddParameter("login", user, ParameterType.QueryString);
+                var client = RestUtils.CreateStandardClient();
+                var request = RestUtils.CreateStandardRequest("helix/users", Method.Get, token.AccessToken, clientData.ClientId, Logger);
+                foreach (var user in users)
+                {
+                    request.AddParameter("login", user, ParameterType.QueryString);
+                }
+                data.Add(await RestUtils.ExecuteWithRefresh<UserResponse>(token, clientData, client, request));
+                cursor += userBatch.Count();
+                userBatch = users.Skip(cursor).Take(100);
             }
-            return await RestUtils.ExecuteWithRefresh<UserResponse>(token, clientData, client, request);
+            while (userBatch.Any());
+            return data;
         }
     }
 }

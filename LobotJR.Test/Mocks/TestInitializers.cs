@@ -1,8 +1,8 @@
 ﻿using LobotJR.Command;
 using LobotJR.Command.Model.Fishing;
 using LobotJR.Data;
-using LobotJR.Data.User;
 using LobotJR.Twitch;
+using LobotJR.Twitch.Model;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Linq;
@@ -42,13 +42,16 @@ namespace LobotJR.Test.Mocks
 
         public static void InitializeUsers(MockContext context)
         {
-            context.Users.Add(new UserMap() { TwitchId = "01", Username = "Streamer" });
-            context.Users.Add(new UserMap() { TwitchId = "02", Username = "Bot" });
-            context.Users.Add(new UserMap() { TwitchId = "03", Username = "Dev" });
-            context.Users.Add(new UserMap() { TwitchId = "10", Username = "Foo" });
-            context.Users.Add(new UserMap() { TwitchId = "11", Username = "Bar" });
-            context.Users.Add(new UserMap() { TwitchId = "12", Username = "Fizz" });
-            context.Users.Add(new UserMap() { TwitchId = "13", Username = "Buzz" });
+            context.Users.Add(new User() { TwitchId = "01", Username = "Streamer", IsAdmin = true });
+            context.Users.Add(new User() { TwitchId = "02", Username = "Bot", IsAdmin = true });
+            context.Users.Add(new User() { TwitchId = "03", Username = "Dev" });
+            context.Users.Add(new User() { TwitchId = "04", Username = "Mod", IsMod = true });
+            context.Users.Add(new User() { TwitchId = "05", Username = "Sub", IsSub = true });
+            context.Users.Add(new User() { TwitchId = "06", Username = "Vip", IsVip = true });
+            context.Users.Add(new User() { TwitchId = "10", Username = "Foo" });
+            context.Users.Add(new User() { TwitchId = "11", Username = "Bar" });
+            context.Users.Add(new User() { TwitchId = "12", Username = "Fizz" });
+            context.Users.Add(new User() { TwitchId = "13", Username = "Buzz" });
         }
 
         public static void InitializeUserRoles(MockContext context)
@@ -56,8 +59,8 @@ namespace LobotJR.Test.Mocks
             var streamer = context.Users.First(x => x.Username.Equals("Streamer"));
             var bot = context.Users.First(x => x.Username.Equals("Bot"));
             var dev = context.Users.First(x => x.Username.Equals("Dev"));
-            context.UserRoles.Add(new UserRole("Streamer", new string[] { streamer.TwitchId, bot.TwitchId }, new string[] { "*.Admin.*" }));
-            context.UserRoles.Add(new UserRole("UIDev", new string[] { streamer.TwitchId, bot.TwitchId, dev.TwitchId }, new string[] { }));
+            context.UserRoles.Add(new AccessGroup("Streamer", new string[] { streamer.TwitchId, bot.TwitchId }, new string[] { "*.Admin.*" }));
+            context.UserRoles.Add(new AccessGroup("UIDev", new string[] { streamer.TwitchId, bot.TwitchId, dev.TwitchId }, new string[] { }));
         }
 
         public static void InitializeFish(MockContext context)
@@ -134,7 +137,9 @@ namespace LobotJR.Test.Mocks
             appSettings.FishingTournamentInterval = 10;
             appSettings.FishingUseNormalRarity = false;
             appSettings.FishingUseNormalSizes = false;
-            appSettings.GeneralCacheUpdateTime = 2;
+            appSettings.UserDatabaseUpdateTime = 2;
+            appSettings.MaxWhisperRecipients = 10;
+            appSettings.UserLookupBatchTime = 0;
             context.AppSettings.Add(appSettings);
         }
 

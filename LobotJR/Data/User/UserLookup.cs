@@ -1,11 +1,7 @@
-﻿using LobotJR.Shared.Authentication;
-using LobotJR.Shared.Client;
-using LobotJR.Shared.User;
-using NLog;
+﻿using NLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace LobotJR.Data.User
 {
@@ -21,7 +17,7 @@ namespace LobotJR.Data.User
     /// username in the cache will be updated or an entry will be added for
     /// them.
     /// </summary>
-    public class UserLookup
+    public class UserLookupOld
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -29,9 +25,9 @@ namespace LobotJR.Data.User
         private readonly List<string> cacheMisses = new List<string>();
 
         public int UpdateTime { get; set; }
-        public IRepository<UserMap> UserMap { get; private set; }
+        public IRepository<Twitch.Model.User> UserMap { get; private set; }
 
-        public UserLookup(IRepositoryManager repositoryManager)
+        public UserLookupOld(IRepositoryManager repositoryManager)
         {
             UserMap = repositoryManager.Users;
         }
@@ -72,7 +68,7 @@ namespace LobotJR.Data.User
         /// </summary>
         /// <param name="token">A valid twitch OAuth token.</param>
         /// <param name="clientData">The client id the app is running under.</param>
-        public async Task<CacheUpdateResult> UpdateCache(TokenResponse token, ClientData clientData)
+/*        public async Task<CacheUpdateResult> UpdateCache(TokenResponse token, ClientData clientData)
         {
             var results = new CacheUpdateResult();
             while (cacheMisses.Count > 0)
@@ -98,7 +94,7 @@ namespace LobotJR.Data.User
                     }
                     else
                     {
-                        UserMap.Create(new UserMap()
+                        UserMap.Create(new Twitch.Model.User()
                         {
                             Username = entry.Login,
                             TwitchId = entry.Id
@@ -109,7 +105,7 @@ namespace LobotJR.Data.User
             UserMap.Commit();
             lastUpdate = DateTime.Now;
             return results;
-        }
+        }*/
 
         /// <summary>
         /// Determines whether or not enough time has passed to update the

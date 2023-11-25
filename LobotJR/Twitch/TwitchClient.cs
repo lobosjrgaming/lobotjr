@@ -1,11 +1,11 @@
 ﻿using LobotJR.Data;
-using LobotJR.Data.User;
 using LobotJR.Shared.Authentication;
 using LobotJR.Shared.Channel;
 using LobotJR.Shared.Chat;
 using LobotJR.Shared.Client;
 using LobotJR.Shared.User;
 using LobotJR.Shared.Utility;
+using LobotJR.Twitch.Model;
 using NLog;
 using RestSharp;
 using System;
@@ -19,46 +19,20 @@ namespace LobotJR.Twitch
     /// <summary>
     /// Client that provide access to common Twitch API endpoints.
     /// </summary>
-    public class TwitchClient
+    public class TwitchClient : ITwitchClient
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private List<string> Blacklist = new List<string>();
 
         private WhisperQueue Queue;
-        private UserLookup UserLookup;
-        private string BroadcasterId;
-        private string ChatId;
         private ClientData ClientData;
         private TokenData TokenData;
 
-
-        public TwitchClient(IRepositoryManager repositoryManager, UserLookup userLookup, ClientData clientData, TokenData tokenData)
+        public TwitchClient(IRepositoryManager repositoryManager, ClientData clientData, TokenData tokenData)
         {
-            Queue = new WhisperQueue(repositoryManager, 3, 100, 40);
-            UserLookup = userLookup;
+            Queue = new WhisperQueue(repositoryManager, 3, 100);
             ClientData = clientData;
             TokenData = tokenData;
-        }
-
-        /// <summary>
-        /// Loads the Twitch id for the broadcast and chat users.
-        /// </summary>
-        /// <exception cref="Exception">Thrown if the id for either user cannot
-        /// be retrieved from Twitch.</exception>
-        public void GetBotIds()
-        {
-            BroadcasterId = UserLookup.GetId(TokenData.BroadcastUser);
-            ChatId = UserLookup.GetId(TokenData.ChatUser);
-            if (string.IsNullOrWhiteSpace(BroadcasterId) || string.IsNullOrWhiteSpace(ChatId))
-            {
-                UserLookup.UpdateCache(TokenData.ChatToken, ClientData).GetAwaiter().GetResult();
-                BroadcasterId = UserLookup.GetId(TokenData.BroadcastUser);
-                ChatId = UserLookup.GetId(TokenData.ChatUser);
-                if (string.IsNullOrWhiteSpace(BroadcasterId) || string.IsNullOrWhiteSpace(ChatId))
-                {
-                    throw new Exception($"Unable to retrieve required twitch ids: {TokenData.BroadcastUser}: {BroadcasterId}, {TokenData.ChatUser}: {ChatId}");
-                }
-            }
         }
 
         private async Task<RestResponse<TokenResponse>> RefreshToken(TokenResponse token)
@@ -112,38 +86,26 @@ namespace LobotJR.Twitch
         }
 
         /// <summary>
-        /// Sends a whisper to a user asynchronously.
+        /// Queues a whisper to send.
         /// </summary>
-        /// <param name="userId">The Twitch id of the user to send the message to.</param>
+        /// <param name="user">The user object of the user to send the message
+        /// to.</param>
         /// <param name="message">The message to send.</param>
-        /// <returns>True if the whisper was sent successfully.</returns>
-        private async Task<HttpStatusCode> WhisperAsync(string userId, string message)
+        public void QueueWhisper(User user, string message)
         {
-            var result = await Whisper.Post(TokenData.ChatToken, ClientData, ChatId, userId, message);
-            return result?.StatusCode ?? (HttpStatusCode)0;
-        }
-
-        /// <summary>
-        /// Sends a whisper to a user synchronously.
-        /// </summary>
-        /// <param name="user">The name of the user to send the message to.</param>
-        /// <param name="message">The message to send.</param>
-        /// <returns>True if the whisper was sent successfully.</returns>
-        public void QueueWhisper(string user, string message)
-        {
-            if (!Blacklist.Contains(user))
+            if (user != null && !Blacklist.Contains(user.Username))
             {
-                Queue.Enqueue(user, UserLookup.GetId(user), message, DateTime.Now);
+                Queue.Enqueue(user.Username, user.TwitchId, message, DateTime.Now);
             }
         }
 
         /// <summary>
-        /// Sends a whisper to a group of users synchronously.
+        /// Queues a whisper to send to multiple users.
         /// </summary>
-        /// <param name="users">A collection of users to message.</param>
+        /// <param name="users">An enumerable collection of user objects to
+        /// send the whisper to.</param>
         /// <param name="message">The message to send.</param>
-        /// <returns>True if all whispers were sent successfully.</returns>
-        public void QueueWhisper(IEnumerable<string> users, string message)
+        public void QueueWhisper(IEnumerable<User> users, string message)
         {
             foreach (var user in users)
             {
@@ -151,15 +113,18 @@ namespace LobotJR.Twitch
             }
         }
 
-        /// <summary>
-        /// Attempts to re-send all whispers that failed due to the id not being in the cache.
-        /// </summary>
-        public async Task ProcessQueue(bool cacheUpdated)
+        private async Task<HttpStatusCode> WhisperAsync(string userId, string message)
         {
-            if (cacheUpdated)
-            {
-                Queue.UpdateUserIds(UserLookup);
-            }
+            var result = await Whisper.Post(TokenData.ChatToken, ClientData, TokenData.ChatId, userId, message);
+            return result?.StatusCode ?? (HttpStatusCode)0;
+        }
+
+        /// <summary>
+        /// Processes the whisper queue, sending as many queued whispers as
+        /// possible while remaining within the rate limits set by Twitch.
+        /// </summary>
+        public async Task ProcessQueue()
+        {
             var canSend = Queue.TryGetMessage(out var message);
             while (canSend)
             {
@@ -176,11 +141,10 @@ namespace LobotJR.Twitch
                 else if (result == (HttpStatusCode)429)
                 {
                     Logger.Error("We sent too many whispers. Whispers have been turned off for one minute, and no more unique recipients will be allowed.");
+                    Logger.Debug("Max whisper recipient limit has been updated to {count}.", Queue.WhisperRecipients.Count);
                     Logger.Debug("See below for details on the current state of the whisper queue.");
                     Logger.Debug(Queue.Debug());
                     Queue.FreezeQueue();
-                    Queue.NewRecipientsAllowed = false;
-                    Queue.ReportFailure(message);
                     break;
                 }
                 else
@@ -194,37 +158,24 @@ namespace LobotJR.Twitch
         /// <summary>
         /// Times out a user asynchronously.
         /// </summary>
-        /// <param name="user">The user to timeout.</param>
+        /// <param name="user">The user object of the user to timeout.</param>
         /// <param name="duration">The duration of the timeout. Null for a permanent ban.</param>
         /// <param name="message">The message to send along with the timeout.</param>
         /// <returns>True if the timeout was executed successfully.</returns>
-        /// <exception cref="Exception">If the Twitch user id cannot be retrieved.</exception>
-        public async Task<bool> TimeoutAsync(string user, int? duration, string message)
+        public async Task<bool> TimeoutAsync(User user, int? duration, string message)
         {
-            var userId = UserLookup.GetId(user);
-            if (userId == null)
-            {
-                await UserLookup.UpdateCache(TokenData.ChatToken, ClientData);
-                userId = UserLookup.GetId(user);
-                if (userId == null)
-                {
-                    Logger.Error("Failed to get user id for timeout of user {user} with reason {message}", user, message ?? "null");
-                    return false;
-                }
-            }
-            var result = await BanUser.Post(TokenData.ChatToken, ClientData, BroadcasterId, ChatId, userId, duration, message);
+            var result = await BanUser.Post(TokenData.ChatToken, ClientData, TokenData.BroadcastId, TokenData.ChatId, user.TwitchId, duration, message);
             return result == HttpStatusCode.OK;
         }
 
         /// <summary>
         /// Times out a user synchronously.
         /// </summary>
-        /// <param name="user">The user to timeout.</param>
+        /// <param name="user">The user object of the user to timeout.</param>
         /// <param name="duration">The duration of the timeout. Null for a permanent ban.</param>
         /// <param name="message">The message to send along with the timeout.</param>
         /// <returns>True if the timeout was executed successfully.</returns>
-        /// <exception cref="Exception">If the Twitch user id cannot be retrieved.</exception>
-        public bool Timeout(string user, int? duration, string message)
+        public bool Timeout(User user, int? duration, string message)
         {
             return TimeoutAsync(user, duration, message).GetAwaiter().GetResult();
         }
@@ -235,7 +186,7 @@ namespace LobotJR.Twitch
         /// <returns>A collection of subscription responses from Twitch.</returns>
         public async Task<IEnumerable<SubscriptionResponseData>> GetSubscriberListAsync()
         {
-            var results = await Subscriptions.GetAll(TokenData.BroadcastToken, ClientData, BroadcasterId);
+            var results = await Subscriptions.GetAll(TokenData.BroadcastToken, ClientData, TokenData.BroadcastId);
             if (results.Any(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized))
             {
                 var failure = results.FirstOrDefault(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized);
@@ -251,7 +202,7 @@ namespace LobotJR.Twitch
         /// <returns>A collection of chatter responses from Twitch.</returns>
         public async Task<IEnumerable<TwitchUserData>> GetChatterListAsync()
         {
-            var results = await Chatters.GetAll(TokenData.ChatToken, ClientData, BroadcasterId, ChatId);
+            var results = await Chatters.GetAll(TokenData.ChatToken, ClientData, TokenData.BroadcastId, TokenData.ChatId);
             if (results.Any(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized))
             {
                 var failure = results.FirstOrDefault(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized);
@@ -267,7 +218,7 @@ namespace LobotJR.Twitch
         /// <returns>A collection of moderator users from Twitch.</returns>
         public async Task<IEnumerable<TwitchUserData>> GetModeratorListAsync()
         {
-            var results = await Moderators.GetAll(TokenData.BroadcastToken, ClientData, BroadcasterId);
+            var results = await Moderators.GetAll(TokenData.BroadcastToken, ClientData, TokenData.BroadcastId);
             if (results.Any(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized))
             {
                 var failure = results.FirstOrDefault(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized);
@@ -283,11 +234,28 @@ namespace LobotJR.Twitch
         /// <returns>A collection of VIP users from Twitch.</returns>
         public async Task<IEnumerable<TwitchUserData>> GetVipListAsync()
         {
-            var results = await VIPs.GetAll(TokenData.BroadcastToken, ClientData, BroadcasterId);
+            var results = await VIPs.GetAll(TokenData.BroadcastToken, ClientData, TokenData.BroadcastId);
             if (results.Any(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized))
             {
                 var failure = results.FirstOrDefault(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized);
                 Logger.Warn("Encountered an unexpected response retrieving VIPs: {statusCode}: {content}", failure.StatusCode, failure.Content);
+                return null;
+            }
+            return results.Where(x => x.Data != null && x.Data.Data != null).SelectMany(x => x.Data.Data);
+        }
+
+        /// <summary>
+        /// Gets the Twitch ids for a collection usernames.
+        /// </summary>
+        /// <param name="usernames">A collection of usernames.</param>
+        /// <returns>A collection of Twitch user data responses.</returns>
+        public async Task<IEnumerable<UserResponseData>> GetTwitchUsers(IEnumerable<string> usernames)
+        {
+            var results = await Users.Get(TokenData.BroadcastToken, ClientData, usernames);
+            if (results.Any(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized))
+            {
+                var failure = results.FirstOrDefault(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized);
+                Logger.Warn("Encountered an unexpected response looking up userids: {statusCode}: {content}", failure.StatusCode, failure.Content);
                 return null;
             }
             return results.Where(x => x.Data != null && x.Data.Data != null).SelectMany(x => x.Data.Data);

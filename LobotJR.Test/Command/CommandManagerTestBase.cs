@@ -1,7 +1,8 @@
 ﻿using LobotJR.Command;
 using LobotJR.Command.Module;
+using LobotJR.Command.System.Twitch;
 using LobotJR.Data;
-using LobotJR.Data.User;
+using LobotJR.Twitch.Model;
 using Moq;
 using System;
 using System.Collections.Generic;
@@ -20,20 +21,20 @@ namespace LobotJR.Test.Command
     /// </summary>
     public abstract class CommandManagerTestBase
     {
-        protected List<UserRole> UserRoles;
-        protected List<UserMap> IdCache;
+        protected List<AccessGroup> UserRoles;
+        protected List<User> IdCache;
         protected IEnumerable<CommandHandler> CommandHandlers;
         protected IEnumerable<CommandHandler> SubCommandHandlers;
         protected CommandManager CommandManager;
         protected IRepositoryManager Manager;
 
         protected Dictionary<string, Mock<CommandExecutor>> ExecutorMocks;
-        protected Mock<AnonymousExecutor> AnonymousExecutorMock;
         protected Mock<ICommandModule> CommandModuleMock;
         protected Mock<ICommandModule> SubCommandModuleMock;
         protected Mock<IRepositoryManager> RepositoryManagerMock;
-        protected Mock<IRepository<UserMap>> UserMapMock;
-        protected Mock<IRepository<UserRole>> UserRoleMock;
+        protected Mock<IRepository<User>> UserMapMock;
+        protected Mock<IRepository<AccessGroup>> UserRoleMock;
+        protected Mock<IRepository<AppSettings>> AppSettingsMock;
 
         /// <summary>
         /// Initializes a command manager object with all internals mocked out.
@@ -44,16 +45,13 @@ namespace LobotJR.Test.Command
         public void InitializeCommandManager()
         {
             ExecutorMocks = new Dictionary<string, Mock<CommandExecutor>>();
-            var commands = new string[] { "Foobar", "Foo", "Bar", "Public" };
+            var commands = new string[] { "Foobar", "Foo", "Bar", "Unrestricted", "Public" };
             foreach (var command in commands)
             {
                 var executorMock = new Mock<CommandExecutor>();
-                executorMock.Setup(x => x(It.IsAny<string>(), It.IsAny<string>())).Returns(new CommandResult(""));
+                executorMock.Setup(x => x(It.IsAny<string>(), It.IsAny<User>())).Returns(new CommandResult(new User(), ""));
                 ExecutorMocks.Add(command, executorMock);
             }
-            AnonymousExecutorMock = new Mock<AnonymousExecutor>();
-            AnonymousExecutorMock.Setup(x => x(It.IsAny<string>())).Returns(new CommandResult(""));
-
             SubCommandHandlers = new CommandHandler[]
             {
                 new CommandHandler("Foobar", ExecutorMocks["Foobar"].Object, "Foobar"),
@@ -73,50 +71,54 @@ namespace LobotJR.Test.Command
                     return new CompactCollection<string>(items, x => $"Foo|{x};");
                 }, "Foo"),
                 new CommandHandler("Bar", ExecutorMocks["Bar"].Object, "Bar"),
-                new CommandHandler("Unrestricted", AnonymousExecutorMock.Object, "Unrestricted"),
+                new CommandHandler("Unrestricted", ExecutorMocks["Unrestricted"].Object, "Unrestricted"),
                 new CommandHandler("Public", ExecutorMocks["Public"].Object, "Public") { WhisperOnly = false }
             };
             CommandModuleMock = new Mock<ICommandModule>();
             CommandModuleMock.Setup(x => x.Name).Returns("CommandMock");
             CommandModuleMock.Setup(x => x.Commands).Returns(CommandHandlers);
-            UserRoles = new List<UserRole>(new UserRole[]
+            UserRoles = new List<AccessGroup>(new AccessGroup[]
             {
-                new UserRole("TestRole",
+                new AccessGroup("TestRole",
                     new List<string>(new string[] { "12345" }),
                     new List<string>(new string[] { "CommandMock.Foo" }))
             });
-            IdCache = new List<UserMap>(new UserMap[]
+            IdCache = new List<User>(new User[]
             {
-                new UserMap() { TwitchId = "12345", Username = "Auth" },
-                new UserMap() { TwitchId = "67890", Username = "NotAuth" }
+                new User() { TwitchId = "12345", Username = "Auth" },
+                new User() { TwitchId = "67890", Username = "NotAuth" }
             });
-            UserMapMock = new Mock<IRepository<UserMap>>();
+            UserMapMock = new Mock<IRepository<User>>();
             UserMapMock.Setup(x => x.Read()).Returns(IdCache);
-            UserMapMock.Setup(x => x.Read(It.IsAny<Func<UserMap, bool>>()))
-                .Returns((Func<UserMap, bool> param) => IdCache.Where(param));
-            UserMapMock.Setup(x => x.Create(It.IsAny<UserMap>()))
-                .Returns((UserMap param) => { IdCache.Add(param); return param; });
-            UserMapMock.Setup(x => x.Update(It.IsAny<UserMap>()))
-                .Returns((UserMap param) => { IdCache.Remove(IdCache.Where(x => x.TwitchId == param.TwitchId).FirstOrDefault()); IdCache.Add(param); return param; });
-            UserMapMock.Setup(x => x.Delete(It.IsAny<UserMap>()))
-                .Returns((UserMap param) => { IdCache.Remove(IdCache.Where(x => x.TwitchId == param.TwitchId).FirstOrDefault()); return param; });
-            UserRoleMock = new Mock<IRepository<UserRole>>();
+            UserMapMock.Setup(x => x.Read(It.IsAny<Func<User, bool>>()))
+                .Returns((Func<User, bool> param) => IdCache.Where(param));
+            UserMapMock.Setup(x => x.Create(It.IsAny<User>()))
+                .Returns((User param) => { IdCache.Add(param); return param; });
+            UserMapMock.Setup(x => x.Update(It.IsAny<User>()))
+                .Returns((User param) => { IdCache.Remove(IdCache.Where(x => x.TwitchId == param.TwitchId).FirstOrDefault()); IdCache.Add(param); return param; });
+            UserMapMock.Setup(x => x.Delete(It.IsAny<User>()))
+                .Returns((User param) => { IdCache.Remove(IdCache.Where(x => x.TwitchId == param.TwitchId).FirstOrDefault()); return param; });
+            UserRoleMock = new Mock<IRepository<AccessGroup>>();
             UserRoleMock.Setup(x => x.Read()).Returns(UserRoles);
-            UserRoleMock.Setup(x => x.Read(It.IsAny<Func<UserRole, bool>>()))
-                .Returns((Func<UserRole, bool> param) => UserRoles.Where(param));
-            UserRoleMock.Setup(x => x.Create(It.IsAny<UserRole>()))
-                .Returns((UserRole param) => { UserRoles.Add(param); return param; });
-            UserRoleMock.Setup(x => x.Update(It.IsAny<UserRole>()))
-                .Returns((UserRole param) => { UserRoles.Remove(UserRoles.Where(x => x.Id == param.Id).FirstOrDefault()); UserRoles.Add(param); return param; });
-            UserRoleMock.Setup(x => x.Delete(It.IsAny<UserRole>()))
-                .Returns((UserRole param) => { UserRoles.Remove(UserRoles.Where(x => x.Id == param.Id).FirstOrDefault()); return param; });
+            UserRoleMock.Setup(x => x.Read(It.IsAny<Func<AccessGroup, bool>>()))
+                .Returns((Func<AccessGroup, bool> param) => UserRoles.Where(param));
+            UserRoleMock.Setup(x => x.Create(It.IsAny<AccessGroup>()))
+                .Returns((AccessGroup param) => { UserRoles.Add(param); return param; });
+            UserRoleMock.Setup(x => x.Update(It.IsAny<AccessGroup>()))
+                .Returns((AccessGroup param) => { UserRoles.Remove(UserRoles.Where(x => x.Id == param.Id).FirstOrDefault()); UserRoles.Add(param); return param; });
+            UserRoleMock.Setup(x => x.Delete(It.IsAny<AccessGroup>()))
+                .Returns((AccessGroup param) => { UserRoles.Remove(UserRoles.Where(x => x.Id == param.Id).FirstOrDefault()); return param; });
+            var Settings = new List<AppSettings>(new AppSettings[] { new AppSettings() });
+            AppSettingsMock = new Mock<IRepository<AppSettings>>();
+            AppSettingsMock.Setup(x => x.Read()).Returns(Settings);
             RepositoryManagerMock = new Mock<IRepositoryManager>();
             RepositoryManagerMock.Setup(x => x.Users).Returns(UserMapMock.Object);
             RepositoryManagerMock.Setup(x => x.UserRoles).Returns(UserRoleMock.Object);
+            RepositoryManagerMock.Setup(x => x.AppSettings).Returns(AppSettingsMock.Object);
             Manager = RepositoryManagerMock.Object;
 
-            RepositoryManagerMock.Setup(x => x.AppSettings).Returns(Manager.AppSettings);
-            var userLookup = new UserLookup(RepositoryManagerMock.Object);
+
+            var userLookup = new UserSystem(RepositoryManagerMock.Object, null);
             CommandManager = new CommandManager(new ICommandModule[] { CommandModuleMock.Object, SubCommandModuleMock.Object }, RepositoryManagerMock.Object, userLookup);
             CommandManager.InitializeModules();
         }

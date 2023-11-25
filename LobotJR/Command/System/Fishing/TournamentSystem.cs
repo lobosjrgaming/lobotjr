@@ -4,6 +4,7 @@ using NLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace LobotJR.Command.System.Fishing
 {
@@ -71,10 +72,10 @@ namespace LobotJR.Command.System.Fishing
         {
             if (IsRunning)
             {
-                Logger.Debug("{userId} caught a fish worth {points} points.", fisher?.UserId, catchData?.Points);
-                LeaderboardSystem.UpdatePersonalLeaderboard(fisher.UserId, catchData);
+                Logger.Debug("User {userName} ({userId}) caught a fish worth {points} points.", fisher?.User.Username, fisher?.User.TwitchId, catchData?.Points);
+                LeaderboardSystem.UpdatePersonalLeaderboard(fisher.User.TwitchId, catchData);
                 LeaderboardSystem.UpdateGlobalLeaderboard(catchData);
-                AddTournamentPoints(fisher.UserId, catchData.Points);
+                AddTournamentPoints(fisher.User.TwitchId, catchData.Points);
             }
         }
 
@@ -176,7 +177,7 @@ namespace LobotJR.Command.System.Fishing
         /// <summary>
         /// Processes the tournament system, starting or ending the tournament as necessary.
         /// </summary>
-        public void Process(bool broadcasting)
+        public Task Process(bool broadcasting)
         {
             if (!broadcasting)
             {
@@ -200,6 +201,7 @@ namespace LobotJR.Command.System.Fishing
                     StartTournament();
                 }
             }
+            return Task.CompletedTask;
         }
     }
 }

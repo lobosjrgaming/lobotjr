@@ -1,13 +1,14 @@
-﻿using System.Collections.Generic;
+﻿using LobotJR.Twitch.Model;
+using System.Collections.Generic;
 
 namespace LobotJR.Command.Module
 {
     /// <summary>
     /// Handler for push notification events.
     /// </summary>
-    /// <param name="userId">The user to push to, or null for public pushes.</param>
+    /// <param name="user">The user to push to, or null for public pushes.</param>
     /// <param name="commandResult">The CommandResult object to process.</param>
-    public delegate void PushNotificationHandler(string userId, CommandResult commandResult);
+    public delegate void PushNotificationHandler(User user, CommandResult commandResult);
 
     /// <summary>
     /// Modules for organizing and grouping commands.

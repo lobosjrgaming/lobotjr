@@ -3,6 +3,7 @@ using LobotJR.Data;
 using NLog;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace LobotJR.Command.System.Fishing
 {
@@ -159,8 +160,9 @@ namespace LobotJR.Command.System.Fishing
             return false;
         }
 
-        public void Process(bool broadcasting)
+        public Task Process(bool broadcasting)
         {
+            return Task.CompletedTask;
         }
     }
 }

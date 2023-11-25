@@ -18,7 +18,7 @@ namespace LobotJR.Test.Modules.AccessControl
         public void ListsRoles()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("ListRoles")).FirstOrDefault();
-            var result = command.AnonymousExecutor("");
+            var result = command.Executor("", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].Contains(UserRoles.Count.ToString()));
@@ -29,7 +29,7 @@ namespace LobotJR.Test.Modules.AccessControl
         public void CreatesANewRole()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("CreateRole")).FirstOrDefault();
-            var result = command.AnonymousExecutor("NewTestRole");
+            var result = command.Executor("NewTestRole", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses.Any(x => x.Contains("success", StringComparison.OrdinalIgnoreCase)));
@@ -41,7 +41,7 @@ namespace LobotJR.Test.Modules.AccessControl
         public void CreateRoleErrorsOnDuplicateRoleName()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("CreateRole")).FirstOrDefault();
-            var result = command.AnonymousExecutor("TestRole");
+            var result = command.Executor("TestRole", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses.Any(x => x.Contains("Error", StringComparison.OrdinalIgnoreCase)));
@@ -53,7 +53,7 @@ namespace LobotJR.Test.Modules.AccessControl
         {
             var command = Module.Commands.Where(x => x.Name.Equals("DescribeRole")).FirstOrDefault();
             var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
-            var result = command.AnonymousExecutor("TestRole");
+            var result = command.Executor("TestRole", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(2, result.Responses.Count());
             Assert.IsTrue(result.Responses.All(x => x.Contains("TestRole")));
@@ -71,7 +71,7 @@ namespace LobotJR.Test.Modules.AccessControl
         public void DescribeRoleErrorsOnRoleNotFound()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("DescribeRole")).FirstOrDefault();
-            var result = command.AnonymousExecutor("NotTestRole");
+            var result = command.Executor("NotTestRole", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
@@ -81,10 +81,10 @@ namespace LobotJR.Test.Modules.AccessControl
         public void DeletesARole()
         {
             var add = Module.Commands.Where(x => x.Name.Equals("CreateRole")).FirstOrDefault();
-            add.AnonymousExecutor("NewTestRole");
+            add.Executor("NewTestRole", null);
             Assert.AreEqual(2, CommandManager.RepositoryManager.UserRoles.Read().Count());
             var command = Module.Commands.Where(x => x.Name.Equals("DeleteRole")).FirstOrDefault();
-            var result = command.AnonymousExecutor("NewTestRole");
+            var result = command.Executor("NewTestRole", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.AreEqual(1, CommandManager.RepositoryManager.UserRoles.Read().Count());
@@ -95,7 +95,7 @@ namespace LobotJR.Test.Modules.AccessControl
         public void DeleteRoleErrorsOnDeleteNonEmptyRole()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("DeleteRole")).FirstOrDefault();
-            var result = command.AnonymousExecutor("TestRole");
+            var result = command.Executor("TestRole", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
@@ -105,7 +105,7 @@ namespace LobotJR.Test.Modules.AccessControl
         public void DeleteRoleErrorsOnRoleNotFound()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("DeleteRole")).FirstOrDefault();
-            var result = command.AnonymousExecutor("NotTestRole");
+            var result = command.Executor("NotTestRole", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));

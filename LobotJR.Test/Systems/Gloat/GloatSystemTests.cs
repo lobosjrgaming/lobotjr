@@ -28,44 +28,46 @@ namespace LobotJR.Test.Systems.Gloat
         [TestMethod]
         public void CanGloatReturnsTrueWithEnoughCoins()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
-            Wolfcoins.Add(userId, Manager.AppSettings.Read().First().FishingGloatCost);
-            var canGloat = GloatSystem.CanGloatFishing(userId);
+            var user = Manager.Users.Read().First();
+            Wolfcoins.Add(user.Username, Manager.AppSettings.Read().First().FishingGloatCost);
+            var canGloat = GloatSystem.CanGloatFishing(user);
             Assert.IsTrue(canGloat);
         }
 
         [TestMethod]
         public void CanGloatReturnsFalseWithoutEnoughCoins()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
-            Wolfcoins.Add(userId, Manager.AppSettings.Read().First().FishingGloatCost - 1);
-            var canGloat = GloatSystem.CanGloatFishing(userId);
+            var user = Manager.Users.Read().First();
+            Wolfcoins.Add(user.Username, Manager.AppSettings.Read().First().FishingGloatCost - 1);
+            var canGloat = GloatSystem.CanGloatFishing(user);
             Assert.IsFalse(canGloat);
         }
 
         [TestMethod]
         public void CanGloatReturnsFalseWithNoCoinEntry()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
-            var canGloat = GloatSystem.CanGloatFishing(userId);
+            var user = Manager.Users.Read().First();
+            var canGloat = GloatSystem.CanGloatFishing(user);
             Assert.IsFalse(canGloat);
         }
 
         [TestMethod]
         public void GloatReturnsCorrectRecordAndRemovesCoins()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
+            var user = Manager.Users.Read().First();
+            var userId = user.TwitchId;
             var expectedFish = Manager.Catches.Read(x => x.UserId.Equals(userId)).OrderBy(x => x.FishId).First();
-            Wolfcoins.Add(userId, Manager.AppSettings.Read().First().FishingGloatCost);
-            var gloat = GloatSystem.FishingGloat(userId, 0);
-            Assert.AreEqual(0, Wolfcoins[userId]);
+            Wolfcoins.Add(user.Username, Manager.AppSettings.Read().First().FishingGloatCost);
+            var gloat = GloatSystem.FishingGloat(user, 0);
+            Assert.AreEqual(0, Wolfcoins[user.Username]);
             Assert.AreEqual(expectedFish.FishId, gloat.FishId);
         }
 
         [TestMethod]
         public void GloatReturnsNullWithNoRecords()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
+            var user = Manager.Users.Read().First();
+            var userId = user.TwitchId;
             var records = Manager.Catches.Read(x => x.UserId.Equals(userId)).ToList();
             foreach (var record in records)
             {
@@ -73,32 +75,34 @@ namespace LobotJR.Test.Systems.Gloat
             }
             Manager.Catches.Commit();
             var cost = Manager.AppSettings.Read().First().FishingGloatCost;
-            Wolfcoins.Add(userId, cost);
-            var gloat = GloatSystem.FishingGloat(userId, 0);
-            Assert.AreEqual(cost, Wolfcoins[userId]);
+            Wolfcoins.Add(user.Username, cost);
+            var gloat = GloatSystem.FishingGloat(user, 0);
+            Assert.AreEqual(cost, Wolfcoins[user.Username]);
             Assert.IsNull(gloat);
         }
 
         [TestMethod]
         public void GloatReturnsNullWithNegativeIndex()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
+            var user = Manager.Users.Read().First();
+            var userId = user.TwitchId;
             var cost = Manager.AppSettings.Read().First().FishingGloatCost;
-            Wolfcoins.Add(userId, cost);
-            var gloat = GloatSystem.FishingGloat(userId, -1);
-            Assert.AreEqual(cost, Wolfcoins[userId]);
+            Wolfcoins.Add(user.Username, cost);
+            var gloat = GloatSystem.FishingGloat(user, -1);
+            Assert.AreEqual(cost, Wolfcoins[user.Username]);
             Assert.IsNull(gloat);
         }
 
         [TestMethod]
         public void GloatReturnsNullWithTooHighIndex()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
+            var user = Manager.Users.Read().First();
+            var userId = user.TwitchId;
             var cost = Manager.AppSettings.Read().First().FishingGloatCost;
             var recordCount = Manager.Catches.Read(x => x.UserId.Equals(userId)).Count();
-            Wolfcoins.Add(userId, cost);
-            var gloat = GloatSystem.FishingGloat(userId, recordCount);
-            Assert.AreEqual(cost, Wolfcoins[userId]);
+            Wolfcoins.Add(user.Username, cost);
+            var gloat = GloatSystem.FishingGloat(user, recordCount);
+            Assert.AreEqual(cost, Wolfcoins[user.Username]);
             Assert.IsNull(gloat);
         }
     }

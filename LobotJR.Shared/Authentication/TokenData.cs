@@ -11,6 +11,10 @@
         /// </summary>
         public string ChatUser { get; set; }
         /// <summary>
+        /// The Twitch user id of the chat user.
+        /// </summary>
+        public string ChatId { get; set; }
+        /// <summary>
         /// The token to use when connecting to chat.
         /// </summary>
         public TokenResponse ChatToken { get; set; }
@@ -18,6 +22,10 @@
         /// The user the broadcast token represents.
         /// </summary>
         public string BroadcastUser { get; set; }
+        /// <summary>
+        /// The Twitch user id of the broadcast user.
+        /// </summary>
+        public string BroadcastId { get; set; }
         /// <summary>
         /// The token to use for accessing subscriber data APIs.
         /// </summary>

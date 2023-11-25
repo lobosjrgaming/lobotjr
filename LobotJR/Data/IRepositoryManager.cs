@@ -1,6 +1,5 @@
 ﻿using LobotJR.Command;
 using LobotJR.Command.Model.Fishing;
-using LobotJR.Data.User;
 using LobotJR.Twitch;
 
 namespace LobotJR.Data
@@ -13,8 +12,8 @@ namespace LobotJR.Data
         IRepository<Metadata> Metadata { get; }
         IRepository<AppSettings> AppSettings { get; }
         IRepository<DataTimer> DataTimers { get; }
-        IRepository<UserMap> Users { get; }
-        IRepository<UserRole> UserRoles { get; }
+        IRepository<Twitch.Model.User> Users { get; }
+        IRepository<AccessGroup> UserRoles { get; }
         IRepository<Catch> Catches { get; }
         IRepository<LeaderboardEntry> FishingLeaderboard { get; }
         IRepository<TournamentResult> TournamentResults { get; }

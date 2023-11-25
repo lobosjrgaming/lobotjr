@@ -1,5 +1,6 @@
 ﻿using LobotJR.Command.Module.AccessControl;
 using LobotJR.Test.Command;
+using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
@@ -23,11 +24,12 @@ namespace LobotJR.Test.Modules.AccessControl
         public void ChecksUsersAccessOfSpecificRole()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("CheckAccess")).FirstOrDefault();
-            var result = command.Executor("TestRole", CommandManager.UserLookup.GetId("Auth"));
+            var result = command.Executor("TestRole", CommandManager.UserSystem.GetUserByName("Auth"));
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsFalse(result.Responses[0].Contains("not", StringComparison.OrdinalIgnoreCase));
-            result = command.Executor("TestRole", CommandManager.UserLookup.GetId("NewUser"));
+            var user = new User() { TwitchId = "999", Username = "NewUser" };
+            result = command.Executor("TestRole", user);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].Contains("not", StringComparison.OrdinalIgnoreCase));
@@ -37,8 +39,8 @@ namespace LobotJR.Test.Modules.AccessControl
         public void CheckAccessGivesNoRoleMessage()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("CheckAccess")).FirstOrDefault();
-            var username = "NewUser";
-            var result = command.Executor(null, username);
+            var user = new User() { TwitchId = "999", Username = "NewUser" };
+            var result = command.Executor(null, user);
             var roles = CommandManager.RepositoryManager.UserRoles.Read().Select(x => x.Name);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
@@ -50,7 +52,7 @@ namespace LobotJR.Test.Modules.AccessControl
         {
             var command = Module.Commands.Where(x => x.Name.Equals("CheckAccess")).FirstOrDefault();
             var username = "Auth";
-            var result = command.Executor(null, CommandManager.UserLookup.GetId(username));
+            var result = command.Executor(null, CommandManager.UserSystem.GetUserByName(username));
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(CommandManager.RepositoryManager.UserRoles
@@ -63,7 +65,7 @@ namespace LobotJR.Test.Modules.AccessControl
         {
             var command = Module.Commands.Where(x => x.Name.Equals("CheckAccess")).FirstOrDefault();
             var roleToCheck = "NotTestRole";
-            var result = command.Executor(roleToCheck, CommandManager.UserLookup.GetId("Auth"));
+            var result = command.Executor(roleToCheck, CommandManager.UserSystem.GetUserByName("Auth"));
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].StartsWith("Error:", StringComparison.OrdinalIgnoreCase));

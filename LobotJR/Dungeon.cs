@@ -1,6 +1,8 @@
 ﻿using Classes;
 using Equipment;
+using LobotJR.Command.System.Twitch;
 using LobotJR.Twitch;
+using LobotJR.Twitch.Model;
 using NLog;
 using System;
 using System.Collections.Generic;
@@ -22,17 +24,18 @@ namespace Adventures
 
         DateTime lastMessage;
         readonly HashSet<string> receivers;
-        readonly TwitchClient twitchClient;
+        readonly ITwitchClient twitchClient;
+        readonly UserSystem userSystem;
         public Queue<List<string>> messageQueue;
         static readonly int cooldown = 9000;
         readonly string myChannel = "";
 
-        public void sendIrcMessage(string user, string message)
+        public void sendIrcMessage(User user, string message)
         {
             twitchClient.QueueWhisper(user, message);
         }
 
-        public DungeonMessager(ref TwitchClient twitchClient, string channel, Party myParty)
+        public DungeonMessager(ref UserSystem userSystem, ref ITwitchClient twitchClient, string channel, Party myParty)
         {
             HashSet<string> temp = new HashSet<string>();
             foreach (var member in myParty.members)
@@ -40,6 +43,7 @@ namespace Adventures
                 temp.Add(member.name);
             }
             receivers = temp;
+            this.userSystem = userSystem;
             this.twitchClient = twitchClient;
             lastMessage = DateTime.Now;
             messageQueue = new Queue<List<string>>();
@@ -119,7 +123,10 @@ namespace Adventures
                 {
                     try
                     {
-                        sendIrcMessage(receiver, toSend);
+                        userSystem.GetUserByNameAsync(receiver, (user) =>
+                        {
+                            sendIrcMessage(user, toSend);
+                        });
                     }
                     catch (Exception e)
                     {
@@ -292,9 +299,9 @@ namespace Adventures
             myChannel = channel;
         }
 
-        public Party RunDungeon(Party myParty, ref TwitchClient whisper)
+        public Party RunDungeon(Party myParty, ref UserSystem userSystem, ref ITwitchClient whisper)
         {
-            messenger = new DungeonMessager(ref whisper, myChannel, myParty);
+            messenger = new DungeonMessager(ref userSystem, ref whisper, myChannel, myParty);
             List<Rewards> partyRewards = new List<Rewards>();
             messenger.sendChatMessage("Loading Dungeon Information (" + dungeonName + ")...", myParty);
             float percentPartyFull = (float)myParty.NumMembers() / maxPlayers;

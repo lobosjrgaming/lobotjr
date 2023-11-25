@@ -1,4 +1,5 @@
 ﻿using LobotJR.Shared.Authentication;
+using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using NLog;
 using System;
@@ -15,7 +16,7 @@ namespace LobotJR.Twitch
     /// <summary>
     /// IRC client built for Twitch.
     /// </summary>
-    public class TwitchIrcClient
+    public class TwitchIrcClient : ITwitchIrcClient
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private static readonly string Url = "irc.chat.twitch.tv";
@@ -24,12 +25,13 @@ namespace LobotJR.Twitch
         private static readonly TimeSpan IdleLimit = TimeSpan.FromMinutes(1);
         private static readonly TimeSpan ResponseLimit = TimeSpan.FromSeconds(10);
         private static readonly TimeSpan ReconnectTimerBase = TimeSpan.FromSeconds(1);
+        private static readonly TimeSpan ReconnectTimerMax = TimeSpan.FromSeconds(2048);
 
         private TcpClient Client;
         private StreamReader InputStream;
         private StreamWriter OutputStream;
         private TokenData TokenData;
-        private TwitchClient TwitchClient;
+        private ITwitchClient TwitchClient;
         private bool IsSecure;
 
         private CancellationTokenSource CancellationTokenSource;
@@ -49,7 +51,7 @@ namespace LobotJR.Twitch
         /// <param name="tokenData">The token data for the authenticated users.</param>
         /// <param name="twitchClient">The twitch client to use when refreshing
         /// the auth token.</param>
-        public TwitchIrcClient(TokenData tokenData, TwitchClient twitchClient)
+        public TwitchIrcClient(TokenData tokenData, ITwitchClient twitchClient)
         {
             Client = new TcpClient();
             TokenData = tokenData;
@@ -103,25 +105,28 @@ namespace LobotJR.Twitch
 
         private async Task Reconnect()
         {
+            PingSent = false;
             Client.Dispose();
             Client = new TcpClient();
             var connected = await Connect(IsSecure);
             if (!connected)
             {
                 LastReconnect = DateTime.Now;
-                ReconnectTimer = TimeSpan.FromSeconds(ReconnectTimer.TotalSeconds * 2);
+                ReconnectTimer = TimeSpan.FromSeconds(Math.Min(ReconnectTimer.TotalSeconds * 2, ReconnectTimerMax.TotalSeconds));
                 Logger.Error("Connection failed. Retrying in {seconds} seconds.", ReconnectTimer.TotalSeconds);
             }
             else
             {
+                await WriteLine("PING");
                 LastReconnect = null;
-                ReconnectTimer = ReconnectTimerBase;
+                ReconnectTimer = TimeSpan.FromSeconds(ReconnectTimerBase.TotalSeconds);
             }
         }
 
         private void ExpectResponse()
         {
-            LastMessage = DateTime.Now - IdleLimit + ResponseLimit;
+            LastMessage = DateTime.Now - IdleLimit;
+            PingSent = true;
         }
 
         private async Task WriteLine(string line)
@@ -207,31 +212,39 @@ namespace LobotJR.Twitch
                         }
                         else if ("notice".Equals(message.Command, StringComparison.OrdinalIgnoreCase))
                         {
+                            Logger.Info("Notice received, likely due to expired OAuth token. Refreshing tokens and reconnecting.");
                             await TwitchClient.RefreshTokens();
                             await Reconnect();
                         }
                         else if ("pong".Equals(message.Command, StringComparison.OrdinalIgnoreCase))
                         {
+                            Logger.Info("Pong received, connection confirmed.");
                             PingSent = false;
                         }
                         else if ("ping".Equals(message.Command, StringComparison.OrdinalIgnoreCase))
                         {
+                            Logger.Info("Ping from received from Twitch, sending pong.");
                             await WriteLine($"PONG :{message.Message}");
+                        }
+                        else
+                        {
+                            Logger.Debug("Received {command} type message from Twitch.", message.Command);
                         }
                     }
                     input = await Read();
                 }
-            }
 
-            if (DateTime.Now - LastMessage > IdleLimit && !PingSent)
-            {
-                await WriteLine("PING");
-                PingSent = true;
-            }
-            else if (DateTime.Now - LastMessage > IdleLimit + ResponseLimit && PingSent)
-            {
-                Logger.Info("IRC client disconnected. Reconnecting...");
-                await Reconnect();
+                if (DateTime.Now - LastMessage > IdleLimit && !PingSent)
+                {
+                    Logger.Info("No messages in {seconds} seconds, sending ping to Twitch.", IdleLimit.TotalSeconds);
+                    await WriteLine("PING");
+                    PingSent = true;
+                }
+                else if (DateTime.Now - LastMessage > IdleLimit + ResponseLimit && PingSent)
+                {
+                    Logger.Info("IRC client disconnected. Reconnecting...");
+                    await Reconnect();
+                }
             }
             else if (LastReconnect != null && DateTime.Now - LastReconnect > ReconnectTimer)
             {

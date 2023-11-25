@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using LobotJR.Twitch.Model;
+using System.Text.RegularExpressions;
 
 namespace LobotJR.Trigger.Responder
 {
@@ -8,7 +9,7 @@ namespace LobotJR.Trigger.Responder
         // OCEAN MAN 🌊  😍
         public Regex Pattern { get; private set; } = new Regex(@"OCEAN MAN \uD83C\uDF0A  \uD83D\uDE0D", RegexOptions.IgnoreCase);
 
-        public TriggerResult Process(Match match, string user)
+        public TriggerResult Process(Match match, User user)
         {
             return new TriggerResult()
             {

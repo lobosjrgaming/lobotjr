@@ -13,16 +13,17 @@ namespace LobotJR.Data.Migration
     /// </summary>
     public class SqliteDatabaseUpdater
     {
-        public static readonly SemanticVersion LatestVersion = new SemanticVersion(1, 0, 4);
 
         private readonly IEnumerable<IDatabaseUpdate> DatabaseUpdates;
 
         public DbContext Context { get; set; }
+        public SemanticVersion LatestVersion { get; private set; }
         public SemanticVersion CurrentVersion { get; set; }
 
         public SqliteDatabaseUpdater(IEnumerable<IDatabaseUpdate> databaseUpdates)
         {
             DatabaseUpdates = databaseUpdates.OrderBy(x => x.ToVersion);
+            LatestVersion = DatabaseUpdates.Last().ToVersion;
         }
 
         /// <summary>
@@ -35,6 +36,10 @@ namespace LobotJR.Data.Migration
             {
                 var tempContext = new SqliteUpdateContext();
                 var appSettings = tempContext.Metadata.First();
+                if (string.IsNullOrWhiteSpace(appSettings?.DatabaseVersion))
+                {
+                    appSettings.DatabaseVersion = LatestVersion.ToString();
+                }
                 CurrentVersion = SemanticVersion.Parse(appSettings.DatabaseVersion);
                 Context = tempContext;
             }

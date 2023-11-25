@@ -18,7 +18,7 @@
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>true</MapFileExtensions>
     <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>1.0.10.0</ApplicationVersion>
+    <ApplicationVersion>1.0.12.0</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
@@ -156,11 +156,14 @@
     <Compile Include="Command\Model\Fishing\TournamentResult.cs" />
     <Compile Include="Command\Module\Gloat\GloatModule.cs" />
     <Compile Include="Command\System\Fishing\TournamentSystem.cs" />
-    <Compile Include="Command\UserRole.cs" />
+    <Compile Include="Command\System\Twitch\UserSystem.cs" />
+    <Compile Include="Command\AccessGroup.cs" />
     <Compile Include="Data\AppSettings.cs" />
     <Compile Include="Data\Import\FileSystem.cs" />
     <Compile Include="Data\Import\IFileSystem.cs" />
     <Compile Include="Data\Metadata.cs" />
+    <Compile Include="Data\Migration\DatabaseUpdate-1.0.5-1.0.6.cs" />
+    <Compile Include="Data\Migration\DatabaseUpdate-1.0.4-1.0.5.cs" />
     <Compile Include="Data\Migration\DatabaseUpdate-1.0.3-1.0.4.cs" />
     <Compile Include="Data\Migration\DatabaseUpdate-1.0.2-1.0.3.cs" />
     <Compile Include="Data\Migration\DatabaseUpdate-1.0.1-1.0.2.cs" />
@@ -181,7 +184,7 @@
     <Compile Include="Data\IRepository.cs" />
     <Compile Include="Data\SqliteContext.cs" />
     <Compile Include="Data\User\UserLookup.cs" />
-    <Compile Include="Data\User\UserMap.cs" />
+    <Compile Include="Twitch\Model\User.cs" />
     <Compile Include="Dungeon.cs" />
     <Compile Include="Classes.cs" />
     <Compile Include="GroupFinder.cs" />
@@ -216,14 +219,17 @@
     <Compile Include="Trigger\TriggerManager.cs" />
     <Compile Include="Trigger\TriggerResult.cs" />
     <Compile Include="Twitch\DataTimer.cs" />
-    <Compile Include="Twitch\IrcMessage.cs" />
+    <Compile Include="Twitch\Model\IrcMessage.cs" />
+    <Compile Include="Twitch\ITwitchClient.cs" />
+    <Compile Include="Twitch\ITwitchIrcClient.cs" />
     <Compile Include="Twitch\TwitchIrcClient.cs" />
     <Compile Include="Twitch\TwitchClient.cs" />
     <Compile Include="Twitch\WhisperQueue.cs" />
-    <Compile Include="Twitch\WhisperRecord.cs" />
+    <Compile Include="Twitch\Model\WhisperRecord.cs" />
     <Compile Include="Utils\AutofacSetup.cs" />
     <Compile Include="Utils\ChatController.cs" />
     <Compile Include="Utils\Extensions.cs" />
+    <Compile Include="Utils\KeyComparer.cs" />
     <Compile Include="Utils\RollingTimer.cs" />
     <Compile Include="Wolfcoins.cs" />
   </ItemGroup>

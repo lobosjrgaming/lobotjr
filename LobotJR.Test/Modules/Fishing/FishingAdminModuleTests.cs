@@ -2,6 +2,7 @@
 using LobotJR.Command.System.Fishing;
 using LobotJR.Data;
 using LobotJR.Test.Mocks;
+using LobotJR.Twitch.Model;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Linq;
 
@@ -32,7 +33,7 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void DebugTournamentStartsTournament()
         {
-            var response = AdminModule.DebugTournament("");
+            var response = AdminModule.DebugTournament("", null);
             Assert.IsTrue(response.Processed);
             Assert.IsTrue(TournamentSystem.IsRunning);
         }
@@ -40,7 +41,7 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void DebugCatchCatchesManyFish()
         {
-            var response = AdminModule.DebugCatch("");
+            var response = AdminModule.DebugCatch("", new User("", ""));
             Assert.IsTrue(response.Processed);
             Assert.AreEqual(50, response.Debug.Count);
             Assert.IsTrue(response.Debug.Any(x => Manager.FishData.Read().Any(y => x.Contains(y.Name))));

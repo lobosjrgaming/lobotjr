@@ -1,5 +1,6 @@
 ﻿using LobotJR.Trigger;
 using LobotJR.Trigger.Responder;
+using LobotJR.Twitch.Model;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
 using Wolfcoins;
@@ -35,7 +36,7 @@ namespace LobotJR.Test.Trigger
         [TestMethod]
         public void TriggerManagerBlocksLinksForNewUsers()
         {
-            var response = Manager.ProcessTrigger("butt.ass", "NewUser");
+            var response = Manager.ProcessTrigger("butt.ass", new User("NewUser", "999"));
             Assert.IsTrue(response.Processed);
             Assert.IsTrue(response.TimeoutSender);
         }
@@ -43,7 +44,7 @@ namespace LobotJR.Test.Trigger
         [TestMethod]
         public void TriggerManagerBlocksLinksForUsersUnderLevel2()
         {
-            var response = Manager.ProcessTrigger("butt.ass", "Level1");
+            var response = Manager.ProcessTrigger("butt.ass", new User("Level1", ""));
             Assert.IsTrue(response.Processed);
             Assert.IsTrue(response.TimeoutSender);
         }
@@ -51,14 +52,14 @@ namespace LobotJR.Test.Trigger
         [TestMethod]
         public void TriggerManagerAllowsLinksForSubs()
         {
-            var response = Manager.ProcessTrigger("butt.ass", "Sub");
+            var response = Manager.ProcessTrigger("butt.ass", new User("Sub", "") { IsSub = true });
             Assert.IsNull(response);
         }
 
         [TestMethod]
         public void TriggerManagerAllowsLinksForLevel2()
         {
-            var response = Manager.ProcessTrigger("butt.ass", "Level2");
+            var response = Manager.ProcessTrigger("butt.ass", new User("Level2", ""));
             Assert.IsNull(response);
         }
     }

@@ -20,7 +20,7 @@ namespace LobotJR.Test.Modules.AccessControl
             var command = Module.Commands.Where(x => x.Name.Equals("RestrictCommand")).FirstOrDefault();
             var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var baseCount = role.Commands.Count;
-            var result = command.AnonymousExecutor("CommandMock.Unrestricted TestRole");
+            var result = command.Executor("CommandMock.Unrestricted TestRole", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses.Any(x => x.Contains("success", StringComparison.OrdinalIgnoreCase)));
@@ -34,19 +34,19 @@ namespace LobotJR.Test.Modules.AccessControl
             var command = Module.Commands.Where(x => x.Name.Equals("RestrictCommand")).FirstOrDefault();
             var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var wrongParameterCount = "BadInput";
-            var result = command.AnonymousExecutor(wrongParameterCount);
+            var result = command.Executor(wrongParameterCount, null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].StartsWith("Error:", StringComparison.OrdinalIgnoreCase));
             Assert.IsFalse(result.Responses[0].Contains(wrongParameterCount));
             var roleToAddTo = "TestRole";
             var commandToAdd = "CommandMock.Bar";
-            result = command.AnonymousExecutor($" {roleToAddTo}");
+            result = command.Executor($" {roleToAddTo}", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].StartsWith("Error:", StringComparison.OrdinalIgnoreCase));
             Assert.IsFalse(result.Responses[0].Contains(roleToAddTo));
-            result = command.AnonymousExecutor($"{commandToAdd} ");
+            result = command.Executor($"{commandToAdd} ", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].StartsWith("Error:", StringComparison.OrdinalIgnoreCase));
@@ -59,7 +59,7 @@ namespace LobotJR.Test.Modules.AccessControl
             var command = Module.Commands.Where(x => x.Name.Equals("RestrictCommand")).FirstOrDefault();
             var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var roleToAdd = "NotTestRole";
-            var result = command.AnonymousExecutor($"CommandMock.Unrestricted {roleToAdd}");
+            var result = command.Executor($"CommandMock.Unrestricted {roleToAdd}", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
@@ -73,7 +73,7 @@ namespace LobotJR.Test.Modules.AccessControl
             var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var commandToAdd = "CommandMock.Invalid";
             var roleToAdd = "TestRole";
-            var result = command.AnonymousExecutor($"{commandToAdd} {roleToAdd}");
+            var result = command.Executor($"{commandToAdd} {roleToAdd}", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             var response = result.Responses[0];
@@ -89,7 +89,7 @@ namespace LobotJR.Test.Modules.AccessControl
             var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var commandToAdd = "CommandMock.Foo";
             var roleToAddTo = "TestRole";
-            var result = command.AnonymousExecutor($"{commandToAdd} {roleToAddTo}");
+            var result = command.Executor($"{commandToAdd} {roleToAddTo}", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             var response = result.Responses[0];
@@ -103,7 +103,7 @@ namespace LobotJR.Test.Modules.AccessControl
         {
             var command = Module.Commands.Where(x => x.Name.Equals("ListCommands")).FirstOrDefault();
 
-            var result = command.AnonymousExecutor("");
+            var result = command.Executor("", null);
 
             var commandModule = CommandModuleMock.Object;
             var subCommandModule = SubCommandModuleMock.Object;
@@ -129,7 +129,7 @@ namespace LobotJR.Test.Modules.AccessControl
             var command = Module.Commands.Where(x => x.Name.Equals("UnrestrictCommand")).FirstOrDefault();
             var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var commandToRemove = "CommandMock.Foo";
-            var result = command.AnonymousExecutor($"{commandToRemove} TestRole");
+            var result = command.Executor($"{commandToRemove} TestRole", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses.Any(x => x.Contains("success", StringComparison.OrdinalIgnoreCase)));
@@ -142,17 +142,17 @@ namespace LobotJR.Test.Modules.AccessControl
             var command = Module.Commands.Where(x => x.Name.Equals("UnrestrictCommand")).FirstOrDefault();
             var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var wrongParameterCount = "BadInput";
-            var result = command.AnonymousExecutor(wrongParameterCount);
+            var result = command.Executor(wrongParameterCount, null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].StartsWith("Error:", StringComparison.OrdinalIgnoreCase));
             var roleToRemove = "TestRole";
             var commandToRemove = "CommandMock.Foo";
-            result = command.AnonymousExecutor($" {roleToRemove}");
+            result = command.Executor($" {roleToRemove}", null);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].StartsWith("Error:", StringComparison.OrdinalIgnoreCase));
             Assert.IsFalse(result.Responses[0].Contains(roleToRemove));
-            result = command.AnonymousExecutor($"{commandToRemove} ");
+            result = command.Executor($"{commandToRemove} ", null);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].StartsWith("Error:", StringComparison.OrdinalIgnoreCase));
             Assert.IsFalse(result.Responses[0].Contains(commandToRemove));
@@ -164,7 +164,7 @@ namespace LobotJR.Test.Modules.AccessControl
             var command = Module.Commands.Where(x => x.Name.Equals("UnrestrictCommand")).FirstOrDefault();
             var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var commandToRemove = "CommandMock.Unrestricted";
-            var result = command.AnonymousExecutor($"{commandToRemove} TestRole");
+            var result = command.Executor($"{commandToRemove} TestRole", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].StartsWith("Error:", StringComparison.OrdinalIgnoreCase));
@@ -177,7 +177,7 @@ namespace LobotJR.Test.Modules.AccessControl
             var command = Module.Commands.Where(x => x.Name.Equals("UnrestrictCommand")).FirstOrDefault();
             var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var roleToRemove = "NotTestRole";
-            var result = command.AnonymousExecutor($"CommandMock.Unrestricted {roleToRemove}");
+            var result = command.Executor($"CommandMock.Unrestricted {roleToRemove}", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].StartsWith("Error:", StringComparison.OrdinalIgnoreCase));
@@ -190,7 +190,7 @@ namespace LobotJR.Test.Modules.AccessControl
             var command = Module.Commands.Where(x => x.Name.Equals("UnrestrictCommand")).FirstOrDefault();
             var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
             var commandToRemove = "CommandMock.None";
-            var result = command.AnonymousExecutor($"{commandToRemove} TestRole");
+            var result = command.Executor($"{commandToRemove} TestRole", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].StartsWith("Error:", StringComparison.OrdinalIgnoreCase));

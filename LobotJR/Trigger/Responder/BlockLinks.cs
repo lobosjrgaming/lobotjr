@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using LobotJR.Twitch.Model;
+using System.Text.RegularExpressions;
 using Wolfcoins;
 
 namespace LobotJR.Trigger.Responder
@@ -13,12 +14,13 @@ namespace LobotJR.Trigger.Responder
             UserList = currency;
         }
 
-        public TriggerResult Process(Match match, string user)
+        public TriggerResult Process(Match match, User user)
         {
-            var userHasXp = UserList.xpList.ContainsKey(user);
             if (!match.Groups[0].Value.Equals("d.va")
-                && !UserList.subSet.Contains(user)
-                && (userHasXp && (UserList.determineLevel(user) < 2) || !userHasXp))
+                && !user.IsSub
+                && !user.IsMod
+                && UserList.determineLevel(user.Username) < 2
+                && UserList.determinePrestige(user.Username) < 1)
             {
                 return new TriggerResult()
                 {

@@ -91,17 +91,17 @@ namespace LobotJR.Test.Systems.Fishing
         [TestMethod]
         public void UpdatesPersonalLeaderboardWithNewFishType()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
-            var records = Manager.Catches.Read(x => x.UserId.Equals(userId));
-            DataUtils.ClearFisherRecords(Manager, userId);
+            var user = Manager.Users.Read().First();
+            var records = Manager.Catches.Read(x => x.UserId.Equals(user.TwitchId));
+            DataUtils.ClearFisherRecords(Manager, user);
             var catchData = new Catch()
             {
                 Fish = Manager.FishData.Read().First(),
-                UserId = userId,
+                UserId = user.TwitchId,
                 Weight = 100
             };
-            var result = LeaderboardSystem.UpdatePersonalLeaderboard(userId, catchData);
-            var updatedRecords = Manager.Catches.Read(x => x.UserId.Equals(userId));
+            var result = LeaderboardSystem.UpdatePersonalLeaderboard(user.TwitchId, catchData);
+            var updatedRecords = Manager.Catches.Read(x => x.UserId.Equals(user.TwitchId));
             Assert.IsTrue(result);
             Assert.AreEqual(1, updatedRecords.Count());
             Assert.AreEqual(catchData.Fish.Id, updatedRecords.ElementAt(0).Fish.Id);
@@ -225,8 +225,8 @@ namespace LobotJR.Test.Systems.Fishing
         [TestMethod]
         public void CatchFishUpdatesLeaderboardWhileTournamentActive()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
-            var fisher = FishingSystem.GetFisherById(userId);
+            var user = Manager.Users.Read().First();
+            var fisher = FishingSystem.GetFisherByUser(user);
             var callbackMock = new Mock<LeaderboardEventHandler>();
             LeaderboardSystem.NewGlobalRecord += callbackMock.Object;
             var leaderboard = Manager.FishingLeaderboard.Read();
