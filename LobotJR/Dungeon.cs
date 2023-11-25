@@ -24,7 +24,7 @@ namespace Adventures
 
         DateTime lastMessage;
         readonly HashSet<string> receivers;
-        readonly TwitchClient twitchClient;
+        readonly ITwitchClient twitchClient;
         readonly UserSystem userSystem;
         public Queue<List<string>> messageQueue;
         static readonly int cooldown = 9000;
@@ -35,7 +35,7 @@ namespace Adventures
             twitchClient.QueueWhisper(user, message);
         }
 
-        public DungeonMessager(ref UserSystem userSystem, ref TwitchClient twitchClient, string channel, Party myParty)
+        public DungeonMessager(ref UserSystem userSystem, ref ITwitchClient twitchClient, string channel, Party myParty)
         {
             HashSet<string> temp = new HashSet<string>();
             foreach (var member in myParty.members)
@@ -299,7 +299,7 @@ namespace Adventures
             myChannel = channel;
         }
 
-        public Party RunDungeon(Party myParty, ref UserSystem userSystem, ref TwitchClient whisper)
+        public Party RunDungeon(Party myParty, ref UserSystem userSystem, ref ITwitchClient whisper)
         {
             messenger = new DungeonMessager(ref userSystem, ref whisper, myChannel, myParty);
             List<Rewards> partyRewards = new List<Rewards>();

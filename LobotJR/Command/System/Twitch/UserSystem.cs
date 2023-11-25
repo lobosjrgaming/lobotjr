@@ -33,7 +33,7 @@ namespace LobotJR.Command.System.Twitch
 
         private readonly IRepository<User> Users;
         private readonly AppSettings Settings;
-        private readonly TwitchClient TwitchClient;
+        private readonly ITwitchClient TwitchClient;
         private DateTime? LookupTimer = null;
         private List<LookupRequest> LookupRequests = new List<LookupRequest>();
 
@@ -54,7 +54,7 @@ namespace LobotJR.Command.System.Twitch
         /// </summary>
         public User ChatUser { get; private set; }
 
-        public UserSystem(IRepositoryManager repositoryManager, TwitchClient twitchClient)
+        public UserSystem(IRepositoryManager repositoryManager, ITwitchClient twitchClient)
         {
             Users = repositoryManager.Users;
             Settings = repositoryManager.AppSettings.Read().First();
@@ -79,13 +79,13 @@ namespace LobotJR.Command.System.Twitch
         /// <returns>The user object for each user provided.</returns>
         public async Task<IEnumerable<User>> GetUsersByNames(params string[] names)
         {
-            var known = Users.Read(x => names.Contains(x.Username, StringComparer.OrdinalIgnoreCase));
+            var known = Users.Read(x => names.Contains(x.Username, StringComparer.OrdinalIgnoreCase)).ToList();
             var missing = names.Except(known.Select(x => x.Username), StringComparer.OrdinalIgnoreCase);
             if (missing.Any())
             {
                 var lookup = await TwitchClient.GetTwitchUsers(missing);
                 var users = CreateUsers(lookup);
-                known = known.Concat(users);
+                known.AddRange(users);
             }
             return known;
         }
@@ -207,12 +207,8 @@ namespace LobotJR.Command.System.Twitch
                 .Union(subs.ToDictionary(x => x.UserId, x => x.UserName))
                 .Union(chatters.ToDictionary(x => x.UserId, x => x.UserName)).ToDictionary(x => x.Key, x => x.Value);
 
-            Logger.Info("All users: {allUsers}", string.Join(", ", allUsers));
-            Logger.Info("All keys: {allKeys}", string.Join(", ", allUsers.Keys));
             var existingUsers = Users.Read(x => allUsers.Keys.Contains(x.TwitchId)).ToDictionary(x => x.TwitchId, x => x.Username);
-            Logger.Info("Existing users: {existingUsers}", string.Join(", ", existingUsers));
             var newUsers = allUsers.Except(existingUsers, new KeyComparer<string, string>());
-            Logger.Info("New users: {newUsers}", string.Join(", ", newUsers));
 
             foreach (var user in newUsers)
             {
@@ -299,16 +295,23 @@ namespace LobotJR.Command.System.Twitch
             LookupTimer = null;
 
             var newUsers = CreateUsers(users);
+            var newUserNames = newUsers.Select(x => x.Username);
 
-            foreach (var request in LookupRequests)
+            var matchedRequests = LookupRequests.Where(x => newUserNames.Contains(x.Username, StringComparer.OrdinalIgnoreCase));
+
+            foreach (var request in matchedRequests)
             {
-                var match = newUsers.FirstOrDefault(x => x.Username.Equals(request.Username, StringComparison.OrdinalIgnoreCase));
-                if (match != null)
-                {
-                    var user = Users.Read(x => match.Id.Equals(x.TwitchId)).FirstOrDefault();
-                    request.Callback(user);
-                }
+                var user = newUsers.FirstOrDefault(x => x.Username.Equals(request.Username, StringComparison.OrdinalIgnoreCase));
+                request.Callback(user);
             }
+
+            var failedRequests = LookupRequests.Except(matchedRequests);
+            if (failedRequests.Any())
+            {
+                Logger.Warn("Lookup requests for the following users failed: {userList}", failedRequests.Select(x => x.Username));
+                Logger.Warn("This probably shouldn't happen, please contact the developer");
+            }
+            LookupRequests.Clear();
         }
 
         public async Task Process(bool broadcasting)

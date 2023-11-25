@@ -292,7 +292,7 @@ namespace LobotJR.Command
         /// <param name="result">The command result object.</param>
         /// <param name="irc">The twitch irc client to send messages through.</param>
         /// <param name="twitchClient">The twitch API client to send whispers through.</param>
-        public void HandleCommandResult(string whisperMessage, CommandResult result, TwitchIrcClient irc, TwitchClient twitchClient)
+        public void HandleCommandResult(string whisperMessage, CommandResult result, ITwitchIrcClient irc, ITwitchClient twitchClient)
         {
             if (result.TimeoutSender)
             {

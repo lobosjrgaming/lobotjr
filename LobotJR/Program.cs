@@ -418,8 +418,8 @@ namespace TwitchBot
                 #endregion
 
                 #region Twitch Setup
-                var twitchClient = scope.Resolve<TwitchClient>();
-                var ircClient = scope.Resolve<TwitchIrcClient>();
+                var twitchClient = scope.Resolve<ITwitchClient>();
+                var ircClient = scope.Resolve<ITwitchIrcClient>();
                 var connected = ircClient.Connect().GetAwaiter().GetResult();
                 var attempts = 0;
                 while (!connected)
@@ -4614,7 +4614,7 @@ namespace TwitchBot
                 while (true) { Thread.Sleep(1000); }
             }
         }
-        static Pet GrantPet(string playerName, Currency wolfcoins, Dictionary<int, Pet> petDatabase, UserSystem userSystem, TwitchIrcClient irc, TwitchClient twitchClient)
+        static Pet GrantPet(string playerName, Currency wolfcoins, Dictionary<int, Pet> petDatabase, UserSystem userSystem, ITwitchIrcClient irc, ITwitchClient twitchClient)
         {
             List<Pet> toAward = new List<Pet>();
             // figure out the rarity of pet to give and build a list of non-duplicate pets to award
@@ -4777,7 +4777,7 @@ namespace TwitchBot
             return 1;
         }
 
-        static void WhisperPet(string user, Pet pet, UserSystem userSystem, TwitchClient twitchClient, int detail)
+        static void WhisperPet(string user, Pet pet, UserSystem userSystem, ITwitchClient twitchClient, int detail)
         {
             const int LOW_DETAIL = 0;
             const int HIGH_DETAIL = 1;
@@ -4860,7 +4860,7 @@ namespace TwitchBot
             });
         }
 
-        static void WhisperItem(string user, Item itm, UserSystem userSystem, TwitchClient twitchClient, Dictionary<int, Item> itemDatabase)
+        static void WhisperItem(string user, Item itm, UserSystem userSystem, ITwitchClient twitchClient, Dictionary<int, Item> itemDatabase)
         {
             string name = itm.itemName;
             string type = "";

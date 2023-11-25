@@ -269,7 +269,7 @@ namespace Wolfcoins
             }
         }
 
-        public void AwardXP(int xp, User user, TwitchClient twitchClient)
+        public void AwardXP(int xp, User user, ITwitchClient twitchClient)
         {
             var userName = user?.Username;
             //int value = 0;
@@ -345,7 +345,7 @@ namespace Wolfcoins
             }
         }
 
-        public void AwardXP(int xp, IEnumerable<User> users, TwitchClient twitchClient)
+        public void AwardXP(int xp, IEnumerable<User> users, ITwitchClient twitchClient)
         {
             foreach (var user in users)
             {
@@ -404,7 +404,7 @@ namespace Wolfcoins
             Logger.Info("Granted {xp} xp to current viewers.", xp);
         }
 
-        public void SetClass(User user, string choice, TwitchClient twitchClient)
+        public void SetClass(User user, string choice, ITwitchClient twitchClient)
         {
             string username = user.Username;
             switch (choice.ToLower())
@@ -468,7 +468,7 @@ namespace Wolfcoins
             }
         }
 
-        public int SetXP(int xp, User user, TwitchClient twitchClient)
+        public int SetXP(int xp, User user, ITwitchClient twitchClient)
         {
             var username = user.Username;
             if (xpList != null)
@@ -564,7 +564,7 @@ namespace Wolfcoins
             return -1;
         }
 
-        public async Task UpdateSubs(TwitchClient twitchClient)
+        public async Task UpdateSubs(ITwitchClient twitchClient)
         {
             var subs = await twitchClient.GetSubscriberListAsync();
             if (subs == null)
@@ -580,7 +580,7 @@ namespace Wolfcoins
             Logger.Info("Subscriber list has been updated!");
         }
 
-        public async Task UpdateViewers(TwitchClient twitchClient)
+        public async Task UpdateViewers(ITwitchClient twitchClient)
         {
             try
             {
@@ -827,7 +827,7 @@ namespace Wolfcoins
 
         }
 
-        public void ChangeClass(string user, int newClass, UserSystem userSystem, TwitchClient twitchClient)
+        public void ChangeClass(string user, int newClass, UserSystem userSystem, ITwitchClient twitchClient)
         {
             if (classList != null && coinList != null)
             {

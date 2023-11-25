@@ -199,7 +199,7 @@ namespace LobotJR.Utils
             { "dd", new KeyPress('F') }
         };
 
-        public void Play(TwitchIrcClient irc)
+        public void Play(ITwitchIrcClient irc)
         {
             Process[] p = Process.GetProcessesByName("DARKSOULS");
             IntPtr h = (IntPtr)0;

@@ -85,9 +85,9 @@ namespace LobotJR.Utils
 
         private static void RegisterManagers(ContainerBuilder builder, ClientData clientData, TokenData tokenData)
         {
-            builder.RegisterType<TwitchClient>().AsSelf().InstancePerLifetimeScope()
+            builder.RegisterType<TwitchClient>().AsSelf().As<ITwitchClient>().InstancePerLifetimeScope()
                 .WithParameters(new Parameter[] { new TypedParameter(typeof(ClientData), clientData), new TypedParameter(typeof(TokenData), tokenData) });
-            builder.RegisterType<TwitchIrcClient>().AsSelf().InstancePerLifetimeScope()
+            builder.RegisterType<TwitchIrcClient>().AsSelf().As<ITwitchIrcClient>().InstancePerLifetimeScope()
                 .WithParameters(new Parameter[] { new TypedParameter(typeof(TokenData), tokenData) });
             builder.RegisterType<SystemManager>().AsSelf().As<ISystemManager>().InstancePerLifetimeScope();
             builder.RegisterType<CommandManager>().AsSelf().As<ICommandManager>().InstancePerLifetimeScope();

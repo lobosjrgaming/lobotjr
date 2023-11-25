@@ -19,7 +19,7 @@ namespace LobotJR.Twitch
     /// <summary>
     /// Client that provide access to common Twitch API endpoints.
     /// </summary>
-    public class TwitchClient
+    public class TwitchClient : ITwitchClient
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private List<string> Blacklist = new List<string>();
@@ -86,23 +86,11 @@ namespace LobotJR.Twitch
         }
 
         /// <summary>
-        /// Sends a whisper to a user asynchronously.
+        /// Queues a whisper to send.
         /// </summary>
-        /// <param name="userId">The Twitch id of the user to send the message to.</param>
+        /// <param name="user">The user object of the user to send the message
+        /// to.</param>
         /// <param name="message">The message to send.</param>
-        /// <returns>True if the whisper was sent successfully.</returns>
-        private async Task<HttpStatusCode> WhisperAsync(string userId, string message)
-        {
-            var result = await Whisper.Post(TokenData.ChatToken, ClientData, TokenData.ChatId, userId, message);
-            return result?.StatusCode ?? (HttpStatusCode)0;
-        }
-
-        /// <summary>
-        /// Sends a whisper to a user synchronously.
-        /// </summary>
-        /// <param name="user">The name of the user to send the message to.</param>
-        /// <param name="message">The message to send.</param>
-        /// <returns>True if the whisper was sent successfully.</returns>
         public void QueueWhisper(User user, string message)
         {
             if (user != null && !Blacklist.Contains(user.Username))
@@ -112,11 +100,11 @@ namespace LobotJR.Twitch
         }
 
         /// <summary>
-        /// Sends a whisper to a group of users synchronously.
+        /// Queues a whisper to send to multiple users.
         /// </summary>
-        /// <param name="users">A collection of users to message.</param>
+        /// <param name="users">An enumerable collection of user objects to
+        /// send the whisper to.</param>
         /// <param name="message">The message to send.</param>
-        /// <returns>True if all whispers were sent successfully.</returns>
         public void QueueWhisper(IEnumerable<User> users, string message)
         {
             foreach (var user in users)
@@ -125,8 +113,15 @@ namespace LobotJR.Twitch
             }
         }
 
+        private async Task<HttpStatusCode> WhisperAsync(string userId, string message)
+        {
+            var result = await Whisper.Post(TokenData.ChatToken, ClientData, TokenData.ChatId, userId, message);
+            return result?.StatusCode ?? (HttpStatusCode)0;
+        }
+
         /// <summary>
-        /// Attempts to re-send all whispers that failed due to the id not being in the cache.
+        /// Processes the whisper queue, sending as many queued whispers as
+        /// possible while remaining within the rate limits set by Twitch.
         /// </summary>
         public async Task ProcessQueue()
         {
@@ -167,7 +162,6 @@ namespace LobotJR.Twitch
         /// <param name="duration">The duration of the timeout. Null for a permanent ban.</param>
         /// <param name="message">The message to send along with the timeout.</param>
         /// <returns>True if the timeout was executed successfully.</returns>
-        /// <exception cref="Exception">If the Twitch user id cannot be retrieved.</exception>
         public async Task<bool> TimeoutAsync(User user, int? duration, string message)
         {
             var result = await BanUser.Post(TokenData.ChatToken, ClientData, TokenData.BroadcastId, TokenData.ChatId, user.TwitchId, duration, message);
@@ -181,7 +175,6 @@ namespace LobotJR.Twitch
         /// <param name="duration">The duration of the timeout. Null for a permanent ban.</param>
         /// <param name="message">The message to send along with the timeout.</param>
         /// <returns>True if the timeout was executed successfully.</returns>
-        /// <exception cref="Exception">If the Twitch user id cannot be retrieved.</exception>
         public bool Timeout(User user, int? duration, string message)
         {
             return TimeoutAsync(user, duration, message).GetAwaiter().GetResult();

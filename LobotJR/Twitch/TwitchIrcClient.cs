@@ -16,7 +16,7 @@ namespace LobotJR.Twitch
     /// <summary>
     /// IRC client built for Twitch.
     /// </summary>
-    public class TwitchIrcClient
+    public class TwitchIrcClient : ITwitchIrcClient
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private static readonly string Url = "irc.chat.twitch.tv";
@@ -31,7 +31,7 @@ namespace LobotJR.Twitch
         private StreamReader InputStream;
         private StreamWriter OutputStream;
         private TokenData TokenData;
-        private TwitchClient TwitchClient;
+        private ITwitchClient TwitchClient;
         private bool IsSecure;
 
         private CancellationTokenSource CancellationTokenSource;
@@ -51,7 +51,7 @@ namespace LobotJR.Twitch
         /// <param name="tokenData">The token data for the authenticated users.</param>
         /// <param name="twitchClient">The twitch client to use when refreshing
         /// the auth token.</param>
-        public TwitchIrcClient(TokenData tokenData, TwitchClient twitchClient)
+        public TwitchIrcClient(TokenData tokenData, ITwitchClient twitchClient)
         {
             Client = new TcpClient();
             TokenData = tokenData;

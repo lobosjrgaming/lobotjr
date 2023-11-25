@@ -42,9 +42,12 @@ namespace LobotJR.Test.Mocks
 
         public static void InitializeUsers(MockContext context)
         {
-            context.Users.Add(new User() { TwitchId = "01", Username = "Streamer" });
-            context.Users.Add(new User() { TwitchId = "02", Username = "Bot" });
+            context.Users.Add(new User() { TwitchId = "01", Username = "Streamer", IsAdmin = true });
+            context.Users.Add(new User() { TwitchId = "02", Username = "Bot", IsAdmin = true });
             context.Users.Add(new User() { TwitchId = "03", Username = "Dev" });
+            context.Users.Add(new User() { TwitchId = "04", Username = "Mod", IsMod = true });
+            context.Users.Add(new User() { TwitchId = "05", Username = "Sub", IsSub = true });
+            context.Users.Add(new User() { TwitchId = "06", Username = "Vip", IsVip = true });
             context.Users.Add(new User() { TwitchId = "10", Username = "Foo" });
             context.Users.Add(new User() { TwitchId = "11", Username = "Bar" });
             context.Users.Add(new User() { TwitchId = "12", Username = "Fizz" });
@@ -136,6 +139,7 @@ namespace LobotJR.Test.Mocks
             appSettings.FishingUseNormalSizes = false;
             appSettings.UserDatabaseUpdateTime = 2;
             appSettings.MaxWhisperRecipients = 10;
+            appSettings.UserLookupBatchTime = 0;
             context.AppSettings.Add(appSettings);
         }
 

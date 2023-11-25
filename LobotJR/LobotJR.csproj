@@ -18,7 +18,7 @@
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>true</MapFileExtensions>
     <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>1.0.11.0</ApplicationVersion>
+    <ApplicationVersion>1.0.12.0</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
@@ -220,6 +220,8 @@
     <Compile Include="Trigger\TriggerResult.cs" />
     <Compile Include="Twitch\DataTimer.cs" />
     <Compile Include="Twitch\Model\IrcMessage.cs" />
+    <Compile Include="Twitch\ITwitchClient.cs" />
+    <Compile Include="Twitch\ITwitchIrcClient.cs" />
     <Compile Include="Twitch\TwitchIrcClient.cs" />
     <Compile Include="Twitch\TwitchClient.cs" />
     <Compile Include="Twitch\WhisperQueue.cs" />
