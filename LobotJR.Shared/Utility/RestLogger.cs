@@ -59,6 +59,9 @@ namespace LobotJR.Shared.Utility
         /// <param name="maskExtra">Whether or not to mask extra security info.</param>
         public static async void LogRequest(HttpRequestMessage request, Logger logger, bool maskExtra)
         {
+            var diag = new System.Diagnostics.StackTrace(true);
+            var frames = diag.GetFrames().Reverse().Where(x => !string.IsNullOrWhiteSpace(x.GetFileName()));
+            logger.Debug("Http request from {trace}", string.Join(" -> ", frames.Select(x => $"{x.GetFileName()}:{x.GetFileLineNumber()}")));
             var uri = request.RequestUri.ToString();
             if (maskExtra && uri.Contains("?"))
             {

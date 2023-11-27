@@ -436,8 +436,6 @@ namespace TwitchBot
                 {
                     #region NormalBot
                     DateTime awardLast = DateTime.Now;
-                    wolfcoins.UpdateViewers(twitchClient).GetAwaiter().GetResult();
-                    wolfcoins.UpdateSubs(twitchClient).GetAwaiter().GetResult();
 
                     #region System Setup
                     var systemManager = scope.Resolve<ISystemManager>();
@@ -734,7 +732,6 @@ namespace TwitchBot
                             if (broadcasting)
                             {
                                 awardTotal = awardAmount * awardMultiplier;
-                                wolfcoins.UpdateViewers(twitchClient).GetAwaiter().GetResult();
 
                                 // Halloween Treats
                                 //Random rnd = new Random();
@@ -744,7 +741,7 @@ namespace TwitchBot
                                 //int coinsToAward = (rnd.Next(5, 10)) * 50;
                                 //wolfcoins.AddCoins(winnerName, coinsToAward.ToString());
 
-                                wolfcoins.AwardCoins(awardTotal * 3); // Give 3x as many coins as XP
+                                wolfcoins.AwardCoins(awardTotal * 3, userSystem.Viewers); // Give 3x as many coins as XP
                                 wolfcoins.AwardXP(awardTotal, userSystem.Viewers, twitchClient);
                                 //string path2 = "C:/Users/Lobos/AppData/Roaming/DarkSoulsII/01100001004801af/`s" + DateTime.Now.Ticks + ".sl2";
                                 //File.Copy(@"C:\Users\Lobos\AppData\Roaming\DarkSoulsII\01100001004801af\DS2SOFS0000.sl2", @path2);
@@ -773,22 +770,24 @@ namespace TwitchBot
                                 if (subMessage.Equals("sub", StringComparison.OrdinalIgnoreCase)
                                     || subMessage.Equals("resub", StringComparison.OrdinalIgnoreCase))
                                 {
-                                    if (sub.Tags.TryGetValue("login", out var user))
+                                    if (sub.Tags.TryGetValue("login", out var user) && sub.Tags.TryGetValue("user-id", out var userId))
                                     {
-                                        if (!wolfcoins.subSet.Contains(user))
+                                        var subUser = userSystem.GetOrCreateUser(userId, user);
+                                        if (!subUser.IsSub)
                                         {
-                                            wolfcoins.subSet.Add(user);
+                                            userSystem.SetSub(subUser);
                                             Logger.Info("Added {user} to the subs list.", user);
                                         }
                                     }
                                 }
                                 else if (subMessage.Equals("subgift", StringComparison.OrdinalIgnoreCase))
                                 {
-                                    if (sub.Tags.TryGetValue("msg-param-recipient-name", out var user))
+                                    if (sub.Tags.TryGetValue("msg-param-recipient-name", out var user) && sub.Tags.TryGetValue("msg-param-recipient-id", out var userId))
                                     {
-                                        if (!wolfcoins.subSet.Contains(user))
+                                        var subUser = userSystem.GetOrCreateUser(userId, user);
+                                        if (!subUser.IsSub)
                                         {
-                                            wolfcoins.subSet.Add(user);
+                                            userSystem.SetSub(subUser);
                                             Logger.Info("Added {user} to the subs list.", user);
                                         }
                                     }
@@ -976,7 +975,8 @@ namespace TwitchBot
                                     }
 
                                     Logger.Debug(">>{user}: Update viewers command executed.", whisperSender);
-                                    wolfcoins.UpdateViewers(twitchClient).GetAwaiter().GetResult();
+                                    userSystem.LastUpdate = userSystem.LastUpdate - TimeSpan.FromMinutes(appSettings.UserDatabaseUpdateTime + 1);
+                                    userSystem.Process(true).GetAwaiter().GetResult();
                                 }
                                 else if (whisperMessage == "!updateitems")
                                 {
@@ -4130,13 +4130,13 @@ namespace TwitchBot
                         #region messageRegion
                         foreach (var message in messages)
                         {
-                            var chatter = userSystem.GetOrCreateUser(message.UserId, message.UserName);
                             if (!string.IsNullOrWhiteSpace(message.Message))
                             {
                                 string[] first = message.Message.Split(' ');
                                 string chatMessage = message.Message;
                                 string sender = message.UserName;
                                 string senderId = message.UserId;
+                                var chatter = userSystem.GetOrCreateUser(message.UserId, message.UserName);
 
                                 #region Trigger Processing
                                 var triggerResult = triggerManager.ProcessTrigger(chatMessage, chatter);
@@ -4307,10 +4307,7 @@ namespace TwitchBot
 
                                     case "!xpon":
                                         {
-                                            wolfcoins.UpdateViewers(twitchClient).GetAwaiter().GetResult();
-                                            var allowed = new List<string>(new string[] { tokenData.BroadcastUser, tokenData.ChatUser, "lan5432" });
-                                            allowed.AddRange(wolfcoins.moderatorList);
-                                            if (allowed.Any(x => x.Equals(sender, StringComparison.OrdinalIgnoreCase)))
+                                            if (chatter.IsAdmin || chatter.IsMod)
                                             {
                                                 if (!broadcasting)
                                                 {
@@ -4331,17 +4328,14 @@ namespace TwitchBot
                                             }
                                             else
                                             {
-                                                Logger.Debug(">>{user}: Xpon command ignored from unauthorized sender. Authorized senders: {authorized}", sender, string.Join(", ", allowed));
+                                                Logger.Debug(">>{user}: Xpon command ignored from unauthorized sender. Only admins and mods can use this command.", sender);
                                             }
                                         }
                                         break;
 
                                     case "!xpoff":
                                         {
-                                            wolfcoins.UpdateViewers(twitchClient).GetAwaiter().GetResult();
-                                            var allowed = new List<string>(new string[] { tokenData.BroadcastUser, tokenData.ChatUser, "lan5432" });
-                                            allowed.AddRange(wolfcoins.moderatorList);
-                                            if (allowed.Any(x => x.Equals(sender, StringComparison.OrdinalIgnoreCase)))
+                                            if (chatter.IsAdmin || chatter.IsMod)
                                             {
                                                 if (broadcasting)
                                                 {
@@ -4358,7 +4352,7 @@ namespace TwitchBot
                                             }
                                             else
                                             {
-                                                Logger.Debug(">>{user}: Xpoff command ignored from unauthorized sender. Authorized senders: {authorized}", sender, string.Join(", ", allowed));
+                                                Logger.Debug(">>{user}: Xpoff command ignored from unauthorized sender. Only admins and mods can use this command.", sender);
                                             }
                                         }
                                         break;
@@ -4556,15 +4550,18 @@ namespace TwitchBot
                                                 {
                                                     if (int.TryParse(first[2], out int value))
                                                     {
-                                                        if (wolfcoins.AddCoins(first[1], value))
+                                                        userSystem.GetUserByNameAsync(first[1], (User user) =>
                                                         {
-                                                            Logger.Debug(">>{user}: Granted {coins} coins to {target}.", sender, value, first[1]);
-                                                            ircClient.QueueMessage($"{sender} granted {first[1]} {value} coins.");
-                                                        }
-                                                        else
-                                                        {
-                                                            Logger.Debug(">>{user}: Unable to add {coins} coins to {target}.", sender, value, first[1]);
-                                                        }
+                                                            if (wolfcoins.AddCoins(user, value))
+                                                            {
+                                                                Logger.Debug(">>{user}: Granted {coins} coins to {target}.", sender, value, first[1]);
+                                                                ircClient.QueueMessage($"{sender} granted {first[1]} {value} coins.");
+                                                            }
+                                                            else
+                                                            {
+                                                                Logger.Debug(">>{user}: Unable to add {coins} coins to {target}.", sender, value, first[1]);
+                                                            }
+                                                        });
                                                     }
                                                     else
                                                     {

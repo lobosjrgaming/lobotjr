@@ -52,6 +52,7 @@ namespace LobotJR.Test.Mocks
             context.Users.Add(new User() { TwitchId = "11", Username = "Bar" });
             context.Users.Add(new User() { TwitchId = "12", Username = "Fizz" });
             context.Users.Add(new User() { TwitchId = "13", Username = "Buzz" });
+            context.Users.Add(new User() { TwitchId = "20", Username = "Super", IsMod = true, IsSub = true, IsVip = true });
         }
 
         public static void InitializeUserRoles(MockContext context)

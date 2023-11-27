@@ -11,7 +11,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Wolfcoins
 {
@@ -80,9 +79,6 @@ namespace Wolfcoins
         public Dictionary<string, int> xpList = new Dictionary<string, int>();
         public Dictionary<string, CharClass> classList = new Dictionary<string, CharClass>();
 
-        public List<string> moderatorList = new List<string>();
-        public List<string> viewerList = new List<string>();
-        public HashSet<string> subSet = new HashSet<string>();
         private readonly string path = "wolfcoins.json";
         private readonly string xpPath = "XP.json";
         private readonly string classPath = "classData.json";
@@ -220,17 +216,12 @@ namespace Wolfcoins
             return "INVALID CLASS";
         }
 
-        public void AwardCoins(int coins)
+        public void AwardCoins(int coins, IEnumerable<User> users)
         {
 
-            for (int i = 0; i <= viewerList.Count - 1; i++)
+            foreach (var user in users)
             {
-                //int value = 0;
-                if (coinList != null)
-                {
-                    AddCoins(viewerList[i], coins);
-                }
-
+                AddCoins(user, coins);
             }
             Logger.Info("Added {coins} coins to current viewers.", coins);
         }
@@ -354,7 +345,7 @@ namespace Wolfcoins
                 {
                     var username = user.Username;
                     int prevLevel = determineLevel(username);
-                    AddXP(username, xp.ToString());
+                    AddXP(user, xp.ToString());
                     int newLevel = determineLevel(username);
                     if (newLevel > MAX_LEVEL)
                     {
@@ -564,54 +555,6 @@ namespace Wolfcoins
             return -1;
         }
 
-        public async Task UpdateSubs(ITwitchClient twitchClient)
-        {
-            var subs = await twitchClient.GetSubscriberListAsync();
-            if (subs == null)
-            {
-                Logger.Error("Unable to retrieve subscriber list.");
-                return;
-            }
-
-            foreach (var sub in subs)
-            {
-                subSet.Add(sub.UserName);
-            }
-            Logger.Info("Subscriber list has been updated!");
-        }
-
-        public async Task UpdateViewers(ITwitchClient twitchClient)
-        {
-            try
-            {
-                viewerList.Clear();
-                moderatorList.Clear();
-                var chatters = await twitchClient.GetChatterListAsync();
-                if (chatters != null)
-                {
-                    viewerList = chatters.Where(x => x != null).Select(x => x.UserLogin).ToList();
-                }
-                else
-                {
-                    Logger.Warn("Null response attempting to retrieve viewer list.");
-                }
-                var moderators = await twitchClient.GetModeratorListAsync();
-                if (moderators != null)
-                {
-                    moderatorList = moderators.Where(x => x != null).Select(x => x.UserLogin).ToList();
-                }
-                else
-                {
-                    Logger.Warn("Null response attempting to retrieve moderator list.");
-                }
-            }
-            catch (Exception e)
-            {
-                Logger.Error("Error updating viewers");
-                Logger.Error(e);
-            }
-        }
-
         public bool Exists(Dictionary<string, int> dic)
         {
             return (dic != null);
@@ -649,31 +592,31 @@ namespace Wolfcoins
             return false;
         }
 
-        public bool AddCoins(string user, int coins)
+        public bool AddCoins(User user, int coins)
         {
             if (coinList == null)
                 return false;
 
-            if (coinList.ContainsKey(user))
+            if (coinList.ContainsKey(user.Username))
             {
                 try
                 {
-                    int prevCoins = coinList[user];
+                    int prevCoins = coinList[user.Username];
                     checked
                     {
-                        if (subSet.Contains(user))
+                        if (user.IsSub)
                         {
                             coins *= 2;
                         }
-                        coinList[user] += coins;
+                        coinList[user.Username] += coins;
                     }
-                    if (coinList[user] > COINMAX)
+                    if (coinList[user.Username] > COINMAX)
                     {
-                        coinList[user] = COINMAX;
+                        coinList[user.Username] = COINMAX;
                     }
 
-                    if (coinList[user] < 0)
-                        coinList[user] = 0;
+                    if (coinList[user.Username] < 0)
+                        coinList[user.Username] = 0;
 
 
                     return true;
@@ -686,9 +629,9 @@ namespace Wolfcoins
 
             }
             {
-                if (!coinList.ContainsKey(user))
+                if (!coinList.ContainsKey(user.Username))
                 {
-                    coinList.Add(user, coins);
+                    coinList.Add(user.Username, coins);
 
                 }
                 else
@@ -719,31 +662,31 @@ namespace Wolfcoins
             }
         }
 
-        public bool AddXP(string user, string xp)
+        public bool AddXP(User user, string xp)
         {
             if (xpList == null)
                 return false;
 
-            if (xpList.ContainsKey(user) && int.TryParse(xp, out int value))
+            if (xpList.ContainsKey(user.Username) && int.TryParse(xp, out int value))
             {
                 try
                 {
-                    int prevXP = xpList[user];
-                    if (subSet.Contains(user.ToLower()))
+                    int prevXP = xpList[user.Username];
+                    if (user.IsSub)
                     {
                         value *= 2;
                     }
                     checked
                     {
-                        xpList[user] += value;
+                        xpList[user.Username] += value;
                     }
                     //if (xpList[user] > MAX_XP)
                     //{
                     //    xpList[user] = MAX_XP - 1;
                     //}
 
-                    if (xpList[user] < 0)
-                        xpList[user] = 0;
+                    if (xpList[user.Username] < 0)
+                        xpList[user.Username] = 0;
 
                     return true;
                 }
@@ -755,7 +698,7 @@ namespace Wolfcoins
 
 
             }
-            if (!xpList.ContainsKey(user) && int.TryParse(xp, out value))
+            if (!xpList.ContainsKey(user.Username) && int.TryParse(xp, out value))
             {
                 if (value > MAX_XP)
                     value = MAX_XP - 1;
@@ -763,7 +706,7 @@ namespace Wolfcoins
                 if (value < 0)
                     value = 0;
 
-                xpList.Add(user, value);
+                xpList.Add(user.Username, value);
 
             }
             else

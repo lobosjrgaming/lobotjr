@@ -184,6 +184,17 @@ namespace LobotJR.Command.System.Twitch
             }
         }
 
+        /// <summary>
+        /// Sets a user's subscriber flag.
+        /// </summary>
+        /// <param name="user">The user to update.</param>
+        public void SetSub(User user)
+        {
+            user.IsSub = true;
+            Users.Update(user);
+            Users.Commit();
+        }
+
         private void SyncLists(IEnumerable<string> target, Func<User, bool> checkLambda, Action<User, bool> updateLambda)
         {
             var toRemove = Users.Read(x => checkLambda(x) && !target.Any(y => y.Equals(x.TwitchId)));
@@ -202,10 +213,10 @@ namespace LobotJR.Command.System.Twitch
 
         private void ProcessUpdate(IEnumerable<TwitchUserData> mods, IEnumerable<TwitchUserData> vips, IEnumerable<SubscriptionResponseData> subs, IEnumerable<TwitchUserData> chatters)
         {
-            var allUsers = mods.ToDictionary(x => x.UserId, x => x.UserName)
-                .Union(vips.ToDictionary(x => x.UserId, x => x.UserName))
-                .Union(subs.ToDictionary(x => x.UserId, x => x.UserName))
-                .Union(chatters.ToDictionary(x => x.UserId, x => x.UserName)).ToDictionary(x => x.Key, x => x.Value);
+            var allUsers = mods.Distinct().ToDictionary(x => x.UserId, x => x.UserName)
+                .Union(vips.Distinct().ToDictionary(x => x.UserId, x => x.UserName))
+                .Union(subs.Distinct().ToDictionary(x => x.UserId, x => x.UserName))
+                .Union(chatters.Distinct().ToDictionary(x => x.UserId, x => x.UserName)).ToDictionary(x => x.Key, x => x.Value);
 
             var existingUsers = Users.Read(x => allUsers.Keys.Contains(x.TwitchId)).ToDictionary(x => x.TwitchId, x => x.Username);
             var newUsers = allUsers.Except(existingUsers, new KeyComparer<string, string>());
