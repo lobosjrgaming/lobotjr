@@ -32,7 +32,7 @@ namespace LobotJR.Test.Command
         public void InitializeLoadsRoleData()
         {
             var userRolesJson = JsonConvert.SerializeObject(UserRoles);
-            var loadedRolesJson = JsonConvert.SerializeObject(CommandManager.RepositoryManager.UserRoles.Read());
+            var loadedRolesJson = JsonConvert.SerializeObject(CommandManager.RepositoryManager.AccessGroups.Read());
             Assert.AreEqual(userRolesJson, loadedRolesJson);
         }
 

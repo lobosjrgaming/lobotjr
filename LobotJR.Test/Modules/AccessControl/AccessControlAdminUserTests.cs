@@ -19,7 +19,7 @@ namespace LobotJR.Test.Modules.AccessControl
         public void AddsUserToRole()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("EnrollUser")).FirstOrDefault();
-            var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
+            var role = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
             var baseIdCount = role.UserIds.Count;
             var result = command.Executor("NotAuth TestRole", null);
             Assert.IsTrue(result.Processed);
@@ -33,7 +33,7 @@ namespace LobotJR.Test.Modules.AccessControl
         public void AddUserErrorsOnMissingParameters()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("EnrollUser")).FirstOrDefault();
-            var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
+            var role = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
             var wrongParameterCount = "BadInput";
             var userToAdd = "NotAuth";
             var roleToAdd = "TestRole";
@@ -58,7 +58,7 @@ namespace LobotJR.Test.Modules.AccessControl
         public void AddUserErrorsOnInvalidRole()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("EnrollUser")).FirstOrDefault();
-            var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
+            var role = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
             var roleToAdd = "NotTestRole";
             var result = command.Executor($"NotAuth {roleToAdd}", null);
             Assert.IsTrue(result.Processed);
@@ -71,7 +71,7 @@ namespace LobotJR.Test.Modules.AccessControl
         public void AddUserErrorsOnExistingAssignment()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("EnrollUser")).FirstOrDefault();
-            var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
+            var role = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
             var userToAdd = "Auth";
             var result = command.Executor($"{userToAdd} TestRole", null);
             Assert.IsTrue(result.Processed);
@@ -84,7 +84,7 @@ namespace LobotJR.Test.Modules.AccessControl
         public void RemovesUserFromRole()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("UnenrollUser")).FirstOrDefault();
-            var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
+            var role = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
             var userToRemove = "Auth";
             var result = command.Executor($"{userToRemove} TestRole", null);
             Assert.IsTrue(result.Processed);
@@ -97,7 +97,7 @@ namespace LobotJR.Test.Modules.AccessControl
         public void RemoveUserErrorsOnMissingParameters()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("UnenrollUser")).FirstOrDefault();
-            var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
+            var role = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
             var wrongParameterCount = "BadInput";
             var userToRemove = "NotAuth";
             var roleToRemove = "TestRole";
@@ -122,7 +122,7 @@ namespace LobotJR.Test.Modules.AccessControl
         public void RemoveUserErrorsOnUserNotEnrolled()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("UnenrollUser")).FirstOrDefault();
-            var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
+            var role = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
             var userToRemove = "NotAuth";
             var result = command.Executor($"{userToRemove} TestRole", null);
             Assert.IsTrue(result.Processed);
@@ -135,7 +135,7 @@ namespace LobotJR.Test.Modules.AccessControl
         public void RemoveUserErrorsOnRoleNotFound()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("UnenrollUser")).FirstOrDefault();
-            var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
+            var role = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
             var roleToRemove = "NotTestRole";
             var result = command.Executor($"Auth {roleToRemove}", null);
             Assert.IsTrue(result.Processed);

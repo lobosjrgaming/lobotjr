@@ -41,7 +41,7 @@ namespace LobotJR.Test.Modules.AccessControl
             var command = Module.Commands.Where(x => x.Name.Equals("CheckAccess")).FirstOrDefault();
             var user = new User() { TwitchId = "999", Username = "NewUser" };
             var result = command.Executor(null, user);
-            var roles = CommandManager.RepositoryManager.UserRoles.Read().Select(x => x.Name);
+            var roles = CommandManager.RepositoryManager.AccessGroups.Read().Select(x => x.Name);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsFalse(roles.Any(x => result.Responses.Any(y => y.Contains(x))));
@@ -55,7 +55,7 @@ namespace LobotJR.Test.Modules.AccessControl
             var result = command.Executor(null, CommandManager.UserSystem.GetUserByName(username));
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
-            Assert.IsTrue(CommandManager.RepositoryManager.UserRoles
+            Assert.IsTrue(CommandManager.RepositoryManager.AccessGroups
                 .Read(x => x.UserIds.Any(y => y.Equals(username)))
                 .All(x => result.Responses.Any(y => y.Contains(x.Name))));
         }

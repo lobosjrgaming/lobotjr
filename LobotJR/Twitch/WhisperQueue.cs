@@ -58,16 +58,15 @@ namespace LobotJR.Twitch
         /// <summary>
         /// Adds a message to the whisper queue.
         /// </summary>
-        /// <param name="userName">The name of the user to send to.</param>
-        /// <param name="userId">The Twitch id of the user to send to.</param>
+        /// <param name="user">The user object of the user to send to.</param>
         /// <param name="message">The content of the message to send.</param>
         /// <param name="dateTime">The time the message was queued.</param>
-        public void Enqueue(string userName, string userId, string message, DateTime dateTime)
+        public void Enqueue(User user, string message, DateTime dateTime)
         {
-            var allowed = WhisperRecipients.Contains(userId) || WhisperRecipients.Count < MaxRecipients;
+            var allowed = WhisperRecipients.Contains(user.TwitchId) || WhisperRecipients.Count < MaxRecipients;
             if (allowed)
             {
-                Queue.Add(new WhisperRecord(userName, userId, message, dateTime));
+                Queue.Add(new WhisperRecord(user, message, dateTime));
             }
             else
             {
@@ -88,27 +87,27 @@ namespace LobotJR.Twitch
             {
                 if (WhisperRecipients.Count < MaxRecipients)
                 {
-                    record = Queue.Where(x => !string.IsNullOrWhiteSpace(x.UserId)).OrderBy(x => x.QueueTime).FirstOrDefault();
+                    record = Queue.Where(x => !string.IsNullOrWhiteSpace(x.User?.TwitchId)).OrderBy(x => x.QueueTime).FirstOrDefault();
                 }
                 else
                 {
-                    record = Queue.Where(x => !string.IsNullOrWhiteSpace(x.UserId) && WhisperRecipients.Contains(x.UserId)).OrderBy(x => x.QueueTime).FirstOrDefault();
+                    record = Queue.Where(x => !string.IsNullOrWhiteSpace(x.User?.TwitchId) && WhisperRecipients.Contains(x.User?.TwitchId)).OrderBy(x => x.QueueTime).FirstOrDefault();
                 }
                 if (record != null)
                 {
                     Queue.Remove(record);
                     return true;
                 }
-                else if (Queue.Any(x => !string.IsNullOrWhiteSpace(x.UserId)))
+                else if (Queue.Any(x => !string.IsNullOrWhiteSpace(x.User?.TwitchId)))
                 {
                     Logger.Warn("Failed to fetch message from queue despite queue containing messages to send. Cleaning up whisper queue.");
                     Logger.Debug("Current whisper recipients: {recipients}", string.Join(", ", WhisperRecipients));
                     Logger.Debug("Current whisper queue: ");
                     foreach (var item in Queue)
                     {
-                        Logger.Debug("  To {username} ({userid}): {message}", item.Username, item.UserId, item.Message);
+                        Logger.Debug("  To {username} ({userid}): {message}", item.User?.Username, item.User?.TwitchId, item.Message);
                     }
-                    var toRemove = Queue.Where(x => !WhisperRecipients.Contains(x.UserId));
+                    var toRemove = Queue.Where(x => !WhisperRecipients.Contains(x.User?.TwitchId));
                     Queue = Queue.Except(toRemove).ToList();
                 }
             }
@@ -144,9 +143,9 @@ namespace LobotJR.Twitch
 
             MinuteTimer.AddOccurrence(DateTime.Now);
             SecondTimer.AddOccurrence(DateTime.Now);
-            if (record.UserId != null)
+            if (!string.IsNullOrWhiteSpace(record.User?.TwitchId))
             {
-                WhisperRecipients.Add(record.UserId);
+                WhisperRecipients.Add(record.User?.TwitchId);
             }
             else
             {
@@ -169,7 +168,7 @@ namespace LobotJR.Twitch
             currentSettings.MaxWhisperRecipients = MaxRecipients;
             AppSettings.Update(currentSettings);
             AppSettings.Commit();
-            var toRemove = Queue.Where(x => !WhisperRecipients.Contains(x.UserId));
+            var toRemove = Queue.Where(x => !WhisperRecipients.Contains(x.User?.TwitchId));
             Queue = Queue.Except(toRemove).ToList();
         }
 

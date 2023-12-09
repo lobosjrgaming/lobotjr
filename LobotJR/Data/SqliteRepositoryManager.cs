@@ -1,7 +1,6 @@
 ﻿using LobotJR.Command;
 using LobotJR.Command.Model.Fishing;
 using LobotJR.Twitch;
-using LobotJR.Twitch.Model;
 using System;
 using System.Data.Entity;
 
@@ -18,7 +17,9 @@ namespace LobotJR.Data
         public IRepository<AppSettings> AppSettings { get; private set; }
         public IRepository<DataTimer> DataTimers { get; private set; }
         public IRepository<Twitch.Model.User> Users { get; private set; }
-        public IRepository<AccessGroup> UserRoles { get; private set; }
+        public IRepository<AccessGroup> AccessGroups { get; private set; }
+        public IRepository<Enrollment> Enrollments { get; private set; }
+        public IRepository<Restriction> Restrictions { get; private set; }
         public IRepository<Catch> Catches { get; private set; }
         public IRepository<LeaderboardEntry> FishingLeaderboard { get; private set; }
         public IRepository<TournamentResult> TournamentResults { get; private set; }
@@ -32,7 +33,7 @@ namespace LobotJR.Data
             AppSettings = new SqliteRepository<AppSettings>(context);
             DataTimers = new SqliteRepository<DataTimer>(context);
             Users = new SqliteRepository<Twitch.Model.User>(context);
-            UserRoles = new SqliteRepository<AccessGroup>(context);
+            AccessGroups = new SqliteRepository<AccessGroup>(context);
             Catches = new SqliteRepository<Catch>(context);
             FishingLeaderboard = new SqliteRepository<LeaderboardEntry>(context);
             TournamentResults = new SqliteRepository<TournamentResult>(context);

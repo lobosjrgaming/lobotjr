@@ -130,8 +130,24 @@ namespace LobotJR.Command
 
         private bool CanUserExecute(string commandId, User user)
         {
-            var roles = RepositoryManager.UserRoles.Read().Where(x => x.CoversCommand(commandId));
-            return !roles.Any() || roles.Any(x => x.UserIds.Contains(user.TwitchId));
+            var restrictions = RepositoryManager.Restrictions.Read().Where(x => Restriction.CoversCommand(x.Command, commandId));
+            if (restrictions.Any())
+            {
+                var groupIds = restrictions.Select(x => x.GroupId).ToList();
+                var groups = RepositoryManager.AccessGroups.Read().Where(x => groupIds.Contains(x.Id));
+
+                if ((user.IsMod && groups.Any(x => x.IncludeMods))
+                    || (user.IsVip && groups.Any(x => x.IncludeVips))
+                    || (user.IsSub && groups.Any(x => x.IncludeSubs))
+                    || (user.IsAdmin && groups.Any(x => x.IncludeAdmin)))
+                {
+                    return true;
+                }
+
+                var enrollments = RepositoryManager.Enrollments.Read().Where(x => x.UserId.Equals(user.TwitchId, StringComparison.OrdinalIgnoreCase));
+                return enrollments.Any(x => groupIds.Contains(x.GroupId));
+            }
+            return true;
         }
 
         private bool CanExecuteInChat(string commandId)

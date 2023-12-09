@@ -1,5 +1,6 @@
 ﻿using LobotJR.Command.Model.Fishing;
 using LobotJR.Data;
+using LobotJR.Twitch.Model;
 using NLog;
 using System.Collections.Generic;
 using System.Linq;
@@ -47,43 +48,43 @@ namespace LobotJR.Command.System.Fishing
         /// <summary>
         /// Gets the personal leaderboard for a user.
         /// </summary>
-        /// <param name="userId">The id of the user.</param>
+        /// <param name="user">The user object.</param>
         /// <returns>A collection of records for the user.</returns>
-        public IEnumerable<Catch> GetPersonalLeaderboard(string userId)
+        public IEnumerable<Catch> GetPersonalLeaderboard(User user)
         {
-            return PersonalLeaderboard.Read(x => x.UserId.Equals(userId)).OrderBy(x => x.FishId);
+            return PersonalLeaderboard.Read(x => x.UserId.Equals(user.TwitchId)).OrderBy(x => x.FishId);
         }
 
         /// <summary>
         /// Gets the personal leaderboard for a user.
         /// </summary>
-        /// <param name="userId">The id of the user.</param>
+        /// <param name="user">The user object.</param>
         /// <returns>A collection of records for the user.</returns>
-        public Catch GetUserRecordForFish(string userId, Fish fish)
+        public Catch GetUserRecordForFish(User user, Fish fish)
         {
-            return PersonalLeaderboard.Read(x => x.UserId.Equals(userId) && x.Fish.Equals(fish)).FirstOrDefault();
+            return PersonalLeaderboard.Read(x => x.UserId.Equals(user.TwitchId) && x.Fish.Equals(fish)).FirstOrDefault();
         }
 
         /// <summary>
         /// Updates the personal leaderboard with new data if the catch object
         /// would set a new record.
         /// </summary>
-        /// <param name="userId">The user id of the user catching the
+        /// <param name="user">The user object of the user catching the
         /// fish.</param>
         /// <param name="catchData">An object with catch data to use for the
         /// update.</param>
         /// <returns>Whether or not the leaderboard was updated.</returns>
-        public bool UpdatePersonalLeaderboard(string userId, Catch catchData)
+        public bool UpdatePersonalLeaderboard(User user, Catch catchData)
         {
-            if (userId == null || catchData == null)
+            if (user == null || catchData == null)
             {
                 return false;
             }
 
-            var record = PersonalLeaderboard.Read(x => x.UserId.Equals(userId) && x.Fish.Equals(catchData.Fish)).FirstOrDefault();
+            var record = PersonalLeaderboard.Read(x => x.UserId.Equals(user.TwitchId) && x.Fish.Equals(catchData.Fish)).FirstOrDefault();
             if (record == null || record.Weight < catchData.Weight)
             {
-                Logger.Debug("Catch set a new personal record for user {userId}, fish {fish} at {weight} pounds.", userId, catchData.Fish?.Name, catchData.Weight);
+                Logger.Debug("Catch set a new personal record for user {user}, fish {fish} at {weight} pounds.", user.Username, catchData.Fish?.Name, catchData.Weight);
                 if (record == null)
                 {
                     PersonalLeaderboard.Create(catchData);
@@ -102,17 +103,17 @@ namespace LobotJR.Command.System.Fishing
         /// <summary>
         /// Deletes a fish from a user's records.
         /// </summary>
-        /// <param name="userId">The id of the user.</param>
+        /// <param name="user">The user object of the user to modify.</param>
         /// <param name="index">The index of the fish to remove.</param>
-        public void DeleteFish(string userId, int index)
+        public void DeleteFish(User user, int index)
         {
-            if (userId != null)
+            if (user != null)
             {
-                var records = PersonalLeaderboard.Read(x => x.UserId.Equals(userId)).OrderBy(x => x.FishId);
+                var records = PersonalLeaderboard.Read(x => x.UserId.Equals(user.TwitchId)).OrderBy(x => x.FishId);
                 if (index >= 0 && records.Count() > index)
                 {
                     var record = records.ElementAt(index);
-                    Logger.Debug("Removed fish {fish} at index {index} for user id {userId}", record?.Fish?.Name, index, userId);
+                    Logger.Debug("Removed fish {fish} at index {index} for user {user}", record?.Fish?.Name, index, user.Username);
                     PersonalLeaderboard.Delete(record);
                     PersonalLeaderboard.Commit();
                 }

@@ -1,4 +1,5 @@
 ﻿using LobotJR.Data;
+using LobotJR.Twitch.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -61,22 +62,22 @@ namespace LobotJR.Command.Model.Fishing
         /// <summary>
         /// Gets the entry for a participant by username.
         /// </summary>
-        /// <param name="userId">The user id of the participant to retrieve.</param>
+        /// <param name="user">The user object of the participant to retrieve.</param>
         /// <returns>A tournament entry for the user, or null if they did not
         /// participate.</returns>
-        public TournamentEntry GetEntryById(string userId)
+        public TournamentEntry GetEntryByUser(User user)
         {
-            return Entries.Where(x => x.UserId.Equals(userId, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            return Entries.Where(x => x.UserId.Equals(user.TwitchId, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
         }
 
         /// <summary>
         /// Gets the rank of a user in the tournament by username.
         /// </summary>
-        /// <param name="userId">The user id of the participant to retrieve.</param>
+        /// <param name="user">The user object of the participant to retrieve.</param>
         /// <returns>A 1-based value indicating the users placement.</returns>
-        public int GetRankById(string userId)
+        public int GetRankByUser(User user)
         {
-            return Entries.IndexOf(Entries.FirstOrDefault(x => x.UserId.Equals(userId))) + 1;
+            return Entries.IndexOf(Entries.FirstOrDefault(x => x.UserId.Equals(user.TwitchId))) + 1;
         }
 
         /// <summary>

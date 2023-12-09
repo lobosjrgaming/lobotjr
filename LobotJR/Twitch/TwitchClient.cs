@@ -95,7 +95,7 @@ namespace LobotJR.Twitch
         {
             if (user != null && !Blacklist.Contains(user.Username))
             {
-                Queue.Enqueue(user.Username, user.TwitchId, message, DateTime.Now);
+                Queue.Enqueue(user, message, DateTime.Now);
             }
         }
 
@@ -113,9 +113,9 @@ namespace LobotJR.Twitch
             }
         }
 
-        private async Task<HttpStatusCode> WhisperAsync(string userId, string message)
+        private async Task<HttpStatusCode> WhisperAsync(User user, string message)
         {
-            var result = await Whisper.Post(TokenData.ChatToken, ClientData, TokenData.ChatId, userId, message);
+            var result = await Whisper.Post(TokenData.ChatToken, ClientData, TokenData.ChatId, user.TwitchId, message);
             return result?.StatusCode ?? (HttpStatusCode)0;
         }
 
@@ -128,15 +128,15 @@ namespace LobotJR.Twitch
             var canSend = Queue.TryGetMessage(out var message);
             while (canSend)
             {
-                var result = await WhisperAsync(message.UserId, message.Message);
+                var result = await WhisperAsync(message.User, message.Message);
                 if (result == HttpStatusCode.NoContent)
                 {
                     Queue.ReportSuccess(message);
                 }
                 else if (result == HttpStatusCode.NotFound)
                 {
-                    Logger.Warn("User name {user} returned id {id} from Twitch. Twitch says this user id doesn't exist. User {user} has been blacklisted from whispers.", message.Username, message.UserId);
-                    Blacklist.Add(message.Username);
+                    Logger.Warn("User name {user} returned id {id} from Twitch. Twitch says this user id doesn't exist. User {user} has been blacklisted from whispers.", message.User.Username, message.User.TwitchId);
+                    Blacklist.Add(message.User.TwitchId);
                 }
                 else if (result == (HttpStatusCode)429)
                 {

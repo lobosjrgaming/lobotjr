@@ -382,7 +382,7 @@ namespace Wolfcoins
 
                         CharClass newClass = new CharClass();
                         newClass.classType = -1;
-                        if (classList.ContainsKey(username))
+                        if (classList.ContainsKey(username.ToLower()))
                             continue;
 
                         classList.Add(username.ToLower(), newClass);

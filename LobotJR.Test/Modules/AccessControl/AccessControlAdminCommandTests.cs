@@ -18,7 +18,7 @@ namespace LobotJR.Test.Modules.AccessControl
         public void AddsCommandToRole()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("RestrictCommand")).FirstOrDefault();
-            var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
+            var role = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
             var baseCount = role.Commands.Count;
             var result = command.Executor("CommandMock.Unrestricted TestRole", null);
             Assert.IsTrue(result.Processed);
@@ -32,7 +32,7 @@ namespace LobotJR.Test.Modules.AccessControl
         public void AddCommandErrorsOnMissingParameters()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("RestrictCommand")).FirstOrDefault();
-            var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
+            var role = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
             var wrongParameterCount = "BadInput";
             var result = command.Executor(wrongParameterCount, null);
             Assert.IsTrue(result.Processed);
@@ -57,7 +57,7 @@ namespace LobotJR.Test.Modules.AccessControl
         public void AddCommandErrorsOnInvalidRole()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("RestrictCommand")).FirstOrDefault();
-            var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
+            var role = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
             var roleToAdd = "NotTestRole";
             var result = command.Executor($"CommandMock.Unrestricted {roleToAdd}", null);
             Assert.IsTrue(result.Processed);
@@ -70,7 +70,7 @@ namespace LobotJR.Test.Modules.AccessControl
         public void AddCommandErrorsOnInvalidCommand()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("RestrictCommand")).FirstOrDefault();
-            var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
+            var role = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
             var commandToAdd = "CommandMock.Invalid";
             var roleToAdd = "TestRole";
             var result = command.Executor($"{commandToAdd} {roleToAdd}", null);
@@ -86,7 +86,7 @@ namespace LobotJR.Test.Modules.AccessControl
         public void AddCommandErrorsOnExistingAssignment()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("RestrictCommand")).FirstOrDefault();
-            var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
+            var role = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
             var commandToAdd = "CommandMock.Foo";
             var roleToAddTo = "TestRole";
             var result = command.Executor($"{commandToAdd} {roleToAddTo}", null);
@@ -127,7 +127,7 @@ namespace LobotJR.Test.Modules.AccessControl
         public void RemovesCommandFromRole()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("UnrestrictCommand")).FirstOrDefault();
-            var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
+            var role = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
             var commandToRemove = "CommandMock.Foo";
             var result = command.Executor($"{commandToRemove} TestRole", null);
             Assert.IsTrue(result.Processed);
@@ -140,7 +140,7 @@ namespace LobotJR.Test.Modules.AccessControl
         public void RemoveCommandErrorsOnMissingParameters()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("UnrestrictCommand")).FirstOrDefault();
-            var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
+            var role = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
             var wrongParameterCount = "BadInput";
             var result = command.Executor(wrongParameterCount, null);
             Assert.IsTrue(result.Processed);
@@ -162,7 +162,7 @@ namespace LobotJR.Test.Modules.AccessControl
         public void RemoveCommandErrorsOnCommandNotAssigned()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("UnrestrictCommand")).FirstOrDefault();
-            var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
+            var role = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
             var commandToRemove = "CommandMock.Unrestricted";
             var result = command.Executor($"{commandToRemove} TestRole", null);
             Assert.IsTrue(result.Processed);
@@ -175,7 +175,7 @@ namespace LobotJR.Test.Modules.AccessControl
         public void RemoveCommandErrorsOnRoleNotFound()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("UnrestrictCommand")).FirstOrDefault();
-            var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
+            var role = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
             var roleToRemove = "NotTestRole";
             var result = command.Executor($"CommandMock.Unrestricted {roleToRemove}", null);
             Assert.IsTrue(result.Processed);
@@ -188,7 +188,7 @@ namespace LobotJR.Test.Modules.AccessControl
         public void RemoveCommandErrorsOnCommandNotFound()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("UnrestrictCommand")).FirstOrDefault();
-            var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
+            var role = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
             var commandToRemove = "CommandMock.None";
             var result = command.Executor($"{commandToRemove} TestRole", null);
             Assert.IsTrue(result.Processed);

@@ -8,13 +8,9 @@ namespace LobotJR.Twitch.Model
     public class WhisperRecord
     {
         /// <summary>
-        /// The name of the user to send the whisper to.
+        /// The user object of the user to send to.
         /// </summary>
-        public string Username { get; private set; }
-        /// <summary>
-        /// The Twitch id of the user.
-        /// </summary>
-        public string UserId { get; set; }
+        public User User { get; set; }
         /// <summary>
         /// The content of the whisper.
         /// </summary>
@@ -24,10 +20,9 @@ namespace LobotJR.Twitch.Model
         /// </summary>
         public DateTime QueueTime { get; private set; }
 
-        public WhisperRecord(string userName, string userId, string message, DateTime queueTime)
+        public WhisperRecord(User user, string message, DateTime queueTime)
         {
-            Username = userName;
-            UserId = userId;
+            User = user;
             Message = message;
             QueueTime = queueTime;
         }
@@ -36,7 +31,7 @@ namespace LobotJR.Twitch.Model
         {
             var other = obj as WhisperRecord;
             return other != null
-                && string.Equals(Username, other.Username, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(User?.TwitchId, other.User?.TwitchId, StringComparison.OrdinalIgnoreCase)
                 && string.Equals(Message, other.Message, StringComparison.OrdinalIgnoreCase)
                 && QueueTime.Equals(other.QueueTime);
         }
@@ -48,7 +43,7 @@ namespace LobotJR.Twitch.Model
 
         public override int GetHashCode()
         {
-            var hash = GetStringHash(Username) * 17;
+            var hash = GetStringHash(User.TwitchId) * 17;
             hash = (hash + GetStringHash(Message)) * 17;
             hash = (hash + QueueTime.GetHashCode()) * 17;
             return hash;

@@ -33,8 +33,8 @@ namespace LobotJR.Test.Modules.AccessControl
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses.Any(x => x.Contains("success", StringComparison.OrdinalIgnoreCase)));
-            Assert.AreEqual(2, CommandManager.RepositoryManager.UserRoles.Read().Count());
-            Assert.IsTrue(CommandManager.RepositoryManager.UserRoles.Read().Any(x => x.Name.Equals("NewTestRole")));
+            Assert.AreEqual(2, CommandManager.RepositoryManager.AccessGroups.Read().Count());
+            Assert.IsTrue(CommandManager.RepositoryManager.AccessGroups.Read().Any(x => x.Name.Equals("NewTestRole")));
         }
 
         [TestMethod]
@@ -45,14 +45,14 @@ namespace LobotJR.Test.Modules.AccessControl
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses.Any(x => x.Contains("Error", StringComparison.OrdinalIgnoreCase)));
-            Assert.AreEqual(1, CommandManager.RepositoryManager.UserRoles.Read().Count());
+            Assert.AreEqual(1, CommandManager.RepositoryManager.AccessGroups.Read().Count());
         }
 
         [TestMethod]
         public void DescribesRole()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("DescribeRole")).FirstOrDefault();
-            var role = CommandManager.RepositoryManager.UserRoles.Read().FirstOrDefault();
+            var role = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
             var result = command.Executor("TestRole", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(2, result.Responses.Count());
@@ -82,12 +82,12 @@ namespace LobotJR.Test.Modules.AccessControl
         {
             var add = Module.Commands.Where(x => x.Name.Equals("CreateRole")).FirstOrDefault();
             add.Executor("NewTestRole", null);
-            Assert.AreEqual(2, CommandManager.RepositoryManager.UserRoles.Read().Count());
+            Assert.AreEqual(2, CommandManager.RepositoryManager.AccessGroups.Read().Count());
             var command = Module.Commands.Where(x => x.Name.Equals("DeleteRole")).FirstOrDefault();
             var result = command.Executor("NewTestRole", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
-            Assert.AreEqual(1, CommandManager.RepositoryManager.UserRoles.Read().Count());
+            Assert.AreEqual(1, CommandManager.RepositoryManager.AccessGroups.Read().Count());
             Assert.IsTrue(result.Responses.Any(x => x.Contains("success", StringComparison.OrdinalIgnoreCase)));
         }
 

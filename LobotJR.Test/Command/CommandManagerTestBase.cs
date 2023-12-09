@@ -113,7 +113,7 @@ namespace LobotJR.Test.Command
             AppSettingsMock.Setup(x => x.Read()).Returns(Settings);
             RepositoryManagerMock = new Mock<IRepositoryManager>();
             RepositoryManagerMock.Setup(x => x.Users).Returns(UserMapMock.Object);
-            RepositoryManagerMock.Setup(x => x.UserRoles).Returns(UserRoleMock.Object);
+            RepositoryManagerMock.Setup(x => x.AccessGroups).Returns(UserRoleMock.Object);
             RepositoryManagerMock.Setup(x => x.AppSettings).Returns(AppSettingsMock.Object);
             Manager = RepositoryManagerMock.Object;
 

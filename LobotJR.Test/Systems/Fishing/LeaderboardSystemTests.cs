@@ -2,6 +2,7 @@
 using LobotJR.Command.System.Fishing;
 using LobotJR.Data;
 using LobotJR.Test.Mocks;
+using LobotJR.Twitch.Model;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using System.Linq;
@@ -45,30 +46,30 @@ namespace LobotJR.Test.Systems.Fishing
         [TestMethod]
         public void DeletesFish()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
-            var records = LeaderboardSystem.GetPersonalLeaderboard(userId);
+            var user = Manager.Users.Read().First();
+            var records = LeaderboardSystem.GetPersonalLeaderboard(user);
             var fish = records.First().FishId;
-            LeaderboardSystem.DeleteFish(userId, 0);
+            LeaderboardSystem.DeleteFish(user, 0);
             Assert.IsFalse(records.Any(x => x.Fish.Id.Equals(fish)));
         }
 
         [TestMethod]
         public void DeleteFishDoesNothingOnNegativeIndex()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
-            var records = LeaderboardSystem.GetPersonalLeaderboard(userId);
+            var user = Manager.Users.Read().First();
+            var records = LeaderboardSystem.GetPersonalLeaderboard(user);
             var recordCount = records.Count();
-            LeaderboardSystem.DeleteFish(userId, -1);
+            LeaderboardSystem.DeleteFish(user, -1);
             Assert.AreEqual(recordCount, records.Count());
         }
 
         [TestMethod]
         public void DeleteFishDoesNothingOnIndexAboveCount()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
-            var records = LeaderboardSystem.GetPersonalLeaderboard(userId);
+            var user = Manager.Users.Read().First();
+            var records = LeaderboardSystem.GetPersonalLeaderboard(user);
             var recordCount = records.Count();
-            LeaderboardSystem.DeleteFish(userId, recordCount);
+            LeaderboardSystem.DeleteFish(user, recordCount);
             Assert.AreEqual(recordCount, records.Count());
         }
 
@@ -76,7 +77,7 @@ namespace LobotJR.Test.Systems.Fishing
         public void DeleteFishDoesNothingOnMissingFisher()
         {
             var recordCount = Manager.Catches.Read().Count();
-            LeaderboardSystem.DeleteFish("Invalid Id", 0);
+            LeaderboardSystem.DeleteFish(new User("Invalid Id", "-1"), 0);
             Assert.AreEqual(recordCount, Manager.Catches.Read().Count());
         }
 
@@ -92,7 +93,7 @@ namespace LobotJR.Test.Systems.Fishing
         public void UpdatesPersonalLeaderboardWithNewFishType()
         {
             var user = Manager.Users.Read().First();
-            var records = Manager.Catches.Read(x => x.UserId.Equals(user.TwitchId));
+            var records = Manager.Catches.Read(x => x.UserId.Equals(user));
             DataUtils.ClearFisherRecords(Manager, user);
             var catchData = new Catch()
             {
@@ -100,7 +101,7 @@ namespace LobotJR.Test.Systems.Fishing
                 UserId = user.TwitchId,
                 Weight = 100
             };
-            var result = LeaderboardSystem.UpdatePersonalLeaderboard(user.TwitchId, catchData);
+            var result = LeaderboardSystem.UpdatePersonalLeaderboard(user, catchData);
             var updatedRecords = Manager.Catches.Read(x => x.UserId.Equals(user.TwitchId));
             Assert.IsTrue(result);
             Assert.AreEqual(1, updatedRecords.Count());
@@ -110,18 +111,18 @@ namespace LobotJR.Test.Systems.Fishing
         [TestMethod]
         public void UpdatesPersonalLeaderboardWithExistingFishType()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
+            var user = Manager.Users.Read().First();
             var fish = Manager.FishData.Read().First();
-            var existing = LeaderboardSystem.GetUserRecordForFish(userId, fish);
+            var existing = LeaderboardSystem.GetUserRecordForFish(user, fish);
             var catchData = new Catch()
             {
                 Fish = fish,
-                UserId = userId,
+                UserId = user.TwitchId,
                 Weight = existing.Weight + 1
             };
-            var result = LeaderboardSystem.UpdatePersonalLeaderboard(userId, catchData);
+            var result = LeaderboardSystem.UpdatePersonalLeaderboard(user, catchData);
             Assert.IsTrue(result);
-            Assert.AreEqual(catchData.Weight, LeaderboardSystem.GetUserRecordForFish(userId, fish).Weight);
+            Assert.AreEqual(catchData.Weight, LeaderboardSystem.GetUserRecordForFish(user, fish).Weight);
         }
 
         [TestMethod]
@@ -134,28 +135,28 @@ namespace LobotJR.Test.Systems.Fishing
         [TestMethod]
         public void UpdatePersonalLeaderboardReturnsFalseWithNullCatchData()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
-            var result = LeaderboardSystem.UpdatePersonalLeaderboard(userId, null);
+            var user = Manager.Users.Read().First();
+            var result = LeaderboardSystem.UpdatePersonalLeaderboard(user, null);
             Assert.IsFalse(result);
         }
 
         [TestMethod]
         public void UpdatePersonalLeaderboardReturnsFalseWhenCatchIsNotNewRecord()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
-            var records = LeaderboardSystem.GetPersonalLeaderboard(userId);
+            var user = Manager.Users.Read().First();
+            var records = LeaderboardSystem.GetPersonalLeaderboard(user);
             var recordCount = records.Count();
             var record = records.FirstOrDefault();
             var catchData = new Catch()
             {
-                UserId = userId,
+                UserId = user.TwitchId,
                 Fish = record.Fish,
                 Weight = record.Weight - 0.01f
             };
-            var result = LeaderboardSystem.UpdatePersonalLeaderboard(userId, catchData);
+            var result = LeaderboardSystem.UpdatePersonalLeaderboard(user, catchData);
             Assert.IsFalse(result);
-            Assert.AreEqual(recordCount, LeaderboardSystem.GetPersonalLeaderboard(userId).Count());
-            Assert.AreNotEqual(catchData.Weight, LeaderboardSystem.GetUserRecordForFish(userId, record.Fish).Weight);
+            Assert.AreEqual(recordCount, LeaderboardSystem.GetPersonalLeaderboard(user).Count());
+            Assert.AreNotEqual(catchData.Weight, LeaderboardSystem.GetUserRecordForFish(user, record.Fish).Weight);
         }
 
         [TestMethod]
