@@ -48,18 +48,18 @@ namespace LobotJR.Command.Module.AccessControl
                 if (groups.Any())
                 {
                     var count = groups.Count();
-                    return new CommandResult(user, $"You are a member of the following role{(count == 1 ? "" : "s")}: {string.Join(", ", groups.Select(x => x.Name))}.");
+                    return new CommandResult(user, $"You are a member of the following group{(count == 1 ? "" : "s")}: {string.Join(", ", groups.Select(x => x.Name))}.");
                 }
                 else
                 {
-                    return new CommandResult(user, "You are not a member of any roles.");
+                    return new CommandResult(user, "You are not a member of any groups.");
                 }
             }
 
             var group = accessGroups.Read(x => x.Name.Equals(groupName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
             if (group == null)
             {
-                return new CommandResult(user, $"Error: No role with name \"{groupName}\" was found.");
+                return new CommandResult(user, $"Error: No group with name \"{groupName}\" was found.");
             }
 
             var access = enrollments.Read(x => x.GroupId == group.Id && x.UserId.Equals(user.TwitchId, StringComparison.OrdinalIgnoreCase)).Any() ? "are" : "are not";

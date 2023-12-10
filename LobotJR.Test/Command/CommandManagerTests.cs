@@ -30,9 +30,9 @@ namespace LobotJR.Test.Command
         [TestMethod]
         public void InitializeLoadsRoleData()
         {
-            var userRolesJson = JsonConvert.SerializeObject(AccessGroups);
-            var loadedRolesJson = JsonConvert.SerializeObject(CommandManager.RepositoryManager.AccessGroups.Read());
-            Assert.AreEqual(userRolesJson, loadedRolesJson);
+            var accessGroupJson = JsonConvert.SerializeObject(AccessGroups);
+            var loadedGroupsJson = JsonConvert.SerializeObject(CommandManager.RepositoryManager.AccessGroups.Read());
+            Assert.AreEqual(accessGroupJson, loadedGroupsJson);
         }
 
         [TestMethod]
@@ -101,7 +101,7 @@ namespace LobotJR.Test.Command
             Restrictions.RemoveAll(x => restrictionIds.Contains(x.Id));
             Restrictions.Add(new Restriction(group.Id, "CommandMock.SubMock.*"));
             var lastId = AccessGroups.Last().Id;
-            AccessGroups.Add(new AccessGroup(lastId + 1, "OtherRole"));
+            AccessGroups.Add(new AccessGroup(lastId + 1, "OtherGroup"));
             Restrictions.Add(new Restriction(lastId + 1, "CommandMock.*"));
             var user = IdCache.FirstOrDefault(x => x.Username.Equals("Auth"));
             var result = CommandManager.ProcessMessage("Foo", user, true);
@@ -119,7 +119,7 @@ namespace LobotJR.Test.Command
             Restrictions.RemoveAll(x => restrictionIds.Contains(x.Id));
             Restrictions.Add(new Restriction(group.Id, "CommandMock.SubMock.*"));
             var lastId = AccessGroups.Last().Id;
-            AccessGroups.Add(new AccessGroup(lastId + 1, "OtherRole"));
+            AccessGroups.Add(new AccessGroup(lastId + 1, "OtherGroup"));
             Restrictions.Add(new Restriction(lastId + 1, "CommandMock.*"));
             var user = IdCache.FirstOrDefault(x => x.Username.Equals("Auth"));
             var result = CommandManager.ProcessMessage("Foobar", user, true);
@@ -139,6 +139,56 @@ namespace LobotJR.Test.Command
         }
 
         [TestMethod]
+        public void ProcessMessageRestrictsAccessToUnauthorizedUsersByFlag()
+        {
+            var user = IdCache.FirstOrDefault(x => x.Username.Equals("NotAuth"));
+            var result = CommandManager.ProcessMessage("ModFoo", user, true);
+            Assert.IsTrue(result.Processed);
+            Assert.IsTrue(result.Errors.Any());
+            ExecutorMocks["ModFoo"].Verify(x => x(It.IsAny<string>(), It.IsAny<User>()), Times.Never());
+        }
+
+        [TestMethod]
+        public void ProcessMessageAllowsAccessToModUsersByFlag()
+        {
+            var user = IdCache.FirstOrDefault(x => x.Username.Equals("Mod"));
+            var result = CommandManager.ProcessMessage("ModFoo", user, true);
+            Assert.IsTrue(result.Processed);
+            Assert.IsNull(result.Errors);
+            ExecutorMocks["ModFoo"].Verify(x => x(It.IsAny<string>(), It.IsAny<User>()), Times.Once());
+        }
+
+        [TestMethod]
+        public void ProcessMessageAllowsAccessToVipUsersByFlag()
+        {
+            var user = IdCache.FirstOrDefault(x => x.Username.Equals("Vip"));
+            var result = CommandManager.ProcessMessage("VipFoo", user, true);
+            Assert.IsTrue(result.Processed);
+            Assert.IsNull(result.Errors);
+            ExecutorMocks["VipFoo"].Verify(x => x(It.IsAny<string>(), It.IsAny<User>()), Times.Once());
+        }
+
+        [TestMethod]
+        public void ProcessMessageAllowsAccessToSubUsersByFlag()
+        {
+            var user = IdCache.FirstOrDefault(x => x.Username.Equals("Sub"));
+            var result = CommandManager.ProcessMessage("SubFoo", user, true);
+            Assert.IsTrue(result.Processed);
+            Assert.IsNull(result.Errors);
+            ExecutorMocks["SubFoo"].Verify(x => x(It.IsAny<string>(), It.IsAny<User>()), Times.Once());
+        }
+
+        [TestMethod]
+        public void ProcessMessageAllowsAccessToAdminUsersByFlag()
+        {
+            var user = IdCache.FirstOrDefault(x => x.Username.Equals("Admin"));
+            var result = CommandManager.ProcessMessage("AdminFoo", user, true);
+            Assert.IsTrue(result.Processed);
+            Assert.IsNull(result.Errors);
+            ExecutorMocks["AdminFoo"].Verify(x => x(It.IsAny<string>(), It.IsAny<User>()), Times.Once());
+        }
+
+        [TestMethod]
         public void ProcessMessageAllowsAccessToAuthorizedUsers()
         {
             var user = IdCache.FirstOrDefault(x => x.Username.Equals("Auth"));
@@ -149,7 +199,7 @@ namespace LobotJR.Test.Command
         }
 
         [TestMethod]
-        public void ProcessMessageRestrictsCommandsWithWildcardRoles()
+        public void ProcessMessageRestrictsCommandsWithWildcards()
         {
             var group = AccessGroups.First();
             var restrictionIds = Enrollments.Where(x => x.GroupId == group.Id).Select(x => x.Id);

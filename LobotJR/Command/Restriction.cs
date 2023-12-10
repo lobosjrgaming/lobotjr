@@ -19,7 +19,7 @@ namespace LobotJR.Command
         }
 
         /// <summary>
-        /// Checks a command to see if it's covered by this role.
+        /// Checks a command to see if it's covered by a given command pattern.
         /// </summary>
         /// <param name="commandPattern">The restricted command string.</param>
         /// <param name="commandId">The id of the command to check.</param>

@@ -21,34 +21,34 @@ namespace LobotJR.Test.Modules.AccessControl
         }
 
         [TestMethod]
-        public void ChecksUsersAccessOfSpecificRole()
+        public void ChecksUsersAccessOfSpecificGroup()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("CheckAccess")).FirstOrDefault();
-            var result = command.Executor("TestRole", CommandManager.UserSystem.GetUserByName("Auth"));
+            var result = command.Executor("TestGroup", CommandManager.UserSystem.GetUserByName("Auth"));
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsFalse(result.Responses[0].Contains("not", StringComparison.OrdinalIgnoreCase));
             var user = new User() { TwitchId = "999", Username = "NewUser" };
-            result = command.Executor("TestRole", user);
+            result = command.Executor("TestGroup", user);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].Contains("not", StringComparison.OrdinalIgnoreCase));
         }
 
         [TestMethod]
-        public void CheckAccessGivesNoRoleMessage()
+        public void CheckAccessGivesNoGroupMessage()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("CheckAccess")).FirstOrDefault();
             var user = new User() { TwitchId = "999", Username = "NewUser" };
             var result = command.Executor(null, user);
-            var roles = CommandManager.RepositoryManager.AccessGroups.Read().Select(x => x.Name);
+            var groups = CommandManager.RepositoryManager.AccessGroups.Read().Select(x => x.Name);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
-            Assert.IsFalse(roles.Any(x => result.Responses.Any(y => y.Contains(x))));
+            Assert.IsFalse(groups.Any(x => result.Responses.Any(y => y.Contains(x))));
         }
 
         [TestMethod]
-        public void CheckAccessListsAllRoles()
+        public void CheckAccessListsAllGroups()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("CheckAccess")).FirstOrDefault();
             var username = "Auth";
@@ -63,15 +63,15 @@ namespace LobotJR.Test.Modules.AccessControl
         }
 
         [TestMethod]
-        public void ChecksAccessErrorsWithRoleNotFound()
+        public void ChecksAccessErrorsWithGroupNotFound()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("CheckAccess")).FirstOrDefault();
-            var roleToCheck = "NotTestRole";
-            var result = command.Executor(roleToCheck, CommandManager.UserSystem.GetUserByName("Auth"));
+            var groupToCheck = "NotTestGroup";
+            var result = command.Executor(groupToCheck, CommandManager.UserSystem.GetUserByName("Auth"));
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].StartsWith("Error:", StringComparison.OrdinalIgnoreCase));
-            Assert.IsTrue(result.Responses[0].Contains(roleToCheck));
+            Assert.IsTrue(result.Responses[0].Contains(groupToCheck));
         }
     }
 }

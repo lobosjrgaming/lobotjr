@@ -11,7 +11,7 @@ namespace LobotJR.Command
     public class AccessGroup : TableObject
     {
         /// <summary>
-        /// The name of the role.
+        /// The name of the access group.
         /// </summary>
         public string Name { get; set; }
         /// <summary>
@@ -39,14 +39,14 @@ namespace LobotJR.Command
         /// </summary>
 
         /// <summary>
-        /// Creates an empty user role.
+        /// Creates an empty access group.
         /// </summary>
         public AccessGroup() { }
 
         /// <summary>
-        /// Creates a user role with a name.
+        /// Creates an access group with a name.
         /// </summary>
-        /// <param name="name">The name of the role.</param>
+        /// <param name="name">The name of the group.</param>
         public AccessGroup(int id, string name)
         {
             Id = id;

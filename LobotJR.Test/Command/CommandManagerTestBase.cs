@@ -64,7 +64,7 @@ namespace LobotJR.Test.Command
         public void InitializeCommandManager()
         {
             ExecutorMocks = new Dictionary<string, Mock<CommandExecutor>>();
-            var commands = new string[] { "Foobar", "Foo", "Bar", "Unrestricted", "Public" };
+            var commands = new string[] { "Foobar", "Foo", "Bar", "Unrestricted", "Public", "ModFoo", "SubFoo", "VipFoo", "AdminFoo" };
             foreach (var command in commands)
             {
                 var executorMock = new Mock<CommandExecutor>();
@@ -91,18 +91,37 @@ namespace LobotJR.Test.Command
                 }, "Foo"),
                 new CommandHandler("Bar", ExecutorMocks["Bar"].Object, "Bar"),
                 new CommandHandler("Unrestricted", ExecutorMocks["Unrestricted"].Object, "Unrestricted"),
-                new CommandHandler("Public", ExecutorMocks["Public"].Object, "Public") { WhisperOnly = false }
+                new CommandHandler("Public", ExecutorMocks["Public"].Object, "Public") { WhisperOnly = false },
+                new CommandHandler("ModFoo", ExecutorMocks["ModFoo"].Object, "ModFoo"),
+                new CommandHandler("SubFoo", ExecutorMocks["SubFoo"].Object, "SubFoo"),
+                new CommandHandler("VipFoo", ExecutorMocks["VipFoo"].Object, "VipFoo"),
+                new CommandHandler("AdminFoo", ExecutorMocks["AdminFoo"].Object, "AdminFoo")
             };
             CommandModuleMock = new Mock<ICommandModule>();
             CommandModuleMock.Setup(x => x.Name).Returns("CommandMock");
             CommandModuleMock.Setup(x => x.Commands).Returns(CommandHandlers);
-            AccessGroups = new List<AccessGroup>(new AccessGroup[] { new AccessGroup(1, "TestRole") });
+            AccessGroups = new List<AccessGroup>(new AccessGroup[] { new AccessGroup(1, "TestGroup"),
+                new AccessGroup(2, "ModGroup") { IncludeMods = true },
+                new AccessGroup(3, "VipGroup") { IncludeVips = true },
+                new AccessGroup(4, "SubGroup") { IncludeSubs = true },
+                new AccessGroup(5, "AdminGroup") { IncludeAdmins = true },
+            });
             Enrollments = new List<Enrollment>(new Enrollment[] { new Enrollment(1, "12345") });
-            Restrictions = new List<Restriction>(new Restriction[] { new Restriction(1, "CommandMock.Foo") });
+            Restrictions = new List<Restriction>(new Restriction[] {
+                new Restriction(1, "CommandMock.Foo"),
+                new Restriction(2, "CommandMock.ModFoo"),
+                new Restriction(3, "CommandMock.VipFoo"),
+                new Restriction(4, "CommandMock.SubFoo"),
+                new Restriction(5, "CommandMock.AdminFoo"),
+            });
             IdCache = new List<User>(new User[]
             {
                 new User() { TwitchId = "12345", Username = "Auth" },
-                new User() { TwitchId = "67890", Username = "NotAuth" }
+                new User() { TwitchId = "67890", Username = "NotAuth" },
+                new User() { TwitchId = "1", Username = "Mod", IsMod = true },
+                new User() { TwitchId = "2", Username = "Vip", IsVip = true },
+                new User() { TwitchId = "3", Username = "Sub", IsSub = true },
+                new User() { TwitchId = "4", Username = "Admin", IsAdmin = true }
             });
             UserMock = CreateListRepositoryMock(IdCache);
             AccessGroupMock = CreateListRepositoryMock(AccessGroups);
