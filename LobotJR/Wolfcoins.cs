@@ -323,7 +323,7 @@ namespace Wolfcoins
                         }
                     }
 
-                    if (!(classList.ContainsKey(userName)) && newLevel > prevLevel && newLevel == 3)
+                    if (!(classList.ContainsKey(userName.ToLower())) && newLevel > prevLevel && newLevel == 3)
                     {
                         CharClass newClass = new CharClass();
                         newClass.classType = -1;
@@ -494,7 +494,7 @@ namespace Wolfcoins
                         }
                     }
 
-                    if (newLevel > prevLevel && newLevel >= 3 && classList != null & !classList.ContainsKey(username))
+                    if (newLevel > prevLevel && newLevel >= 3 && classList != null & !classList.ContainsKey(username.ToLower()))
                     {
                         CharClass newChar = new CharClass();
                         newChar.classType = -1;
