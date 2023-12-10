@@ -1,5 +1,6 @@
 ﻿using LobotJR.Command.Model.Fishing;
 using LobotJR.Data;
+using LobotJR.Twitch.Model;
 using NLog;
 using System;
 using System.Collections.Generic;
@@ -73,9 +74,9 @@ namespace LobotJR.Command.System.Fishing
             if (IsRunning)
             {
                 Logger.Debug("User {userName} ({userId}) caught a fish worth {points} points.", fisher?.User.Username, fisher?.User.TwitchId, catchData?.Points);
-                LeaderboardSystem.UpdatePersonalLeaderboard(fisher.User.TwitchId, catchData);
+                LeaderboardSystem.UpdatePersonalLeaderboard(fisher.User, catchData);
                 LeaderboardSystem.UpdateGlobalLeaderboard(catchData);
-                AddTournamentPoints(fisher.User.TwitchId, catchData.Points);
+                AddTournamentPoints(fisher.User, catchData.Points);
             }
         }
 
@@ -91,28 +92,28 @@ namespace LobotJR.Command.System.Fishing
         /// <summary>
         /// Retrieves all tournament results that contain an entry for a specific user.
         /// </summary>
-        /// <param name="userId">The id of the user to check for.</param>
+        /// <param name="user">The user object of the user to check for.</param>
         /// <returns>An enumerable collection of all tournament results where that user participated.</returns>
-        public IEnumerable<TournamentResult> GetResultsForUser(string userId)
+        public IEnumerable<TournamentResult> GetResultsForUser(User user)
         {
-            return TournamentResults.Read(x => x.GetEntryById(userId) != null);
+            return TournamentResults.Read(x => x.GetEntryByUser(user) != null);
         }
 
         /// <summary>
         /// Adds points to a user in a tournament. If this is their first catch
         /// of the tournament, it will add an entry for them as well.
         /// </summary>
-        /// <param name="userId">The user to update.</param>
+        /// <param name="user">The user to update.</param>
         /// <param name="points">The amount of points to add.</param>
         /// <returns>The user's current point total.</returns>
-        public int AddTournamentPoints(string userId, int points)
+        public int AddTournamentPoints(User user, int points)
         {
             if (CurrentTournament != null)
             {
-                var entry = CurrentTournament.Entries.Where(x => x.UserId.Equals(userId, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                var entry = CurrentTournament.Entries.Where(x => x.UserId.Equals(user.TwitchId)).FirstOrDefault();
                 if (entry == null)
                 {
-                    entry = new TournamentEntry(userId, 0);
+                    entry = new TournamentEntry(user.TwitchId, 0);
                     CurrentTournament.Entries.Add(entry);
                 }
                 entry.Points += points;

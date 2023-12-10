@@ -22,10 +22,6 @@ namespace LobotJR.Test.Trigger
                 { "Level1", Currency.XPForLevel(1) },
                 { "Level2", Currency.XPForLevel(2) }
             };
-            Currency.subSet = new HashSet<string>
-            {
-                "Sub"
-            };
             Manager = new TriggerManager(new ITriggerResponder[]
             {
                 new BlockLinks(Currency),

@@ -31,10 +31,10 @@ namespace LobotJR.Test.TournamentSystems.Fishing
         [TestMethod]
         public void AddsTournamentPoints()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
+            var user = Manager.Users.Read().First();
             TournamentSystem.CurrentTournament = new TournamentResult();
-            TournamentSystem.CurrentTournament.Entries.Add(new TournamentEntry(userId, 10));
-            var points = TournamentSystem.AddTournamentPoints(userId, 10);
+            TournamentSystem.CurrentTournament.Entries.Add(new TournamentEntry(user.TwitchId, 10));
+            var points = TournamentSystem.AddTournamentPoints(user, 10);
             Assert.AreEqual(20, points);
             Assert.AreEqual(1, TournamentSystem.CurrentTournament.Entries.Count);
             Assert.AreEqual(points, TournamentSystem.CurrentTournament.Entries[0].Points);
@@ -43,20 +43,20 @@ namespace LobotJR.Test.TournamentSystems.Fishing
         [TestMethod]
         public void AddTournamentPointsAddsUserIfNoEntryExists()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
+            var user = Manager.Users.Read().First();
             TournamentSystem.CurrentTournament = new TournamentResult();
-            var points = TournamentSystem.AddTournamentPoints(userId, 10);
+            var points = TournamentSystem.AddTournamentPoints(user, 10);
             Assert.AreEqual(10, points);
             Assert.AreEqual(1, TournamentSystem.CurrentTournament.Entries.Count);
-            Assert.AreEqual(userId, TournamentSystem.CurrentTournament.Entries[0].UserId);
+            Assert.AreEqual(user.TwitchId, TournamentSystem.CurrentTournament.Entries[0].UserId);
             Assert.AreEqual(points, TournamentSystem.CurrentTournament.Entries[0].Points);
         }
 
         [TestMethod]
         public void AddTournamentPointsDoesNothingIfNoTournamentRunning()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
-            var points = TournamentSystem.AddTournamentPoints(userId, 10);
+            var user = Manager.Users.Read().First();
+            var points = TournamentSystem.AddTournamentPoints(user, 10);
             Assert.AreEqual(-1, points);
             Assert.IsNull(TournamentSystem.CurrentTournament);
         }
@@ -160,9 +160,9 @@ namespace LobotJR.Test.TournamentSystems.Fishing
         [TestMethod]
         public void GetResultForUser()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
-            var expectedResults = Manager.TournamentResults.Read(x => x.Entries.Any(y => y.UserId.Equals(userId)));
-            var actualResults = TournamentSystem.GetResultsForUser(userId);
+            var user = Manager.Users.Read().First();
+            var expectedResults = Manager.TournamentResults.Read(x => x.Entries.Any(y => y.UserId.Equals(user.TwitchId)));
+            var actualResults = TournamentSystem.GetResultsForUser(user);
             Assert.AreEqual(expectedResults.Count(), actualResults.Count());
         }
 

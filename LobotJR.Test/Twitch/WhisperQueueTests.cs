@@ -1,6 +1,7 @@
 ﻿using LobotJR.Data;
 using LobotJR.Test.Mocks;
 using LobotJR.Twitch;
+using LobotJR.Twitch.Model;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Linq;
@@ -45,7 +46,7 @@ namespace LobotJR.Test.Twitch
         public void EnqueueAddsWhispersToQueue()
         {
             var queue = new WhisperQueue(RepositoryManager, 1, 1);
-            queue.Enqueue("Test", "0", "test", DateTime.Now);
+            queue.Enqueue(new User("Test", "0"), "test", DateTime.Now);
             var canSend = queue.TryGetMessage(out var toSend);
             Assert.IsTrue(canSend);
             Assert.IsTrue(toSend.Message.Equals("test"));
@@ -55,7 +56,7 @@ namespace LobotJR.Test.Twitch
         public void GetMessagesRemovesWhispersFromQueue()
         {
             var queue = new WhisperQueue(RepositoryManager, 1, 1);
-            queue.Enqueue("Test", "0", "test", DateTime.Now);
+            queue.Enqueue(new User("Test", "0"), "test", DateTime.Now);
             queue.TryGetMessage(out var toSend);
             var canSend = queue.TryGetMessage(out toSend);
             Assert.IsFalse(canSend);
@@ -66,8 +67,8 @@ namespace LobotJR.Test.Twitch
         public void GetMessagesRespectsPerSecondLimit()
         {
             var queue = new WhisperQueue(RepositoryManager, 1, 10);
-            queue.Enqueue("Test", "0", "test", DateTime.Now);
-            queue.Enqueue("Test", "0", "fail", DateTime.Now + TimeSpan.FromMilliseconds(1));
+            queue.Enqueue(new User("Test", "0"), "test", DateTime.Now);
+            queue.Enqueue(new User("Test", "0"), "fail", DateTime.Now + TimeSpan.FromMilliseconds(1));
             var canSendFirst = queue.TryGetMessage(out var toSendFirst);
             queue.ReportSuccess(toSendFirst);
             var canSendSecond = queue.TryGetMessage(out var toSendSecond);
@@ -81,8 +82,8 @@ namespace LobotJR.Test.Twitch
         public void GetMessagesRespectsPerMinuteLimit()
         {
             var queue = new WhisperQueue(RepositoryManager, 10, 1);
-            queue.Enqueue("Test", "0", "test", DateTime.Now);
-            queue.Enqueue("Test", "0", "fail", DateTime.Now + TimeSpan.FromMilliseconds(1));
+            queue.Enqueue(new User("Test", "0"), "test", DateTime.Now);
+            queue.Enqueue(new User("Test", "0"), "fail", DateTime.Now + TimeSpan.FromMilliseconds(1));
             var canSendFirst = queue.TryGetMessage(out var toSendFirst);
             queue.ReportSuccess(toSendFirst);
             var canSendSecond = queue.TryGetMessage(out var toSendSecond);
@@ -101,8 +102,8 @@ namespace LobotJR.Test.Twitch
             RepositoryManager.AppSettings.Commit();
 
             var queue = new WhisperQueue(RepositoryManager, 10, 10);
-            queue.Enqueue("Test", "0", "test", DateTime.Now);
-            queue.Enqueue("Second", "1", "fail", DateTime.Now + TimeSpan.FromMilliseconds(1));
+            queue.Enqueue(new User("Test", "0"), "test", DateTime.Now);
+            queue.Enqueue(new User("Second", "1"), "fail", DateTime.Now + TimeSpan.FromMilliseconds(1));
             var canSendFirst = queue.TryGetMessage(out var toSendFirst);
             queue.ReportSuccess(toSendFirst);
             var canSendSecond = queue.TryGetMessage(out var toSendSecond);
@@ -121,8 +122,8 @@ namespace LobotJR.Test.Twitch
             RepositoryManager.AppSettings.Commit();
 
             var queue = new WhisperQueue(RepositoryManager, 10, 10);
-            queue.Enqueue("Test", "0", "test", DateTime.Now);
-            queue.Enqueue("Second", "1", "fail", DateTime.Now + TimeSpan.FromMilliseconds(1));
+            queue.Enqueue(new User("Test", "0"), "test", DateTime.Now);
+            queue.Enqueue(new User("Second", "1"), "fail", DateTime.Now + TimeSpan.FromMilliseconds(1));
             var canSendFirst = queue.TryGetMessage(out var toSendFirst);
             queue.ReportSuccess(toSendFirst);
             var canSendSecond = queue.TryGetMessage(out var toSendSecond);
@@ -130,7 +131,7 @@ namespace LobotJR.Test.Twitch
             Assert.IsTrue(toSendFirst.Message.Equals("test"));
             Assert.IsFalse(canSendSecond);
             Assert.IsNull(toSendSecond);
-            queue.Enqueue("Test", "0", "test two", DateTime.Now + TimeSpan.FromMilliseconds(2));
+            queue.Enqueue(new User("Test", "0"), "test two", DateTime.Now + TimeSpan.FromMilliseconds(2));
             var canSendAgain = queue.TryGetMessage(out var toSendAgain);
             Assert.IsTrue(canSendAgain);
             Assert.IsTrue(toSendAgain.Message.Equals("test two"));
@@ -140,7 +141,7 @@ namespace LobotJR.Test.Twitch
         public void GetMessagesExcludesMessagesWithNoUserId()
         {
             var queue = new WhisperQueue(RepositoryManager, 1, 1);
-            queue.Enqueue("Test", null, "test", DateTime.Now);
+            queue.Enqueue(new User("Test", null), "test", DateTime.Now);
             var canSend = queue.TryGetMessage(out var toSend);
             Assert.IsFalse(canSend);
             Assert.IsNull(toSend);
@@ -153,7 +154,7 @@ namespace LobotJR.Test.Twitch
             RepositoryManager.DataTimers.Delete(timer);
             RepositoryManager.DataTimers.Commit();
             var queue = new WhisperQueue(RepositoryManager, 1, 1);
-            queue.Enqueue("Test", "0", "test", DateTime.Now);
+            queue.Enqueue(new User("Test", "0"), "test", DateTime.Now);
             var canSend = queue.TryGetMessage(out var toSend);
             queue.ReportSuccess(toSend);
             timer = RepositoryManager.DataTimers.Read(x => x.Name.Equals("WhisperQueue")).First();
@@ -169,7 +170,7 @@ namespace LobotJR.Test.Twitch
             RepositoryManager.DataTimers.Update(timer);
             RepositoryManager.DataTimers.Commit();
             var queue = new WhisperQueue(RepositoryManager, 1, 1);
-            queue.Enqueue("Test", "0", "test", DateTime.Now);
+            queue.Enqueue(new User("Test", "0"), "test", DateTime.Now);
             var canSend = queue.TryGetMessage(out var toSend);
             queue.ReportSuccess(toSend);
             timer = RepositoryManager.DataTimers.Read(x => x.Name.Equals("WhisperQueue")).First();
@@ -181,7 +182,7 @@ namespace LobotJR.Test.Twitch
         public void ReportSuccessAddsToRecipients()
         {
             var queue = new WhisperQueue(RepositoryManager, 1, 1);
-            queue.Enqueue("Test", "0", "test", DateTime.Now);
+            queue.Enqueue(new User("Test", "0"), "test", DateTime.Now);
             var canSend = queue.TryGetMessage(out var toSend);
             queue.ReportSuccess(toSend);
             Assert.IsTrue(queue.WhisperRecipients.Contains("0"));
@@ -192,10 +193,10 @@ namespace LobotJR.Test.Twitch
         public void ReportSuccessDoesNotAddDuplicateRecipients()
         {
             var queue = new WhisperQueue(RepositoryManager, 10, 10);
-            queue.Enqueue("Test", "0", "test", DateTime.Now);
+            queue.Enqueue(new User("Test", "0"), "test", DateTime.Now);
             queue.TryGetMessage(out var toSend);
             queue.ReportSuccess(toSend);
-            queue.Enqueue("Test", "0", "test 2", DateTime.Now);
+            queue.Enqueue(new User("Test", "0"), "test 2", DateTime.Now);
             queue.TryGetMessage(out toSend);
             queue.ReportSuccess(toSend);
             Assert.IsTrue(queue.WhisperRecipients.Contains("0"));
@@ -206,7 +207,7 @@ namespace LobotJR.Test.Twitch
         public void ReportSuccessAddsToRollingTimers()
         {
             var queue = new WhisperQueue(RepositoryManager, 2, 2);
-            queue.Enqueue("Test", "0", "test", DateTime.Now);
+            queue.Enqueue(new User("Test", "0"), "test", DateTime.Now);
             queue.TryGetMessage(out var toSend);
             queue.ReportSuccess(toSend);
             var secondAvailable = queue.SecondTimer.AvailableOccurrences();
@@ -219,20 +220,20 @@ namespace LobotJR.Test.Twitch
         public void ReportSuccessClearsWhisperRecipientsOnRollover()
         {
             var queue = new WhisperQueue(RepositoryManager, 10, 10);
-            queue.Enqueue("Test", "0", "test", DateTime.Now);
+            queue.Enqueue(new User("Test", "0"), "test", DateTime.Now);
             var canSend = queue.TryGetMessage(out var toSend);
             queue.ReportSuccess(toSend);
-            queue.Enqueue("Second", "1", "test", DateTime.Now);
+            queue.Enqueue(new User("Second", "1"), "test", DateTime.Now);
             canSend = queue.TryGetMessage(out toSend);
             var timer = RepositoryManager.DataTimers.Read(x => x.Name.Equals("WhisperQueue")).First();
             timer.Timestamp = DateTime.Now - TimeSpan.FromDays(2);
             RepositoryManager.DataTimers.Update(timer);
             RepositoryManager.DataTimers.Commit();
             queue.ReportSuccess(toSend);
-            queue.Enqueue("Third", "2", "test", DateTime.Now);
+            queue.Enqueue(new User("Third", "2"), "test", DateTime.Now);
             canSend = queue.TryGetMessage(out toSend);
             Assert.IsTrue(canSend);
-            Assert.IsTrue(toSend.Username.Equals("Third"));
+            Assert.IsTrue(toSend.User.Username.Equals("Third"));
         }
 
         [TestMethod]
@@ -240,7 +241,7 @@ namespace LobotJR.Test.Twitch
         {
             var queue = new WhisperQueue(RepositoryManager, 100, 100);
             queue.FreezeQueue();
-            queue.Enqueue("Test", null, "test", DateTime.Now);
+            queue.Enqueue(new User("Test", null), "test", DateTime.Now);
             var canSend = queue.TryGetMessage(out var toSend);
             Assert.IsFalse(canSend);
             Assert.IsNull(toSend);
@@ -250,7 +251,7 @@ namespace LobotJR.Test.Twitch
         public void FreezeQueueUpdatesMaxRecipients()
         {
             var queue = new WhisperQueue(RepositoryManager, 100, 100);
-            queue.Enqueue("Test", "01", "test", DateTime.Now);
+            queue.Enqueue(new User("Test", "01"), "test", DateTime.Now);
             var canSend = queue.TryGetMessage(out var toSend);
             queue.ReportSuccess(toSend);
             queue.FreezeQueue();

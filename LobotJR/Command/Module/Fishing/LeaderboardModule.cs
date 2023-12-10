@@ -57,7 +57,7 @@ namespace LobotJR.Command.Module.Fishing
         public CompactCollection<Catch> PlayerLeaderboardCompact(string data, User user)
         {
             string selectFunc(Catch x) => $"{x.Fish.Name}|{x.Length}|{x.Weight};";
-            var records = TournamentSystem.GetPersonalLeaderboard(user.TwitchId);
+            var records = TournamentSystem.GetPersonalLeaderboard(user);
             if (string.IsNullOrWhiteSpace(data))
             {
                 if (records != null && records.Any())
@@ -135,7 +135,7 @@ namespace LobotJR.Command.Module.Fishing
         {
             if (int.TryParse(data, out var param))
             {
-                var records = TournamentSystem.GetPersonalLeaderboard(user.TwitchId);
+                var records = TournamentSystem.GetPersonalLeaderboard(user);
                 if (records == null || !records.Any())
                 {
                     return new CommandResult(user, "You don't have any fish! Type !cast to try and fish for some!");
@@ -144,7 +144,7 @@ namespace LobotJR.Command.Module.Fishing
                 if (count >= param && param > 0)
                 {
                     var fishName = records.ElementAtOrDefault(param - 1).Fish.Name;
-                    TournamentSystem.DeleteFish(user.TwitchId, param - 1);
+                    TournamentSystem.DeleteFish(user, param - 1);
                     return new CommandResult(user, $"You released your {fishName}. Bye bye!");
                 }
                 return new CommandResult(user, $"That fish doesn't exist. Fish # must be between 1 and {count}");

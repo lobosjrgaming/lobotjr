@@ -128,7 +128,7 @@ namespace LobotJR.Test.Modules.Fishing
         {
             var user = Manager.Users.Read().First();
             var fisher = FishingSystem.GetFisherByUser(user);
-            var fish = LeaderboardSystem.GetPersonalLeaderboard(user.TwitchId).FirstOrDefault();
+            var fish = LeaderboardSystem.GetPersonalLeaderboard(user).FirstOrDefault();
             var response = LeaderboardModule.PlayerLeaderboard("1", user);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
@@ -184,14 +184,14 @@ namespace LobotJR.Test.Modules.Fishing
         {
             var user = Manager.Users.Read().First();
             var fisher = FishingSystem.GetFisherByUser(user);
-            var fish = LeaderboardSystem.GetPersonalLeaderboard(user.TwitchId).FirstOrDefault().Fish;
+            var fish = LeaderboardSystem.GetPersonalLeaderboard(user).FirstOrDefault().Fish;
             var response = LeaderboardModule.ReleaseFish("1", user);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
             Assert.IsNull(response.Errors);
             Assert.AreEqual(1, responses.Count);
             Assert.IsTrue(responses[0].Contains(fish.Name));
-            Assert.IsFalse(LeaderboardSystem.GetPersonalLeaderboard(user.TwitchId).Any(x => x.Fish.Id.Equals(fish.Id)));
+            Assert.IsFalse(LeaderboardSystem.GetPersonalLeaderboard(user).Any(x => x.Fish.Id.Equals(fish.Id)));
         }
 
         [TestMethod]

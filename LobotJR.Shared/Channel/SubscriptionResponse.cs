@@ -93,5 +93,18 @@ namespace LobotJR.Shared.Channel
         /// The user’s display name.
         /// </summary>
         public string UserName { get; set; }
+
+        public override bool Equals(object obj)
+        {
+            var other = obj as SubscriptionResponseData;
+            return other != null && (
+                (string.IsNullOrWhiteSpace(other.UserId) && string.IsNullOrWhiteSpace(UserId))
+                || other.UserId.Equals(UserId));
+        }
+
+        public override int GetHashCode()
+        {
+            return this.UserId.GetHashCode();
+        }
     }
 }

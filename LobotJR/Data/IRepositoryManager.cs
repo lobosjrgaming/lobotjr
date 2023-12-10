@@ -13,7 +13,9 @@ namespace LobotJR.Data
         IRepository<AppSettings> AppSettings { get; }
         IRepository<DataTimer> DataTimers { get; }
         IRepository<Twitch.Model.User> Users { get; }
-        IRepository<AccessGroup> UserRoles { get; }
+        IRepository<AccessGroup> AccessGroups { get; }
+        IRepository<Enrollment> Enrollments { get; }
+        IRepository<Restriction> Restrictions { get; }
         IRepository<Catch> Catches { get; }
         IRepository<LeaderboardEntry> FishingLeaderboard { get; }
         IRepository<TournamentResult> TournamentResults { get; }

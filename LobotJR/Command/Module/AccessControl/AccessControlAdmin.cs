@@ -13,7 +13,9 @@ namespace LobotJR.Command.Module.AccessControl
     public class AccessControlAdmin : ICommandModule
     {
         //private readonly ICommandManager CommandManager;
-        private readonly IRepository<AccessGroup> UserRoles;
+        private readonly IRepository<AccessGroup> AccessGroups;
+        private readonly IRepository<Enrollment> Enrollments;
+        private readonly IRepository<Restriction> Restrictions;
         private readonly UserSystem UserSystem;
 
         public ICommandManager CommandManager;
@@ -35,80 +37,171 @@ namespace LobotJR.Command.Module.AccessControl
 
         public AccessControlAdmin(IRepositoryManager repositoryManager, UserSystem userSystem)
         {
-            UserRoles = repositoryManager.UserRoles;
+            AccessGroups = repositoryManager.AccessGroups;
+            Enrollments = repositoryManager.Enrollments;
+            Restrictions = repositoryManager.Restrictions;
             UserSystem = userSystem;
             Commands = new CommandHandler[]
             {
-                new CommandHandler("ListRoles", ListRoles, "ListRoles", "list-roles"),
-                new CommandHandler("CreateRole", CreateRole, "CreateRole", "create-role"),
-                new CommandHandler("DescribeRole", DescribeRole, "DescribeRole", "describe-role"),
-                new CommandHandler("DeleteRole", DeleteRole, "DeleteRole", "delete-role"),
+                new CommandHandler("ListGroups", ListGroups, "ListGroups", "list-groups", "ListRoles", "list-roles"),
+                new CommandHandler("CreateGroup", CreateGroup, "CreateGroup", "create-group", "CreateRole", "create-role"),
+                new CommandHandler("DescribeGroup", DescribeGroup, "DescribeGroup", "describe-group", "DescribeRole", "describe-role"),
+                new CommandHandler("DeleteGroup", DeleteGroup, "DeleteGroup", "delete-group", "DeleteRole", "delete-role"),
 
-                new CommandHandler("EnrollUser", AddUserToRole, "EnrollUser", "enroll-user"),
-                new CommandHandler("UnenrollUser", RemoveUserFromRole, "UnenrollUser", "unenroll-user"),
+                new CommandHandler("SetGroupFlag", SetGroupFlag, "SetGroupFlag", "set-group-flag"),
 
-                new CommandHandler("RestrictCommand", AddCommandToRole, "RestrictCommand", "restrict-command"),
+                new CommandHandler("EnrollUser", AddUserToGroup, "EnrollUser", "enroll-user"),
+                new CommandHandler("UnenrollUser", RemoveUserFromGroup, "UnenrollUser", "unenroll-user"),
+
+                new CommandHandler("RestrictCommand", AddCommandToGroup, "RestrictCommand", "restrict-command"),
                 new CommandHandler("ListCommands", ListCommands, "ListCommands", "list-commands"),
-                new CommandHandler("UnrestrictCommand", RemoveCommandFromRole, "UnrestrictCommand", "unrestrict-command")
+                new CommandHandler("UnrestrictCommand", RemoveCommandFromGroup, "UnrestrictCommand", "unrestrict-command")
             };
         }
 
-        private CommandResult ListRoles(string data, User user)
+        private CommandResult ListGroups(string data, User user)
         {
-            return new CommandResult(user, $"There are {UserRoles.Read().Count()} roles: {string.Join(", ", UserRoles.Read().Select(x => x.Name))}");
+            return new CommandResult(user, $"There are {AccessGroups.Read().Count()} groups: {string.Join(", ", AccessGroups.Read().Select(x => x.Name))}");
         }
 
-        private CommandResult CreateRole(string data, User user)
+        private CommandResult CreateGroup(string data, User user)
         {
-            var existingRole = UserRoles.Read(x => x.Name.Equals(data)).FirstOrDefault();
-            if (existingRole != null)
+            var existingGroup = AccessGroups.Read(x => x.Name.Equals(data)).FirstOrDefault();
+            if (existingGroup != null)
             {
-                return new CommandResult(user, $"Error: Unable to create role, \"{data}\" already exists.");
+                return new CommandResult(user, $"Error: Unable to create group, \"{data}\" already exists.");
             }
 
-            UserRoles.Create(new AccessGroup(data));
-            UserRoles.Commit();
-            return new CommandResult(user, $"Role \"{data}\" created successfully!");
+            AccessGroups.Create(new AccessGroup() { Name = data });
+            AccessGroups.Commit();
+            return new CommandResult(user, $"Access group \"{data}\" created successfully!");
         }
 
-        private CommandResult DescribeRole(string data, User user)
+        private CommandResult DescribeGroup(string data, User user)
         {
-            var existingRole = UserRoles.Read(x => x.Name.Equals(data)).FirstOrDefault();
-            if (existingRole == null)
+            var existingGroup = AccessGroups.Read(x => x.Name.Equals(data)).FirstOrDefault();
+            if (existingGroup == null)
             {
-                return new CommandResult(user, $"Error: Role \"{data}\" not found.");
+                return new CommandResult(user, $"Error: Group \"{data}\" not found.");
             }
-
+            var enrollments = Enrollments.Read(x => x.GroupId.Equals(existingGroup.Id));
+            var restrictions = Restrictions.Read(x => x.GroupId.Equals(existingGroup.Id));
+            var names = new List<string>();
+            if (existingGroup.IncludeAdmins)
+            {
+                names.Add("Admins");
+            }
+            if (existingGroup.IncludeMods)
+            {
+                names.Add("Mods");
+            }
+            if (existingGroup.IncludeVips)
+            {
+                names.Add("VIPs");
+            }
+            if (existingGroup.IncludeSubs)
+            {
+                names.Add("Subs");
+            }
+            foreach (var enrollment in enrollments)
+            {
+                var enrolledUser = UserSystem.GetUserById(enrollment.UserId);
+                if (enrolledUser != null)
+                {
+                    names.Add(enrolledUser.Username);
+                }
+            }
             return new CommandResult(user,
-                $"Role \"{data}\" contains the following commands: {string.Join(", ", existingRole.Commands)}.",
-                $"Role \"{data}\" contains the following users: {string.Join(", ", existingRole.UserIds)}."
+                $"Access group \"{data}\" contains the following commands: {string.Join(", ", restrictions.Select(x => x.Command))}.",
+                $"Access group \"{data}\" contains the following users: {string.Join(", ", names)}."
             );
         }
 
-        private CommandResult DeleteRole(string data, User user)
+        private CommandResult DeleteGroup(string data, User user)
         {
-            var existingRole = UserRoles.Read(x => x.Name.Equals(data)).FirstOrDefault();
-            if (existingRole == null)
+            var existingGroup = AccessGroups.Read(x => x.Name.Equals(data)).FirstOrDefault();
+            if (existingGroup == null)
             {
-                return new CommandResult(user, $"Error: Unable to delete role, \"{data}\" does not exist.");
+                return new CommandResult(user, $"Error: Unable to delete group, \"{data}\" does not exist.");
             }
 
-            if (existingRole.Commands.Count > 0)
+            var enrollments = Enrollments.Read(x => x.GroupId.Equals(existingGroup.Id));
+            if (enrollments.Any())
             {
-                return new CommandResult(user, $"Error: Unable to delete role, please remove all commands first.");
+                return new CommandResult(user, $"Error: Unable to delete group, please unenroll all users first.");
             }
 
-            UserRoles.Delete(existingRole);
-            UserRoles.Commit();
-            return new CommandResult(user, $"Role \"{data}\" deleted successfully!");
+            var restrictions = Restrictions.Read(x => x.GroupId.Equals(existingGroup.Id));
+            if (restrictions.Any())
+            {
+                return new CommandResult(user, $"Error: Unable to delete group, please unrestrict all commands first.");
+            }
+
+            AccessGroups.Delete(existingGroup);
+            AccessGroups.Commit();
+            return new CommandResult(user, $"Group \"{data}\" deleted successfully!");
         }
 
-        private CommandResult AddUserToRole(string data, User user)
+        private CommandResult SetGroupFlag(string data, User user)
+        {
+            List<int> spaces = new List<int>();
+            for (var i = data.IndexOf(' '); i != -1; i = data.IndexOf(' ', i + 1))
+            {
+                spaces.Add(i);
+            }
+            if (spaces.Count < 2)
+            {
+                return new CommandResult(user, "Error: Invalid number of parameters. Expected parameters: {flag name} {value} {group name}.");
+            }
+            var flag = data.Substring(0, spaces[0]);
+            var valueString = data.Substring(spaces[0] + 1, spaces[1] - spaces[0]);
+            var groupName = data.Substring(spaces[1] + 1);
+
+            var existingGroup = AccessGroups.Read(x => x.Name.Equals(groupName)).FirstOrDefault();
+            if (existingGroup == null)
+            {
+                return new CommandResult(user, $"Error: Group \"{data}\" not found.");
+            }
+
+            bool value = false;
+            var parseResult = bool.TryParse(valueString, out value);
+            if (!parseResult)
+            {
+                return new CommandResult(user, $"Error: Invalid value, must be \"true\" or \"false\".");
+            }
+
+            if (flag.Equals("mod", StringComparison.OrdinalIgnoreCase))
+            {
+                existingGroup.IncludeMods = value;
+            }
+            else if (flag.Equals("vip", StringComparison.OrdinalIgnoreCase))
+            {
+                existingGroup.IncludeVips = value;
+            }
+            else if (flag.Equals("sub", StringComparison.OrdinalIgnoreCase))
+            {
+                existingGroup.IncludeSubs = value;
+            }
+            else if (flag.Equals("admin", StringComparison.OrdinalIgnoreCase))
+            {
+                existingGroup.IncludeAdmins = value;
+            }
+            else
+            {
+                return new CommandResult(user, $"Error: Invalid flag, must be one of \"mod\", \"vip\", \"sub\", or \"admin\".");
+            }
+            AccessGroups.Update(existingGroup);
+            AccessGroups.Commit();
+            var includeClause = value ? "includes" : "does not include";
+            return new CommandResult(user, $"Access group \"{existingGroup.Name}\" now {includeClause} {flag}s.");
+        }
+
+        private CommandResult AddUserToGroup(string data, User user)
         {
             var space = data.IndexOf(' ');
             if (space == -1)
             {
-                return new CommandResult(user, "Error: Invalid number of parameters. Expected parameters: {username} {role name}.");
+                return new CommandResult(user, "Error: Invalid number of parameters. Expected parameters: {username} {group name}.");
             }
 
             var userNameToAdd = data.Substring(0, space);
@@ -121,34 +214,35 @@ namespace LobotJR.Command.Module.AccessControl
             {
                 return new CommandResult(user, "Error: User id not present in id cache, please try again in a few minutes.");
             }
-            var roleName = data.Substring(space + 1);
-            if (roleName.Length == 0)
+            var groupName = data.Substring(space + 1);
+            if (groupName.Length == 0)
             {
-                return new CommandResult(user, "Error: Role name cannot be empty.");
+                return new CommandResult(user, "Error: Group name cannot be empty.");
             }
 
-            var role = UserRoles.Read(x => x.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-            if (role == null)
+            var group = AccessGroups.Read(x => x.Name.Equals(groupName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            if (group == null)
             {
-                return new CommandResult(user, $"Error: No role with name \"{roleName}\" was found.");
+                return new CommandResult(user, $"Error: No group with name \"{groupName}\" was found.");
             }
-            if (role.UserIds.Contains(userToAdd.TwitchId))
-            {
-                return new CommandResult(user, $"Error: User \"{userNameToAdd}\" is already a member of \"{roleName}\".");
-            }
-            role.AddUser(userToAdd.TwitchId);
-            UserRoles.Update(role);
-            UserRoles.Commit();
 
-            return new CommandResult(user, $"User \"{userNameToAdd}\" was added to role \"{role.Name}\" successfully!");
+            var enrollments = Enrollments.Read(x => x.GroupId.Equals(group.Id));
+            if (enrollments.Any(x => userToAdd.TwitchId.Equals(x.UserId)))
+            {
+                return new CommandResult(user, $"Error: User \"{userNameToAdd}\" is already a member of \"{groupName}\".");
+            }
+            Enrollments.Create(new Enrollment(group.Id, userToAdd.TwitchId));
+            Enrollments.Commit();
+
+            return new CommandResult(user, $"User \"{userNameToAdd}\" was added to group \"{group.Name}\" successfully!");
         }
 
-        private CommandResult RemoveUserFromRole(string data, User user)
+        private CommandResult RemoveUserFromGroup(string data, User user)
         {
             var space = data.IndexOf(' ');
             if (space == -1)
             {
-                return new CommandResult(user, "Error: Invalid number of parameters. Expected parameters: {username} {role name}.");
+                return new CommandResult(user, "Error: Invalid number of parameters. Expected parameters: {username} {group name}.");
             }
 
             var userNameToRemove = data.Substring(0, space);
@@ -156,36 +250,41 @@ namespace LobotJR.Command.Module.AccessControl
             {
                 return new CommandResult(user, "Error: Username cannot be empty.");
             }
-            var roleName = data.Substring(space + 1);
-            if (roleName.Length == 0)
+            var groupName = data.Substring(space + 1);
+            if (groupName.Length == 0)
             {
-                return new CommandResult(user, "Error: Role name cannot be empty.");
+                return new CommandResult(user, "Error: Group name cannot be empty.");
+            }
+
+            var group = AccessGroups.Read(x => x.Name.Equals(groupName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            if (group == null)
+            {
+                return new CommandResult(user, $"Error: No group with name \"{groupName}\" was found.");
             }
 
             var userToRemove = UserSystem.GetUserByName(userNameToRemove);
-            var role = UserRoles.Read(x => x.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-            if (role == null)
+            if (userToRemove == null)
             {
-                return new CommandResult(user, $"Error: No role with name \"{roleName}\" was found.");
+                return new CommandResult(user, $"Error: User \"{userNameToRemove}\" not found in user database. Please ensure the name is correct and the user has been in chat before.");
             }
 
-            if (!role.UserIds.Contains(userToRemove.TwitchId))
+            var enrollment = Enrollments.Read(x => x.GroupId.Equals(group.Id) && x.UserId.Equals(userToRemove.TwitchId)).FirstOrDefault();
+            if (enrollment == null)
             {
-                return new CommandResult(user, $"Error: User \"{userNameToRemove}\" is not a member of \"{roleName}\".");
+                return new CommandResult(user, $"Error: User \"{userNameToRemove}\" is not a member of \"{groupName}\".");
             }
-            role.RemoveUser(userToRemove.TwitchId);
-            UserRoles.Update(role);
-            UserRoles.Commit();
+            Enrollments.Delete(enrollment);
+            Enrollments.Commit();
 
-            return new CommandResult(user, $"User \"{userNameToRemove}\" was removed from role \"{role.Name}\" successfully!");
+            return new CommandResult(user, $"User \"{userNameToRemove}\" was removed from group \"{group.Name}\" successfully!");
         }
 
-        private CommandResult AddCommandToRole(string data, User user)
+        private CommandResult AddCommandToGroup(string data, User user)
         {
             var space = data.IndexOf(' ');
             if (space == -1)
             {
-                return new CommandResult(user, "Error: Invalid number of parameters. Expected parameters: {command name} {role name}.");
+                return new CommandResult(user, "Error: Invalid number of parameters. Expected parameters: {command name} {group name}.");
             }
 
             var commandName = data.Substring(0, space);
@@ -198,27 +297,26 @@ namespace LobotJR.Command.Module.AccessControl
                 return new CommandResult(user, $"Error: Command {commandName} does not match any commands.");
             }
 
-            var roleName = data.Substring(space + 1);
-            if (roleName.Length == 0)
+            var groupName = data.Substring(space + 1);
+            if (groupName.Length == 0)
             {
-                return new CommandResult(user, "Error: Role name cannot be empty.");
+                return new CommandResult(user, "Error: Group name cannot be empty.");
             }
-            var role = UserRoles.Read(x => x.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-            if (role == null)
+            var group = AccessGroups.Read(x => x.Name.Equals(groupName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            if (group == null)
             {
-                return new CommandResult(user, $"Error: Role \"{roleName}\" does not exist.");
-            }
-
-            if (role.Commands.Contains(commandName))
-            {
-                return new CommandResult(user, $"Error: \"{roleName}\" already has access to \"{commandName}\".");
+                return new CommandResult(user, $"Error: Group \"{groupName}\" does not exist.");
             }
 
-            role.AddCommand(commandName);
-            UserRoles.Update(role);
-            UserRoles.Commit();
+            var restrictions = Restrictions.Read(x => x.GroupId == group.Id && x.Command.Equals(commandName, StringComparison.OrdinalIgnoreCase));
+            if (restrictions.Any())
+            {
+                return new CommandResult(user, $"Error: \"{groupName}\" already has access to \"{commandName}\".");
+            }
 
-            return new CommandResult(user, $"Command \"{commandName}\" was added to the role \"{role.Name}\" successfully!");
+            Restrictions.Create(new Restriction() { GroupId = group.Id, Command = commandName });
+            Restrictions.Commit();
+            return new CommandResult(user, $"Command \"{commandName}\" was added to the group \"{group.Name}\" successfully!");
         }
 
         private CommandResult ListCommands(string data, User user)
@@ -234,12 +332,12 @@ namespace LobotJR.Command.Module.AccessControl
             return new CommandResult(user, response);
         }
 
-        private CommandResult RemoveCommandFromRole(string data, User user)
+        private CommandResult RemoveCommandFromGroup(string data, User user)
         {
             var space = data.IndexOf(' ');
             if (space == -1)
             {
-                return new CommandResult(user, "Error: Invalid number of parameters. Expected paremeters: {command name} {role name}.");
+                return new CommandResult(user, "Error: Invalid number of parameters. Expected paremeters: {command name} {group name}.");
             }
 
             var commandName = data.Substring(0, space);
@@ -252,27 +350,28 @@ namespace LobotJR.Command.Module.AccessControl
                 return new CommandResult(user, $"Error: Command {commandName} does not match any commands.");
             }
 
-            var roleName = data.Substring(space + 1);
-            if (roleName.Length == 0)
+            var groupName = data.Substring(space + 1);
+            if (groupName.Length == 0)
             {
-                return new CommandResult(user, "Error: Role name cannot be empty.");
+                return new CommandResult(user, "Error: Group name cannot be empty.");
             }
-            var role = UserRoles.Read(x => x.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-            if (role == null)
+            var group = AccessGroups.Read(x => x.Name.Equals(groupName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            if (group == null)
             {
-                return new CommandResult(user, $"Error: Role \"{roleName}\" does not exist.");
-            }
-
-            if (!role.Commands.Contains(commandName))
-            {
-                return new CommandResult(user, $"Error: \"{roleName}\" doesn't have access to \"{commandName}\".");
+                return new CommandResult(user, $"Error: Group \"{groupName}\" does not exist.");
             }
 
-            role.RemoveCommand(commandName);
-            UserRoles.Update(role);
-            UserRoles.Commit();
+            var restrictions = Restrictions.Read(x => x.GroupId == group.Id && x.Command.Equals(commandName, StringComparison.OrdinalIgnoreCase));
+            if (!restrictions.Any())
+            {
+                return new CommandResult(user, $"Error: \"{groupName}\" doesn't have access to \"{commandName}\".");
+            }
 
-            return new CommandResult(user, $"Command \"{commandName}\" was removed from role \"{role.Name}\" successfully!");
+            var toRemove = restrictions.First();
+            Restrictions.Delete(toRemove);
+            Restrictions.Commit();
+
+            return new CommandResult(user, $"Command \"{commandName}\" was removed from group \"{group.Name}\" successfully!");
         }
     }
 }

@@ -17,7 +17,9 @@ namespace LobotJR.Data
 
         /** User data */
         public DbSet<Twitch.Model.User> Users { get; set; }
-        public DbSet<AccessGroup> UserRoles { get; set; }
+        public DbSet<AccessGroup> AccessGroups { get; set; }
+        public DbSet<Enrollment> Enrollments { get; set; }
+        public DbSet<Restriction> Restrictions { get; set; }
         public DbSet<Catch> Catches { get; set; }
         public DbSet<LeaderboardEntry> FishingLeaderboard { get; set; }
         public DbSet<TournamentResult> FishingTournaments { get; set; }

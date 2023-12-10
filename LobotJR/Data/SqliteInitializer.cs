@@ -9,8 +9,9 @@ namespace LobotJR.Data
         public SqliteInitializer(DbModelBuilder dbModelBuilder) : base(dbModelBuilder) { }
         protected override void Seed(SqliteContext context)
         {
-            context.UserRoles.Add(new AccessGroup("Streamer", new string[] { "28640725", "lobotjr" }, new string[] { "*.Admin.*" }));
-            context.UserRoles.Add(new AccessGroup("UIDev", new string[] { "28640725", "lobotjr", "26374083" }, new string[] { }));
+            context.AccessGroups.Add(new AccessGroup() { Id = 1, Name = "Admin", IncludeAdmins = true });
+            context.AccessGroups.Add(new AccessGroup() { Id = 2, Name = "UIDev" });
+            context.Enrollments.Add(new Enrollment() { GroupId = 2, UserId = "26374083" });
             if (context.Metadata != null)
             {
                 context.Metadata.Add(new Metadata());

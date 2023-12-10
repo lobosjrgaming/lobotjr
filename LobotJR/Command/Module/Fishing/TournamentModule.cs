@@ -132,10 +132,10 @@ namespace LobotJR.Command.Module.Fishing
                         Winner = UserSystem.GetUserById(winner.UserId).Username,
                         WinnerPoints = winner.Points
                     };
-                    var userEntry = tournament.GetEntryById(user.TwitchId);
+                    var userEntry = tournament.GetEntryByUser(user);
                     if (userEntry != null)
                     {
-                        output.Rank = tournament.GetRankById(userEntry.UserId);
+                        output.Rank = tournament.GetRankByUser(user);
                         output.UserPoints = userEntry.Points;
                     }
                     return output;
@@ -158,21 +158,21 @@ namespace LobotJR.Command.Module.Fishing
         public TournamentRecordsResponse TournamentRecordsCompact(string data, User user)
         {
             var output = new Dictionary<string, string>();
-            var tournaments = TournamentSystem.GetResultsForUser(user.TwitchId);
+            var tournaments = TournamentSystem.GetResultsForUser(user);
             if (!tournaments.Any())
             {
                 return null;
             }
-            var topRank = tournaments.OrderBy(x => x.GetRankById(user.TwitchId)).First();
-            var topRankAndScore = tournaments.Where(x => x.GetRankById(user.TwitchId) == topRank.GetRankById(user.TwitchId)).OrderByDescending(x => x.GetEntryById(user.TwitchId).Points).First();
-            var topScore = tournaments.OrderByDescending(x => x.GetEntryById(user.TwitchId).Points).First();
-            var topScoreAndRank = tournaments.Where(x => x.GetEntryById(user.TwitchId).Points == topScore.GetEntryById(user.TwitchId).Points).OrderBy(x => x.GetRankById(user.TwitchId)).First();
+            var topRank = tournaments.OrderBy(x => x.GetRankByUser(user)).First();
+            var topRankAndScore = tournaments.Where(x => x.GetRankByUser(user) == topRank.GetRankByUser(user)).OrderByDescending(x => x.GetEntryByUser(user).Points).First();
+            var topScore = tournaments.OrderByDescending(x => x.GetEntryByUser(user).Points).First();
+            var topScoreAndRank = tournaments.Where(x => x.GetEntryByUser(user).Points == topScore.GetEntryByUser(user).Points).OrderBy(x => x.GetRankByUser(user)).First();
             return new TournamentRecordsResponse()
             {
-                TopRank = topRankAndScore.GetRankById(user.TwitchId),
-                TopRankScore = topRankAndScore.GetEntryById(user.TwitchId).Points,
-                TopScore = topScoreAndRank.GetEntryById(user.TwitchId).Points,
-                TopScoreRank = topScoreAndRank.GetRankById(user.TwitchId)
+                TopRank = topRankAndScore.GetRankByUser(user),
+                TopRankScore = topRankAndScore.GetEntryByUser(user).Points,
+                TopScore = topScoreAndRank.GetEntryByUser(user).Points,
+                TopScoreRank = topScoreAndRank.GetRankByUser(user)
             };
         }
 

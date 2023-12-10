@@ -11,7 +11,8 @@ namespace LobotJR.Command.Module.AccessControl
     /// </summary>
     public class AccessControlModule : ICommandModule
     {
-        private readonly IRepository<AccessGroup> repository;
+        private readonly IRepository<AccessGroup> accessGroups;
+        private readonly IRepository<Enrollment> enrollments;
         /// <summary>
         /// Prefix applied to names of commands within this module.
         /// </summary>
@@ -29,7 +30,8 @@ namespace LobotJR.Command.Module.AccessControl
 
         public AccessControlModule(IRepositoryManager repositoryManager)
         {
-            repository = repositoryManager.UserRoles;
+            accessGroups = repositoryManager.AccessGroups;
+            enrollments = repositoryManager.Enrollments;
             Commands = new CommandHandler[]
             {
                 new CommandHandler("CheckAccess", CheckAccess, "CheckAccess", "check-access"),
@@ -38,29 +40,30 @@ namespace LobotJR.Command.Module.AccessControl
 
         private CommandResult CheckAccess(string data, User user)
         {
-            var roleName = data;
-            if (roleName == null || roleName.Length == 0)
+            var groupName = data;
+            if (groupName == null || groupName.Length == 0)
             {
-                var roles = repository.Read(x => x.UserIds.Any(y => y.Equals(user.TwitchId, StringComparison.OrdinalIgnoreCase)));
-                if (roles.Any())
+                var groupIds = enrollments.Read(x => x.UserId.Equals(user.TwitchId, StringComparison.OrdinalIgnoreCase)).Select(x => x.GroupId).ToList();
+                var groups = accessGroups.Read(x => groupIds.Contains(x.Id));
+                if (groups.Any())
                 {
-                    var count = roles.Count();
-                    return new CommandResult(user, $"You are a member of the following role{(count == 1 ? "" : "s")}: {string.Join(", ", roles.Select(x => x.Name))}.");
+                    var count = groups.Count();
+                    return new CommandResult(user, $"You are a member of the following group{(count == 1 ? "" : "s")}: {string.Join(", ", groups.Select(x => x.Name))}.");
                 }
                 else
                 {
-                    return new CommandResult(user, "You are not a member of any roles.");
+                    return new CommandResult(user, "You are not a member of any groups.");
                 }
             }
 
-            var role = repository.Read(x => x.Name.Equals(roleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-            if (role == null)
+            var group = accessGroups.Read(x => x.Name.Equals(groupName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            if (group == null)
             {
-                return new CommandResult(user, $"Error: No role with name \"{roleName}\" was found.");
+                return new CommandResult(user, $"Error: No group with name \"{groupName}\" was found.");
             }
 
-            var access = role.UserIds.Contains(user.TwitchId) ? "are" : "are not";
-            return new CommandResult(user, $"You {access} a member of \"{role.Name}\"!");
+            var access = enrollments.Read(x => x.GroupId == group.Id && x.UserId.Equals(user.TwitchId, StringComparison.OrdinalIgnoreCase)).Any() ? "are" : "are not";
+            return new CommandResult(user, $"You {access} a member of \"{group.Name}\"!");
         }
     }
 }
