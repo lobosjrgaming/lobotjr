@@ -19,14 +19,17 @@ namespace LobotJR.Test.Modules.AccessControl
         public void AddsUserToRole()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("EnrollUser")).FirstOrDefault();
-            var role = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
-            var baseIdCount = role.UserIds.Count;
+            var group = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
+            var enrollments = CommandManager.RepositoryManager.Enrollments.Read(x => x.GroupId == group.Id);
+            var baseEnrollmentCount = enrollments.Count();
             var result = command.Executor("NotAuth TestRole", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].Contains("success", StringComparison.OrdinalIgnoreCase));
-            Assert.AreEqual(baseIdCount + 1, role.UserIds.Count);
-            Assert.IsTrue(role.UserIds.Contains(CommandManager.UserSystem.GetUserByName("NotAuth").TwitchId));
+            enrollments = CommandManager.RepositoryManager.Enrollments.Read(x => x.GroupId == group.Id);
+            Assert.AreEqual(baseEnrollmentCount + 1, enrollments.Count());
+            var notAuth = CommandManager.UserSystem.GetUserByName("NotAuth");
+            Assert.IsTrue(CommandManager.RepositoryManager.Enrollments.Read(x => x.GroupId == group.Id && x.UserId.Equals(notAuth.TwitchId)).Any());
         }
 
         [TestMethod]
@@ -84,13 +87,14 @@ namespace LobotJR.Test.Modules.AccessControl
         public void RemovesUserFromRole()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("UnenrollUser")).FirstOrDefault();
-            var role = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
-            var userToRemove = "Auth";
+            var group = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
+            var userToRemove = CommandManager.UserSystem.GetUserByName("Auth").Username;
             var result = command.Executor($"{userToRemove} TestRole", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].Contains("success", StringComparison.OrdinalIgnoreCase));
-            Assert.IsFalse(role.UserIds.Contains(CommandManager.UserSystem.GetUserByName(userToRemove).TwitchId));
+            var enrollments = CommandManager.RepositoryManager.Enrollments.Read(x => x.UserId.Equals(userToRemove) && x.GroupId == group.Id);
+            Assert.IsFalse(enrollments.Any());
         }
 
         [TestMethod]

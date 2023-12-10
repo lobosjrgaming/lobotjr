@@ -72,7 +72,7 @@ namespace LobotJR.Command.Module.AccessControl
                 return new CommandResult(user, $"Error: Unable to create group, \"{data}\" already exists.");
             }
 
-            AccessGroups.Create(new AccessGroup(data));
+            AccessGroups.Create(new AccessGroup() { Name = data });
             AccessGroups.Commit();
             return new CommandResult(user, $"Access group \"{data}\" created successfully!");
         }
@@ -86,10 +86,34 @@ namespace LobotJR.Command.Module.AccessControl
             }
             var enrollments = Enrollments.Read(x => x.GroupId.Equals(existingGroup.Id));
             var restrictions = Restrictions.Read(x => x.GroupId.Equals(existingGroup.Id));
-            var userNames = UserSystem.GetUsersByNames(enrollments.Select(x => x.UserId).ToArray());
+            var names = new List<string>();
+            if (existingGroup.IncludeAdmins)
+            {
+                names.Add("Admins");
+            }
+            if (existingGroup.IncludeMods)
+            {
+                names.Add("Mods");
+            }
+            if (existingGroup.IncludeVips)
+            {
+                names.Add("VIPs");
+            }
+            if (existingGroup.IncludeSubs)
+            {
+                names.Add("Subs");
+            }
+            foreach (var enrollment in enrollments)
+            {
+                var enrolledUser = UserSystem.GetUserById(enrollment.UserId);
+                if (enrolledUser != null)
+                {
+                    names.Add(enrolledUser.Username);
+                }
+            }
             return new CommandResult(user,
                 $"Access group \"{data}\" contains the following commands: {string.Join(", ", restrictions.Select(x => x.Command))}.",
-                $"Access group \"{data}\" contains the following users: {string.Join(", ", userNames)}."
+                $"Access group \"{data}\" contains the following users: {string.Join(", ", names)}."
             );
         }
 
@@ -121,7 +145,7 @@ namespace LobotJR.Command.Module.AccessControl
         private CommandResult SetGroupFlag(string data, User user)
         {
             List<int> spaces = new List<int>();
-            for (var i = data.IndexOf(' '); i != -1; i = data.IndexOf(' ', i))
+            for (var i = data.IndexOf(' '); i != -1; i = data.IndexOf(' ', i + 1))
             {
                 spaces.Add(i);
             }
@@ -160,7 +184,7 @@ namespace LobotJR.Command.Module.AccessControl
             }
             else if (flag.Equals("admin", StringComparison.OrdinalIgnoreCase))
             {
-                existingRole.IncludeAdmin = value;
+                existingRole.IncludeAdmins = value;
             }
             else
             {

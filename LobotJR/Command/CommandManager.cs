@@ -139,7 +139,7 @@ namespace LobotJR.Command
                 if ((user.IsMod && groups.Any(x => x.IncludeMods))
                     || (user.IsVip && groups.Any(x => x.IncludeVips))
                     || (user.IsSub && groups.Any(x => x.IncludeSubs))
-                    || (user.IsAdmin && groups.Any(x => x.IncludeAdmin)))
+                    || (user.IsAdmin && groups.Any(x => x.IncludeAdmins)))
                 {
                     return true;
                 }

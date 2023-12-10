@@ -76,7 +76,7 @@ namespace LobotJR.Command.System.Fishing
                 Logger.Debug("User {userName} ({userId}) caught a fish worth {points} points.", fisher?.User.Username, fisher?.User.TwitchId, catchData?.Points);
                 LeaderboardSystem.UpdatePersonalLeaderboard(fisher.User, catchData);
                 LeaderboardSystem.UpdateGlobalLeaderboard(catchData);
-                AddTournamentPoints(fisher.User.TwitchId, catchData.Points);
+                AddTournamentPoints(fisher.User, catchData.Points);
             }
         }
 

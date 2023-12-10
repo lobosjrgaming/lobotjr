@@ -113,7 +113,7 @@ namespace LobotJR.Test.Modules.Fishing
             fisher.Hooked = Manager.FishData.Read().First();
             var response = FishingModule.CatchFish("", user);
             var responses = response.Responses;
-            var newRecords = LeaderboardSystem.GetPersonalLeaderboard(user.TwitchId);
+            var newRecords = LeaderboardSystem.GetPersonalLeaderboard(user);
             Assert.IsTrue(response.Processed);
             Assert.IsNull(response.Errors);
             Assert.AreEqual(2, responses.Count);
@@ -139,7 +139,7 @@ namespace LobotJR.Test.Modules.Fishing
             Assert.AreEqual(1, responses.Count);
             Assert.IsTrue(responses[0].Contains("!cast"));
             Assert.IsFalse(fisher.IsFishing);
-            Assert.AreEqual(0, LeaderboardSystem.GetPersonalLeaderboard(user.TwitchId).Count());
+            Assert.AreEqual(0, LeaderboardSystem.GetPersonalLeaderboard(user).Count());
         }
 
         [TestMethod]
@@ -159,7 +159,7 @@ namespace LobotJR.Test.Modules.Fishing
             Assert.AreEqual(1, responses.Count);
             Assert.IsTrue(responses[0].Contains("!cancelcast"));
             Assert.IsFalse(fisher.IsFishing);
-            Assert.AreEqual(0, LeaderboardSystem.GetPersonalLeaderboard(user.TwitchId).Count());
+            Assert.AreEqual(0, LeaderboardSystem.GetPersonalLeaderboard(user).Count());
         }
 
         [TestMethod]

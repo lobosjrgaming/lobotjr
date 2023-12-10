@@ -3,7 +3,6 @@ using LobotJR.Twitch.Model;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Newtonsoft.Json;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace LobotJR.Test.Command
@@ -31,7 +30,7 @@ namespace LobotJR.Test.Command
         [TestMethod]
         public void InitializeLoadsRoleData()
         {
-            var userRolesJson = JsonConvert.SerializeObject(UserRoles);
+            var userRolesJson = JsonConvert.SerializeObject(AccessGroups);
             var loadedRolesJson = JsonConvert.SerializeObject(CommandManager.RepositoryManager.AccessGroups.Read());
             Assert.AreEqual(userRolesJson, loadedRolesJson);
         }
@@ -78,9 +77,13 @@ namespace LobotJR.Test.Command
         public void ProcessMessageWildcardAllowsAccessToSubModules()
         {
             var module = CommandModuleMock.Object;
-            var role = UserRoles.First();
-            role.CommandList = "CommandMock.*";
-            role.UserList = "12345";
+            var group = AccessGroups.First();
+            var restrictionIds = Enrollments.Where(x => x.GroupId == group.Id).Select(x => x.Id);
+            Restrictions.RemoveAll(x => restrictionIds.Contains(x.Id));
+            Restrictions.Add(new Restriction(group.Id, "CommandMock.*"));
+            var enrollmentIds = Enrollments.Where(x => x.GroupId == group.Id).Select(x => x.Id);
+            Enrollments.RemoveAll(x => enrollmentIds.Contains(x.Id));
+            Enrollments.Add(new Enrollment(group.Id, "12345"));
             var user = IdCache.FirstOrDefault(x => x.Username.Equals("Auth"));
             var result = CommandManager.ProcessMessage("Foobar", user, true);
             Assert.IsTrue(result.Processed);
@@ -93,9 +96,13 @@ namespace LobotJR.Test.Command
         public void ProcessMessageSubModuleAccessDoesNotAllowParentAccess()
         {
             var module = CommandModuleMock.Object;
-            var role = UserRoles.First();
-            role.CommandList = "CommandMock.SubMock.*";
-            UserRoles.Add(new AccessGroup("OtherRole", null, new List<string>(new string[] { "CommandMock.*" })));
+            var group = AccessGroups.First();
+            var restrictionIds = Enrollments.Where(x => x.GroupId == group.Id).Select(x => x.Id);
+            Restrictions.RemoveAll(x => restrictionIds.Contains(x.Id));
+            Restrictions.Add(new Restriction(group.Id, "CommandMock.SubMock.*"));
+            var lastId = AccessGroups.Last().Id;
+            AccessGroups.Add(new AccessGroup(lastId + 1, "OtherRole"));
+            Restrictions.Add(new Restriction(lastId + 1, "CommandMock.*"));
             var user = IdCache.FirstOrDefault(x => x.Username.Equals("Auth"));
             var result = CommandManager.ProcessMessage("Foo", user, true);
             Assert.IsTrue(result.Processed);
@@ -107,9 +114,13 @@ namespace LobotJR.Test.Command
         public void ProcessMessageAllowsAuthorizedUserWhenWildcardIsRestricted()
         {
             var module = CommandModuleMock.Object;
-            var role = UserRoles.First();
-            role.CommandList = "CommandMock.SubMock.*";
-            UserRoles.Add(new AccessGroup("OtherRole", null, new List<string>(new string[] { "CommandMock.*" })));
+            var group = AccessGroups.First();
+            var restrictionIds = Enrollments.Where(x => x.GroupId == group.Id).Select(x => x.Id);
+            Restrictions.RemoveAll(x => restrictionIds.Contains(x.Id));
+            Restrictions.Add(new Restriction(group.Id, "CommandMock.SubMock.*"));
+            var lastId = AccessGroups.Last().Id;
+            AccessGroups.Add(new AccessGroup(lastId + 1, "OtherRole"));
+            Restrictions.Add(new Restriction(lastId + 1, "CommandMock.*"));
             var user = IdCache.FirstOrDefault(x => x.Username.Equals("Auth"));
             var result = CommandManager.ProcessMessage("Foobar", user, true);
             Assert.IsTrue(result.Processed);
@@ -140,8 +151,10 @@ namespace LobotJR.Test.Command
         [TestMethod]
         public void ProcessMessageRestrictsCommandsWithWildcardRoles()
         {
-            var role = UserRoles.First();
-            role.CommandList = "CommandMock.*";
+            var group = AccessGroups.First();
+            var restrictionIds = Enrollments.Where(x => x.GroupId == group.Id).Select(x => x.Id);
+            Restrictions.RemoveAll(x => restrictionIds.Contains(x.Id));
+            Restrictions.Add(new Restriction(group.Id, "CommandMock.*"));
             var user = IdCache.FirstOrDefault(x => x.Username.Equals("NotAuth"));
             var result = CommandManager.ProcessMessage("Foo", user, true);
             Assert.IsTrue(result.Processed);

@@ -18,7 +18,7 @@ namespace LobotJR.Command
         /// Whether or not this access group automatically includes every user
         /// with the IsAdmin flag set.
         /// </summary>
-        public bool IncludeAdmin { get; set; }
+        public bool IncludeAdmins { get; set; }
         /// <summary>
         /// Whether or not this access group automatically includes every user
         /// with the IsMod flag set.
@@ -41,16 +41,15 @@ namespace LobotJR.Command
         /// <summary>
         /// Creates an empty user role.
         /// </summary>
-        public AccessGroup()
-        {
-        }
+        public AccessGroup() { }
 
         /// <summary>
         /// Creates a user role with a name.
         /// </summary>
         /// <param name="name">The name of the role.</param>
-        public AccessGroup(string name)
+        public AccessGroup(int id, string name)
         {
+            Id = id;
             Name = name;
         }
     }

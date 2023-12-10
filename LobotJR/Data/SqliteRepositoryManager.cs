@@ -34,6 +34,8 @@ namespace LobotJR.Data
             DataTimers = new SqliteRepository<DataTimer>(context);
             Users = new SqliteRepository<Twitch.Model.User>(context);
             AccessGroups = new SqliteRepository<AccessGroup>(context);
+            Enrollments = new SqliteRepository<Enrollment>(context);
+            Restrictions = new SqliteRepository<Restriction>(context);
             Catches = new SqliteRepository<Catch>(context);
             FishingLeaderboard = new SqliteRepository<LeaderboardEntry>(context);
             TournamentResults = new SqliteRepository<TournamentResult>(context);

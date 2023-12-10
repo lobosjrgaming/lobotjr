@@ -52,12 +52,14 @@ namespace LobotJR.Test.Modules.AccessControl
         {
             var command = Module.Commands.Where(x => x.Name.Equals("CheckAccess")).FirstOrDefault();
             var username = "Auth";
+            var user = CommandManager.UserSystem.GetUserByName(username);
             var result = command.Executor(null, CommandManager.UserSystem.GetUserByName(username));
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
-            Assert.IsTrue(CommandManager.RepositoryManager.AccessGroups
-                .Read(x => x.UserIds.Any(y => y.Equals(username)))
-                .All(x => result.Responses.Any(y => y.Contains(x.Name))));
+            var enrollments = CommandManager.RepositoryManager.Enrollments.Read(x => x.UserId.Equals(user.TwitchId));
+            var enrolledGroups = enrollments.Select(x => x.GroupId).Distinct();
+            var groups = CommandManager.RepositoryManager.AccessGroups.Read(x => enrolledGroups.Contains(x.Id));
+            Assert.IsTrue(groups.All(x => result.Responses.Any(y => y.Contains(x.Name))));
         }
 
         [TestMethod]

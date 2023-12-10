@@ -18,14 +18,15 @@ namespace LobotJR.Test.Modules.AccessControl
         public void AddsCommandToRole()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("RestrictCommand")).FirstOrDefault();
-            var role = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
-            var baseCount = role.Commands.Count;
+            var testRole = CommandManager.RepositoryManager.AccessGroups.Read(x => x.Name.Equals("TestRole")).First();
+            var restrictions = CommandManager.RepositoryManager.Restrictions.Read();
+            var baseCount = restrictions.Count();
             var result = command.Executor("CommandMock.Unrestricted TestRole", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses.Any(x => x.Contains("success", StringComparison.OrdinalIgnoreCase)));
-            Assert.AreEqual(baseCount + 1, role.Commands.Count);
-            Assert.IsTrue(role.Commands.Contains("CommandMock.Unrestricted"));
+            Assert.AreEqual(baseCount + 1, restrictions.Count());
+            Assert.IsTrue(restrictions.Any(x => x.GroupId == testRole.Id && x.Command.Equals("CommandMock.Unrestricted")));
         }
 
         [TestMethod]
@@ -127,13 +128,14 @@ namespace LobotJR.Test.Modules.AccessControl
         public void RemovesCommandFromRole()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("UnrestrictCommand")).FirstOrDefault();
-            var role = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
+            var restrictions = CommandManager.RepositoryManager.Restrictions.Read();
+            var testRole = CommandManager.RepositoryManager.AccessGroups.Read(x => x.Name.Equals("TestRole")).First();
             var commandToRemove = "CommandMock.Foo";
             var result = command.Executor($"{commandToRemove} TestRole", null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses.Any(x => x.Contains("success", StringComparison.OrdinalIgnoreCase)));
-            Assert.IsFalse(role.Commands.Contains(commandToRemove));
+            Assert.IsFalse(restrictions.Any(x => x.GroupId == testRole.Id && x.Command.Equals(commandToRemove)));
         }
 
         [TestMethod]

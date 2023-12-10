@@ -82,7 +82,7 @@ namespace LobotJR.Command.Module.Fishing
 
                 if (TournamentSystem.IsRunning)
                 {
-                    var record = LeaderboardSystem.GetUserRecordForFish(user.TwitchId, catchData.Fish);
+                    var record = LeaderboardSystem.GetUserRecordForFish(user, catchData.Fish);
                     var responses = new List<string>();
                     if (record.Weight == catchData.Weight)
                     {

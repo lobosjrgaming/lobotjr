@@ -49,5 +49,13 @@ namespace LobotJR.Command
         /// The command that is restricted. May include * as a wildcard match.
         /// </summary>
         public string Command { get; set; }
+
+        public Restriction() { }
+
+        public Restriction(int groupId, string command)
+        {
+            GroupId = groupId;
+            Command = command;
+        }
     }
 }

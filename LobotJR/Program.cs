@@ -278,20 +278,23 @@ namespace TwitchBot
         {
             if (isLive)
             {
-                using (var player = new SoundPlayer("./alert.wav"))
+                if (hasCrashed)
                 {
-                    player.PlaySync();
+                    using (var player = new SoundPlayer("./Resources/alert.wav"))
+                    {
+                        player.PlaySync();
+                    }
+                    hasCrashed = false;
                 }
-                hasCrashed = false;
-            }
-            else
-            {
-                hasCrashed = true;
             }
         }
 
         static void Main(string[] args)
         {
+            LogManager.Setup().LoadConfiguration(builder =>
+            {
+                builder.ForLogger().FilterMinLevel(LogLevel.Info).WriteToConsole(layout: "${time}|${level:uppercase=true}|${message:withexception=true}");
+            });
             while (true)
             {
                 try
@@ -307,22 +310,17 @@ namespace TwitchBot
                     ZipFile.CreateFromDirectory(folder, $"{folder}.zip");
                     File.Delete($"{folder}/output.log");
                     Directory.Delete(folder);
-                    Logger.Error("The application has encountered an unexpected error: {message}", ex.Message);
                     Logger.Error(ex);
-                    Logger.Error("The full details of the error can be found in {file}.zip", folder);
+                    Logger.Error("The application has encountered an unexpected error: {message}", ex.Message);
+                    Logger.Error("The full details of the error can be found in {file}", $"{folder}.zip");
+                    hasCrashed = true;
                     CrashAlert();
-                    isLive = false;
                 }
             }
         }
 
         static void RunBot(string[] args)
         {
-            LogManager.Setup().LoadConfiguration(builder =>
-            {
-                builder.ForLogger().FilterMinLevel(LogLevel.Info).WriteToConsole(layout: "${time}|${level:uppercase=true}|${message:withexception=true}");
-            });
-
             bool twitchPlays = false;
             bool broadcasting = false;
             string broadcastSetter = "";
@@ -546,6 +544,19 @@ namespace TwitchBot
                     member.Value.ClearQueue();
                 }
                 wolfcoins.SaveClassData();
+
+                #region Crash Recovery
+                if (isLive)
+                {
+                    broadcasting = true;
+                    broadcastSetter = "Auto Recovery";
+                    awardLast = DateTime.Now;
+                    var tournamentSystem = systemManager.Get<TournamentSystem>();
+                    tournamentSystem.NextTournament = DateTime.Now.AddMinutes(15);
+                    isLive = true;
+                    CrashAlert();
+                }
+                #endregion
 
                 while (true)
                 {
@@ -878,6 +889,10 @@ namespace TwitchBot
                                 twitchClient.QueueWhisper(whisperer, "Hi I'm LobotJR! I'm a chat bot written by LobosJR to help out with things.  To ask me about a certain topic, whisper me the number next to what you want to know about! (Ex: Whisper me 1 for information on Wolfcoins)");
                                 twitchClient.QueueWhisper(whisperer, "Here's a list of things you can ask me about: Wolfcoins (1) - Leveling System (2)");
 
+                            }
+                            else if (whisperMessage == "!testcrash" && (whisperSender == tokenData.BroadcastUser || whisperSender == tokenData.ChatUser || whisperSender.Equals("celesteenfer", StringComparison.OrdinalIgnoreCase)))
+                            {
+                                throw new Exception($"Test crash initiated by {whisperSender} at {DateTime.Now.ToString("yyyyMMddTHHmmssfffZ")}");
                             }
                             else if (whisperMessage == "!cleartesters" && (whisperSender == tokenData.BroadcastUser || whisperSender == tokenData.ChatUser))
                             {

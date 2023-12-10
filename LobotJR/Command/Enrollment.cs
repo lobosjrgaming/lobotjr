@@ -16,6 +16,8 @@ namespace LobotJR.Command
         /// </summary>
         public string UserId { get; set; }
 
+        public Enrollment() { }
+
         public Enrollment(int groupId, string userId)
         {
             GroupId = groupId;
