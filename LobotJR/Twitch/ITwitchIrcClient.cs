@@ -1,4 +1,5 @@
 ﻿using LobotJR.Twitch.Model;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,8 +9,13 @@ namespace LobotJR.Twitch
     /// <summary>
     /// IRC client built for Twitch.
     /// </summary>
-    public interface ITwitchIrcClient
+    public interface ITwitchIrcClient : IDisposable
     {
+        /// <summary>
+        /// Disposes and recreates the inner tcp client to allow for proper reconnects.
+        /// </summary>
+        void Restart();
+
         /// <summary>
         /// Connects the client to the twitch server, authenticates the chat
         /// user, and joins the channel of the broadcast user.
