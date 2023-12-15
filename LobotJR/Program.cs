@@ -23,6 +23,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Media;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using Wolfcoins;
@@ -280,9 +281,18 @@ namespace TwitchBot
             {
                 if (hasCrashed)
                 {
-                    using (var player = new SoundPlayer("./Resources/alert.wav"))
+                    var alertFile = "./Resources/alert.wav";
+                    var alertDefault = "./Resources/alert.default.wav";
+                    if (!File.Exists(alertFile) && File.Exists(alertDefault))
                     {
-                        player.PlaySync();
+                        File.Copy(alertDefault, alertFile);
+                    }
+                    if (File.Exists(alertFile))
+                    {
+                        using (var player = new SoundPlayer(alertFile))
+                        {
+                            player.PlaySync();
+                        }
                     }
                     hasCrashed = false;
                 }
@@ -295,6 +305,7 @@ namespace TwitchBot
             {
                 builder.ForLogger().FilterMinLevel(LogLevel.Info).WriteToConsole(layout: "${time}|${level:uppercase=true}|${message:withexception=true}");
             });
+            Logger.Info("Launching Lobot version {version}", Assembly.GetExecutingAssembly().GetName().Version);
             while (true)
             {
                 try
@@ -305,13 +316,13 @@ namespace TwitchBot
                 {
                     var now = DateTime.UtcNow;
                     var folder = $"CrashDump.{now.ToString("yyyyMMddTHHmmssfffZ")}";
+                    Logger.Error(ex);
+                    Logger.Error("The application has encountered an unexpected error: {message}", ex.Message);
                     Directory.CreateDirectory(folder);
                     File.Copy("./output.log", $"{folder}/output.log");
                     ZipFile.CreateFromDirectory(folder, $"{folder}.zip");
                     File.Delete($"{folder}/output.log");
                     Directory.Delete(folder);
-                    Logger.Error(ex);
-                    Logger.Error("The application has encountered an unexpected error: {message}", ex.Message);
                     Logger.Error("The full details of the error can be found in {file}", $"{folder}.zip");
                     hasCrashed = true;
                     CrashAlert();
@@ -468,6 +479,8 @@ namespace TwitchBot
             {
                 Logger.Error($"IRC connection failed. Retrying in {Math.Pow(2, attempts)} seconds...");
                 Thread.Sleep((int)Math.Pow(2, attempts) * 1000);
+                ircClient.Restart();
+                connected = ircClient.Connect().GetAwaiter().GetResult();
                 attempts++;
             }
             Logger.Info($"Logged in as {tokenData.ChatUser}");
@@ -890,7 +903,7 @@ namespace TwitchBot
                                 twitchClient.QueueWhisper(whisperer, "Here's a list of things you can ask me about: Wolfcoins (1) - Leveling System (2)");
 
                             }
-                            else if (whisperMessage == "!testcrash" && (whisperSender == tokenData.BroadcastUser || whisperSender == tokenData.ChatUser || whisperSender.Equals("celesteenfer", StringComparison.OrdinalIgnoreCase)))
+                            else if (whisperMessage == "!testcrash" && (whisperSender == tokenData.BroadcastUser || whisperSender == tokenData.ChatUser))
                             {
                                 throw new Exception($"Test crash initiated by {whisperSender} at {DateTime.Now.ToString("yyyyMMddTHHmmssfffZ")}");
                             }

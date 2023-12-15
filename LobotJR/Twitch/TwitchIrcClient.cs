@@ -59,6 +59,15 @@ namespace LobotJR.Twitch
         }
 
         /// <summary>
+        /// Disposes and recreates the inner tcp client to allow for proper reconnects.
+        /// </summary>
+        public void Restart()
+        {
+            this.Dispose();
+            Client = new TcpClient();
+        }
+
+        /// <summary>
         /// Connects the client to the twitch server, authenticates the chat
         /// user, and joins the channel of the broadcast user.
         /// </summary>
@@ -260,6 +269,27 @@ namespace LobotJR.Twitch
         public void QueueMessage(string message)
         {
             this.MessageQueue.Enqueue(message);
+        }
+
+        public void Dispose()
+        {
+            if (this.InputStream != null)
+            {
+                try { this.InputStream.Close(); } catch { }
+                try { this.InputStream.Dispose(); } catch { }
+            }
+
+            if (this.OutputStream != null)
+            {
+                try { this.OutputStream.Close(); } catch { }
+                try { this.OutputStream.Dispose(); } catch { }
+            }
+
+            if (this.Client != null)
+            {
+                try { this.Client.Close(); } catch { }
+                try { this.Client.Dispose(); } catch { }
+            }
         }
     }
 }

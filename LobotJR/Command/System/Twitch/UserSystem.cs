@@ -213,11 +213,25 @@ namespace LobotJR.Command.System.Twitch
 
         private void ProcessUpdate(IEnumerable<TwitchUserData> mods, IEnumerable<TwitchUserData> vips, IEnumerable<SubscriptionResponseData> subs, IEnumerable<TwitchUserData> chatters)
         {
-            var allUsers = mods.Distinct().ToDictionary(x => x.UserId, x => x.UserName)
-                .Union(vips.Distinct().ToDictionary(x => x.UserId, x => x.UserName))
-                .Union(subs.Distinct().ToDictionary(x => x.UserId, x => x.UserName))
-                .Union(chatters.Distinct().ToDictionary(x => x.UserId, x => x.UserName)).ToDictionary(x => x.Key, x => x.Value);
+            IEnumerable<KeyValuePair<string, string>> userPairs = new List<KeyValuePair<string, string>>();
+            if (mods.Any())
+            {
+                userPairs = userPairs.Union(mods.Distinct().ToDictionary(x => x.UserId, x => x.UserName));
+            }
+            if (vips.Any())
+            {
+                userPairs = userPairs.Union(vips.Distinct().ToDictionary(x => x.UserId, x => x.UserName));
+            }
+            if (subs.Any())
+            {
+                userPairs = userPairs.Union(subs.Distinct().ToDictionary(x => x.UserId, x => x.UserName));
+            }
+            if (chatters.Any())
+            {
+                userPairs = userPairs.Union(chatters.Distinct().ToDictionary(x => x.UserId, x => x.UserName));
+            }
 
+            var allUsers = userPairs.ToDictionary(x => x.Key, x => x.Value);
             var existingUsers = Users.Read(x => allUsers.Keys.Contains(x.TwitchId)).ToDictionary(x => x.TwitchId, x => x.Username);
             var newUsers = allUsers.Except(existingUsers, new KeyComparer<string, string>());
 
