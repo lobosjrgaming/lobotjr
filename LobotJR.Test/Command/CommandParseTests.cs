@@ -183,8 +183,5 @@ namespace LobotJR.Test.Command
             Assert.AreEqual(0, result.Errors.Count());
             Assert.AreEqual(0, CommandModuleMock.IntParamCount);
         }
-
-        //TODO: Add tests for dynamic invoke parse system
-        //Check error handling for missing params, too many params, and invalid type cast params
     }
 }
