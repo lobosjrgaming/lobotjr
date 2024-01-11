@@ -2,6 +2,7 @@
 using LobotJR.Command.System.Fishing;
 using LobotJR.Command.System.Twitch;
 using LobotJR.Twitch.Model;
+using LobotJR.Utils;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -42,9 +43,9 @@ namespace LobotJR.Command.Module.Fishing
             UserSystem = userSystem;
             Commands = new CommandHandler[]
             {
-                new CommandHandler("PlayerLeaderboard", PlayerLeaderboard, PlayerLeaderboardCompact, "fish"),
-                new CommandHandler("GlobalLeaderboard", GlobalLeaderboard, GlobalLeaderboardCompact, "fishleaders", "leaderboards", "fish-leaders"),
-                new CommandHandler("ReleaseFish", ReleaseFish, "releasefish", "release-fish")
+                new CommandHandler("PlayerLeaderboard", this, CommandMethod.GetInfo<int>(PlayerLeaderboard), CommandMethod.GetInfo<int>(PlayerLeaderboardCompact), "fish"),
+                new CommandHandler("GlobalLeaderboard", this, CommandMethod.GetInfo(GlobalLeaderboard), CommandMethod.GetInfo(GlobalLeaderboardCompact), "fishleaders", "leaderboards", "fish-leaders"),
+                new CommandHandler("ReleaseFish", this, CommandMethod.GetInfo<int>(ReleaseFish), "releasefish", "release-fish")
             };
         }
 
@@ -54,11 +55,11 @@ namespace LobotJR.Command.Module.Fishing
             PushNotification?.Invoke(null, new CommandResult() { Messages = new string[] { recordMessage } });
         }
 
-        public CompactCollection<Catch> PlayerLeaderboardCompact(string data, User user)
+        public CompactCollection<Catch> PlayerLeaderboardCompact(User user, int index = -1)
         {
             string selectFunc(Catch x) => $"{x.Fish.Name}|{x.Length}|{x.Weight};";
             var records = TournamentSystem.GetPersonalLeaderboard(user);
-            if (string.IsNullOrWhiteSpace(data))
+            if (index == -1)
             {
                 if (records != null && records.Any())
                 {
@@ -68,23 +69,20 @@ namespace LobotJR.Command.Module.Fishing
             }
             else
             {
-                if (int.TryParse(data, out var id))
+                var fish = records.ElementAtOrDefault(index - 1);
+                if (fish != null)
                 {
-                    var fish = records.ElementAtOrDefault(id - 1);
-                    if (fish != null)
-                    {
-                        return new CompactCollection<Catch>(new Catch[] { fish }, selectFunc);
-                    }
+                    return new CompactCollection<Catch>(new Catch[] { fish }, selectFunc);
                 }
                 return null;
             }
         }
 
-        public CommandResult PlayerLeaderboard(string data, User user)
+        public CommandResult PlayerLeaderboard(User user, int index = -1)
         {
-            var compact = PlayerLeaderboardCompact(data, user);
+            var compact = PlayerLeaderboardCompact(user, index);
             var items = compact.Items.ToList();
-            if (string.IsNullOrWhiteSpace(data))
+            if (index == -1)
             {
                 if (items.Count > 0)
                 {
@@ -93,18 +91,19 @@ namespace LobotJR.Command.Module.Fishing
                         $"You've caught {items.Count} different types of fish: "
                     };
                     responses.AddRange(items.Select((x, i) => $"{i + 1}: {x.Fish.Name}"));
-                    return new CommandResult(user, responses.ToArray());
+                    return new CommandResult(responses.ToArray());
                 }
                 else
                 {
-                    return new CommandResult(user, $"You haven't caught any fish yet!");
+                    return new CommandResult($"You haven't caught any fish yet!");
                 }
             }
             else
             {
                 if (compact == null)
                 {
-                    return new CommandResult(user, $"Invalid request. Syntax: !fish <Fish #>");
+                    var count = TournamentSystem.GetPersonalLeaderboard(user).Count();
+                    return new CommandResult($"That fish doesn't exist. Fish # must be between 1 and {count}");
                 }
                 var fishCatch = compact.Items.FirstOrDefault();
                 var responses = new List<string>
@@ -115,41 +114,36 @@ namespace LobotJR.Command.Module.Fishing
                     $"Size Category - {fishCatch.Fish.SizeCategory.Name}",
                     $"Description - {fishCatch.Fish.FlavorText}"
                 };
-                return new CommandResult(user, responses.ToArray());
+                return new CommandResult(responses.ToArray());
             }
         }
 
-        public CompactCollection<LeaderboardEntry> GlobalLeaderboardCompact(string data, User user)
+        public CompactCollection<LeaderboardEntry> GlobalLeaderboardCompact()
         {
-
             return new CompactCollection<LeaderboardEntry>(TournamentSystem.GetLeaderboard(), x => $"{x.Fish.Name}|{x.Length}|{x.Weight}|{UserSystem.GetUserById(x.UserId).Username};");
         }
 
-        public CommandResult GlobalLeaderboard(string data, User user)
+        public CommandResult GlobalLeaderboard()
         {
-            var compact = GlobalLeaderboardCompact(data, null);
-            return new CommandResult(user, compact.Items.Select(x => $"Largest {x.Fish.Name} caught by {UserSystem.GetUserById(x.UserId).Username} at {x.Weight} lbs., {x.Length} in.").ToArray());
+            var compact = GlobalLeaderboardCompact();
+            return new CommandResult(compact.Items.Select(x => $"Largest {x.Fish.Name} caught by {UserSystem.GetUserById(x.UserId).Username} at {x.Weight} lbs., {x.Length} in.").ToArray());
         }
 
-        public CommandResult ReleaseFish(string data, User user)
+        public CommandResult ReleaseFish(User user, int index)
         {
-            if (int.TryParse(data, out var param))
+            var records = TournamentSystem.GetPersonalLeaderboard(user);
+            if (records == null || !records.Any())
             {
-                var records = TournamentSystem.GetPersonalLeaderboard(user);
-                if (records == null || !records.Any())
-                {
-                    return new CommandResult(user, "You don't have any fish! Type !cast to try and fish for some!");
-                }
-                var count = records.Count();
-                if (count >= param && param > 0)
-                {
-                    var fishName = records.ElementAtOrDefault(param - 1).Fish.Name;
-                    TournamentSystem.DeleteFish(user, param - 1);
-                    return new CommandResult(user, $"You released your {fishName}. Bye bye!");
-                }
-                return new CommandResult(user, $"That fish doesn't exist. Fish # must be between 1 and {count}");
+                return new CommandResult("You don't have any fish! Type !cast to try and fish for some!");
             }
-            return new CommandResult(user, $"Invalid request. Syntax: !releasefish <Fish #>");
+            var count = records.Count();
+            if (count >= index && index > 0)
+            {
+                var fishName = records.ElementAtOrDefault(index - 1).Fish.Name;
+                TournamentSystem.DeleteFish(user, index - 1);
+                return new CommandResult($"You released your {fishName}. Bye bye!");
+            }
+            return new CommandResult($"That fish doesn't exist. Fish # must be between 1 and {count}");
         }
     }
 }

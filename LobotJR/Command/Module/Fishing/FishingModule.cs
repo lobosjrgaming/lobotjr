@@ -41,9 +41,9 @@ namespace LobotJR.Command.Module.Fishing
             LeaderboardSystem = leaderboardSystem;
             Commands = new CommandHandler[]
             {
-                new CommandHandler("CancelCast", CancelCast, "cancelcast", "cancel-cast"),
-                new CommandHandler("CatchFish", CatchFish, "catch", "reel"),
-                new CommandHandler("CastLine", Cast, "cast"),
+                new CommandHandler("CancelCast", this, CommandMethod.GetInfo(CancelCast), "cancelcast", "cancel-cast"),
+                new CommandHandler("CatchFish", this, CommandMethod.GetInfo(CatchFish), "catch", "reel"),
+                new CommandHandler("CastLine", this, CommandMethod.GetInfo(Cast), "cast"),
             };
         }
 
@@ -58,18 +58,18 @@ namespace LobotJR.Command.Module.Fishing
             PushNotification?.Invoke(fisher.User, new CommandResult(fisher.User, "Heck! The fish got away. Maybe next time..."));
         }
 
-        public CommandResult CancelCast(string data, User user)
+        public CommandResult CancelCast(User user)
         {
             var fisher = FishingSystem.GetFisherByUser(user);
             if (fisher.IsFishing)
             {
                 FishingSystem.UnhookFish(fisher);
-                return new CommandResult(user, "You reel in the empty line.");
+                return new CommandResult("You reel in the empty line.");
             }
-            return new CommandResult(user, "Your line has not been cast.");
+            return new CommandResult("Your line has not been cast.");
         }
 
-        public CommandResult CatchFish(string data, User user)
+        public CommandResult CatchFish(User user)
         {
             var fisher = FishingSystem.GetFisherByUser(user);
             if (fisher.IsFishing)
@@ -77,7 +77,7 @@ namespace LobotJR.Command.Module.Fishing
                 var catchData = FishingSystem.CatchFish(fisher);
                 if (catchData == null)
                 {
-                    return new CommandResult(user, "Nothing is biting yet! To reset your cast, use !cancelcast");
+                    return new CommandResult("Nothing is biting yet! To reset your cast, use !cancelcast");
                 }
 
                 if (TournamentSystem.IsRunning)
@@ -91,29 +91,29 @@ namespace LobotJR.Command.Module.Fishing
                     var userEntry = TournamentSystem.CurrentTournament.Entries.Where(x => x.UserId.Equals(user.TwitchId)).FirstOrDefault();
                     var sorted = TournamentSystem.CurrentTournament.Entries.OrderByDescending(x => x.Points).ToList().IndexOf(userEntry) + 1;
                     responses.Add($"You caught a {catchData.Length} inch, {catchData.Weight} pound {catchData.Fish.Name} worth {catchData.Points} points! You are in {sorted.ToOrdinal()} place with {userEntry.Points} total points.");
-                    return new CommandResult(user, responses.ToArray());
+                    return new CommandResult(responses.ToArray());
                 }
                 else
                 {
-                    return new CommandResult(user, $"Congratulations! You caught a {catchData.Length} inch, {catchData.Weight} pound {catchData.Fish.Name}!");
+                    return new CommandResult($"Congratulations! You caught a {catchData.Length} inch, {catchData.Weight} pound {catchData.Fish.Name}!");
                 }
             }
-            return new CommandResult(user, $"Your line has not been cast. Use !cast to start fishing");
+            return new CommandResult($"Your line has not been cast. Use !cast to start fishing");
         }
 
-        public CommandResult Cast(string data, User user)
+        public CommandResult Cast(User user)
         {
             var fisher = FishingSystem.GetFisherByUser(user);
             if (fisher.Hooked != null)
             {
-                return new CommandResult(user, "Something's already bit your line! Quick, type !catch to snag it!");
+                return new CommandResult("Something's already bit your line! Quick, type !catch to snag it!");
             }
             if (fisher.IsFishing)
             {
-                return new CommandResult(user, "Your line is already cast! I'm sure a fish'll be along soon...");
+                return new CommandResult("Your line is already cast! I'm sure a fish'll be along soon...");
             }
             FishingSystem.Cast(user);
-            return new CommandResult(user, "You cast your line out into the water.");
+            return new CommandResult("You cast your line out into the water.");
         }
     }
 }

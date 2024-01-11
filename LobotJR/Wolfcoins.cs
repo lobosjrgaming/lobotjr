@@ -323,12 +323,19 @@ namespace Wolfcoins
                         }
                     }
 
-                    if (!(classList.ContainsKey(userName.ToLower())) && newLevel > prevLevel && newLevel == 3)
+                    if (!(classList.ContainsKey(userName.ToLower())))
                     {
                         CharClass newClass = new CharClass();
                         newClass.classType = -1;
                         classList.Add(userName.ToLower(), newClass);
-                        twitchClient.QueueWhisper(user, " You've reached LEVEL 3! You get to choose a class for your character! Choose by whispering me one of the following: ");
+                        if (newLevel > prevLevel && newLevel == 3)
+                        {
+                            twitchClient.QueueWhisper(user, " You've reached LEVEL 3! You get to choose a class for your character! Choose by whispering me one of the following: ");
+                        }
+                        else
+                        {
+                            twitchClient.QueueWhisper(user, " It looks like you are elligible to choose a class but haven't yet done so. Choose by whispering me one of the following: ");
+                        }
                         twitchClient.QueueWhisper(user, " 'C1' (Warrior), 'C2' (Mage), 'C3' (Rogue), 'C4' (Ranger), or 'C5' (Cleric)");
                     }
 
@@ -387,6 +394,14 @@ namespace Wolfcoins
 
                         classList.Add(username.ToLower(), newClass);
                         twitchClient.QueueWhisper(user, " You've reached LEVEL 3! You get to choose a class for your character! Choose by whispering me one of the following: ");
+                        twitchClient.QueueWhisper(user, " 'C1' (Warrior), 'C2' (Mage), 'C3' (Rogue), 'C4' (Ranger), or 'C5' (Cleric)");
+                    }
+                    else if (newLevel >= 3 && !classList.ContainsKey(username.ToLower()))
+                    {
+                        CharClass newClass = new CharClass();
+                        newClass.classType = -1;
+                        classList.Add(username.ToLower(), newClass);
+                        twitchClient.QueueWhisper(user, " It looks like you are elligible to choose a class but haven't yet done so. Choose by whispering me one of the following: ");
                         twitchClient.QueueWhisper(user, " 'C1' (Warrior), 'C2' (Mage), 'C3' (Rogue), 'C4' (Ranger), or 'C5' (Cleric)");
                     }
                 }

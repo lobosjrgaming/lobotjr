@@ -191,7 +191,7 @@ namespace LobotJR.Twitch
             {
                 var failure = results.FirstOrDefault(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized);
                 Logger.Warn("Encountered an unexpected response retrieving subscribers: {statusCode}: {content}", failure.StatusCode, failure.Content);
-                return null;
+                return new List<SubscriptionResponseData>();
             }
             return results.Where(x => x.Data != null && x.Data.Data != null).SelectMany(x => x.Data.Data);
         }
@@ -207,7 +207,7 @@ namespace LobotJR.Twitch
             {
                 var failure = results.FirstOrDefault(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized);
                 Logger.Warn("Encountered an unexpected response retrieving chatters: {statusCode}: {content}", failure.StatusCode, failure.Content);
-                return null;
+                return new List<TwitchUserData>();
             }
             return results.Where(x => x.Data != null && x.Data.Data != null).SelectMany(x => x.Data.Data);
         }
@@ -223,7 +223,7 @@ namespace LobotJR.Twitch
             {
                 var failure = results.FirstOrDefault(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized);
                 Logger.Warn("Encountered an unexpected response retrieving moderators: {statusCode}: {content}", failure.StatusCode, failure.Content);
-                return null;
+                return new List<TwitchUserData>();
             }
             return results.Where(x => x.Data != null && x.Data.Data != null).SelectMany(x => x.Data.Data);
         }
@@ -239,7 +239,7 @@ namespace LobotJR.Twitch
             {
                 var failure = results.FirstOrDefault(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized);
                 Logger.Warn("Encountered an unexpected response retrieving VIPs: {statusCode}: {content}", failure.StatusCode, failure.Content);
-                return null;
+                return new List<TwitchUserData>();
             }
             return results.Where(x => x.Data != null && x.Data.Data != null).SelectMany(x => x.Data.Data);
         }
@@ -256,7 +256,7 @@ namespace LobotJR.Twitch
             {
                 var failure = results.FirstOrDefault(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized);
                 Logger.Warn("Encountered an unexpected response looking up userids: {statusCode}: {content}", failure.StatusCode, failure.Content);
-                return null;
+                return new List<UserResponseData>();
             }
             return results.Where(x => x.Data != null && x.Data.Data != null).SelectMany(x => x.Data.Data);
         }

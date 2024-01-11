@@ -15,7 +15,7 @@ namespace LobotJR.Test.Modules.AccessControl
             InitializeCommandManager();
             var userSystem = new UserSystem(RepositoryManagerMock.Object, null);
             Module = new AccessControlAdmin(Manager, userSystem);
-            CommandManager = new CommandManager(new ICommandModule[] { CommandModuleMock.Object, SubCommandModuleMock.Object, Module }, RepositoryManagerMock.Object, userSystem);
+            CommandManager = new CommandManager(new ICommandModule[] { CommandModuleMock, SubCommandModuleMock, Module }, RepositoryManagerMock.Object, userSystem);
             CommandManager.InitializeModules();
         }
     }

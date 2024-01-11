@@ -1,11 +1,9 @@
-﻿using LobotJR.Twitch.Model;
+﻿using LobotJR.Command.Module;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace LobotJR.Command
 {
-    public delegate CommandResult CommandExecutor(string data, User user);
-    public delegate ICompactResponse CompactExecutor(string data, User user);
-
     /// <summary>
     /// Represents a command the bot can execute in response to a message from
     /// a user.
@@ -44,7 +42,20 @@ namespace LobotJR.Command
         /// Creates a new command handler.
         /// </summary>
         /// <param name="name">The name of the command.</param>
-        /// <param name="executor">A delegate to use to execute the command.</param>
+        /// <param name="methodInfo">Reflection data for the method executed by the command.</param>
+        /// <param name="commandStrings">The strings that be used to trigger the command.</param>
+        public CommandHandler(string name, ICommandModule target, MethodInfo methodInfo, params string[] commandStrings)
+        {
+            Name = name;
+            Executor = new CommandExecutor(target, methodInfo);
+            CommandStrings = commandStrings;
+        }
+
+        /// <summary>
+        /// Creates a new command handler with a specified executor. Mainly used for testing.
+        /// </summary>
+        /// <param name="name">The name of the command.</param>
+        /// <param name="executor">The command executor object used to execute the command.</param>
         /// <param name="commandStrings">The strings that be used to trigger the command.</param>
         public CommandHandler(string name, CommandExecutor executor, params string[] commandStrings)
         {
@@ -57,15 +68,12 @@ namespace LobotJR.Command
         /// Creates a new command handler.
         /// </summary>
         /// <param name="name">The name of the command.</param>
-        /// <param name="executor">A delegate to use to execute the command.</param>
-        /// <param name="compactExecutor">A delegate to use to execute the command in compact mode.</param>
+        /// <param name="methodInfo">Reflection data for the method executed by the command.</param>
+        /// <param name="compactMethodInfo">Reflection data for the method executed by the command in compact mode.</param>
         /// <param name="commandStrings">The strings that be used to trigger the command.</param>
-        public CommandHandler(string name, CommandExecutor executor, CompactExecutor compactExecutor, params string[] commandStrings)
+        public CommandHandler(string name, ICommandModule target, MethodInfo methodInfo, MethodInfo compactMethodInfo, params string[] commandStrings) : this(name, target, methodInfo, commandStrings)
         {
-            Name = name;
-            Executor = executor;
-            CompactExecutor = compactExecutor;
-            CommandStrings = commandStrings;
+            CompactExecutor = new CompactExecutor(target, compactMethodInfo);
         }
     }
 }

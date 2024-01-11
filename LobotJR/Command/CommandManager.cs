@@ -223,7 +223,7 @@ namespace LobotJR.Command
                 toSend += entry;
             }
             responses.Add(toSend);
-            return new CommandResult(user, responses.ToArray());
+            return new CommandResult(responses.ToArray());
         }
 
         private CommandResult TryExecuteCommand(CommandRequest request, User user)
@@ -234,29 +234,46 @@ namespace LobotJR.Command
                 {
                     if (compactIdToExecutorMap.TryGetValue(request.CommandId, out var compactExecutor))
                     {
-                        var compactResponse = compactExecutor.Invoke(request.Data, request.User);
+                        var compactResponse = compactExecutor.Execute(user, request.Data);
                         if (compactResponse != null)
                         {
                             return PrepareCompactResponse(request, user, compactResponse);
                         }
-                        return new CommandResult(user, $"Command requested produced no results.");
+                        return new CommandResult($"Command requested produced no results.");
                     }
                     else
                     {
-                        return new CommandResult(user, $"Command {request.CommandId} does not support compact mode.");
+                        return new CommandResult($"Command {request.CommandId} does not support compact mode.");
                     }
                 }
                 else
                 {
                     if (commandIdToExecutorMap.TryGetValue(request.CommandId, out var executor))
                     {
-                        return executor.Invoke(request.Data, request.User);
+                        CommandResult response;
+                        try
+                        {
+                            response = executor.Execute(user, request.Data);
+                        }
+                        catch (ArgumentException e)
+                        {
+                            response = new CommandResult($"Error: {e.Message}");
+                        }
+                        catch (InvalidCastException e)
+                        {
+                            response = new CommandResult($"Error {e.Message}");
+                        }
+                        if (response != null)
+                        {
+                            response.Sender = user;
+                            return response;
+                        }
                     }
                 }
             }
             catch (Exception e)
             {
-                return new CommandResult(request.User, true, new Exception[] { e });
+                return new CommandResult(new Exception[] { e });
             }
             return new CommandResult();
         }
@@ -295,7 +312,7 @@ namespace LobotJR.Command
                 {
                     return TryExecuteCommand(request, user);
                 }
-                return new CommandResult(user, true, new Exception[] { new UnauthorizedAccessException($"User \"{user.Username}\" attempted to execute unauthorized command \"{message}\"") });
+                return new CommandResult(new Exception[] { new UnauthorizedAccessException($"User \"{user.Username}\" attempted to execute unauthorized command \"{message}\"") });
             }
             return new CommandResult();
         }

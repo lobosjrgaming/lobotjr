@@ -1,5 +1,6 @@
 ﻿using LobotJR.Data;
 using LobotJR.Twitch.Model;
+using LobotJR.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,36 +35,35 @@ namespace LobotJR.Command.Module.AccessControl
             enrollments = repositoryManager.Enrollments;
             Commands = new CommandHandler[]
             {
-                new CommandHandler("CheckAccess", CheckAccess, "CheckAccess", "check-access"),
+                new CommandHandler("CheckAccess", this, CommandMethod.GetInfo<string>(CheckAccess), "CheckAccess", "check-access"),
             };
         }
 
-        private CommandResult CheckAccess(string data, User user)
+        private CommandResult CheckAccess(User user, string groupName = "")
         {
-            var groupName = data;
-            if (groupName == null || groupName.Length == 0)
+            if (string.IsNullOrWhiteSpace(groupName))
             {
                 var groupIds = enrollments.Read(x => x.UserId.Equals(user.TwitchId, StringComparison.OrdinalIgnoreCase)).Select(x => x.GroupId).ToList();
                 var groups = accessGroups.Read(x => groupIds.Contains(x.Id));
                 if (groups.Any())
                 {
                     var count = groups.Count();
-                    return new CommandResult(user, $"You are a member of the following group{(count == 1 ? "" : "s")}: {string.Join(", ", groups.Select(x => x.Name))}.");
+                    return new CommandResult($"You are a member of the following group{(count == 1 ? "" : "s")}: {string.Join(", ", groups.Select(x => x.Name))}.");
                 }
                 else
                 {
-                    return new CommandResult(user, "You are not a member of any groups.");
+                    return new CommandResult("You are not a member of any groups.");
                 }
             }
 
             var group = accessGroups.Read(x => x.Name.Equals(groupName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
             if (group == null)
             {
-                return new CommandResult(user, $"Error: No group with name \"{groupName}\" was found.");
+                return new CommandResult($"Error: No group with name \"{groupName}\" was found.");
             }
 
             var access = enrollments.Read(x => x.GroupId == group.Id && x.UserId.Equals(user.TwitchId, StringComparison.OrdinalIgnoreCase)).Any() ? "are" : "are not";
-            return new CommandResult(user, $"You {access} a member of \"{group.Name}\"!");
+            return new CommandResult($"You {access} a member of \"{group.Name}\"!");
         }
     }
 }

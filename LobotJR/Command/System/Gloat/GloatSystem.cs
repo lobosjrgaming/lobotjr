@@ -35,7 +35,8 @@ namespace LobotJR.Command.System.Gloat
         /// <returns>True if the user has the coins to gloat, false if not.</returns>
         public bool CanGloatFishing(User user)
         {
-            if (Wolfcoins.TryGetValue(user.Username, out var coins))
+            var key = Wolfcoins.Keys.FirstOrDefault(x => x.Equals(user.Username, StringComparison.OrdinalIgnoreCase));
+            if (!string.IsNullOrWhiteSpace(key) && Wolfcoins.TryGetValue(key, out var coins))
             {
                 return coins >= FishingGloatCost;
             }
@@ -62,6 +63,16 @@ namespace LobotJR.Command.System.Gloat
                 }
             }
             return null;
+        }
+
+        /// <summary>
+        /// Gets the total number of fish on a user's leaderboard.
+        /// </summary>
+        /// <param name="user">The user to check.</param>
+        /// <returns>The number of leaderboard records.</returns>
+        public int GetFishCount(User user)
+        {
+            return PersonalLeaderboard.Read(x => x.UserId.Equals(user.TwitchId)).Count();
         }
 
         public Task Process(bool broadcasting)

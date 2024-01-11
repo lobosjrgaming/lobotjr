@@ -50,6 +50,7 @@ namespace LobotJR.Command
             else
             {
                 output.CommandString = message;
+                output.Data = string.Empty;
             }
             return output;
         }
