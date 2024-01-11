@@ -19,7 +19,7 @@ namespace LobotJR.Test.Modules.AccessControl
         {
             var command = Module.Commands.Where(x => x.Name.Equals("ListGroups")).FirstOrDefault();
             var user = CommandManager.RepositoryManager.Users.Read().First();
-            var result = command.Executor("", user);
+            var result = command.Executor.Execute(user, "");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].Contains(AccessGroups.Count.ToString()));
@@ -29,26 +29,28 @@ namespace LobotJR.Test.Modules.AccessControl
         [TestMethod]
         public void CreatesANewGroup()
         {
+            var initialCount = CommandManager.RepositoryManager.AccessGroups.Read().Count();
             var command = Module.Commands.Where(x => x.Name.Equals("CreateGroup")).FirstOrDefault();
             var user = CommandManager.RepositoryManager.Users.Read().First();
-            var result = command.Executor("NewTestGroup", user);
+            var result = command.Executor.Execute(user, "NewTestGroup");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses.Any(x => x.Contains("success", StringComparison.OrdinalIgnoreCase)));
-            Assert.AreEqual(2, CommandManager.RepositoryManager.AccessGroups.Read().Count());
+            Assert.AreEqual(initialCount + 1, CommandManager.RepositoryManager.AccessGroups.Read().Count());
             Assert.IsTrue(CommandManager.RepositoryManager.AccessGroups.Read().Any(x => x.Name.Equals("NewTestGroup")));
         }
 
         [TestMethod]
         public void CreateGroupErrorsOnDuplicateGroupName()
         {
+            var initialCount = CommandManager.RepositoryManager.AccessGroups.Read().Count();
             var command = Module.Commands.Where(x => x.Name.Equals("CreateGroup")).FirstOrDefault();
             var user = CommandManager.RepositoryManager.Users.Read().First();
-            var result = command.Executor("TestGroup", user);
+            var result = command.Executor.Execute(user, "TestGroup");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses.Any(x => x.Contains("Error", StringComparison.OrdinalIgnoreCase)));
-            Assert.AreEqual(1, CommandManager.RepositoryManager.AccessGroups.Read().Count());
+            Assert.AreEqual(initialCount, CommandManager.RepositoryManager.AccessGroups.Read().Count());
         }
 
         [TestMethod]
@@ -57,7 +59,7 @@ namespace LobotJR.Test.Modules.AccessControl
             var command = Module.Commands.Where(x => x.Name.Equals("DescribeGroup")).FirstOrDefault();
             var group = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
             var user = CommandManager.RepositoryManager.Users.Read().First();
-            var result = command.Executor("TestGroup", user);
+            var result = command.Executor.Execute(user, "TestGroup");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(2, result.Responses.Count());
             Assert.IsTrue(result.Responses.All(x => x.Contains("TestGroup")));
@@ -79,7 +81,7 @@ namespace LobotJR.Test.Modules.AccessControl
         {
             var command = Module.Commands.Where(x => x.Name.Equals("DescribeGroup")).FirstOrDefault();
             var user = CommandManager.RepositoryManager.Users.Read().First();
-            var result = command.Executor("NotTestGroup", user);
+            var result = command.Executor.Execute(user, "NotTestGroup");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
@@ -88,15 +90,16 @@ namespace LobotJR.Test.Modules.AccessControl
         [TestMethod]
         public void DeletesAGroup()
         {
+            var initialCount = CommandManager.RepositoryManager.AccessGroups.Read().Count();
             var user = CommandManager.RepositoryManager.Users.Read().First();
             var add = Module.Commands.Where(x => x.Name.Equals("CreateGroup")).FirstOrDefault();
-            add.Executor("NewTestGroup", user);
-            Assert.AreEqual(2, CommandManager.RepositoryManager.AccessGroups.Read().Count());
+            add.Executor.Execute(user, "NewTestGroup");
+            Assert.AreEqual(initialCount + 1, CommandManager.RepositoryManager.AccessGroups.Read().Count());
             var command = Module.Commands.Where(x => x.Name.Equals("DeleteGroup")).FirstOrDefault();
-            var result = command.Executor("NewTestGroup", user);
+            var result = command.Executor.Execute(user, "NewTestGroup");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
-            Assert.AreEqual(1, CommandManager.RepositoryManager.AccessGroups.Read().Count());
+            Assert.AreEqual(initialCount, CommandManager.RepositoryManager.AccessGroups.Read().Count());
             Assert.IsTrue(result.Responses.Any(x => x.Contains("success", StringComparison.OrdinalIgnoreCase)));
         }
 
@@ -105,7 +108,7 @@ namespace LobotJR.Test.Modules.AccessControl
         {
             var command = Module.Commands.Where(x => x.Name.Equals("DeleteGroup")).FirstOrDefault();
             var user = CommandManager.RepositoryManager.Users.Read().First();
-            var result = command.Executor("TestGroup", user);
+            var result = command.Executor.Execute(user, "TestGroup");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
@@ -116,7 +119,7 @@ namespace LobotJR.Test.Modules.AccessControl
         {
             var command = Module.Commands.Where(x => x.Name.Equals("DeleteGroup")).FirstOrDefault();
             var user = CommandManager.RepositoryManager.Users.Read().First();
-            var result = command.Executor("NotTestGroup", user);
+            var result = command.Executor.Execute(user, "NotTestGroup");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));

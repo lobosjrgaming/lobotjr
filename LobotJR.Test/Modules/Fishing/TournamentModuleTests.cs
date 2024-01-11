@@ -154,7 +154,7 @@ namespace LobotJR.Test.Modules.Fishing
         public void TournamentResultsGetsLatestTournamentWithParticipation()
         {
             var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentResults")).FirstOrDefault();
-            var results = command.Executor("", UserLookup.GetUserByName("Foo"));
+            var results = command.Executor.Execute(UserLookup.GetUserByName("Foo"), "");
             Assert.IsNotNull(results.Responses);
             Assert.AreEqual(3, results.Responses.Count);
             Assert.IsTrue(results.Responses.Any(x => x.Contains("30 seconds")));
@@ -166,7 +166,7 @@ namespace LobotJR.Test.Modules.Fishing
         public void TournamentResultsGetsLatestTournamentWithoutParticipation()
         {
             var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentResults")).FirstOrDefault();
-            var results = command.Executor("", UserLookup.GetUserByName("Buzz"));
+            var results = command.Executor.Execute(UserLookup.GetUserByName("Buzz"), "");
             Assert.IsNotNull(results.Responses);
             Assert.AreEqual(2, results.Responses.Count);
             Assert.IsTrue(results.Responses.Any(x => x.Contains("30 seconds")));
@@ -177,7 +177,7 @@ namespace LobotJR.Test.Modules.Fishing
         public void TournamentResultsGetsLatestTournamentForWinner()
         {
             var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentResults")).FirstOrDefault();
-            var results = command.Executor("", UserLookup.GetUserByName("Fizz"));
+            var results = command.Executor.Execute(UserLookup.GetUserByName("Fizz"), "");
             Assert.IsNotNull(results.Responses);
             Assert.AreEqual(2, results.Responses.Count);
             Assert.IsTrue(results.Responses.Any(x => x.Contains("30 seconds")));
@@ -190,7 +190,7 @@ namespace LobotJR.Test.Modules.Fishing
         {
             ClearTournaments();
             var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentResults")).FirstOrDefault();
-            var results = command.Executor("", UserLookup.GetUserByName("Foo"));
+            var results = command.Executor.Execute(UserLookup.GetUserByName("Foo"), "");
             Assert.IsNotNull(results.Responses);
             Assert.AreEqual(1, results.Responses.Count);
         }
@@ -199,7 +199,7 @@ namespace LobotJR.Test.Modules.Fishing
         public void TournamentResultsCompactGetsLatestTournament()
         {
             var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentResults")).FirstOrDefault();
-            var results = command.CompactExecutor("", UserLookup.GetUserByName("Buzz"));
+            var results = command.CompactExecutor.Execute(UserLookup.GetUserByName("Buzz"), "");
             var resultObject = ResultsFromCompact(results.ToCompact().First());
             Assert.IsNotNull(resultObject);
             Assert.AreEqual("Fizz", resultObject.Winner);
@@ -213,7 +213,7 @@ namespace LobotJR.Test.Modules.Fishing
         public void TournamentResultsCompactIncludesUserData()
         {
             var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentResults")).FirstOrDefault();
-            var results = command.CompactExecutor("", UserLookup.GetUserByName("Foo"));
+            var results = command.CompactExecutor.Execute(UserLookup.GetUserByName("Foo"), "");
             var resultObject = ResultsFromCompact(results.ToCompact().First());
             Assert.IsNotNull(resultObject);
             Assert.AreEqual("Fizz", resultObject.Winner);
@@ -229,7 +229,7 @@ namespace LobotJR.Test.Modules.Fishing
             ClearTournaments();
             var leftovers = Manager.TournamentResults.Read().ToArray();
             var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentResults")).FirstOrDefault();
-            var results = command.CompactExecutor("", UserLookup.GetUserByName("Buzz"));
+            var results = command.CompactExecutor.Execute(UserLookup.GetUserByName("Buzz"), "");
             Assert.IsNull(results);
         }
 
@@ -237,7 +237,7 @@ namespace LobotJR.Test.Modules.Fishing
         public void TournamentRecordsGetsUsersRecords()
         {
             var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentRecords")).FirstOrDefault();
-            var results = command.Executor("", UserLookup.GetUserByName("Foo"));
+            var results = command.Executor.Execute(UserLookup.GetUserByName("Foo"), "");
             Assert.IsNotNull(results.Responses);
             Assert.AreEqual(2, results.Responses.Count);
             Assert.IsTrue(results.Responses.Any(x => x.Contains("1st") && x.Contains("35 points")));
@@ -248,7 +248,7 @@ namespace LobotJR.Test.Modules.Fishing
         public void TournamentRecordsGetsErrorWhenUserHasNotCompetedInAnyTournaments()
         {
             var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentRecords")).FirstOrDefault();
-            var results = command.Executor("", UserLookup.GetUserByName("Buzz"));
+            var results = command.Executor.Execute(UserLookup.GetUserByName("Buzz"), "");
             Assert.IsNotNull(results.Responses);
             Assert.AreEqual(1, results.Responses.Count);
         }
@@ -257,7 +257,7 @@ namespace LobotJR.Test.Modules.Fishing
         public void TournamentRecordsCompactGetsUserRecords()
         {
             var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentRecords")).FirstOrDefault();
-            var results = command.CompactExecutor("", UserLookup.GetUserByName("Foo"));
+            var results = command.CompactExecutor.Execute(UserLookup.GetUserByName("Foo"), "");
             var resultObject = RecordsFromCompact(results.ToCompact().First());
             Assert.IsNotNull(resultObject);
             Assert.AreEqual(1, resultObject.TopRank);
@@ -270,7 +270,7 @@ namespace LobotJR.Test.Modules.Fishing
         public void TournamentRecordsCompactGetsNullIfUserHasNeverEntered()
         {
             var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentRecords")).FirstOrDefault();
-            var results = command.CompactExecutor("", UserLookup.GetUserByName("Buzz"));
+            var results = command.CompactExecutor.Execute(UserLookup.GetUserByName("Buzz"), "");
             Assert.IsNull(results);
         }
     }

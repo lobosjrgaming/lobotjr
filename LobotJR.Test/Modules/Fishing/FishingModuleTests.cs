@@ -79,10 +79,10 @@ namespace LobotJR.Test.Modules.Fishing
             var user = Manager.Users.Read().First();
             var fisher = FishingSystem.GetFisherByUser(user);
             fisher.IsFishing = true;
-            var response = FishingModule.CancelCast("", user);
+            var response = FishingModule.CancelCast(user);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
-            Assert.IsNull(response.Errors);
+            Assert.AreEqual(0, response.Errors.Count);
             Assert.AreEqual(1, responses.Count);
             Assert.IsFalse(fisher.IsFishing);
         }
@@ -93,10 +93,10 @@ namespace LobotJR.Test.Modules.Fishing
             var user = Manager.Users.Read().First();
             var fisher = FishingSystem.GetFisherByUser(user);
             fisher.IsFishing = false;
-            var response = FishingModule.CancelCast("", user);
+            var response = FishingModule.CancelCast(user);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
-            Assert.IsNull(response.Errors);
+            Assert.AreEqual(0, response.Errors.Count);
             Assert.AreEqual(1, responses.Count);
             Assert.IsFalse(fisher.IsFishing);
         }
@@ -111,11 +111,11 @@ namespace LobotJR.Test.Modules.Fishing
             fisher.IsFishing = true;
             fisher.HookedTime = DateTime.Now;
             fisher.Hooked = Manager.FishData.Read().First();
-            var response = FishingModule.CatchFish("", user);
+            var response = FishingModule.CatchFish(user);
             var responses = response.Responses;
             var newRecords = LeaderboardSystem.GetPersonalLeaderboard(user);
             Assert.IsTrue(response.Processed);
-            Assert.IsNull(response.Errors);
+            Assert.AreEqual(0, response.Errors.Count);
             Assert.AreEqual(2, responses.Count);
             Assert.IsTrue(responses.Any(x => x.Contains("biggest")));
             Assert.IsTrue(responses.All(x => x.Contains(newRecords.First().Fish.Name)));
@@ -132,10 +132,10 @@ namespace LobotJR.Test.Modules.Fishing
             DataUtils.ClearFisherRecords(Manager, user);
             fisher.IsFishing = false;
             fisher.Hooked = null;
-            var response = FishingModule.CatchFish("", user);
+            var response = FishingModule.CatchFish(user);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
-            Assert.IsNull(response.Errors);
+            Assert.AreEqual(0, response.Errors.Count);
             Assert.AreEqual(1, responses.Count);
             Assert.IsTrue(responses[0].Contains("!cast"));
             Assert.IsFalse(fisher.IsFishing);
@@ -152,10 +152,10 @@ namespace LobotJR.Test.Modules.Fishing
             fisher.IsFishing = true;
             fisher.HookedTime = DateTime.Now;
             fisher.Hooked = null;
-            var response = FishingModule.CatchFish("", user);
+            var response = FishingModule.CatchFish(user);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
-            Assert.IsNull(response.Errors);
+            Assert.AreEqual(0, response.Errors.Count);
             Assert.AreEqual(1, responses.Count);
             Assert.IsTrue(responses[0].Contains("!cancelcast"));
             Assert.IsFalse(fisher.IsFishing);
@@ -168,10 +168,10 @@ namespace LobotJR.Test.Modules.Fishing
             var user = Manager.Users.Read().First();
             var fisher = FishingSystem.GetFisherByUser(user);
             fisher.IsFishing = false;
-            var response = FishingModule.Cast("", user);
+            var response = FishingModule.Cast(user);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
-            Assert.IsNull(response.Errors);
+            Assert.AreEqual(0, response.Errors.Count);
             Assert.AreEqual(1, responses.Count);
             Assert.IsTrue(fisher.IsFishing);
         }
@@ -182,10 +182,10 @@ namespace LobotJR.Test.Modules.Fishing
             var user = Manager.Users.Read().First();
             var fisher = FishingSystem.GetFisherByUser(user);
             fisher.IsFishing = true;
-            var response = FishingModule.Cast("", user);
+            var response = FishingModule.Cast(user);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
-            Assert.IsNull(response.Errors);
+            Assert.AreEqual(0, response.Errors.Count);
             Assert.AreEqual(1, responses.Count);
             Assert.IsTrue(responses[0].Contains("already"));
             Assert.IsFalse(responses[0].Contains("!catch"));
@@ -198,10 +198,10 @@ namespace LobotJR.Test.Modules.Fishing
             var fisher = FishingSystem.GetFisherByUser(user);
             fisher.IsFishing = true;
             fisher.Hooked = Manager.FishData.Read().First();
-            var response = FishingModule.Cast("", user);
+            var response = FishingModule.Cast(user);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
-            Assert.IsNull(response.Errors);
+            Assert.AreEqual(0, response.Errors.Count);
             Assert.AreEqual(1, responses.Count);
             Assert.IsTrue(responses[0].Contains("already"));
             Assert.IsTrue(responses[0].Contains("!catch"));

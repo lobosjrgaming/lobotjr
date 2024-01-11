@@ -1,6 +1,7 @@
 ﻿using LobotJR.Command.Model.Fishing;
 using LobotJR.Command.System.Fishing;
 using LobotJR.Twitch.Model;
+using LobotJR.Utils;
 using System.Collections.Generic;
 
 namespace LobotJR.Command.Module.Fishing
@@ -24,18 +25,18 @@ namespace LobotJR.Command.Module.Fishing
             TournamentSystem = tournamentSystem;
             Commands = new List<CommandHandler>(new CommandHandler[]
             {
-                new CommandHandler("DebugTournament", DebugTournament, "debugtournament", "debug-tournament"),
-                new CommandHandler("DebugCatch", DebugCatch, "debugcatch", "debug-catch")
+                new CommandHandler("DebugTournament", this, CommandMethod.GetInfo(DebugTournament), "debugtournament", "debug-tournament"),
+                new CommandHandler("DebugCatch", this, CommandMethod.GetInfo(DebugCatch), "debugcatch", "debug-catch")
             }); ;
         }
 
-        public CommandResult DebugTournament(string data, User user)
+        public CommandResult DebugTournament()
         {
             TournamentSystem.StartTournament();
-            return new CommandResult() { Sender = user, Processed = true };
+            return new CommandResult(true);
         }
 
-        public CommandResult DebugCatch(string data, User user)
+        public CommandResult DebugCatch()
         {
             var fisher = new Fisher() { User = new User("", "") };
             var output = new List<string>();
@@ -45,7 +46,7 @@ namespace LobotJR.Command.Module.Fishing
                 var fish = FishingSystem.CalculateFishSizes(fisher);
                 output.Add($"{fish.Fish.Name} ({fish.Fish.Rarity.Name}) caght.");
             }
-            return new CommandResult() { Sender = user, Processed = true, Debug = output };
+            return new CommandResult(true) { Debug = output };
         }
     }
 }

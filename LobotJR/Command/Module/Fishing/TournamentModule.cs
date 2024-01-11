@@ -45,9 +45,9 @@ namespace LobotJR.Command.Module.Fishing
             UserSystem = userSystem;
             Commands = new CommandHandler[]
             {
-                new CommandHandler("TournamentResults", TournamentResults, TournamentResultsCompact, "TournamentResults", "tournament-results"),
-                new CommandHandler("TournamentRecords", TournamentRecords, TournamentRecordsCompact, "TournamentRecords", "tournament-records"),
-                new CommandHandler("NextTournament", NextTournament, NextTournamentCompact, "NextTournament", "next-tournament"),
+                new CommandHandler("TournamentResults", this, CommandMethod.GetInfo(TournamentResults), CommandMethod.GetInfo(TournamentResultsCompact), "TournamentResults", "tournament-results"),
+                new CommandHandler("TournamentRecords", this, CommandMethod.GetInfo(TournamentRecords), CommandMethod.GetInfo(TournamentRecordsCompact), "TournamentRecords", "tournament-records"),
+                new CommandHandler("NextTournament", this, CommandMethod.GetInfo(NextTournament), CommandMethod.GetInfo(NextTournamentCompact), "NextTournament", "next-tournament"),
             };
         }
 
@@ -84,12 +84,12 @@ namespace LobotJR.Command.Module.Fishing
             PushNotification?.Invoke(null, new CommandResult { Processed = true, Messages = new string[] { message } });
         }
 
-        public CommandResult TournamentResults(string data, User user)
+        public CommandResult TournamentResults(User user)
         {
-            var result = TournamentResultsCompact(data, user);
+            var result = TournamentResultsCompact(user);
             if (result == null)
             {
-                return new CommandResult(user, "No fishing tournaments have completed.");
+                return new CommandResult("No fishing tournaments have completed.");
             }
             var sinceEnded = DateTime.Now - result.Ended;
             var pluralized = "participant";
@@ -114,10 +114,10 @@ namespace LobotJR.Command.Module.Fishing
             {
                 responses.Add($"The tournament was won by {result.Winner} with {result.WinnerPoints} points.");
             }
-            return new CommandResult(user, responses.ToArray());
+            return new CommandResult(responses.ToArray());
         }
 
-        public TournamentResultsResponse TournamentResultsCompact(string data, User user)
+        public TournamentResultsResponse TournamentResultsCompact(User user)
         {
             var tournament = TournamentSystem.GetLatestResults();
             if (tournament != null)
@@ -144,18 +144,18 @@ namespace LobotJR.Command.Module.Fishing
             return null;
         }
 
-        public CommandResult TournamentRecords(string data, User user)
+        public CommandResult TournamentRecords(User user)
         {
-            var records = TournamentRecordsCompact(data, user);
+            var records = TournamentRecordsCompact(user);
             if (records == null)
             {
-                return new CommandResult(user, "You have not entered any fishing tournaments.");
+                return new CommandResult("You have not entered any fishing tournaments.");
             }
-            return new CommandResult(user, $"Your highest score in a tournament was {records.TopScore} points, earning you {records.TopScoreRank.ToOrdinal()} place.",
+            return new CommandResult($"Your highest score in a tournament was {records.TopScore} points, earning you {records.TopScoreRank.ToOrdinal()} place.",
                 $"Your best tournament placement was {records.TopRank.ToOrdinal()} place, with {records.TopRankScore} points.");
         }
 
-        public TournamentRecordsResponse TournamentRecordsCompact(string data, User user)
+        public TournamentRecordsResponse TournamentRecordsCompact(User user)
         {
             var output = new Dictionary<string, string>();
             var tournaments = TournamentSystem.GetResultsForUser(user);
@@ -176,22 +176,22 @@ namespace LobotJR.Command.Module.Fishing
             };
         }
 
-        public CommandResult NextTournament(string data, User user)
+        public CommandResult NextTournament()
         {
-            var compact = NextTournamentCompact(data, user);
+            var compact = NextTournamentCompact();
             if (compact.Items.Count() == 0)
             {
-                return new CommandResult(user, "Stream is offline. Next fishing tournament will begin 15m after the beginning of next stream.");
+                return new CommandResult("Stream is offline. Next fishing tournament will begin 15m after the beginning of next stream.");
             }
             var toNext = compact.Items.FirstOrDefault();
             if (toNext.TotalMilliseconds > 0)
             {
-                return new CommandResult(user, $"Next fishing tournament begins in {toNext.TotalMinutes} minutes.");
+                return new CommandResult($"Next fishing tournament begins in {toNext.TotalMinutes} minutes.");
             }
-            return new CommandResult(user, $"A fishing tournament is active now! Go catch fish at: https://tinyurl.com/PlayWolfpackRPG !");
+            return new CommandResult($"A fishing tournament is active now! Go catch fish at: https://tinyurl.com/PlayWolfpackRPG !");
         }
 
-        public CompactCollection<TimeSpan> NextTournamentCompact(string data, User user)
+        public CompactCollection<TimeSpan> NextTournamentCompact()
         {
             if (TournamentSystem.NextTournament == null)
             {

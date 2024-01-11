@@ -90,8 +90,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Command\CommandManagerTestBase.cs" />
+    <Compile Include="Command\CommandParseTests.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="Mocks\DataUtils.cs" />
+    <Compile Include="Mocks\MockCommandModule.cs" />
     <Compile Include="Mocks\MockInitializer.cs" />
     <Compile Include="Mocks\MockContext.cs" />
     <Compile Include="Mocks\TestInitializers.cs" />

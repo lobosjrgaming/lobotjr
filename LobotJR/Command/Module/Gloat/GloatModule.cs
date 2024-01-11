@@ -1,5 +1,6 @@
 ﻿using LobotJR.Command.System.Gloat;
 using LobotJR.Twitch.Model;
+using LobotJR.Utils;
 using System.Collections.Generic;
 
 namespace LobotJR.Command.Module.Gloat
@@ -31,29 +32,37 @@ namespace LobotJR.Command.Module.Gloat
             GloatSystem = gloatSystem;
             Commands = new CommandHandler[]
             {
-                new CommandHandler("GloatFish", GloatFish, "gloatfish", "fishgloat", "gloat-fish")
+                new CommandHandler("GloatFish", this, CommandMethod.GetInfo<int>(GloatFish), "gloatfish", "fishgloat", "gloat-fish")
             };
         }
 
-        public CommandResult GloatFish(string data, User user)
+        public CommandResult GloatFish(User user, int index)
         {
-            if (int.TryParse(data, out var index))
+            if (GloatSystem.CanGloatFishing(user))
             {
-                if (GloatSystem.CanGloatFishing(user))
+                var max = GloatSystem.GetFishCount(user);
+                if (max == 0)
+                {
+                    return new CommandResult("You don't have any fish! Type !cast to try and fish for some!");
+                }
+                else if (index < 1 || index >= max)
+                {
+                    return new CommandResult($"Invalid index. Please use a number between 1 and {max}");
+                }
+                else
                 {
                     var record = GloatSystem.FishingGloat(user, index - 1);
                     if (record != null)
                     {
-                        return new CommandResult(user, $"You spent {GloatSystem.FishingGloatCost} wolfcoins to brag about your biggest {record.Fish.Name}.")
+                        return new CommandResult($"You spent {GloatSystem.FishingGloatCost} wolfcoins to brag about your biggest {record.Fish.Name}.")
                         {
                             Messages = new string[] { $"{user.Username} gloats about the time they caught a {record.Length} in. long, {record.Weight} pound {record.Fish.Name} lobosSmug" }
                         };
                     }
-                    return new CommandResult(user, "You don't have any fish! Type !cast to try and fish for some!");
                 }
-                return new CommandResult(user, "You don't have enough coins to gloat!");
+                return new CommandResult("Uh oh! Something went wrong trying to gloat, please check your inputs and try again.");
             }
-            return new CommandResult(user, "Invalid request. Syntax: !gloatfish <Fish #>");
+            return new CommandResult("You don't have enough coins to gloat!");
         }
     }
 }

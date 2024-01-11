@@ -21,7 +21,7 @@ namespace LobotJR.Test.Modules.AccessControl
             var group = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
             var enrollments = CommandManager.RepositoryManager.Enrollments.Read(x => x.GroupId == group.Id);
             var baseEnrollmentCount = enrollments.Count();
-            var result = command.Executor("NotAuth TestGroup", null);
+            var result = command.Executor.Execute(null, "NotAuth TestGroup");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].Contains("success", StringComparison.OrdinalIgnoreCase));
@@ -35,21 +35,22 @@ namespace LobotJR.Test.Modules.AccessControl
         public void AddUserErrorsOnMissingParameters()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("EnrollUser")).FirstOrDefault();
+            var user = UserMock.Object.Read().First();
             var group = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
             var wrongParameterCount = "BadInput";
             var userToAdd = "NotAuth";
             var groupToAdd = "TestGroup";
-            var result = command.Executor(wrongParameterCount, null);
+            var result = CommandManager.ProcessMessage($"{command.Name} {wrongParameterCount}", user, true);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].StartsWith("Error:", StringComparison.OrdinalIgnoreCase));
             Assert.IsFalse(result.Responses[0].Contains(wrongParameterCount));
-            result = command.Executor($" {groupToAdd}", null);
+            result = CommandManager.ProcessMessage($"{command.Name}  {groupToAdd}", user, true);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].StartsWith("Error:", StringComparison.OrdinalIgnoreCase));
             Assert.IsFalse(result.Responses[0].Contains(groupToAdd));
-            result = command.Executor($"{userToAdd} ", null);
+            result = CommandManager.ProcessMessage($"{command.Name} {userToAdd} ", user, true);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
@@ -62,7 +63,7 @@ namespace LobotJR.Test.Modules.AccessControl
             var command = Module.Commands.Where(x => x.Name.Equals("EnrollUser")).FirstOrDefault();
             var group = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
             var groupToAdd = "NotTestGroup";
-            var result = command.Executor($"NotAuth {groupToAdd}", null);
+            var result = command.Executor.Execute(null, $"NotAuth {groupToAdd}");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].StartsWith("Error:", StringComparison.OrdinalIgnoreCase));
@@ -75,7 +76,7 @@ namespace LobotJR.Test.Modules.AccessControl
             var command = Module.Commands.Where(x => x.Name.Equals("EnrollUser")).FirstOrDefault();
             var group = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
             var userToAdd = "Auth";
-            var result = command.Executor($"{userToAdd} TestGroup", null);
+            var result = command.Executor.Execute(null, $"{userToAdd} TestGroup");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].StartsWith("Error:", StringComparison.OrdinalIgnoreCase));
@@ -88,7 +89,7 @@ namespace LobotJR.Test.Modules.AccessControl
             var command = Module.Commands.Where(x => x.Name.Equals("UnenrollUser")).FirstOrDefault();
             var group = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
             var userToRemove = CommandManager.UserSystem.GetUserByName("Auth").Username;
-            var result = command.Executor($"{userToRemove} TestGroup", null);
+            var result = command.Executor.Execute(null, $"{userToRemove} TestGroup");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].Contains("success", StringComparison.OrdinalIgnoreCase));
@@ -99,22 +100,23 @@ namespace LobotJR.Test.Modules.AccessControl
         [TestMethod]
         public void RemoveUserErrorsOnMissingParameters()
         {
+            var user = UserMock.Object.Read().First();
             var command = Module.Commands.Where(x => x.Name.Equals("UnenrollUser")).FirstOrDefault();
             var group = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
             var wrongParameterCount = "BadInput";
             var userToRemove = "NotAuth";
             var groupToRemove = "TestGroup";
-            var result = command.Executor(wrongParameterCount, null);
+            var result = CommandManager.ProcessMessage($"{command.Name} {wrongParameterCount}", user, true);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].StartsWith("Error:", StringComparison.OrdinalIgnoreCase));
             Assert.IsFalse(result.Responses[0].Contains(wrongParameterCount));
-            result = command.Executor($" {userToRemove}", null);
+            result = CommandManager.ProcessMessage($"{command.Name}  {userToRemove}", user, true);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].StartsWith("Error:", StringComparison.OrdinalIgnoreCase));
             Assert.IsFalse(result.Responses[0].Contains(userToRemove));
-            result = command.Executor($"{groupToRemove} ", null);
+            result = CommandManager.ProcessMessage($"{command.Name} {groupToRemove} ", user, true);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].StartsWith("Error:", StringComparison.OrdinalIgnoreCase));
@@ -127,7 +129,7 @@ namespace LobotJR.Test.Modules.AccessControl
             var command = Module.Commands.Where(x => x.Name.Equals("UnenrollUser")).FirstOrDefault();
             var group = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
             var userToRemove = "NotAuth";
-            var result = command.Executor($"{userToRemove} TestGroup", null);
+            var result = command.Executor.Execute(null, $"{userToRemove} TestGroup");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].StartsWith("Error:", StringComparison.OrdinalIgnoreCase));
@@ -140,7 +142,7 @@ namespace LobotJR.Test.Modules.AccessControl
             var command = Module.Commands.Where(x => x.Name.Equals("UnenrollUser")).FirstOrDefault();
             var group = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
             var groupToRemove = "NotTestGroup";
-            var result = command.Executor($"Auth {groupToRemove}", null);
+            var result = command.Executor.Execute(null, $"Auth {groupToRemove}");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].StartsWith("Error:", StringComparison.OrdinalIgnoreCase));
@@ -152,7 +154,7 @@ namespace LobotJR.Test.Modules.AccessControl
         {
             var command = Module.Commands.Where(x => x.Name.Equals("SetGroupFlag")).FirstOrDefault();
             var group = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
-            var result = command.Executor("mod true TestGroup", null);
+            var result = command.Executor.Execute(null, "TestGroup mod true");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].Contains("now includes", StringComparison.OrdinalIgnoreCase));
@@ -165,7 +167,7 @@ namespace LobotJR.Test.Modules.AccessControl
             var command = Module.Commands.Where(x => x.Name.Equals("SetGroupFlag")).FirstOrDefault();
             var group = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
             group.IncludeMods = true;
-            var result = command.Executor("mod false TestGroup", null);
+            var result = command.Executor.Execute(null, "TestGroup mod false");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].Contains("now does not include", StringComparison.OrdinalIgnoreCase));
@@ -177,7 +179,7 @@ namespace LobotJR.Test.Modules.AccessControl
         {
             var command = Module.Commands.Where(x => x.Name.Equals("SetGroupFlag")).FirstOrDefault();
             var group = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
-            var result = command.Executor("vip true TestGroup", null);
+            var result = command.Executor.Execute(null, "TestGroup vip true");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].Contains("now includes", StringComparison.OrdinalIgnoreCase));
@@ -190,7 +192,7 @@ namespace LobotJR.Test.Modules.AccessControl
             var command = Module.Commands.Where(x => x.Name.Equals("SetGroupFlag")).FirstOrDefault();
             var group = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
             group.IncludeVips = true;
-            var result = command.Executor("vip false TestGroup", null);
+            var result = command.Executor.Execute(null, "TestGroup vip false");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].Contains("now does not include", StringComparison.OrdinalIgnoreCase));
@@ -202,7 +204,7 @@ namespace LobotJR.Test.Modules.AccessControl
         {
             var command = Module.Commands.Where(x => x.Name.Equals("SetGroupFlag")).FirstOrDefault();
             var group = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
-            var result = command.Executor("sub true TestGroup", null);
+            var result = command.Executor.Execute(null, "TestGroup sub true");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].Contains("now includes", StringComparison.OrdinalIgnoreCase));
@@ -215,7 +217,7 @@ namespace LobotJR.Test.Modules.AccessControl
             var command = Module.Commands.Where(x => x.Name.Equals("SetGroupFlag")).FirstOrDefault();
             var group = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
             group.IncludeSubs = true;
-            var result = command.Executor("sub false TestGroup", null);
+            var result = command.Executor.Execute(null, "TestGroup sub false");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].Contains("now does not include", StringComparison.OrdinalIgnoreCase));
@@ -227,7 +229,7 @@ namespace LobotJR.Test.Modules.AccessControl
         {
             var command = Module.Commands.Where(x => x.Name.Equals("SetGroupFlag")).FirstOrDefault();
             var group = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
-            var result = command.Executor("admin true TestGroup", null);
+            var result = command.Executor.Execute(null, "TestGroup admin true");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].Contains("now includes", StringComparison.OrdinalIgnoreCase));
@@ -240,7 +242,7 @@ namespace LobotJR.Test.Modules.AccessControl
             var command = Module.Commands.Where(x => x.Name.Equals("SetGroupFlag")).FirstOrDefault();
             var group = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
             group.IncludeAdmins = true;
-            var result = command.Executor("admin false TestGroup", null);
+            var result = command.Executor.Execute(null, "TestGroup admin false");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].Contains("now does not include", StringComparison.OrdinalIgnoreCase));

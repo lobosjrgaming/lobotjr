@@ -2,6 +2,7 @@
 using LobotJR.Command.Module;
 using LobotJR.Command.System.Twitch;
 using LobotJR.Data;
+using LobotJR.Test.Mocks;
 using LobotJR.Twitch.Model;
 using Moq;
 using System;
@@ -19,26 +20,29 @@ namespace LobotJR.Test.Command
     /// an abstract class to be extended. This removes the need to re-establish
     /// these variables in each test class.
     /// </summary>
-    public abstract class CommandManagerTestBase
+    public abstract class CommandManagerTestBase : ICommandModule
     {
         protected List<AccessGroup> AccessGroups;
         protected List<Enrollment> Enrollments;
         protected List<Restriction> Restrictions;
         protected List<User> IdCache;
-        protected IEnumerable<CommandHandler> CommandHandlers;
-        protected IEnumerable<CommandHandler> SubCommandHandlers;
         protected CommandManager CommandManager;
         protected IRepositoryManager Manager;
 
-        protected Dictionary<string, Mock<CommandExecutor>> ExecutorMocks;
-        protected Mock<ICommandModule> CommandModuleMock;
-        protected Mock<ICommandModule> SubCommandModuleMock;
+        protected MockCommandModule CommandModuleMock;
+        protected MockCommandSubModule SubCommandModuleMock;
         protected Mock<IRepositoryManager> RepositoryManagerMock;
         protected Mock<IRepository<User>> UserMock;
         protected Mock<IRepository<AccessGroup>> AccessGroupMock;
         protected Mock<IRepository<Enrollment>> EnrollmentMock;
         protected Mock<IRepository<Restriction>> RestrictionMock;
         protected Mock<IRepository<AppSettings>> AppSettingsMock;
+
+        public string Name => "CommandManagerTest";
+
+        public IEnumerable<CommandHandler> Commands => new List<CommandHandler>();
+
+        public event PushNotificationHandler PushNotification;
 
         private Mock<IRepository<T>> CreateListRepositoryMock<T>(IList<T> list) where T : TableObject
         {
@@ -63,43 +67,9 @@ namespace LobotJR.Test.Command
         /// </summary>
         public void InitializeCommandManager()
         {
-            ExecutorMocks = new Dictionary<string, Mock<CommandExecutor>>();
-            var commands = new string[] { "Foobar", "Foo", "Bar", "Unrestricted", "Public", "ModFoo", "SubFoo", "VipFoo", "AdminFoo" };
-            foreach (var command in commands)
-            {
-                var executorMock = new Mock<CommandExecutor>();
-                executorMock.Setup(x => x(It.IsAny<string>(), It.IsAny<User>())).Returns(new CommandResult(new User(), ""));
-                ExecutorMocks.Add(command, executorMock);
-            }
-            SubCommandHandlers = new CommandHandler[]
-            {
-                new CommandHandler("Foobar", ExecutorMocks["Foobar"].Object, "Foobar"),
-            };
-            SubCommandModuleMock = new Mock<ICommandModule>();
-            SubCommandModuleMock.Setup(x => x.Name).Returns("CommandMock.SubMock");
-            SubCommandModuleMock.Setup(x => x.Commands).Returns(SubCommandHandlers);
+            SubCommandModuleMock = new MockCommandSubModule();
+            CommandModuleMock = new MockCommandModule();
 
-
-            CommandHandlers = new CommandHandler[] {
-                new CommandHandler("Foo", ExecutorMocks["Foo"].Object, (data, user) =>
-                {
-                    var items = new string[]
-                    {
-                        string.IsNullOrWhiteSpace(data) ? "Bar" : data
-                    };
-                    return new CompactCollection<string>(items, x => $"Foo|{x};");
-                }, "Foo"),
-                new CommandHandler("Bar", ExecutorMocks["Bar"].Object, "Bar"),
-                new CommandHandler("Unrestricted", ExecutorMocks["Unrestricted"].Object, "Unrestricted"),
-                new CommandHandler("Public", ExecutorMocks["Public"].Object, "Public") { WhisperOnly = false },
-                new CommandHandler("ModFoo", ExecutorMocks["ModFoo"].Object, "ModFoo"),
-                new CommandHandler("SubFoo", ExecutorMocks["SubFoo"].Object, "SubFoo"),
-                new CommandHandler("VipFoo", ExecutorMocks["VipFoo"].Object, "VipFoo"),
-                new CommandHandler("AdminFoo", ExecutorMocks["AdminFoo"].Object, "AdminFoo")
-            };
-            CommandModuleMock = new Mock<ICommandModule>();
-            CommandModuleMock.Setup(x => x.Name).Returns("CommandMock");
-            CommandModuleMock.Setup(x => x.Commands).Returns(CommandHandlers);
             AccessGroups = new List<AccessGroup>(new AccessGroup[] { new AccessGroup(1, "TestGroup"),
                 new AccessGroup(2, "ModGroup") { IncludeMods = true },
                 new AccessGroup(3, "VipGroup") { IncludeVips = true },
@@ -140,7 +110,7 @@ namespace LobotJR.Test.Command
 
 
             var userLookup = new UserSystem(RepositoryManagerMock.Object, null);
-            CommandManager = new CommandManager(new ICommandModule[] { CommandModuleMock.Object, SubCommandModuleMock.Object }, RepositoryManagerMock.Object, userLookup);
+            CommandManager = new CommandManager(new ICommandModule[] { CommandModuleMock, SubCommandModuleMock }, RepositoryManagerMock.Object, userLookup);
             CommandManager.InitializeModules();
         }
     }

@@ -39,12 +39,12 @@ namespace LobotJR.Test.Modules.Gloat
             var user = Manager.Users.Read().First();
             var userId = user.TwitchId;
             Wolfcoins.Add(user.Username, GloatSystem.FishingGloatCost);
-            var response = GloatModule.GloatFish("1", user);
+            var response = GloatModule.GloatFish(user, 1);
             var responses = response.Responses;
             var messages = response.Messages;
             var record = Manager.Catches.Read(x => x.UserId.Equals(userId)).OrderBy(x => x.FishId).First();
             Assert.IsTrue(response.Processed);
-            Assert.IsNull(response.Errors);
+            Assert.AreEqual(0, response.Errors.Count);
             Assert.AreEqual(1, responses.Count);
             Assert.AreEqual(1, messages.Count);
             Assert.IsTrue(responses[0].Contains(GloatSystem.FishingGloatCost.ToString()));
@@ -61,11 +61,11 @@ namespace LobotJR.Test.Modules.Gloat
             var user = Manager.Users.Read().First();
             var userId = user.TwitchId;
             Wolfcoins.Add(user.Username, GloatSystem.FishingGloatCost);
-            var response = GloatModule.GloatFish("", user);
+            var response = GloatModule.GloatFish(user, 0);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
-            Assert.IsNull(response.Errors);
-            Assert.IsNull(response.Messages);
+            Assert.AreEqual(0, response.Errors.Count);
+            Assert.AreEqual(0, response.Messages.Count);
             Assert.AreEqual(1, responses.Count);
             Assert.IsTrue(responses[0].Contains("invalid", StringComparison.OrdinalIgnoreCase));
         }
@@ -77,11 +77,11 @@ namespace LobotJR.Test.Modules.Gloat
             var userId = user.TwitchId;
             Wolfcoins.Add(user.Username, GloatSystem.FishingGloatCost);
             DataUtils.ClearFisherRecords(Manager, user);
-            var response = GloatModule.GloatFish("1", user);
+            var response = GloatModule.GloatFish(user, 1);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
-            Assert.IsNull(response.Errors);
-            Assert.IsNull(response.Messages);
+            Assert.AreEqual(0, response.Errors.Count);
+            Assert.AreEqual(0, response.Messages.Count);
             Assert.AreEqual(1, responses.Count);
             Assert.IsTrue(responses[0].Contains("!cast"));
         }
@@ -90,11 +90,11 @@ namespace LobotJR.Test.Modules.Gloat
         public void GloatFailsWithInsufficientCoins()
         {
             var user = Manager.Users.Read().First();
-            var response = GloatModule.GloatFish("1", user);
+            var response = GloatModule.GloatFish(user, 1);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
-            Assert.IsNull(response.Errors);
-            Assert.IsNull(response.Messages);
+            Assert.AreEqual(0, response.Errors.Count);
+            Assert.AreEqual(0, response.Messages.Count);
             Assert.AreEqual(1, responses.Count);
             Assert.IsTrue(responses[0].Contains("coins"));
             Assert.IsFalse(responses[0].Contains("wolfcoins"));
