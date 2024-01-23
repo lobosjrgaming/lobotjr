@@ -151,6 +151,7 @@
     <Compile Include="Command\CompactCollection.cs" />
     <Compile Include="Command\ICommandManager.cs" />
     <Compile Include="Command\ICompactResponse.cs" />
+    <Compile Include="Command\Model\Equipment\Item.cs" />
     <Compile Include="Command\Model\Fishing\Catch.cs" />
     <Compile Include="Command\Model\Fishing\Fish.cs" />
     <Compile Include="Command\Model\Fishing\Fisher.cs" />
@@ -274,7 +275,11 @@
       <Name>LobotJR.Shared</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Command\Model\Dungeon\" />
+    <Folder Include="Command\Model\Experience\" />
+    <Folder Include="Command\Model\Pet\" />
+  </ItemGroup>
   <ItemGroup>
     <Content Include="Resources\alert.default.wav">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
