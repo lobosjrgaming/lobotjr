@@ -42,9 +42,9 @@ namespace LobotJR.Command
         }
 
         /// <summary>
-        /// The id of the group this command is restricted to.
+        /// The group this command is restricted to.
         /// </summary>
-        public int GroupId { get; set; }
+        public virtual AccessGroup Group { get; set; }
         /// <summary>
         /// The command that is restricted. May include * as a wildcard match.
         /// </summary>
@@ -52,9 +52,9 @@ namespace LobotJR.Command
 
         public Restriction() { }
 
-        public Restriction(int groupId, string command)
+        public Restriction(AccessGroup group, string command)
         {
-            GroupId = groupId;
+            Group = group;
             Command = command;
         }
     }

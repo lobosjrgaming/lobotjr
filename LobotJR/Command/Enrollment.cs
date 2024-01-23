@@ -8,9 +8,9 @@ namespace LobotJR.Command
     public class Enrollment : TableObject
     {
         /// <summary>
-        /// The id of the accessgroup the user is enrolled in.
+        /// The accessgroup the user is enrolled in.
         /// </summary>
-        public int GroupId { get; set; }
+        public virtual AccessGroup Group { get; set; }
         /// <summary>
         /// The id of the user enrolled.
         /// </summary>
@@ -18,9 +18,9 @@ namespace LobotJR.Command
 
         public Enrollment() { }
 
-        public Enrollment(int groupId, string userId)
+        public Enrollment(AccessGroup group, string userId)
         {
-            GroupId = groupId;
+            Group = group;
             UserId = userId;
         }
     }

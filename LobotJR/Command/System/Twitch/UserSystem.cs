@@ -241,7 +241,7 @@ namespace LobotJR.Command.System.Twitch
             }
             Users.Commit();
 
-            if (mods != null)
+            if (mods.Any())
             {
                 SyncLists(mods.Select(x => x.UserId), x => x.IsMod, (u, v) => u.IsMod = v);
             }
@@ -250,7 +250,7 @@ namespace LobotJR.Command.System.Twitch
                 Logger.Warn("Null response attempting to retrieve moderator list.");
             }
 
-            if (vips != null)
+            if (vips.Any())
             {
                 SyncLists(vips.Select(x => x.UserId), x => x.IsVip, (u, v) => u.IsVip = v);
             }
@@ -259,7 +259,7 @@ namespace LobotJR.Command.System.Twitch
                 Logger.Warn("Null response attempting to retrieve vip list.");
             }
 
-            if (subs != null)
+            if (subs.Any())
             {
                 SyncLists(subs.Select(x => x.UserId), x => x.IsSub, (u, v) => u.IsSub = v);
             }
@@ -269,7 +269,7 @@ namespace LobotJR.Command.System.Twitch
             }
             Users.Commit();
 
-            if (chatters != null)
+            if (chatters.Any())
             {
                 var chatterIds = chatters.Where(x => x != null).Select(x => x.UserId);
                 Viewers = Users.Read(x => chatterIds.Contains(x.TwitchId)).ToList();
