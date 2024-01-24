@@ -195,10 +195,13 @@ namespace LobotJR.Command.System.Twitch
             Users.Commit();
         }
 
-        private void SyncLists(IEnumerable<string> target, Func<User, bool> checkLambda, Action<User, bool> updateLambda)
+        private void SyncLists(IEnumerable<User> allUsers, IEnumerable<string> target, Func<User, bool> checkLambda, Action<User, bool> updateLambda)
         {
-            var toRemove = Users.Read(x => checkLambda(x) && !target.Any(y => y.Equals(x.TwitchId)));
-            var toAdd = Users.Read(x => !checkLambda(x) && target.Any(y => y.Equals(x.TwitchId)));
+            var targetUsers = target.Select(x => allUsers.FirstOrDefault(y => y.TwitchId.Equals(x))).ToList();
+            var existingFlagged = allUsers.Where(x => checkLambda(x)).ToList();
+            var notFlagged = allUsers.Except(existingFlagged).ToList();
+            var toRemove = existingFlagged.Except(targetUsers).ToList();
+            var toAdd = targetUsers.Except(existingFlagged).ToList();
             foreach (var user in toRemove)
             {
                 updateLambda(user, false);
@@ -240,10 +243,11 @@ namespace LobotJR.Command.System.Twitch
                 Users.Create(new User() { TwitchId = user.Key, Username = user.Value });
             }
             Users.Commit();
+            var dbUsers = Users.Read().ToList();
 
             if (mods.Any())
             {
-                SyncLists(mods.Select(x => x.UserId), x => x.IsMod, (u, v) => u.IsMod = v);
+                SyncLists(dbUsers, mods.Select(x => x.UserId), x => x.IsMod, (u, v) => u.IsMod = v);
             }
             else
             {
@@ -252,7 +256,7 @@ namespace LobotJR.Command.System.Twitch
 
             if (vips.Any())
             {
-                SyncLists(vips.Select(x => x.UserId), x => x.IsVip, (u, v) => u.IsVip = v);
+                SyncLists(dbUsers, vips.Select(x => x.UserId), x => x.IsVip, (u, v) => u.IsVip = v);
             }
             else
             {
@@ -261,7 +265,7 @@ namespace LobotJR.Command.System.Twitch
 
             if (subs.Any())
             {
-                SyncLists(subs.Select(x => x.UserId), x => x.IsSub, (u, v) => u.IsSub = v);
+                SyncLists(dbUsers, subs.Select(x => x.UserId), x => x.IsSub, (u, v) => u.IsSub = v);
             }
             else
             {
@@ -272,7 +276,7 @@ namespace LobotJR.Command.System.Twitch
             if (chatters.Any())
             {
                 var chatterIds = chatters.Where(x => x != null).Select(x => x.UserId);
-                Viewers = Users.Read(x => chatterIds.Contains(x.TwitchId)).ToList();
+                Viewers = chatterIds.Select(x => dbUsers.FirstOrDefault(y => y.TwitchId.Equals(x))).Where(x => x != null).ToList();
             }
             else
             {
