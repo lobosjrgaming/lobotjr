@@ -40,5 +40,14 @@ namespace LobotJR.Twitch.Model
             Username = name;
             TwitchId = id;
         }
+
+        public override bool Equals(object obj)
+        {
+            return TwitchId.Equals((obj as User)?.TwitchId);
+        }
+        public override int GetHashCode()
+        {
+            return TwitchId.GetHashCode();
+        }
     }
 }
