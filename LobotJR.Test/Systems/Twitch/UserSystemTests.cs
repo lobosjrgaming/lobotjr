@@ -5,6 +5,7 @@ using LobotJR.Shared.User;
 using LobotJR.Test.Mocks;
 using LobotJR.Twitch;
 using LobotJR.Twitch.Model;
+using LobotJR.Utils;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using System;
