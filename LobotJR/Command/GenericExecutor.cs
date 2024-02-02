@@ -187,7 +187,7 @@ namespace LobotJR.Command
                     typeExceptions += $"Can't convert {param} to {SimplifyType(targetParam.ParameterType)}.";
                 }
             }
-            for (var i = passed.Length + userAdjust; i < MaxParams; i++)
+            for (var i = passed.Length + userAdjust; i < MaxParams + userAdjust; i++)
             {
                 toPass[i] = Type.Missing;
             }
