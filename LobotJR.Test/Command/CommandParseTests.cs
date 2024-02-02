@@ -173,6 +173,18 @@ namespace LobotJR.Test.Command
         }
 
         [TestMethod]
+        public void ProcessMessageDefaultsOptionalParametersWithUser()
+        {
+            var command = CommandModuleMock.Commands.Where(x => x.Name.Equals("UserAndOptionalParam")).FirstOrDefault();
+            var user = UserMock.Object.Read().First();
+            var result = CommandManager.ProcessMessage($"{command.Name}", user, true);
+            Assert.IsNotNull(result);
+            Assert.IsTrue(result.Responses.Any(x => x.Contains("default")));
+            Assert.AreEqual(0, result.Errors.Count());
+            Assert.AreEqual(1, CommandModuleMock.OptionalParamCount);
+        }
+
+        [TestMethod]
         public void ProcessMessageErrorsOnInvalidType()
         {
             var command = CommandModuleMock.Commands.Where(x => x.Name.Equals("IntParam")).FirstOrDefault();

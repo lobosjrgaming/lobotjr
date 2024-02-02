@@ -27,9 +27,10 @@ namespace LobotJR.Test.Mocks
         public int IntParamCount { get; private set; } = 0;
         public int BoolParamCount { get; private set; } = 0;
         public int OptionalParamCount { get; private set; } = 0;
+        public int UserAndOptionalParamCount { get; private set; } = 0;
         public int UserParamCount { get; private set; } = 0;
         public int UserAndStringParamCount { get; private set; } = 0;
-        public int TotalCount { get { return FooCount + FooCountCompact + PublicCount + ModFooCount + SubFooCount + VipFooCount + AdminFooCount + SingleParamCount + MultiParamCount + IntParamCount + BoolParamCount + OptionalParamCount + UserParamCount + UserAndStringParamCount; } }
+        public int TotalCount { get { return FooCount + FooCountCompact + PublicCount + ModFooCount + SubFooCount + VipFooCount + AdminFooCount + SingleParamCount + MultiParamCount + IntParamCount + BoolParamCount + OptionalParamCount + UserAndOptionalParamCount + UserParamCount + UserAndStringParamCount; } }
 
         public MockCommandModule()
         {
@@ -47,6 +48,7 @@ namespace LobotJR.Test.Mocks
                 new CommandHandler("IntParam", this, CommandMethod.GetInfo<int>(IntParam), "IntParam"),
                 new CommandHandler("BoolParam", this, CommandMethod.GetInfo<bool>(BoolParam), "BoolParam"),
                 new CommandHandler("OptionalParam", this, CommandMethod.GetInfo<string>(OptionalParam), "OptionalParam"),
+                new CommandHandler("UserAndOptionalParam", this, CommandMethod.GetInfo<string>(UserAndOptionalParam), "UserAndOptionalParam"),
                 new CommandHandler("UserParam", this, CommandMethod.GetInfo(UserParam), "UserParam"),
                 new CommandHandler("UserAndStringParam", this, CommandMethod.GetInfo<string>(UserAndStringParam), "UserAndStringParam"),
             };
@@ -125,6 +127,12 @@ namespace LobotJR.Test.Mocks
         }
 
         public CommandResult OptionalParam(string p1 = "default")
+        {
+            OptionalParamCount++;
+            return new CommandResult($"Received parameter {p1}");
+        }
+
+        public CommandResult UserAndOptionalParam(User user, string p1 = "default")
         {
             OptionalParamCount++;
             return new CommandResult($"Received parameter {p1}");
