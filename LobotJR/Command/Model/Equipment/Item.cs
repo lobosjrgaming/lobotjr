@@ -26,26 +26,26 @@ namespace LobotJR.Command.Model.Equipment
         /// <summary>
         /// The chance of successfully completing a dungeon.
         /// </summary>
-        public float SuccessChance { get; set; }
+        float SuccessChance { get; set; }
         /// <summary>
         /// The chance for items to drop.
         /// </summary>
-        public int ItemFind { get; set; }
+        int ItemFind { get; set; }
         /// <summary>
         /// The amount of coins earned.
         /// </summary>
-        public int CoinBonus { get; set; }
+        int CoinBonus { get; set; }
         /// <summary>
         /// The experience earned.
         /// </summary>
-        public int XpBonus { get; set; }
+        int XpBonus { get; set; }
         /// <summary>
         /// The chance for a player to avoid death after failing a dungeon.
         /// </summary>
-        public float PreventDeathBonus { get; set; }
+        float PreventDeathBonus { get; set; }
     }
 
-    public class Item : TableObject
+    public class Item : Stats
     {
         /// <summary>
         /// The quality/rarity of the item.
@@ -66,16 +66,17 @@ namespace LobotJR.Command.Model.Equipment
         /// <summary>
         /// The flavor text description.
         /// </summary>
-        public string Description { get; set; }
-        /// <summary>
-        /// The stats the item provides.
-        /// </summary>
-        public Stats Stats { get; set; }
+    }
+
+    public class Inventory : TableObject
+    {
+        public string UserId { get; set; }
+        public virtual Item Item { get; set; }
     }
 
     public class Equipment : TableObject
     {
         public string UserId { get; set; }
-        public Item Item { get; set; }
+        public virtual Item Item { get; set; }
     }
 }
