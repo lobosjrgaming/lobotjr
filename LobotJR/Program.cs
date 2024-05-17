@@ -2,7 +2,6 @@
 using Autofac;
 using Classes;
 using Companions;
-using Equipment;
 using GroupFinder;
 using LobotJR.Command;
 using LobotJR.Command.System;
@@ -75,7 +74,7 @@ namespace TwitchBot
             }
         }
 
-        static void UpdateItems(string itemListPath, ref Dictionary<int, string> itemList, ref Dictionary<int, Item> itemDatabase)
+        static void UpdateItems(string itemListPath, ref Dictionary<int, string> itemList, ref Dictionary<int, Equipment.LegacyItem> itemDatabase)
         {
             IEnumerable<string> fileText;
             if (File.Exists(itemListPath))
@@ -87,7 +86,7 @@ namespace TwitchBot
                 fileText = new List<string>();
                 Logger.Error("Failed to load item list file, {file} not found.", itemListPath);
             }
-            itemDatabase = new Dictionary<int, Item>();
+            itemDatabase = new Dictionary<int, Equipment.LegacyItem>();
             itemList = new Dictionary<int, string>();
             int itemIter = 1;
             // ALERT: Was there a reason you were loading this from the file twice?
@@ -107,7 +106,7 @@ namespace TwitchBot
             itemIter = 0;
             foreach (var item in itemList)
             {
-                Item myItem = new Item();
+                Equipment.LegacyItem myItem = new Equipment.LegacyItem();
                 int parsedInt = -1;
                 int line = 0;
                 string[] temp = { "" };
@@ -358,7 +357,7 @@ namespace TwitchBot
             int gloatCost = 25;
             int pryCost = 1;
 
-            Dictionary<int, Item> itemDatabase = new Dictionary<int, Item>();
+            Dictionary<int, Equipment.LegacyItem> itemDatabase = new Dictionary<int, Equipment.LegacyItem>();
             Dictionary<int, Pet> petDatabase = new Dictionary<int, Pet>();
 
             var subathonPath = "C:/Users/Lobos/Dropbox/Stream/subathon.txt";
@@ -512,38 +511,7 @@ namespace TwitchBot
                 #endregion
 
                 #region Import Legacy Data Into Sql
-                if (File.Exists(FishDataImport.FishDataPath))
-                {
-                    Logger.Info("Detected legacy fish data file, migrating to SQLite.");
-                    FishDataImport.ImportFishDataIntoSql(FishDataImport.FishDataPath, contentManager.FishData);
-                    File.Move(FishDataImport.FishDataPath, $"{FishDataImport.FishDataPath}.{DateTime.Now.ToFileTimeUtc()}.backup");
-                    Logger.Info("Fish data migration complete!");
-                }
-
-                var hasFisherData = File.Exists(FisherDataImport.FisherDataPath);
-                var hasLeaderboardData = File.Exists(FisherDataImport.FishingLeaderboardPath);
-                if (hasFisherData || hasLeaderboardData)
-                {
-                    Logger.Info("Detected legacy fisher data file, migrating to SQLite. This could take a few minutes.");
-                    IEnumerable<string> users = new List<string>();
-                    Dictionary<string, LegacyFisher> legacyFisherData = FisherDataImport.LoadLegacyFisherData(FisherDataImport.FisherDataPath);
-                    List<LegacyCatch> legacyLeaderboardData = FisherDataImport.LoadLegacyFishingLeaderboardData(FisherDataImport.FishingLeaderboardPath);
-                    Logger.Info("Converting usernames to user ids...");
-                    FisherDataImport.FetchUserIds(legacyFisherData.Keys.Union(legacyLeaderboardData.Select(x => x.caughtBy)), userSystem, tokenData.BroadcastToken, clientData);
-                    if (hasFisherData)
-                    {
-                        Logger.Info("Importing user records...");
-                        FisherDataImport.ImportFisherDataIntoSql(legacyFisherData, contentManager.FishData, repoManager.Catches, userSystem);
-                        File.Move(FisherDataImport.FisherDataPath, $"{FisherDataImport.FisherDataPath}.{DateTime.Now.ToFileTimeUtc()}.backup");
-                    }
-                    if (hasLeaderboardData)
-                    {
-                        Logger.Info("Importing leaderboard...");
-                        FisherDataImport.ImportLeaderboardDataIntoSql(legacyLeaderboardData, repoManager.FishingLeaderboard, contentManager.FishData, userSystem);
-                        File.Move(FisherDataImport.FishingLeaderboardPath, $"{FisherDataImport.FishingLeaderboardPath}.{DateTime.Now.ToFileTimeUtc()}.backup");
-                    }
-                    Logger.Info("Fisher data migration complete!");
-                }
+                DataImporter.ImportLegacyData(contentManager, repoManager, userSystem).GetAwaiter().GetResult();
                 #endregion
 
                 UpdateDungeons(dungeonListPath, ref dungeonList);
@@ -1068,7 +1036,7 @@ namespace TwitchBot
 
                                     foreach (var item in player.Value.myItems)
                                     {
-                                        Item newItem = itemDatabase[item.itemID - 1];
+                                        Equipment.LegacyItem newItem = itemDatabase[item.itemID - 1];
 
                                         item.itemName = newItem.itemName;
                                         item.itemRarity = newItem.itemRarity;
@@ -3125,7 +3093,7 @@ namespace TwitchBot
                                     if (wolfcoins.Exists(wolfcoins.classList, target))
                                     {
                                         wolfcoins.classList[target].totalItemCount = 0;
-                                        wolfcoins.classList[target].myItems = new List<Item>();
+                                        wolfcoins.classList[target].myItems = new List<Equipment.LegacyItem>();
                                         wolfcoins.SaveClassData();
                                         Logger.Debug(">>{user}: Clear items executed against {target}.", whisperSender, target);
                                         twitchClient.QueueWhisper(whisperer, "Cleared " + target + "'s item list.");
@@ -3296,10 +3264,10 @@ namespace TwitchBot
                                     {
                                         if (wolfcoins.classList[whisperSender].myItems.Count > 0)
                                         {
-                                            Item toActivate = wolfcoins.classList[whisperSender].GetItem(id);
+                                            Equipment.LegacyItem toActivate = wolfcoins.classList[whisperSender].GetItem(id);
                                             int itemPos = wolfcoins.classList[whisperSender].GetItemPos(id);
 
-                                            if (toActivate.itemType == Item.TYPE_ARMOR || toActivate.itemType == Item.TYPE_WEAPON)
+                                            if (toActivate.itemType == Equipment.LegacyItem.TYPE_ARMOR || toActivate.itemType == Equipment.LegacyItem.TYPE_WEAPON)
                                             {
                                                 if (toActivate.isActive)
                                                 {
@@ -3363,10 +3331,10 @@ namespace TwitchBot
                                     {
                                         if (wolfcoins.classList[whisperSender].myItems.Count > 0)
                                         {
-                                            Item toDeactivate = wolfcoins.classList[whisperSender].GetItem(id);
+                                            Equipment.LegacyItem toDeactivate = wolfcoins.classList[whisperSender].GetItem(id);
                                             int itemPos = wolfcoins.classList[whisperSender].GetItemPos(id);
 
-                                            if (toDeactivate.itemType == Item.TYPE_ARMOR || toDeactivate.itemType == Item.TYPE_WEAPON)
+                                            if (toDeactivate.itemType == Equipment.LegacyItem.TYPE_ARMOR || toDeactivate.itemType == Equipment.LegacyItem.TYPE_WEAPON)
                                             {
                                                 if (toDeactivate.isActive)
                                                 {
@@ -4922,26 +4890,26 @@ namespace TwitchBot
             });
         }
 
-        static void WhisperItem(string user, Item itm, UserSystem userSystem, ITwitchClient twitchClient, Dictionary<int, Item> itemDatabase)
+        static void WhisperItem(string user, Equipment.LegacyItem itm, UserSystem userSystem, ITwitchClient twitchClient, Dictionary<int, Equipment.LegacyItem> itemDatabase)
         {
             string name = itm.itemName;
             string type = "";
             int inventoryID = itm.inventoryID;
             switch (itm.itemType)
             {
-                case (Item.TYPE_ARMOR):
+                case (Equipment.LegacyItem.TYPE_ARMOR):
                     {
                         type = "Armor";
                     }
                     break;
 
-                case (Item.TYPE_WEAPON):
+                case (Equipment.LegacyItem.TYPE_WEAPON):
                     {
                         type = "Weapon";
                     }
                     break;
 
-                case (Item.TYPE_OTHER):
+                case (Equipment.LegacyItem.TYPE_OTHER):
                     {
                         type = "Misc. Item";
                     }
@@ -4955,25 +4923,25 @@ namespace TwitchBot
             string rarity = "";
             switch (itm.itemRarity)
             {
-                case Item.QUALITY_UNCOMMON:
+                case Equipment.LegacyItem.QUALITY_UNCOMMON:
                     {
                         rarity = "Uncommon";
                     }
                     break;
 
-                case Item.QUALITY_RARE:
+                case Equipment.LegacyItem.QUALITY_RARE:
                     {
                         rarity = "Rare";
                     }
                     break;
 
-                case Item.QUALITY_EPIC:
+                case Equipment.LegacyItem.QUALITY_EPIC:
                     {
                         rarity = "Epic";
                     }
                     break;
 
-                case Item.QUALITY_ARTIFACT:
+                case Equipment.LegacyItem.QUALITY_ARTIFACT:
                     {
                         rarity = "Artifact";
                     }
@@ -5034,14 +5002,14 @@ namespace TwitchBot
             });
         }
 
-        static int GrantItem(int id, Currency wolfcoins, string user, Dictionary<int, Item> itemDatabase)
+        static int GrantItem(int id, Currency wolfcoins, string user, Dictionary<int, Equipment.LegacyItem> itemDatabase)
         {
             string logPath = "dungeonlog.txt";
 
             if (id < 1)
                 return -1;
 
-            Item newItem = itemDatabase[id - 1];
+            Equipment.LegacyItem newItem = itemDatabase[id - 1];
             bool hasActiveItem = false;
             foreach (var item in wolfcoins.classList[user].myItems)
             {

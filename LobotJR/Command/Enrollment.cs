@@ -8,6 +8,10 @@ namespace LobotJR.Command
     public class Enrollment : TableObject
     {
         /// <summary>
+        /// The foreign key id of the access group the user is enrolled in.
+        /// </summary>
+        public int GroupId { get; set; }
+        /// <summary>
         /// The accessgroup the user is enrolled in.
         /// </summary>
         public virtual AccessGroup Group { get; set; }
@@ -20,6 +24,7 @@ namespace LobotJR.Command
 
         public Enrollment(AccessGroup group, string userId)
         {
+            GroupId = group.Id;
             Group = group;
             UserId = userId;
         }

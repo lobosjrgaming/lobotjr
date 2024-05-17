@@ -192,7 +192,7 @@ namespace Adventures
         public const int randomRewardMod = 5;
         public float levelRewardModifier = 0.05f;
         public List<int> loot = new List<int>();
-        public Dictionary<int, Item> itemDB = new Dictionary<int, Item>();
+        public Dictionary<int, LegacyItem> itemDB = new Dictionary<int, LegacyItem>();
         public float partyCoinBonus = 0;
         public float partyXpBonus = 0;
         public float partyItemFindBonus = 0;
@@ -249,7 +249,7 @@ namespace Adventures
             }
         }
 
-        public Dungeon(string path, string channel, Dictionary<int, Item> itemDatabase)
+        public Dungeon(string path, string channel, Dictionary<int, LegacyItem> itemDatabase)
         {
             itemDB = itemDatabase;
             IEnumerable<string> fileText = System.IO.File.ReadLines(path, UTF8Encoding.Default);
@@ -699,7 +699,7 @@ namespace Adventures
 
                     if (!hasItem)
                     {
-                        if (chanceForLoot > (roll + (itemDB[myLoot - 1].itemRarity * Item.QUALITY_MOD)))
+                        if (chanceForLoot > (roll + (itemDB[myLoot - 1].itemRarity * LegacyItem.QUALITY_MOD)))
                             return myLoot;
                     }
                     continue;

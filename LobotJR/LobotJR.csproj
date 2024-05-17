@@ -151,22 +151,43 @@
     <Compile Include="Command\CompactCollection.cs" />
     <Compile Include="Command\ICommandManager.cs" />
     <Compile Include="Command\ICompactResponse.cs" />
+    <Compile Include="Command\Model\Dungeons\Dungeon.cs" />
+    <Compile Include="Command\Model\Dungeons\DungeonLockout.cs" />
+    <Compile Include="Command\Model\Dungeons\DungeonTimer.cs" />
+    <Compile Include="Command\Model\Dungeons\Encounter.cs" />
+    <Compile Include="Command\Model\Dungeons\Loot.cs" />
+    <Compile Include="Command\Model\Equipment\Inventory.cs" />
     <Compile Include="Command\Model\Equipment\Item.cs" />
+    <Compile Include="Command\Model\Equipment\ItemQuality.cs" />
+    <Compile Include="Command\Model\Equipment\ItemSlot.cs" />
+    <Compile Include="Command\Model\Equipment\ItemType.cs" />
+    <Compile Include="Command\Model\Experience\CharacterClass.cs" />
+    <Compile Include="Command\Model\Experience\PlayerCharacter.cs" />
+    <Compile Include="Command\Model\Experience\PlayerStats.cs" />
     <Compile Include="Command\Model\Fishing\Catch.cs" />
     <Compile Include="Command\Model\Fishing\Fish.cs" />
     <Compile Include="Command\Model\Fishing\Fisher.cs" />
     <Compile Include="Command\Model\Fishing\LeaderboardEntry.cs" />
     <Compile Include="Command\Model\Fishing\TournamentEntry.cs" />
     <Compile Include="Command\Model\Fishing\TournamentResult.cs" />
+    <Compile Include="Command\Model\Pets\Pet.cs" />
+    <Compile Include="Command\Model\Pets\PetRarity.cs" />
+    <Compile Include="Command\Model\Pets\Stable.cs" />
     <Compile Include="Command\Module\Gloat\GloatModule.cs" />
     <Compile Include="Command\Restriction.cs" />
     <Compile Include="Command\System\Fishing\TournamentSystem.cs" />
     <Compile Include="Command\System\Twitch\UserSystem.cs" />
     <Compile Include="Command\AccessGroup.cs" />
     <Compile Include="Data\AppSettings.cs" />
+    <Compile Include="Data\Import\DataImporter.cs" />
+    <Compile Include="Data\Import\DungeonDataImport.cs" />
     <Compile Include="Data\Import\FileSystem.cs" />
     <Compile Include="Data\Import\IFileSystem.cs" />
+    <Compile Include="Data\Import\ItemDataImport.cs" />
+    <Compile Include="Data\Import\PetDataImport.cs" />
+    <Compile Include="Data\Import\PlayerDataImport.cs" />
     <Compile Include="Data\Metadata.cs" />
+    <Compile Include="Data\Migration\DatabaseUpdate-1.0.7-1.0.8.cs" />
     <Compile Include="Data\Migration\DatabaseUpdate-1.0.6-1.0.7.cs" />
     <Compile Include="Data\Migration\DatabaseUpdate-1.0.5-1.0.6.cs" />
     <Compile Include="Data\Migration\DatabaseUpdate-1.0.4-1.0.5.cs" />
@@ -275,11 +296,7 @@
       <Name>LobotJR.Shared</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Command\Model\Dungeon\" />
-    <Folder Include="Command\Model\Experience\" />
-    <Folder Include="Command\Model\Pet\" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <Content Include="Resources\alert.default.wav">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

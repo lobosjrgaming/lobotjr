@@ -195,7 +195,7 @@ namespace LobotJR.Command.Module.AccessControl
             {
                 return new CommandResult($"Error: User \"{username}\" is already a member of \"{groupName}\".");
             }
-            Enrollments.Create(new Enrollment(group.Id, userToAdd.TwitchId));
+            Enrollments.Create(new Enrollment(group, userToAdd.TwitchId));
             Enrollments.Commit();
 
             return new CommandResult($"User \"{username}\" was added to group \"{group.Name}\" successfully!");

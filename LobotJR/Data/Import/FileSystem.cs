@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace LobotJR.Data.Import
@@ -43,9 +44,9 @@ namespace LobotJR.Data.Import
             return File.ReadAllText(path, UTF8Encoding.Default);
         }
 
-        public void WriteAllBytes(string path, byte[] bytes)
+        public IEnumerable<string> EnumerateFiles(string path)
         {
-            throw new System.NotImplementedException();
+            return Directory.EnumerateFiles(path);
         }
     }
 }

@@ -1,64 +1,44 @@
-﻿using LobotJR.Data;
+﻿using LobotJR.Command.Model.Experience;
+using LobotJR.Data;
+using System.ComponentModel.DataAnnotations;
 
 namespace LobotJR.Command.Model.Equipment
 {
-    public class ItemQuality : TableObject
-    {
-        public string Name { get; set; }
-        public int DropRate { get; set; }
-    }
-
     /// <summary>
-    /// Lookup table for the 
+    /// An item players can have. Includes equipment, keys, consumables, etc.
     /// </summary>
-    public class ItemSlot : TableObject
-    {
-        public string Name { get; set; }
-    }
-
-    public class ItemType : TableObject
-    {
-        public string Name { get; set; }
-    }
-
-    public class Stats : TableObject
+    public class Item : TableObject, PlayerStats
     {
         /// <summary>
-        /// The chance of successfully completing a dungeon.
+        /// The foreign key id for the item quality.
         /// </summary>
-        float SuccessChance { get; set; }
-        /// <summary>
-        /// The chance for items to drop.
-        /// </summary>
-        int ItemFind { get; set; }
-        /// <summary>
-        /// The amount of coins earned.
-        /// </summary>
-        int CoinBonus { get; set; }
-        /// <summary>
-        /// The experience earned.
-        /// </summary>
-        int XpBonus { get; set; }
-        /// <summary>
-        /// The chance for a player to avoid death after failing a dungeon.
-        /// </summary>
-        float PreventDeathBonus { get; set; }
-    }
-
-    public class Item : Stats
-    {
+        [Required]
+        public int QualityId { get; set; }
         /// <summary>
         /// The quality/rarity of the item.
         /// </summary>
-        public ItemQuality Quality { get; set; }
+        public virtual ItemQuality Quality { get; set; }
+
+        /// <summary>
+        /// The foreign key id for the item slot.
+        /// </summary>
+        [Required]
+        public int SlotId { get; set; }
         /// <summary>
         /// The equipment slot the item goes in.
         /// </summary>
-        public ItemSlot Slot { get; set; }
+        public virtual ItemSlot Slot { get; set; }
+
         /// <summary>
-        /// The gear type of the item, which determines which classes can equip.
+        /// The foreign key id for the item type.
         /// </summary>
-        public ItemType Type { get; set; }
+        [Required]
+        public int TypeId { get; set; }
+        /// <summary>
+        /// The gear type of the item, which determines which classes can
+        /// equip it.
+        /// </summary>
+        public virtual ItemType Type { get; set; }
         /// <summary>
         /// The name of the item.
         /// </summary>
@@ -66,17 +46,26 @@ namespace LobotJR.Command.Model.Equipment
         /// <summary>
         /// The flavor text description.
         /// </summary>
-    }
-
-    public class Inventory : TableObject
-    {
-        public string UserId { get; set; }
-        public virtual Item Item { get; set; }
-    }
-
-    public class Equipment : TableObject
-    {
-        public string UserId { get; set; }
-        public virtual Item Item { get; set; }
+        public string Description { get; set; }
+        /// <summary>
+        /// The chance of successfully completing a dungeon.
+        /// </summary>
+        public float SuccessChance { get; set; }
+        /// <summary>
+        /// The chance for items to drop.
+        /// </summary>
+        public int ItemFind { get; set; }
+        /// <summary>
+        /// The amount of coins earned.
+        /// </summary>
+        public int CoinBonus { get; set; }
+        /// <summary>
+        /// The experience earned.
+        /// </summary>
+        public int XpBonus { get; set; }
+        /// <summary>
+        /// The chance for a player to avoid death after failing a dungeon.
+        /// </summary>
+        public float PreventDeathBonus { get; set; }
     }
 }

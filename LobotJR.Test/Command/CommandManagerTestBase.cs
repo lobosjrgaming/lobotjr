@@ -76,13 +76,13 @@ namespace LobotJR.Test.Command
                 new AccessGroup(4, "SubGroup") { IncludeSubs = true },
                 new AccessGroup(5, "AdminGroup") { IncludeAdmins = true },
             });
-            Enrollments = new List<Enrollment>(new Enrollment[] { new Enrollment(1, "12345") });
+            Enrollments = new List<Enrollment>(new Enrollment[] { new Enrollment(AccessGroups.ElementAt(0), "12345") });
             Restrictions = new List<Restriction>(new Restriction[] {
-                new Restriction(1, "CommandMock.Foo"),
-                new Restriction(2, "CommandMock.ModFoo"),
-                new Restriction(3, "CommandMock.VipFoo"),
-                new Restriction(4, "CommandMock.SubFoo"),
-                new Restriction(5, "CommandMock.AdminFoo"),
+                new Restriction(AccessGroups.ElementAt(0), "CommandMock.Foo"),
+                new Restriction(AccessGroups.ElementAt(1), "CommandMock.ModFoo"),
+                new Restriction(AccessGroups.ElementAt(2), "CommandMock.VipFoo"),
+                new Restriction(AccessGroups.ElementAt(3), "CommandMock.SubFoo"),
+                new Restriction(AccessGroups.ElementAt(4), "CommandMock.AdminFoo"),
             });
             IdCache = new List<User>(new User[]
             {

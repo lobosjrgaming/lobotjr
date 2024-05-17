@@ -797,7 +797,7 @@ namespace Wolfcoins
 
                     if (classList[user].classType != -1 && coinList[user] >= respecCost)
                     {
-                        classList[user].myItems = new List<Item>();
+                        classList[user].myItems = new List<LegacyItem>();
                         classList[user].classType = newClass;
                         RemoveCoins(user, respecCost);
 

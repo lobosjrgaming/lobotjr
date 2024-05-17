@@ -53,7 +53,7 @@ namespace Classes
 
         public DateTime queueTime;
 
-        public List<Item> myItems = new List<Item>();
+        public List<LegacyItem> myItems = new List<LegacyItem>();
 
         public List<Pet> myPets = new List<Pet>();
 
@@ -218,7 +218,7 @@ namespace Classes
             return successChance + chance;
         }
 
-        public Item GetItem(int inventoryID)
+        public LegacyItem GetItem(int inventoryID)
         {
             foreach (var itm in myItems)
             {
@@ -226,7 +226,7 @@ namespace Classes
                     return itm;
             }
 
-            return new Item();
+            return new LegacyItem();
         }
 
         public Pet GetPet(int petID)
@@ -267,12 +267,12 @@ namespace Classes
             return false;
         }
 
-        public void AddItem(Item itm)
+        public void AddItem(LegacyItem itm)
         {
             myItems.Add(itm);
         }
 
-        public void ActivateItem(Item itm)
+        public void ActivateItem(LegacyItem itm)
         {
             foreach (var iterItem in myItems)
             {
@@ -284,7 +284,7 @@ namespace Classes
             itm.isActive = true;
         }
 
-        public void RemoveItem(Item itm)
+        public void RemoveItem(LegacyItem itm)
         {
             foreach (var iterItem in myItems)
             {

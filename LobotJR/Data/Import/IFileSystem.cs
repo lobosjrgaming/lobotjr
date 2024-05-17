@@ -1,4 +1,6 @@
-﻿namespace LobotJR.Data.Import
+﻿using System.Collections.Generic;
+
+namespace LobotJR.Data.Import
 {
     public interface IFileSystem
     {
@@ -263,45 +265,43 @@
         /// </exception>
         void AppendAllText(string path, string contents);
 
-        /// <summary>
-        /// Creates a new file, writes the specified byte array to the file, and then closes
-        /// the file. If the target file already exists, it is overwritten.
-        /// </summary>
-        /// <param name="path">
-        /// The file to write to.
-        /// </param>
-        /// <param name="bytes">
-        /// The bytes to write to the file.
-        /// </param>
-        /// <exception cref="System.ArgumentException">
-        /// path is a zero-length string, contains only white space, or contains one or more
-        /// invalid characters as defined by System.IO.Path.InvalidPathChars.
-        /// </exception>
-        /// <exception cref="System.ArgumentNullException">
-        /// path is null or the byte array is empty.
-        /// </exception>
-        /// <exception cref="System.IO.PathTooLongException">
-        /// The specified path, file name, or both exceed the system-defined maximum length.
-        /// For example, on Windows-based platforms, paths must be less than 248 characters,
-        /// and file names must be less than 260 characters.
-        /// </exception>
-        /// <exception cref="System.IO.DirectoryNotFoundException">
-        /// The specified path is invalid (for example, it is on an unmapped drive).
-        /// </exception>
-        /// <exception cref="System.IO.IOException">
-        /// An I/O error occurred while opening the file.
-        /// </exception>
-        /// <exception cref="System.UnauthorizedAccessException">
-        /// path specified a file that is read-only.-or- This operation is not supported
-        /// on the current platform.-or- path specified a directory.-or- The caller does
-        /// not have the required permission.
-        /// </exception>
-        /// <exception cref="System.NotSupportedException">
-        /// path is in an invalid format.
-        /// </exception>
-        /// <exception cref="System.Security.SecurityException">
-        /// The caller does not have the required permission.
-        /// </exception>
-        void WriteAllBytes(string path, byte[] bytes);
+        //
+        // Summary:
+        //     Returns an enumerable collection of file names in a specified path.
+        //
+        // Parameters:
+        //   path:
+        //     The relative or absolute path to the directory to search. This string is not
+        //     case-sensitive.
+        //
+        // Returns:
+        //     An enumerable collection of the full names (including paths) for the files in
+        //     the directory specified by path.
+        //
+        // Exceptions:
+        //   T:System.ArgumentException:
+        //     path is a zero-length string, contains only white space, or contains invalid
+        //     characters. You can query for invalid characters by using the System.IO.Path.GetInvalidPathChars
+        //     method.
+        //
+        //   T:System.ArgumentNullException:
+        //     path is null.
+        //
+        //   T:System.IO.DirectoryNotFoundException:
+        //     path is invalid, such as referring to an unmapped drive.
+        //
+        //   T:System.IO.IOException:
+        //     path is a file name.
+        //
+        //   T:System.IO.PathTooLongException:
+        //     The specified path, file name, or combined exceed the system-defined maximum
+        //     length.
+        //
+        //   T:System.Security.SecurityException:
+        //     The caller does not have the required permission.
+        //
+        //   T:System.UnauthorizedAccessException:
+        //     The caller does not have the required permission.
+        IEnumerable<string> EnumerateFiles(string path);
     }
 }

@@ -60,10 +60,12 @@ namespace LobotJR.Test.Mocks
             var streamer = context.Users.First(x => x.Username.Equals("Streamer"));
             var bot = context.Users.First(x => x.Username.Equals("Bot"));
             var dev = context.Users.First(x => x.Username.Equals("Dev"));
-            context.AccessGroups.Add(new AccessGroup(1, "Streamer") { IncludeAdmins = true });
-            context.Restrictions.Add(new Restriction(1, "*.Admin.*"));
-            context.AccessGroups.Add(new AccessGroup(2, "UIDev"));
-            context.Restrictions.Add(new Restriction(2, dev.TwitchId));
+            var group1 = new AccessGroup(1, "Streamer") { IncludeAdmins = true };
+            context.AccessGroups.Add(group1);
+            context.Restrictions.Add(new Restriction(group1, "*.Admin.*"));
+            var group2 = new AccessGroup(2, "UIDev");
+            context.AccessGroups.Add(group2);
+            context.Restrictions.Add(new Restriction(group2, dev.TwitchId));
         }
 
         public static void InitializeFish(MockContext context)

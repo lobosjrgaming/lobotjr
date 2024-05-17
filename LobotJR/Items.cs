@@ -1,6 +1,6 @@
 ﻿namespace Equipment
 {
-    public class Item
+    public class LegacyItem
     {
         public const int QUALITY_UNCOMMON = 1;
         public const int QUALITY_RARE = 2;
@@ -35,9 +35,9 @@
 
         public bool isActive = false;
 
-        public Item()
+        public LegacyItem()
         {
-            
+
         }
     }
 }

@@ -1,7 +1,5 @@
 ﻿using LobotJR.Command.Model.Fishing;
 using LobotJR.Command.System.Twitch;
-using LobotJR.Shared.Authentication;
-using LobotJR.Shared.Client;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -62,18 +60,6 @@ namespace LobotJR.Data.Import
             {
                 return new List<LegacyCatch>();
             }
-        }
-
-        /// <summary>
-        /// Fetches the twitch user ids for each username in a collection.
-        /// </summary>
-        /// <param name="usernames">A collection of twitch usernames.</param>
-        /// <param name="userSystem">The user lookup system to convert usernames into user ids.</param>
-        /// <param name="token">The OAuth token object for making twitch API calls.</param>
-        /// <param name="clientData">The client data for the app executing the request.</param>
-        public static void FetchUserIds(IEnumerable<string> usernames, UserSystem userSystem, TokenResponse token, ClientData clientData)
-        {
-            var users = userSystem.GetUsersByNames(usernames.ToArray());
         }
 
         /// <summary>

@@ -42,6 +42,10 @@ namespace LobotJR.Command
         }
 
         /// <summary>
+        /// The foreign key id of the access group the command is restricted to.
+        /// </summary>
+        public int GroupId { get; set; }
+        /// <summary>
         /// The group this command is restricted to.
         /// </summary>
         public virtual AccessGroup Group { get; set; }
@@ -54,6 +58,7 @@ namespace LobotJR.Command
 
         public Restriction(AccessGroup group, string command)
         {
+            GroupId = group.Id;
             Group = group;
             Command = command;
         }
