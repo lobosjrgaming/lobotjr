@@ -8,7 +8,7 @@ namespace LobotJR.Data.Import
     public static class ItemDataImport
     {
         public static readonly string ContentFolderName = "content";
-        public static readonly string ItemListPath = "content/itemlist.ini";
+        public static readonly string ItemListPath = "itemlist.ini";
         public static readonly string ItemFolder = "items";
         public static IFileSystem FileSystem = new FileSystem();
 

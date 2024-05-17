@@ -99,7 +99,7 @@ namespace LobotJR.Data.Import
         {
             var content = PetDataImport.ContentFolderName;
             var listPath = PetDataImport.PetListPath;
-            FileSystem.Move($"{content}{listPath}", $"{content}/{listPath}.{DateTime.Now.ToFileTimeUtc()}.backup");
+            FileSystem.Move($"{content}/{listPath}", $"{content}/{listPath}.{DateTime.Now.ToFileTimeUtc()}.backup");
             Logger.Info("Pet data migration complete!");
         }
 
@@ -154,7 +154,7 @@ namespace LobotJR.Data.Import
         {
             var content = ItemDataImport.ContentFolderName;
             var listPath = ItemDataImport.ItemListPath;
-            FileSystem.Move($"{content}{listPath}", $"{content}/{listPath}.{DateTime.Now.ToFileTimeUtc()}.backup");
+            FileSystem.Move($"{content}/{listPath}", $"{content}/{listPath}.{DateTime.Now.ToFileTimeUtc()}.backup");
             Logger.Info("Item data migration complete!");
         }
 
@@ -197,7 +197,7 @@ namespace LobotJR.Data.Import
         {
             var content = DungeonDataImport.ContentFolderName;
             var listPath = DungeonDataImport.DungeonListPath;
-            FileSystem.Move($"{content}{listPath}", $"{content}/{listPath}.{DateTime.Now.ToFileTimeUtc()}.backup");
+            FileSystem.Move($"{content}/{listPath}", $"{content}/{listPath}.{DateTime.Now.ToFileTimeUtc()}.backup");
             Logger.Info("Dungeon data migration complete!");
         }
 
@@ -222,8 +222,7 @@ namespace LobotJR.Data.Import
                     Logger.Error("Player database already contains data, aborting import.");
                     throw new Exception("Legacy import error. Aborting import to avoid data loss.");
                 }
-                await PlayerDataImport.ImportPlayerDataIntoSql(PlayerDataImport.CoinDataPath, PlayerDataImport.ExperienceDataPath, PlayerDataImport.ClassDataPath, playerRepository, classRepository, inventoryRepository, stableRepository, userSystem, itemMap, petMap);
-                return true;
+                return await PlayerDataImport.ImportPlayerDataIntoSql(PlayerDataImport.CoinDataPath, PlayerDataImport.ExperienceDataPath, PlayerDataImport.ClassDataPath, playerRepository, classRepository, inventoryRepository, stableRepository, userSystem, itemMap, petMap);
             }
             return false;
         }

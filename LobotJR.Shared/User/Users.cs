@@ -3,8 +3,10 @@ using LobotJR.Shared.Client;
 using LobotJR.Shared.Utility;
 using NLog;
 using RestSharp;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace LobotJR.Shared.User
@@ -16,6 +18,8 @@ namespace LobotJR.Shared.User
     public class Users
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        private static readonly int UriMaxLength = 2083;
+        private static readonly int ApiRateLimit = 800;
 
         /// <summary>
         /// Calls the twitch Get Users API with no parameters.
@@ -41,20 +45,54 @@ namespace LobotJR.Shared.User
         {
             var data = new List<RestResponse<UserResponse>>();
             var cursor = 0;
+            var total = users.Count();
             var userBatch = users.Take(100);
+            var start = DateTime.Now;
+            var requestCount = 0;
+            var logTime = DateTime.Now;
             do
             {
+                if (requestCount >= ApiRateLimit - 1)
+                {
+                    if (DateTime.Now - start < TimeSpan.FromMinutes(1))
+                    {
+                        var remainingTime = TimeSpan.FromMinutes(1) - (DateTime.Now - start);
+                        Logger.Info("API Rate limit hit fetching users, suspending for {remainingTime}ms.", remainingTime.TotalMilliseconds);
+                        Thread.Sleep((int)remainingTime.TotalMilliseconds);
+                        start = DateTime.Now;
+                    }
+                }
+                if (DateTime.Now - logTime > TimeSpan.FromSeconds(5))
+                {
+                    var elapsed = DateTime.Now - start;
+                    var estimate = elapsed - TimeSpan.FromMilliseconds(elapsed.TotalMilliseconds / cursor * total);
+                    Logger.Info("{count} total users processed. {elapsed} time elapsed, {estimate} estimated remaining.", cursor, elapsed.ToString("mm\\:ss"), estimate.ToString("mm\\:ss"));
+                    logTime = DateTime.Now;
+                }
                 var client = RestUtils.CreateStandardClient();
                 var request = RestUtils.CreateStandardRequest("helix/users", Method.Get, token.AccessToken, clientData.ClientId, Logger);
-                foreach (var user in users)
+                var uriLengthLeft = UriMaxLength - request.Resource.Length;
+                var actualUserCount = 0;
+                foreach (var user in userBatch)
                 {
-                    request.AddParameter("login", user, ParameterType.QueryString);
+                    if (uriLengthLeft > user.Length + 7)
+                    {
+                        uriLengthLeft -= user.Length + 7;
+                        request.AddParameter("login", user, ParameterType.QueryString);
+                        actualUserCount++;
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
                 data.Add(await RestUtils.ExecuteWithRefresh<UserResponse>(token, clientData, client, request));
-                cursor += userBatch.Count();
+                requestCount++;
+                cursor += actualUserCount;
                 userBatch = users.Skip(cursor).Take(100);
             }
             while (userBatch.Any());
+            Logger.Info("Data for {count} users retrieved!", requestCount);
             return data;
         }
     }

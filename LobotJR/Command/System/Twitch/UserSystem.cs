@@ -293,9 +293,22 @@ namespace LobotJR.Command.System.Twitch
 
         private IEnumerable<User> CreateUsers(IEnumerable<UserResponseData> users)
         {
+            Users.BeginTransaction();
+            Logger.Info("Writing {count} user records to database.", users.Count());
+            var total = users.Count();
             var output = new List<User>();
+            var startTime = DateTime.Now;
+            var logTime = DateTime.Now;
+            var processed = 0;
             foreach (var user in users)
             {
+                if (DateTime.Now - logTime > TimeSpan.FromSeconds(5))
+                {
+                    var elapsed = DateTime.Now - startTime;
+                    var estimate = TimeSpan.FromMilliseconds(elapsed.TotalMilliseconds / processed * total) - elapsed;
+                    Logger.Info("{count} total user records written. {elapsed} time elapsed, {estimate} estimated remaining.", processed, elapsed.ToString("mm\\:ss"), estimate.ToString("mm\\:ss"));
+                    logTime = DateTime.Now;
+                }
                 var request = LookupRequests.FirstOrDefault(x => x.Username.Equals(user.DisplayName));
                 var existing = Users.Read(x => x.TwitchId.Equals(user.Id)).FirstOrDefault();
                 if (existing != null)
@@ -314,8 +327,10 @@ namespace LobotJR.Command.System.Twitch
                     Users.Create(newUser);
                     output.Add(newUser);
                 }
+                processed++;
             }
             Users.Commit();
+            Logger.Info("Data for {count} users inserted into the database!", processed);
             return output;
         }
 

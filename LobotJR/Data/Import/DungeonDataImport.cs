@@ -9,7 +9,7 @@ namespace LobotJR.Data.Import
     public class DungeonDataImport
     {
         public static readonly string ContentFolderName = "content";
-        public static readonly string DungeonListPath = "content/dungeonlist.ini";
+        public static readonly string DungeonListPath = "dungeonlist.ini";
         public static readonly string DungeonFolder = "dungeons";
         public static IFileSystem FileSystem = new FileSystem();
 

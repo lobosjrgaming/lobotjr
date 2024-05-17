@@ -5,6 +5,7 @@ namespace LobotJR.Data
 {
     public interface IRepository<TEntity>
     {
+        void BeginTransaction();
         TEntity Create(TEntity entry);
         IEnumerable<TEntity> Read();
         IEnumerable<TEntity> Read(Func<TEntity, bool> filter);

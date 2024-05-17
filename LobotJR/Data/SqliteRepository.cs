@@ -9,6 +9,7 @@ namespace LobotJR.Data
     {
         private readonly DbContext context;
         private readonly DbSet<TEntity> dbSet;
+        private DbContextTransaction transaction;
 
         public SqliteRepository(DbContext context)
         {
@@ -16,8 +17,21 @@ namespace LobotJR.Data
             dbSet = context.Set<TEntity>();
         }
 
+        public void BeginTransaction()
+        {
+            context.Configuration.AutoDetectChangesEnabled = false;
+            transaction = context.Database.BeginTransaction();
+        }
+
         public void Commit()
         {
+            if (transaction != null)
+            {
+                transaction.Commit();
+                transaction.Dispose();
+                transaction = null;
+                context.Configuration.AutoDetectChangesEnabled = true;
+            }
             context.SaveChanges();
         }
 

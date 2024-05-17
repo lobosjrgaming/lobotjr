@@ -34,7 +34,7 @@ namespace LobotJR.Data.Migration
                 "CREATE TABLE \"DungeonLockouts\" ([Id] INTEGER PRIMARY KEY, [UserId] nvarchar NOT NULL, [TimerId] int NOT NULL, [Time] datetime NOT NULL, FOREIGN KEY (TimerId) REFERENCES \"DungeonTimers\"(Id))",
                 //Cleanup database errors from previous versions
                 "DROP INDEX \"IX_Catch_Fisher_Id\"",
-                "ALTER TABLE \"Fish\" DROP COLUMN [Fisher_Id]",
+                "ALTER TABLE \"Catches\" DROP COLUMN [Fisher_Id]",
                 //Add missing foreign keys
                 "ALTER TABLE \"Enrollments\" RENAME TO \"Enrollments_Old\"",
                 "CREATE TABLE \"Enrollments\" ([Id] INTEGER PRIMARY KEY, [GroupId] int, [UserId] nvarchar, FOREIGN KEY (GroupId) REFERENCES \"AccessGroups\"(Id))",

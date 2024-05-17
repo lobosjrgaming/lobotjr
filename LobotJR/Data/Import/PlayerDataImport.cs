@@ -3,6 +3,7 @@ using LobotJR.Command.Model.Experience;
 using LobotJR.Command.Model.Pets;
 using LobotJR.Command.System.Twitch;
 using Newtonsoft.Json;
+using NLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,6 +13,7 @@ namespace LobotJR.Data.Import
 {
     public static class PlayerDataImport
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         public static readonly string ExperienceDataPath = "XP.json";
         public static readonly string CoinDataPath = "wolfcoins.json";
         public static readonly string ClassDataPath = "classData.json";
@@ -53,16 +55,18 @@ namespace LobotJR.Data.Import
             }
         }
 
-        public static Dictionary<string, CharacterClass> SeedClassData(IRepository<CharacterClass> classRepository)
+        public static Dictionary<int, CharacterClass> SeedClassData(IRepository<CharacterClass> classRepository)
         {
-            var output = new Dictionary<string, CharacterClass>()
+            var deprived = new CharacterClass("Deprived", 0, 0, 0, 0, 0) { CanPlay = false };
+            var output = new Dictionary<int, CharacterClass>()
             {
-                { "-1", new CharacterClass("Deprived", 0, 0, 0, 0, 0) { CanPlay = false } },
-                { "1", new CharacterClass("Warrior", 0.1f, 3, 5, 0, 0) },
-                { "2", new CharacterClass("Mage", 0.03f, 10, 0, 5, 0) },
-                { "3", new CharacterClass("Rogue", 0, 5, 10, 3, 0) },
-                { "4", new CharacterClass("Ranger", 0.05f, 0, 3, 10, 0) },
-                { "5", new CharacterClass("Cleric", 0.03f, 3, 3, 3, 0.1f) }
+                { -1, deprived },
+                { 0, deprived },
+                { 1, new CharacterClass("Warrior", 0.1f, 3, 5, 0, 0) },
+                { 2, new CharacterClass("Mage", 0.03f, 10, 0, 5, 0) },
+                { 3, new CharacterClass("Rogue", 0, 5, 10, 3, 0) },
+                { 4, new CharacterClass("Ranger", 0.05f, 0, 3, 10, 0) },
+                { 5, new CharacterClass("Cleric", 0.03f, 3, 3, 3, 0.1f) }
             };
 
             foreach (var entry in output.OrderBy(x => x.Key))
@@ -73,7 +77,7 @@ namespace LobotJR.Data.Import
             return output;
         }
 
-        public static async Task ImportPlayerDataIntoSql(
+        public static async Task<bool> ImportPlayerDataIntoSql(
             string coinDataPath,
             string xpDataPath,
             string classDataPath,
@@ -122,61 +126,75 @@ namespace LobotJR.Data.Import
                 }
             }
 
-            var userMap = await userSystem.GetUsersByNames(classList.Keys.ToArray());
-            foreach (var userClass in classList)
+            var keys = classList.Keys.ToArray();
+            Logger.Info("Fetching user data for {userCount} users, this could take several minutes", keys.Count());
+            var userMap = await userSystem.GetUsersByNames(keys);
+            Logger.Info("Importing data into database.");
+            playerRepository.BeginTransaction();
+            try
             {
-                var user = userMap.FirstOrDefault(x => x.Username.Equals(userClass.Key, StringComparison.OrdinalIgnoreCase));
-                if (user != null)
+
+                foreach (var userClass in classList)
                 {
-                    var player = new PlayerCharacter()
+                    var user = userMap.FirstOrDefault(x => x.Username.Equals(userClass.Key, StringComparison.OrdinalIgnoreCase));
+                    if (user != null)
                     {
-                        UserId = user.TwitchId,
-                        CharacterClassId = classMap[userClass.Value.className].Id,
-                        Currency = userClass.Value.coins,
-                        Experience = userClass.Value.xp,
-                        Level = userClass.Value.level,
-                        Prestige = userClass.Value.prestige,
-                    };
-                    playerRepository.Create(player);
-                    foreach (var pet in userClass.Value.myPets)
-                    {
-                        var stable = new Stable()
+                        var player = new PlayerCharacter()
                         {
                             UserId = user.TwitchId,
-                            PetId = petMap[pet.ID].Id,
-                            Name = pet.name,
-                            Level = pet.level,
-                            Experience = pet.xp,
-                            Affection = pet.affection,
-                            Hunger = pet.hunger,
-                            IsSparkly = pet.isSparkly,
-                            IsActive = pet.isActive,
+                            CharacterClassId = classMap[userClass.Value.classType].Id,
+                            Currency = userClass.Value.coins,
+                            Experience = userClass.Value.xp,
+                            Level = userClass.Value.level,
+                            Prestige = userClass.Value.prestige,
                         };
-                        stableRepository.Create(stable);
-                    }
-                    foreach (var item in userClass.Value.myItems)
-                    {
-                        var itemObject = itemMap[item.itemID];
-                        var inventory = new Inventory()
+                        playerRepository.Create(player);
+                        foreach (var pet in userClass.Value.myPets)
                         {
-                            UserId = user.TwitchId,
-                            ItemId = itemObject.Id,
-                            IsEquipped = item.isActive
-                        };
-                        inventoryRepository.Create(inventory);
+                            var stable = new Stable()
+                            {
+                                UserId = user.TwitchId,
+                                PetId = petMap[pet.ID].Id,
+                                Name = pet.name,
+                                Level = pet.level,
+                                Experience = pet.xp,
+                                Affection = pet.affection,
+                                Hunger = pet.hunger,
+                                IsSparkly = pet.isSparkly,
+                                IsActive = pet.isActive,
+                            };
+                            stableRepository.Create(stable);
+                        }
+                        foreach (var item in userClass.Value.myItems)
+                        {
+                            var itemObject = itemMap[item.itemID];
+                            var inventory = new Inventory()
+                            {
+                                UserId = user.TwitchId,
+                                ItemId = itemObject.Id,
+                                IsEquipped = item.isActive
+                            };
+                            inventoryRepository.Create(inventory);
+                        }
                     }
                 }
+                playerRepository.Commit();
+                stableRepository.Commit();
+                inventoryRepository.Commit();
             }
-            playerRepository.Commit();
-            stableRepository.Commit();
-            inventoryRepository.Commit();
+            catch (Exception ex)
+            {
+                Logger.Error(ex);
+                return false;
+            }
+            return true;
         }
     }
 
     public class LegacyCharacterClass
     {
         public string name { get; set; }
-        public string className { get; set; }
+        public int classType { get; set; }
         public int level { get; set; }
         public int prestige { get; set; }
         public int xp { get; set; }

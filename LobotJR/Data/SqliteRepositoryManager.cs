@@ -77,7 +77,7 @@ namespace LobotJR.Data
             LootData = new SqliteRepository<Loot>(context);
             EncounterData = new SqliteRepository<Encounter>(context);
             DungeonTimerData = new SqliteRepository<DungeonTimer>(context);
-
+            CharacterClassData = new SqliteRepository<CharacterClass>(context);
         }
 
         public void Dispose()

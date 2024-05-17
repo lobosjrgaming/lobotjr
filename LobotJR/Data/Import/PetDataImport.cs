@@ -59,7 +59,7 @@ namespace LobotJR.Data.Import
             return new Pet()
             {
                 Name = fileData["Name"],
-                Description = fileData["Desc"],
+                Description = fileData["Description"],
                 RarityId = rarities[fileData["Rarity"]],
             };
         }
