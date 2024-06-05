@@ -10,7 +10,7 @@ using System.Linq;
 namespace LobotJR.Command.Module.Fishing
 {
     /// <summary>
-    /// Module of access control commands.
+    /// Module containing commands related to fishing tournaments.
     /// </summary>
     public class TournamentModule : ICommandModule
     {
@@ -21,21 +21,14 @@ namespace LobotJR.Command.Module.Fishing
         /// Prefix applied to names of commands within this module.
         /// </summary>
         public string Name => "Fishing.Tournament";
-
         /// <summary>
         /// Notifications when a tournament starts or ends.
         /// </summary>
         public event PushNotificationHandler PushNotification;
-
         /// <summary>
-        /// A collection of commands for managing access to commands.
+        /// A collection of commands this module provides.
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
-
-        /// <summary>
-        /// Null response to indicate this module has no sub modules.
-        /// </summary>
-        public IEnumerable<ICommandModule> SubModules => null;
 
         public TournamentModule(TournamentSystem system, UserSystem userSystem)
         {
@@ -55,7 +48,7 @@ namespace LobotJR.Command.Module.Fishing
         {
             var duration = end - DateTime.Now;
             var message = $"A fishing tournament has just begun! For the next {Math.Round(duration.TotalMinutes)} minutes, fish can be caught more quickly & will be eligible for leaderboard recognition! Head to https://tinyurl.com/PlayWolfpackRPG and type !cast to play!";
-            PushNotification?.Invoke(null, new CommandResult { Processed = true, Messages = new string[] { message } });
+            PushNotification?.Invoke(null, new CommandResult(true, message));
         }
 
         private void System_TournamentEnded(TournamentResult result, DateTime? next)
@@ -81,7 +74,7 @@ namespace LobotJR.Command.Module.Fishing
                     message = "The fishing tournament has ended.";
                 }
             }
-            PushNotification?.Invoke(null, new CommandResult { Processed = true, Messages = new string[] { message } });
+            PushNotification?.Invoke(null, new CommandResult(true, message));
         }
 
         public CommandResult TournamentResults(User user)

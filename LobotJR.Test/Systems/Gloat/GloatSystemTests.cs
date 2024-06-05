@@ -29,7 +29,7 @@ namespace LobotJR.Test.Systems.Gloat
         public void CanGloatReturnsTrueWithEnoughCoins()
         {
             var user = Manager.Users.Read().First();
-            Wolfcoins.Add(user.Username, Manager.AppSettings.Read().First().FishingGloatCost);
+            Wolfcoins.Add(user.Username, Manager.GameSettings.Read().First().FishingGloatCost);
             var canGloat = GloatSystem.CanGloatFishing(user);
             Assert.IsTrue(canGloat);
         }
@@ -38,7 +38,7 @@ namespace LobotJR.Test.Systems.Gloat
         public void CanGloatReturnsFalseWithoutEnoughCoins()
         {
             var user = Manager.Users.Read().First();
-            Wolfcoins.Add(user.Username, Manager.AppSettings.Read().First().FishingGloatCost - 1);
+            Wolfcoins.Add(user.Username, Manager.GameSettings.Read().First().FishingGloatCost - 1);
             var canGloat = GloatSystem.CanGloatFishing(user);
             Assert.IsFalse(canGloat);
         }
@@ -57,7 +57,7 @@ namespace LobotJR.Test.Systems.Gloat
             var user = Manager.Users.Read().First();
             var userId = user.TwitchId;
             var expectedFish = Manager.Catches.Read(x => x.UserId.Equals(userId)).OrderBy(x => x.FishId).First();
-            Wolfcoins.Add(user.Username, Manager.AppSettings.Read().First().FishingGloatCost);
+            Wolfcoins.Add(user.Username, Manager.GameSettings.Read().First().FishingGloatCost);
             var gloat = GloatSystem.FishingGloat(user, 0);
             Assert.AreEqual(0, Wolfcoins[user.Username]);
             Assert.AreEqual(expectedFish.FishId, gloat.FishId);
@@ -74,7 +74,7 @@ namespace LobotJR.Test.Systems.Gloat
                 Manager.Catches.Delete(record);
             }
             Manager.Catches.Commit();
-            var cost = Manager.AppSettings.Read().First().FishingGloatCost;
+            var cost = Manager.GameSettings.Read().First().FishingGloatCost;
             Wolfcoins.Add(user.Username, cost);
             var gloat = GloatSystem.FishingGloat(user, 0);
             Assert.AreEqual(cost, Wolfcoins[user.Username]);
@@ -86,7 +86,7 @@ namespace LobotJR.Test.Systems.Gloat
         {
             var user = Manager.Users.Read().First();
             var userId = user.TwitchId;
-            var cost = Manager.AppSettings.Read().First().FishingGloatCost;
+            var cost = Manager.GameSettings.Read().First().FishingGloatCost;
             Wolfcoins.Add(user.Username, cost);
             var gloat = GloatSystem.FishingGloat(user, -1);
             Assert.AreEqual(cost, Wolfcoins[user.Username]);
@@ -98,7 +98,7 @@ namespace LobotJR.Test.Systems.Gloat
         {
             var user = Manager.Users.Read().First();
             var userId = user.TwitchId;
-            var cost = Manager.AppSettings.Read().First().FishingGloatCost;
+            var cost = Manager.GameSettings.Read().First().FishingGloatCost;
             var recordCount = Manager.Catches.Read(x => x.UserId.Equals(userId)).Count();
             Wolfcoins.Add(user.Username, cost);
             var gloat = GloatSystem.FishingGloat(user, recordCount);

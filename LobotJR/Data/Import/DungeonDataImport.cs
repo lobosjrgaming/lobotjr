@@ -54,11 +54,11 @@ namespace LobotJR.Data.Import
         {
             var metadata = fileData.ElementAt(1).Split(',');
             var encounterList = fileData.ElementAt(2).Split(',');
-            var loot = fileData.FirstOrDefault(x => x.StartsWith("Loot="))?.Substring(5).Split(',').Select(x => int.Parse(x));
-            var lines = fileData.Skip(loot.Any() ? 6 : 7).ToList();
+            var loot = fileData.FirstOrDefault(x => x.StartsWith("Loot="))?.Substring(5).Split(',').Select(x => int.Parse(x)) ?? new List<int>();
+            var lines = fileData.Skip(loot.Any() ? 7 : 6).ToList();
             lines.Add(fileData.ElementAt(4));
             var heroicMetadata = heroicData.ElementAt(1).Split(',');
-            var heroicLoot = fileData.FirstOrDefault(x => x.StartsWith("Loot="))?.Substring(5).Split(',').Select(x => int.Parse(x));
+            var heroicLoot = heroicData.FirstOrDefault(x => x.StartsWith("Loot="))?.Substring(5).Split(',').Select(x => int.Parse(x)) ?? new List<int>();
             var encounterCount = metadata[1];
             var successRate = int.Parse(metadata[2]);
             var heroicSuccessRate = int.Parse(heroicMetadata[2]);

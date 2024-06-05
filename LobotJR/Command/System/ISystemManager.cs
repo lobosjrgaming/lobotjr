@@ -14,7 +14,6 @@ namespace LobotJR.Command.System
         /// <summary>
         /// Processes all loaded systems.
         /// </summary>
-        /// <param name="broadcasting">Whether or not the streamer is currently live.</param>
-        Task Process(bool broadcasting);
+        Task Process();
     }
 }

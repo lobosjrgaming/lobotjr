@@ -11,7 +11,6 @@ namespace LobotJR.Command.System
         /// <summary>
         /// Called once per frame to process the logic of a system.
         /// </summary>
-        /// <param name="broadcasting">Whether or not the streamer is broadcasting.</param>
-        Task Process(bool broadcasting);
+        Task Process();
     }
 }

@@ -1,6 +1,6 @@
 ﻿using LobotJR.Data;
 
-namespace LobotJR.Command.Model.Experience
+namespace LobotJR.Command.Model.Player
 {
     /// <summary>
     /// Class that holds the data for a player character.

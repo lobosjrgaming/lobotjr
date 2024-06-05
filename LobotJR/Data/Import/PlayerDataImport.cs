@@ -1,6 +1,6 @@
 ﻿using LobotJR.Command.Model.Equipment;
-using LobotJR.Command.Model.Experience;
 using LobotJR.Command.Model.Pets;
+using LobotJR.Command.Model.Player;
 using LobotJR.Command.System.Twitch;
 using Newtonsoft.Json;
 using NLog;
@@ -128,6 +128,7 @@ namespace LobotJR.Data.Import
 
             var keys = classList.Keys.ToArray();
             Logger.Info("Fetching user data for {userCount} users, this could take several minutes", keys.Count());
+            //TODO: For some reason after this process happens once, running it again on the same data files produces weird user counts, when it should be 0 since the process already ran once.
             var userMap = await userSystem.GetUsersByNames(keys);
             Logger.Info("Importing data into database.");
             playerRepository.BeginTransaction();

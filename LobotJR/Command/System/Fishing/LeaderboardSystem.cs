@@ -161,7 +161,7 @@ namespace LobotJR.Command.System.Fishing
             return false;
         }
 
-        public Task Process(bool broadcasting)
+        public Task Process()
         {
             return Task.CompletedTask;
         }

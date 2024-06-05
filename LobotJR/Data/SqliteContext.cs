@@ -1,9 +1,9 @@
 ﻿using LobotJR.Command;
 using LobotJR.Command.Model.Dungeons;
 using LobotJR.Command.Model.Equipment;
-using LobotJR.Command.Model.Experience;
 using LobotJR.Command.Model.Fishing;
 using LobotJR.Command.Model.Pets;
+using LobotJR.Command.Model.Player;
 using LobotJR.Twitch;
 using LobotJR.Twitch.Model;
 using System.Data.Common;
@@ -18,6 +18,7 @@ namespace LobotJR.Data
     {
         public DbSet<Metadata> Metadata { get; set; }
         public DbSet<AppSettings> AppSettings { get; set; }
+        public DbSet<GameSettings> GameSettings { get; set; }
         public DbSet<DataTimer> DataTimers { get; set; }
 
         /** Admin data */

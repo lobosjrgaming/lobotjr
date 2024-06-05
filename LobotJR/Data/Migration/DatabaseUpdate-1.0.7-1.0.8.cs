@@ -16,22 +16,35 @@ namespace LobotJR.Data.Migration
             var commands = new string[]
             {
                 //Add content tables
+                "CREATE TABLE \"GameSettings\" ([Id] INTEGER PRIMARY KEY, [ExperienceFrequency] int NOT NULL, [ExperienceValue] int NOT NULL, [CoinValue] int NOT NULL, [SubRewardMultiplier] int NOT NULL, [RespecCost] int NOT NULL, [PryCost] int NOT NULL, [FishingCastMinimum] int NOT NULL, [FishingCastMaximum] int NOT NULL, [FishingHookLength] int NOT NULL, [FishingUseNormalRarity] bit NOT NULL, [FishingUseNormalSizes] bit NOT NULL, [FishingGloatCost] int NOT NULL, [FishingTournamentDuration] int NOT NULL, [FishingTournamentInterval] int NOT NULL, [FishingTournamentCastMinimum] int NOT NULL, [FishingTournamentCastMaximum] int NOT NULL)",
                 "CREATE TABLE \"ItemQualities\" ([Id] INTEGER PRIMARY KEY, [Name] nvarchar, [DropRatePenalty] int NOT NULL)",
                 "CREATE TABLE \"ItemSlots\" ([Id] INTEGER PRIMARY KEY, [Name] nvarchar, [MaxEquipped] int NOT NULL)",
                 "CREATE TABLE \"ItemTypes\" ([Id] INTEGER PRIMARY KEY, [Name] nvarchar)",
-                "CREATE TABLE \"Items\" ([Id] INTEGER PRIMARY KEY, [QualityId] int NOT NULL, [SlotId] int NOT NULL, [TypeId] int NOT NULL, [Name] nvarchar, [Description] nvarchar, [SuccessChance] real NOT NULL, [ItemFind] int NOT NULL, [CoinBonus] int NOT NULL, [XpBonus] int NOT NULL, [PreventDeathBonus] real NOT NULL, FOREIGN KEY (QualityId) REFERENCES \"ItemQualities\"(Id), FOREIGN KEY (SlotId) REFERENCES \"ItemSlots\"(Id), FOREIGN KEY (TypeId) REFERENCES \"ItemTypes\"(Id))",
+                "CREATE TABLE \"Items\" ([Id] INTEGER PRIMARY KEY, [QualityId] int NOT NULL, [SlotId] int NOT NULL, [TypeId] int NOT NULL, [Name] nvarchar, [Description] nvarchar, [Max] int NOT NULL, [SuccessChance] real NOT NULL, [ItemFind] real NOT NULL, [CoinBonus] real NOT NULL, [XpBonus] real NOT NULL, [PreventDeathBonus] real NOT NULL, FOREIGN KEY (QualityId) REFERENCES \"ItemQualities\"(Id), FOREIGN KEY (SlotId) REFERENCES \"ItemSlots\"(Id), FOREIGN KEY (TypeId) REFERENCES \"ItemTypes\"(Id))",
                 "CREATE TABLE \"PetRarities\" ([Id] INTEGER PRIMARY KEY, [Name] nvarchar, [DropRate] int NOT NULL)",
                 "CREATE TABLE \"Pets\" ([Id] INTEGER PRIMARY KEY, [Name] nvarchar, [Description] nvarchar, [RarityId] int NOT NULL, FOREIGN KEY (RarityId) REFERENCES \"PetRarities\"(Id))",
                 "CREATE TABLE \"DungeonTimers\" ([Id] INTEGER PRIMARY KEY, [Name] nvarchar, [BaseTime] datetime, [Length] int NOT NULL)",
                 "CREATE TABLE \"Dungeons\" ([Id] INTEGER PRIMARY KEY, [Name] nvarchar, [Description] nvarchar, [Introduction] nvarchar, [FailureText] nvarchar, [LevelMinimum] int NOT NULL, [LevelMaximum] int NOT NULL, [HeroicMinimum] int NOT NULL, [HeroicMaximum] int NOT NULL)",
                 "CREATE TABLE \"Loot\" ([Id] INTEGER PRIMARY KEY, [DungeonId] int NOT NULL, [ItemId] int NOT NULL, [DropChance] real NOT NULL, [IsHeroic] bit NOT NULL, FOREIGN KEY (DungeonId) REFERENCES \"Dungeons\"(Id), FOREIGN KEY (ItemId) REFERENCES \"Items\"(Id))",
-                "CREATE TABLE \"Encounters\" ([Id] INTEGER PRIMARY KEY, [DungeonId] int NOT NULL, [Enemy] nvarchar NOT NULL, [Difficulty] int NOT NULL, [SetupText] nvarchar NOT NULL, [CompleteText] nvarchar NOT NULL, FOREIGN KEY (DungeonId) REFERENCES \"Dungeons\"(Id))",
+                "CREATE TABLE \"Encounters\" ([Id] INTEGER PRIMARY KEY, [DungeonId] int NOT NULL, [Enemy] nvarchar NOT NULL, [Difficulty] int NOT NULL, [HeroicDifficulty] int NOT NULL, [SetupText] nvarchar NOT NULL, [CompleteText] nvarchar NOT NULL, FOREIGN KEY (DungeonId) REFERENCES \"Dungeons\"(Id))",
                 "CREATE TABLE \"CharacterClasses\" ([Id] INTEGER PRIMARY KEY, [Name] nvarchar, [CanPlay] bit NOT NULL, [SuccessChance] real NOT NULL, [ItemFind] int NOT NULL, [CoinBonus] int NOT NULL, [XpBonus] int NOT NULL, [PreventDeathBonus] real NOT NULL)",
                 //Add player tables
                 "CREATE TABLE \"PlayerCharacters\" ([Id] INTEGER PRIMARY KEY, [UserId] nvarchar NOT NULL, [CharacterClassId] int NOT NULL, [Experience] int NOT NULL, [Currency] int NOT NULL, [Level] int NOT NULL, [Prestige] int NOT NULL, FOREIGN KEY (CharacterClassId) REFERENCES \"CharacterClasses\"(Id))",
-                "CREATE TABLE \"Inventories\" ([Id] INTEGER PRIMARY KEY, [UserId] nvarchar NOT NULL, [ItemId] int NOT NULL, [IsEquipped] bit NOT NULL, FOREIGN KEY (ItemId) REFERENCES \"Items\"(Id))",
+                "CREATE TABLE \"Inventories\" ([Id] INTEGER PRIMARY KEY, [UserId] nvarchar NOT NULL, [ItemId] int NOT NULL, [Count] int NOT NULL, [IsEquipped] bit NOT NULL, [TimeAdded] datetime NOT NULL, FOREIGN KEY (ItemId) REFERENCES \"Items\"(Id))",
                 "CREATE TABLE \"Stables\" ([Id] INTEGER PRIMARY KEY, [UserId] nvarchar NOT NULL, [PetId] int NOT NULL, [Name] nvarchar NOT NULL, [Level] int NOT NULL, [Experience] int NOT NULL, [Affection] int NOT NULL, [Hunger] int NOT NULL, [IsSparkly] bit NOT NULL, [IsActive] bit NOT NULL, FOREIGN KEY (PetId) REFERENCES \"Pets\"(Id))",
                 "CREATE TABLE \"DungeonLockouts\" ([Id] INTEGER PRIMARY KEY, [UserId] nvarchar NOT NULL, [TimerId] int NOT NULL, [Time] datetime NOT NULL, FOREIGN KEY (TimerId) REFERENCES \"DungeonTimers\"(Id))",
+                //Move game settings to new table
+                "INSERT INTO \"GameSettings\" ([ExperiencFrequency], [ExperienceValue], [CoinValue], [SubRewardMultiplier], [RespecCost], [PryCost], [FishingCastMinimum], [FishingCastMaximum], [FishingHookLength], [FishingUseNormalRarity], [FishingUseNormalSizes], [FishingGloatCost], [FishingTournamentDuration], [FishingTournamentInterval], [FishingTournamentCastMinimum], [FishingTournamentCastMaximum]) SELECT 15, 1, 3, 2, 250, 1, [FishingCastMinimum], [FishingCastMaximum], [FishingHookLength], [FishingUseNormalRarity], [FishingUseNormalSizes], [FishingGloatCost], [FishingTournamentDuration], [FishingTournamentInterval], [FishingTournamentCastMinimum], [FishingTournamentCastMaximum] FROM \"AppSettings\"",
+                "ALTER TABLE \"AppSettings\" DROP COLUMN [FishingCastMinimum]",
+                "ALTER TABLE \"AppSettings\" DROP COLUMN [FishingCastMaximum]",
+                "ALTER TABLE \"AppSettings\" DROP COLUMN [FishingHookLength]",
+                "ALTER TABLE \"AppSettings\" DROP COLUMN [FishingUseNormalRarity]",
+                "ALTER TABLE \"AppSettings\" DROP COLUMN [FishingUseNormalSizes]",
+                "ALTER TABLE \"AppSettings\" DROP COLUMN [FishingGloatCost]",
+                "ALTER TABLE \"AppSettings\" DROP COLUMN [FishingTournamentDuration]",
+                "ALTER TABLE \"AppSettings\" DROP COLUMN [FishingTournamentInterval]",
+                "ALTER TABLE \"AppSettings\" DROP COLUMN [FishingTournamentCastMinimum]",
+                "ALTER TABLE \"AppSettings\" DROP COLUMN [FishingTournamentCastMaximum]",
                 //Cleanup database errors from previous versions
                 "DROP INDEX \"IX_Catch_Fisher_Id\"",
                 "ALTER TABLE \"Catches\" DROP COLUMN [Fisher_Id]",

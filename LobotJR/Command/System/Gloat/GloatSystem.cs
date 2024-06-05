@@ -20,11 +20,12 @@ namespace LobotJR.Command.System.Gloat
 
         public GloatSystem(
             IRepositoryManager repositoryManager,
+            IContentManager contentManager,
             Currency wolfcoins)
         {
             PersonalLeaderboard = repositoryManager.Catches;
             Wolfcoins = wolfcoins.coinList;
-            FishingGloatCost = repositoryManager.AppSettings.Read().First().FishingGloatCost;
+            FishingGloatCost = contentManager.GameSettings.Read().First().FishingGloatCost;
         }
 
         /// <summary>

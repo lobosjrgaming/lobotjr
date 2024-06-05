@@ -1,12 +1,11 @@
 ﻿using LobotJR.Command;
 using LobotJR.Command.Model.Dungeons;
 using LobotJR.Command.Model.Equipment;
-using LobotJR.Command.Model.Experience;
 using LobotJR.Command.Model.Fishing;
 using LobotJR.Command.Model.Pets;
+using LobotJR.Command.Model.Player;
 using LobotJR.Twitch;
 using LobotJR.Twitch.Model;
-using System;
 using System.Data.Entity;
 
 namespace LobotJR.Data
@@ -14,12 +13,13 @@ namespace LobotJR.Data
     /// <summary>
     /// Implementation of a repository manager using sqlite storage.
     /// </summary>
-    public class SqliteRepositoryManager : IRepositoryManager, IContentManager, IDisposable
+    public class SqliteRepositoryManager : IDatabase
     {
         private DbContext context;
 
         public IRepository<Metadata> Metadata { get; private set; }
         public IRepository<AppSettings> AppSettings { get; private set; }
+        public IRepository<GameSettings> GameSettings { get; private set; }
         public IRepository<DataTimer> DataTimers { get; private set; }
         public IRepository<User> Users { get; private set; }
         public IRepository<AccessGroup> AccessGroups { get; private set; }
@@ -49,9 +49,20 @@ namespace LobotJR.Data
 
         public SqliteRepositoryManager(DbContext context)
         {
+            SetContext(context);
+        }
+
+        public SqliteRepositoryManager()
+        {
+            SetContext(new SqliteContext());
+        }
+
+        private void SetContext(DbContext context)
+        {
             this.context = context;
             Metadata = new SqliteRepository<Metadata>(context);
             AppSettings = new SqliteRepository<AppSettings>(context);
+            GameSettings = new SqliteRepository<GameSettings>(context);
             DataTimers = new SqliteRepository<DataTimer>(context);
             Users = new SqliteRepository<User>(context);
             AccessGroups = new SqliteRepository<AccessGroup>(context);
@@ -82,6 +93,7 @@ namespace LobotJR.Data
 
         public void Dispose()
         {
+            context.SaveChanges();
             context.Database.Connection.Close();
             context.Dispose();
         }

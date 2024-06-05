@@ -1,5 +1,6 @@
 ﻿using LobotJR.Command.Model.Fishing;
 using LobotJR.Command.System.Fishing;
+using LobotJR.Data;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using System.Collections.Generic;
@@ -8,7 +9,7 @@ using System.Linq;
 namespace LobotJR.Command.Module.Fishing
 {
     /// <summary>
-    /// Contains the compact methods for the fishing module.
+    /// Module containing commands used to fish.
     /// </summary>
     public class FishingModule : ICommandModule
     {
@@ -20,15 +21,13 @@ namespace LobotJR.Command.Module.Fishing
         /// Prefix applied to names of commands within this module.
         /// </summary>
         public string Name => "Fishing";
-
         /// <summary>
         /// Invoked to notify users of fish being hooked or getting away, and
         /// for notifying chat when a user sets a new record.
         /// </summary>
         public event PushNotificationHandler PushNotification;
-
         /// <summary>
-        /// A collection of commands for managing access to commands.
+        /// A collection of commands this module provides.
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
@@ -47,18 +46,18 @@ namespace LobotJR.Command.Module.Fishing
             };
         }
 
-        private void FishingSystem_FishHooked(Fisher fisher)
+        private void FishingSystem_FishHooked(IDatabase database, Fisher fisher)
         {
             var hookMessage = $"{fisher.Hooked.SizeCategory.Message} Type !catch to reel it in!";
-            PushNotification?.Invoke(fisher.User, new CommandResult(fisher.User, hookMessage));
+            PushNotification?.Invoke(database, fisher.User, new CommandResult(fisher.User, hookMessage));
         }
 
-        private void FishingSystem_FishGotAway(Fisher fisher)
+        private void FishingSystem_FishGotAway(IDatabase database, Fisher fisher)
         {
-            PushNotification?.Invoke(fisher.User, new CommandResult(fisher.User, "Heck! The fish got away. Maybe next time..."));
+            PushNotification?.Invoke(database, fisher.User, new CommandResult(fisher.User, "Heck! The fish got away. Maybe next time..."));
         }
 
-        public CommandResult CancelCast(User user)
+        public CommandResult CancelCast(IDatabase database, User user)
         {
             var fisher = FishingSystem.GetFisherByUser(user);
             if (fisher.IsFishing)
@@ -69,12 +68,12 @@ namespace LobotJR.Command.Module.Fishing
             return new CommandResult("Your line has not been cast.");
         }
 
-        public CommandResult CatchFish(User user)
+        public CommandResult CatchFish(IDatabase database, User user)
         {
             var fisher = FishingSystem.GetFisherByUser(user);
             if (fisher.IsFishing)
             {
-                var catchData = FishingSystem.CatchFish(fisher);
+                var catchData = FishingSystem.CatchFish(database, fisher);
                 if (catchData == null)
                 {
                     return new CommandResult("Nothing is biting yet! To reset your cast, use !cancelcast");
@@ -101,7 +100,7 @@ namespace LobotJR.Command.Module.Fishing
             return new CommandResult($"Your line has not been cast. Use !cast to start fishing");
         }
 
-        public CommandResult Cast(User user)
+        public CommandResult Cast(IDatabase database, User user)
         {
             var fisher = FishingSystem.GetFisherByUser(user);
             if (fisher.Hooked != null)

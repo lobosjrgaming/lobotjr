@@ -1,6 +1,5 @@
 ﻿using Autofac;
 using LobotJR.Command.Module;
-using LobotJR.Command.Module.AccessControl;
 using LobotJR.Command.System.Twitch;
 using LobotJR.Data;
 using LobotJR.Twitch;
@@ -95,11 +94,11 @@ namespace LobotJR.Command
 
         private void AddModule(ICommandModule module)
         {
-            //This is a bad hack to get it working quickly, need a better way to provide back access
-            //Create an access control system that can take the command manager as a parameter to get proper access
-            if (module is AccessControlAdmin)
+            // For modules that need access to the command manager, we can't
+            // use DI to inject or it would create a circular dependency
+            if (module is IMetaModule)
             {
-                (module as AccessControlAdmin).CommandManager = this;
+                (module as IMetaModule).CommandManager = this;
             }
 
             module.PushNotification += Module_PushNotification;
@@ -223,7 +222,7 @@ namespace LobotJR.Command
                 toSend += entry;
             }
             responses.Add(toSend);
-            return new CommandResult(responses.ToArray());
+            return new CommandResult(user, responses.ToArray());
         }
 
         private CommandResult TryExecuteCommand(CommandRequest request, User user)

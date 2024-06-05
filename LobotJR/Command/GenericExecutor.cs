@@ -54,7 +54,7 @@ namespace LobotJR.Command
                 MinParams--;
                 if (Parameters[0].ParameterType != typeof(User))
                 {
-                    throw new Exception($"User parameter must be the first parameter");
+                    throw new Exception($"User parameter must be the second parameter");
                 }
             }
             else if (userParams > 1)
@@ -167,27 +167,27 @@ namespace LobotJR.Command
 
             string typeExceptions = "";
             object[] toPass = new object[Parameters.Length];
-            var userAdjust = 0;
+            var paramAdjust = 0;
             if (HasUserParam)
             {
-                userAdjust = 1;
+                paramAdjust++;
                 toPass[0] = user;
             }
 
             for (var i = 0; i < passed.Length; i++)
             {
                 var param = passed[i];
-                var targetParam = Parameters[i + userAdjust];
+                var targetParam = Parameters[i + paramAdjust];
                 if (TryChangeType(param, targetParam.ParameterType, out var result))
                 {
-                    toPass[i + userAdjust] = result;
+                    toPass[i + paramAdjust] = result;
                 }
                 else
                 {
                     typeExceptions += $"Can't convert {param} to {SimplifyType(targetParam.ParameterType)}.";
                 }
             }
-            for (var i = passed.Length + userAdjust; i < MaxParams + userAdjust; i++)
+            for (var i = passed.Length + paramAdjust; i < MaxParams + paramAdjust; i++)
             {
                 toPass[i] = Type.Missing;
             }

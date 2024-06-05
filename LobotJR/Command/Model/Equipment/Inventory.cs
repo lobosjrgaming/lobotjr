@@ -1,4 +1,5 @@
 ﻿using LobotJR.Data;
+using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace LobotJR.Command.Model.Equipment
@@ -23,8 +24,16 @@ namespace LobotJR.Command.Model.Equipment
         /// </summary>
         public virtual Item Item { get; set; }
         /// <summary>
+        /// The quantity of this item the user has.
+        /// </summary>
+        public int Count { get; set; }
+        /// <summary>
         /// Whether or not this item is currently equipped.
         /// </summary>
         public bool IsEquipped { get; set; }
+        /// <summary>
+        /// The datetime for when the inventory record was created.
+        /// </summary>
+        public DateTime TimeAdded { get; set; }
     }
 }

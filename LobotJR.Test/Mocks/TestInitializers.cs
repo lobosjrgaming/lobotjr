@@ -129,23 +129,26 @@ namespace LobotJR.Test.Mocks
             context.FishingTournaments.Add(CreateTournamentResult(2, 0, 30, new TournamentEntry("10", 40), new TournamentEntry("11", 60), new TournamentEntry("12", 50)));
         }
 
-        public static void InitializeAppSettings(MockContext context)
+        public static void InitializeSettings(MockContext context)
         {
             var appSettings = new AppSettings();
-            appSettings.FishingCastMaximum = 20;
-            appSettings.FishingCastMinimum = 10;
-            appSettings.FishingGloatCost = 10;
-            appSettings.FishingHookLength = 10;
-            appSettings.FishingTournamentCastMaximum = 2;
-            appSettings.FishingTournamentCastMinimum = 1;
-            appSettings.FishingTournamentDuration = 5;
-            appSettings.FishingTournamentInterval = 10;
-            appSettings.FishingUseNormalRarity = false;
-            appSettings.FishingUseNormalSizes = false;
             appSettings.UserDatabaseUpdateTime = 2;
             appSettings.MaxWhisperRecipients = 10;
             appSettings.UserLookupBatchTime = 0;
             context.AppSettings.Add(appSettings);
+
+            var gameSettings = new GameSettings();
+            gameSettings.FishingCastMaximum = 20;
+            gameSettings.FishingCastMinimum = 10;
+            gameSettings.FishingGloatCost = 10;
+            gameSettings.FishingHookLength = 10;
+            gameSettings.FishingTournamentCastMaximum = 2;
+            gameSettings.FishingTournamentCastMinimum = 1;
+            gameSettings.FishingTournamentDuration = 5;
+            gameSettings.FishingTournamentInterval = 10;
+            gameSettings.FishingUseNormalRarity = false;
+            gameSettings.FishingUseNormalSizes = false;
+            context.GameSettings.Add(gameSettings);
         }
 
         public static void InitializeTimers(MockContext context)
@@ -157,7 +160,7 @@ namespace LobotJR.Test.Mocks
         public static void SetupDatabase(TestContext context)
         {
             var dbContext = MockContext.CreateAndSeed(
-                InitializeAppSettings,
+                InitializeSettings,
                 InitializeUsers,
                 InitializeUserRoles,
                 InitializeFish,

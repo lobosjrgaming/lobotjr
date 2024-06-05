@@ -1,4 +1,4 @@
-﻿using LobotJR.Command.Model.Experience;
+﻿using LobotJR.Command.Model.Player;
 using LobotJR.Data;
 using System.ComponentModel.DataAnnotations;
 
@@ -48,21 +48,25 @@ namespace LobotJR.Command.Model.Equipment
         /// </summary>
         public string Description { get; set; }
         /// <summary>
+        /// The maximum number of this item a player can have.
+        /// </summary>
+        public int Max { get; set; }
+        /// <summary>
         /// The chance of successfully completing a dungeon.
         /// </summary>
         public float SuccessChance { get; set; }
         /// <summary>
         /// The chance for items to drop.
         /// </summary>
-        public int ItemFind { get; set; }
+        public float ItemFind { get; set; }
         /// <summary>
         /// The amount of coins earned.
         /// </summary>
-        public int CoinBonus { get; set; }
+        public float CoinBonus { get; set; }
         /// <summary>
         /// The experience earned.
         /// </summary>
-        public int XpBonus { get; set; }
+        public float XpBonus { get; set; }
         /// <summary>
         /// The chance for a player to avoid death after failing a dungeon.
         /// </summary>

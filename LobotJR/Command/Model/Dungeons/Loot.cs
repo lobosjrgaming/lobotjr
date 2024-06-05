@@ -1,12 +1,14 @@
 ﻿using LobotJR.Command.Model.Equipment;
 using LobotJR.Data;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace LobotJR.Command.Model.Dungeons
 {
     /// <summary>
     /// The loot that can be dropped in a dungeon.
     /// </summary>
+    [Table("Loot")]
     public class Loot : TableObject
     {
         /// <summary>

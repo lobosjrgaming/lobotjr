@@ -32,9 +32,13 @@ namespace LobotJR.Data.Import
             {
                 "Weapon", "Armor", "Trinket", "Other"
             };
-            foreach (var name in names)
+            List<int> maxEquip = new List<int>()
             {
-                slotRepository.Create(new ItemSlot() { Name = name });
+                1, 1, 2, 0
+            };
+            for (var i = 0; i < names.Count; i++)
+            {
+                slotRepository.Create(new ItemSlot() { Name = names[i], MaxEquipped = maxEquip[i] });
             }
             slotRepository.Commit();
             return slotRepository.Read().ToDictionary(x => (names.IndexOf(x.Name) + 1).ToString(), x => x.Id);
@@ -91,9 +95,9 @@ namespace LobotJR.Data.Import
                 TypeId = types[fileData["Class"]],
                 QualityId = qualities[fileData["Rarity"]],
                 SuccessChance = float.Parse(fileData["SuccessChance"]) / 100f,
-                ItemFind = int.Parse(fileData["ItemFind"]),
-                CoinBonus = int.Parse(fileData["CoinBonus"]),
-                XpBonus = int.Parse(fileData["XpBonus"]),
+                ItemFind = float.Parse(fileData["ItemFind"]) / 100f,
+                CoinBonus = float.Parse(fileData["CoinBonus"]) / 100f,
+                XpBonus = float.Parse(fileData["XpBonus"]) / 100f,
                 PreventDeathBonus = float.Parse(fileData["PreventDeathBonus"]) / 100f
             };
         }

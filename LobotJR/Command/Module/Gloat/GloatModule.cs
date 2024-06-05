@@ -6,7 +6,8 @@ using System.Collections.Generic;
 namespace LobotJR.Command.Module.Gloat
 {
     /// <summary>
-    /// Module of access control commands.
+    /// Module containing commands that allow players to gloat about their
+    /// achievements.
     /// </summary>
     public class GloatModule : ICommandModule
     {
@@ -16,14 +17,12 @@ namespace LobotJR.Command.Module.Gloat
         /// Prefix applied to names of commands within this module.
         /// </summary>
         public string Name => "Gloat";
-
         /// <summary>
-        /// Notifications when a tournament starts or ends.
+        /// Invoked to push gloat messages to public chat.
         /// </summary>
         public event PushNotificationHandler PushNotification;
-
         /// <summary>
-        /// A collection of commands for managing access to commands.
+        /// A collection of commands this module provides.
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 

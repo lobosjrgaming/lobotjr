@@ -53,6 +53,10 @@ namespace LobotJR.Command.System.Twitch
         /// The user object for the chat user.
         /// </summary>
         public User ChatUser { get; private set; }
+        /// <summary>
+        /// Whether or not the stream is currently broadcasting live.
+        /// </summary>
+        public bool IsBroadcasting { get; private set; }
 
         public UserSystem(IRepositoryManager repositoryManager, ITwitchClient twitchClient)
         {
@@ -158,6 +162,20 @@ namespace LobotJR.Command.System.Twitch
                 Users.Commit();
             }
             return existing;
+        }
+
+        /// <summary>
+        /// Updates the user's mod, sub, and vip status based on the flags on
+        /// the incoming message. Note that this should only be used for public
+        /// messages, as whisper messages will have different flags set.
+        /// </summary>
+        /// <param name="user">The object for the user who sent the message.</param>
+        /// <param name="message">The object for the message that was sent.</param>
+        public void UpdateUser(User user, IrcMessage message)
+        {
+            user.IsMod = message.IsMod;
+            user.IsVip = message.IsVip;
+            user.IsSub = message.IsSub;
         }
 
         /// <summary>
@@ -358,10 +376,10 @@ namespace LobotJR.Command.System.Twitch
             LookupRequests.Clear();
         }
 
-        public async Task Process(bool broadcasting)
+        public async Task Process()
         {
             var elapsed = DateTime.Now - LastUpdate;
-            if (broadcasting && elapsed > TimeSpan.FromMinutes(Settings.UserDatabaseUpdateTime))
+            if (elapsed > TimeSpan.FromMinutes(Settings.UserDatabaseUpdateTime))
             {
                 LastUpdate = DateTime.Now;
                 var mods = await TwitchClient.GetModeratorListAsync();

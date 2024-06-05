@@ -51,6 +51,21 @@ namespace LobotJR.Twitch.Model
         /// True if the message is a usernotice alert.
         /// </summary>
         public bool IsUserNotice { get { return "usernotice".Equals(Command, StringComparison.OrdinalIgnoreCase); } }
+        /// <summary>
+        /// True if the user who sent the message is a moderator on the channel
+        /// the message was sent to.
+        /// </summary>
+        public bool IsMod { get { if (Tags.TryGetValue("mod", out var value)) { return value == "1"; } return false; } }
+        /// <summary>
+        /// True if the user who sent the message is a VIP on the channel the
+        /// message was sent to.
+        /// </summary>
+        public bool IsVip { get { if (Tags.TryGetValue("vip", out var value)) { return value == "1"; } return false; } }
+        /// <summary>
+        /// True if the user who sent the message is a subscriber on the
+        /// channel the message was sent to.
+        /// </summary>
+        public bool IsSub { get { if (Tags.TryGetValue("subscriber", out var value)) { return value == "1"; } return false; } }
 
         public static IrcMessage Parse(string message)
         {

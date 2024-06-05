@@ -1,8 +1,8 @@
 ﻿using LobotJR.Command.Model.Dungeons;
 using LobotJR.Command.Model.Equipment;
-using LobotJR.Command.Model.Experience;
 using LobotJR.Command.Model.Fishing;
 using LobotJR.Command.Model.Pets;
+using LobotJR.Command.Model.Player;
 using LobotJR.Command.System.Twitch;
 using NLog;
 using System;
@@ -270,41 +270,42 @@ namespace LobotJR.Data.Import
             Logger.Info("Player data migration complete!");
         }
 
-        private static async Task<bool> ImportPlayerData(IContentManager contentManager, IRepositoryManager repoManager, UserSystem userSystem)
+        private static async Task<bool> ImportPlayerData(IDatabase database, UserSystem userSystem)
         {
-            var petMap = ImportPetData(contentManager.PetData, contentManager.PetRarityData);
+            var petMap = ImportPetData(database.PetData, database.PetRarityData);
             if (petMap.Any())
             {
-                var itemMap = ImportItemData(contentManager.ItemData, contentManager.ItemTypeData, contentManager.ItemSlotData, contentManager.ItemQualityData);
+                var itemMap = ImportItemData(database.ItemData, database.ItemTypeData, database.ItemSlotData, database.ItemQualityData);
                 if (itemMap.Any())
                 {
-                    var dungeonImport = ImportDungeonData(contentManager.DungeonData, contentManager.DungeonTimerData, itemMap);
+                    var dungeonImport = ImportDungeonData(database.DungeonData, database.DungeonTimerData, itemMap);
                     if (dungeonImport)
                     {
-                        var playerImport = await ImportPlayerData(repoManager.PlayerCharacters, contentManager.CharacterClassData, repoManager.Inventories, repoManager.Stables, userSystem, itemMap, petMap);
+                        var playerImport = await ImportPlayerData(database.PlayerCharacters, database.CharacterClassData, database.Inventories, database.Stables, userSystem, itemMap, petMap);
                         if (playerImport)
                         {
                             FinalizePlayerData();
+                            //TODO: classData.json file is persisting after this operation. Best guess is that the legacy wolfcoin code is importing the data file and then writing it back out to memory after this happens. Should resolve once the legacy code is removed.
                             FinalizeDungeonData();
                             FinalizeItemData();
                             FinalizePetData();
                             return true;
                         }
-                        RollbackPlayerData(repoManager.PlayerCharacters, contentManager.CharacterClassData, repoManager.Inventories, repoManager.Stables);
+                        RollbackPlayerData(database.PlayerCharacters, database.CharacterClassData, database.Inventories, database.Stables);
                     }
-                    RollbackDungeonData(contentManager.DungeonData, contentManager.DungeonTimerData);
+                    RollbackDungeonData(database.DungeonData, database.DungeonTimerData);
                 }
-                RollbackItemData(contentManager.ItemData, contentManager.ItemTypeData, contentManager.ItemSlotData, contentManager.ItemQualityData);
+                RollbackItemData(database.ItemData, database.ItemTypeData, database.ItemSlotData, database.ItemQualityData);
             }
-            RollbackPetData(contentManager.PetData, contentManager.PetRarityData);
+            RollbackPetData(database.PetData, database.PetRarityData);
             return false;
         }
 
-        public static async Task ImportLegacyData(IContentManager contentManager, IRepositoryManager repoManager, UserSystem userSystem)
+        public static async Task ImportLegacyData(IDatabase database, UserSystem userSystem)
         {
-            ImportFishData(contentManager.FishData);
-            await ImportFisherData(contentManager.FishData, repoManager.Catches, repoManager.FishingLeaderboard, userSystem);
-            var playerImport = await ImportPlayerData(contentManager, repoManager, userSystem);
+            ImportFishData(database.FishData);
+            await ImportFisherData(database.FishData, database.Catches, database.FishingLeaderboard, userSystem);
+            var playerImport = await ImportPlayerData(database, userSystem);
             if (!playerImport)
             {
                 Logger.Warn("Player data import failed, please verify your player, dungeon, item, and pet files and try again.");

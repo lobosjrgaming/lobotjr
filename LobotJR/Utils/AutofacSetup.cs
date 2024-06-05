@@ -3,11 +3,16 @@ using Autofac.Core;
 using LobotJR.Command;
 using LobotJR.Command.Module;
 using LobotJR.Command.Module.AccessControl;
+using LobotJR.Command.Module.Equipment;
 using LobotJR.Command.Module.Fishing;
 using LobotJR.Command.Module.Gloat;
+using LobotJR.Command.Module.Player;
+using LobotJR.Command.Module.Twitch;
 using LobotJR.Command.System;
+using LobotJR.Command.System.Equipment;
 using LobotJR.Command.System.Fishing;
 using LobotJR.Command.System.Gloat;
+using LobotJR.Command.System.Player;
 using LobotJR.Command.System.Twitch;
 using LobotJR.Data;
 using LobotJR.Data.Migration;
@@ -46,9 +51,9 @@ namespace LobotJR.Utils
         private static void RegisterDatabase(ContainerBuilder builder, ClientData clientData, TokenData tokenData)
         {
             builder.RegisterType<SqliteContext>().AsSelf().As<DbContext>().InstancePerLifetimeScope();
-
             builder.RegisterType<SqliteRepositoryManager>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
-            // builder.RegisterType<UserLookup>().AsSelf().InstancePerLifetimeScope();
+            builder.RegisterType<ConnectionManager>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
+            builder.RegisterType<SettingsManager>().AsSelf().InstancePerLifetimeScope();
         }
 
         private static void RegisterRpg(ContainerBuilder builder, ClientData clientData, TokenData tokenData)
@@ -63,17 +68,24 @@ namespace LobotJR.Utils
             builder.RegisterType<FishingSystem>().AsSelf().As<ISystem>().InstancePerLifetimeScope();
             builder.RegisterType<LeaderboardSystem>().AsSelf().As<ISystem>().InstancePerLifetimeScope();
             builder.RegisterType<TournamentSystem>().AsSelf().As<ISystem>().InstancePerLifetimeScope();
+            builder.RegisterType<PlayerSystem>().AsSelf().As<ISystem>().InstancePerLifetimeScope();
+            builder.RegisterType<EquipmentSystem>().AsSelf().As<ISystem>().InstancePerLifetimeScope();
             builder.RegisterType<GloatSystem>().AsSelf().As<ISystem>().InstancePerLifetimeScope();
         }
 
         private static void RegisterModules(ContainerBuilder builder)
         {
+            builder.RegisterType<UserModule>().AsSelf().As<ICommandModule>().InstancePerLifetimeScope();
             builder.RegisterType<AccessControlModule>().AsSelf().As<ICommandModule>().InstancePerLifetimeScope();
             builder.RegisterType<AccessControlAdmin>().AsSelf().As<ICommandModule>().InstancePerLifetimeScope();
             builder.RegisterType<FishingModule>().AsSelf().As<ICommandModule>().InstancePerLifetimeScope();
             builder.RegisterType<FishingAdmin>().AsSelf().As<ICommandModule>().InstancePerLifetimeScope();
             builder.RegisterType<TournamentModule>().AsSelf().As<ICommandModule>().InstancePerLifetimeScope();
             builder.RegisterType<LeaderboardModule>().AsSelf().As<ICommandModule>().InstancePerLifetimeScope();
+            builder.RegisterType<PlayerModule>().AsSelf().As<ICommandModule>().InstancePerLifetimeScope();
+            builder.RegisterType<PlayerAdmin>().AsSelf().As<ICommandModule>().InstancePerLifetimeScope();
+            builder.RegisterType<EquipmentModule>().AsSelf().As<ICommandModule>().InstancePerLifetimeScope();
+            builder.RegisterType<EquipmentAdmin>().AsSelf().As<ICommandModule>().InstancePerLifetimeScope();
             builder.RegisterType<GloatModule>().AsSelf().As<ICommandModule>().InstancePerLifetimeScope();
         }
 

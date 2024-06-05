@@ -1,6 +1,7 @@
 ﻿using LobotJR.Command.Model.Fishing;
 using LobotJR.Command.System.Fishing;
 using LobotJR.Command.System.Twitch;
+using LobotJR.Data;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using System.Collections.Generic;
@@ -9,7 +10,8 @@ using System.Linq;
 namespace LobotJR.Command.Module.Fishing
 {
     /// <summary>
-    /// Module of fishing leaderboard commands.
+    /// Module containing commands for retrieving leaderboards and managing
+    /// personal fishing records.
     /// </summary>
     public class LeaderboardModule : ICommandModule
     {
@@ -20,21 +22,14 @@ namespace LobotJR.Command.Module.Fishing
         /// Prefix applied to names of commands within this module.
         /// </summary>
         public string Name => "Fishing.Leaderboard";
-
         /// <summary>
-        /// Notifications when a new fishing record is set..
+        /// Invoke to send personal and global leaderboard update messages.
         /// </summary>
         public event PushNotificationHandler PushNotification;
-
         /// <summary>
-        /// A collection of commands for managing access to commands.
+        /// A collection of commands this module provides.
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
-
-        /// <summary>
-        /// Null response to indicate this module has no sub modules.
-        /// </summary>
-        public IEnumerable<ICommandModule> SubModules => null;
 
         public LeaderboardModule(LeaderboardSystem system, UserSystem userSystem)
         {
@@ -49,13 +44,13 @@ namespace LobotJR.Command.Module.Fishing
             };
         }
 
-        private void System_NewGlobalRecord(LeaderboardEntry catchData)
+        private void System_NewGlobalRecord(IDatabase database, LeaderboardEntry catchData)
         {
             var recordMessage = $"{UserSystem.GetUserById(catchData.UserId).Username} just caught the heaviest {catchData.Fish.Name} ever! It weighs {catchData.Weight} pounds!";
-            PushNotification?.Invoke(null, new CommandResult() { Messages = new string[] { recordMessage } });
+            PushNotification?.Invoke(database, null, new CommandResult() { Messages = new string[] { recordMessage } });
         }
 
-        public CompactCollection<Catch> PlayerLeaderboardCompact(User user, int index = -1)
+        public CompactCollection<Catch> PlayerLeaderboardCompact(IDatabase database, User user, int index = -1)
         {
             string selectFunc(Catch x) => $"{x.Fish.Name}|{x.Length}|{x.Weight};";
             var records = TournamentSystem.GetPersonalLeaderboard(user);
@@ -78,9 +73,9 @@ namespace LobotJR.Command.Module.Fishing
             }
         }
 
-        public CommandResult PlayerLeaderboard(User user, int index = -1)
+        public CommandResult PlayerLeaderboard(IDatabase database, User user, int index = -1)
         {
-            var compact = PlayerLeaderboardCompact(user, index);
+            var compact = PlayerLeaderboardCompact(database, user, index);
             var items = compact.Items.ToList();
             if (index == -1)
             {
@@ -118,18 +113,18 @@ namespace LobotJR.Command.Module.Fishing
             }
         }
 
-        public CompactCollection<LeaderboardEntry> GlobalLeaderboardCompact()
+        public CompactCollection<LeaderboardEntry> GlobalLeaderboardCompact(IDatabase database)
         {
             return new CompactCollection<LeaderboardEntry>(TournamentSystem.GetLeaderboard(), x => $"{x.Fish.Name}|{x.Length}|{x.Weight}|{UserSystem.GetUserById(x.UserId).Username};");
         }
 
-        public CommandResult GlobalLeaderboard()
+        public CommandResult GlobalLeaderboard(IDatabase database)
         {
-            var compact = GlobalLeaderboardCompact();
+            var compact = GlobalLeaderboardCompact(database);
             return new CommandResult(compact.Items.Select(x => $"Largest {x.Fish.Name} caught by {UserSystem.GetUserById(x.UserId).Username} at {x.Weight} lbs., {x.Length} in.").ToArray());
         }
 
-        public CommandResult ReleaseFish(User user, int index)
+        public CommandResult ReleaseFish(IDatabase database, User user, int index)
         {
             var records = TournamentSystem.GetPersonalLeaderboard(user);
             if (records == null || !records.Any())

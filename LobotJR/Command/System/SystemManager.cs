@@ -45,12 +45,11 @@ namespace LobotJR.Command.System
         /// <summary>
         /// Processes all loaded systems.
         /// </summary>
-        /// <param name="broadcasting">Whether or not the streamer is currently live.</param>
-        public async Task Process(bool broadcasting)
+        public async Task Process()
         {
             foreach (var system in Systems)
             {
-                await system.Process(broadcasting);
+                await system.Process();
             }
         }
     }

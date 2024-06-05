@@ -1,4 +1,5 @@
 ﻿using LobotJR.Command.Model.Fishing;
+using LobotJR.Command.System.Player;
 using LobotJR.Data;
 using LobotJR.Twitch.Model;
 using NLog;
@@ -16,10 +17,11 @@ namespace LobotJR.Command.System.Fishing
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        private readonly IRepository<TournamentResult> TournamentResults;
+        private readonly ConnectionManager ConnectionManager;
         private readonly FishingSystem FishingSystem;
         private readonly LeaderboardSystem LeaderboardSystem;
-        private readonly AppSettings Settings;
+        private readonly PlayerSystem PlayerSystem;
+        private readonly SettingsManager SettingsManager;
 
         /// <summary>
         /// Event handler for the start of a tournament.
@@ -56,16 +58,17 @@ namespace LobotJR.Command.System.Fishing
         public bool IsRunning { get { return CurrentTournament != null; } }
 
         public TournamentSystem(
+            ConnectionManager connectionManager,
             FishingSystem fishingSystem,
             LeaderboardSystem leaderboardSystem,
-            IRepositoryManager repositoryManager)
+            PlayerSystem playerSystem,
+            SettingsManager settingsManager)
         {
+            ConnectionManager = connectionManager;
             FishingSystem = fishingSystem;
             LeaderboardSystem = leaderboardSystem;
-            TournamentResults = repositoryManager.TournamentResults;
-
-            Settings = repositoryManager.AppSettings.Read().First();
-            NextTournament = DateTime.Now.AddMinutes(Settings.FishingTournamentInterval);
+            PlayerSystem = playerSystem;
+            SettingsManager = settingsManager;
             fishingSystem.FishCaught += FishingSystem_FishCaught;
         }
 
@@ -86,7 +89,7 @@ namespace LobotJR.Command.System.Fishing
         /// <returns>The result data from the most recent tournament.</returns>
         public TournamentResult GetLatestResults()
         {
-            return TournamentResults.Read().OrderByDescending(x => x.Date).FirstOrDefault();
+            return ConnectionManager.CurrentConnection.TournamentResults.Read().OrderByDescending(x => x.Date).FirstOrDefault();
         }
 
         /// <summary>
@@ -96,7 +99,7 @@ namespace LobotJR.Command.System.Fishing
         /// <returns>An enumerable collection of all tournament results where that user participated.</returns>
         public IEnumerable<TournamentResult> GetResultsForUser(User user)
         {
-            return TournamentResults.Read(x => x.GetEntryByUser(user) != null);
+            return ConnectionManager.CurrentConnection.TournamentResults.Read(x => x.GetEntryByUser(user) != null);
         }
 
         /// <summary>
@@ -125,17 +128,19 @@ namespace LobotJR.Command.System.Fishing
         /// <summary>
         /// Starts a new tournament.
         /// </summary>
+        /// <param name="database">A connection to the database.</param>
         public void StartTournament()
         {
             if (CurrentTournament == null)
             {
+                var settings = SettingsManager.GetGameSettings();
                 FishingSystem.ResetFishers();
-                FishingSystem.CastTimeMinimum = Settings.FishingTournamentCastMinimum;
-                FishingSystem.CastTimeMaximum = Settings.FishingTournamentCastMaximum;
+                FishingSystem.CastTimeMinimum = settings.FishingTournamentCastMinimum;
+                FishingSystem.CastTimeMaximum = settings.FishingTournamentCastMaximum;
 
                 CurrentTournament = new TournamentResult
                 {
-                    Date = DateTime.Now.AddMinutes(Settings.FishingTournamentDuration)
+                    Date = DateTime.Now.AddMinutes(settings.FishingTournamentDuration)
                 };
                 NextTournament = null;
                 Logger.Debug("Tournament started at {start}", DateTime.Now.ToString("G"));
@@ -146,19 +151,20 @@ namespace LobotJR.Command.System.Fishing
         /// <summary>
         /// Ends the current tournament, saves the results, and schedules the next one.
         /// </summary>
-        public void EndTournament(bool broadcasting)
+        /// <param name="database">A connection to the database.</param>
+        public void EndTournament()
         {
             if (CurrentTournament != null)
             {
                 CurrentTournament.SortResults();
-                TournamentResults.Create(CurrentTournament);
-                TournamentResults.Commit();
-                FishingSystem.CastTimeMinimum = Settings.FishingCastMinimum;
-                FishingSystem.CastTimeMaximum = Settings.FishingCastMaximum;
+                ConnectionManager.CurrentConnection.TournamentResults.Create(CurrentTournament);
+                var settings = SettingsManager.GetGameSettings();
+                FishingSystem.CastTimeMinimum = settings.FishingCastMinimum;
+                FishingSystem.CastTimeMaximum = settings.FishingCastMaximum;
                 DateTime? next;
-                if (broadcasting)
+                if (PlayerSystem.AwardsEnabled)
                 {
-                    next = CurrentTournament.Date.AddMinutes(Settings.FishingTournamentDuration + Settings.FishingTournamentInterval);
+                    next = CurrentTournament.Date.AddMinutes(settings.FishingTournamentDuration + settings.FishingTournamentInterval);
                 }
                 else
                 {
@@ -178,14 +184,14 @@ namespace LobotJR.Command.System.Fishing
         /// <summary>
         /// Processes the tournament system, starting or ending the tournament as necessary.
         /// </summary>
-        public Task Process(bool broadcasting)
+        public Task Process()
         {
-            if (!broadcasting)
+            if (!PlayerSystem.AwardsEnabled)
             {
                 if (CurrentTournament != null)
                 {
                     Logger.Debug("Tournament active when broadcasting ended.");
-                    EndTournament(broadcasting);
+                    EndTournament();
                 }
                 NextTournament = null;
             }
@@ -194,12 +200,20 @@ namespace LobotJR.Command.System.Fishing
                 if (CurrentTournament != null && DateTime.Now >= CurrentTournament.Date)
                 {
                     Logger.Debug("Tournament time expired.");
-                    EndTournament(broadcasting);
+                    EndTournament();
                 }
-                else if (CurrentTournament == null && DateTime.Now >= NextTournament)
+                else if (CurrentTournament == null)
                 {
-                    Logger.Debug("Tournament start time arrived.");
-                    StartTournament();
+                    if (NextTournament == null)
+                    {
+                        var settings = SettingsManager.GetGameSettings();
+                        NextTournament = DateTime.Now.AddMinutes(settings.FishingTournamentInterval);
+                    }
+                    else if (DateTime.Now >= NextTournament)
+                    {
+                        Logger.Debug("Tournament start time arrived.");
+                        StartTournament();
+                    }
                 }
             }
             return Task.CompletedTask;

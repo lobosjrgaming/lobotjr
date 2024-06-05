@@ -27,6 +27,11 @@ namespace LobotJR.Command.Model.Dungeons
         /// </summary>
         public int Difficulty { get; set; }
         /// <summary>
+        /// The difficulty rating of this encounter when running the dungeon in
+        /// heroic mode, used to determine success chance.
+        /// </summary>
+        public int HeroicDifficulty { get; set; }
+        /// <summary>
         /// The text sent to players before this encounter is resolved.
         /// </summary>
         public string SetupText { get; set; }

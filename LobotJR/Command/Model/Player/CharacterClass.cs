@@ -1,6 +1,6 @@
 ﻿using LobotJR.Data;
 
-namespace LobotJR.Command.Model.Experience
+namespace LobotJR.Command.Model.Player
 {
     /// <summary>
     /// A character class available for players to choose.
