@@ -154,9 +154,13 @@
     <Compile Include="Command\IMetaModule.cs" />
     <Compile Include="Command\Model\Dungeons\Dungeon.cs" />
     <Compile Include="Command\Model\Dungeons\DungeonLockout.cs" />
+    <Compile Include="Command\Model\Dungeons\DungeonMode.cs" />
     <Compile Include="Command\Model\Dungeons\DungeonTimer.cs" />
     <Compile Include="Command\Model\Dungeons\Encounter.cs" />
+    <Compile Include="Command\Model\Dungeons\EncounterLevel.cs" />
+    <Compile Include="Command\Model\Dungeons\LevelRange.cs" />
     <Compile Include="Command\Model\Dungeons\Loot.cs" />
+    <Compile Include="Command\Model\Dungeons\Party.cs" />
     <Compile Include="Command\Model\Equipment\Inventory.cs" />
     <Compile Include="Command\Model\Equipment\Item.cs" />
     <Compile Include="Command\Model\Equipment\ItemQuality.cs" />
@@ -174,6 +178,7 @@
     <Compile Include="Command\Model\Pets\Pet.cs" />
     <Compile Include="Command\Model\Pets\PetRarity.cs" />
     <Compile Include="Command\Model\Pets\Stable.cs" />
+    <Compile Include="Command\Module\Dungeons\DungeonModule.cs" />
     <Compile Include="Command\Module\Equipment\EquipmentAdmin.cs" />
     <Compile Include="Command\Module\Equipment\EquipmentModule.cs" />
     <Compile Include="Command\Module\General\ConfirmationModule.cs" />
@@ -185,6 +190,7 @@
     <Compile Include="Command\Module\Gloat\GloatModule.cs" />
     <Compile Include="Command\Module\Twitch\UserModule.cs" />
     <Compile Include="Command\Restriction.cs" />
+    <Compile Include="Command\System\Dungeons\DungeonSystem.cs" />
     <Compile Include="Command\System\Equipment\EquipmentSystem.cs" />
     <Compile Include="Command\System\General\ConfirmationSystem.cs" />
     <Compile Include="Command\System\Pets\PetSystem.cs" />

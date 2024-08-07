@@ -10,18 +10,35 @@ namespace LobotJR.Command
 {
     public class CommandExecutor : GenericExecutor<CommandResult>
     {
-        public CommandExecutor(ICommandModule target, MethodInfo methodInfo) : base(target, methodInfo)
+        public CommandExecutor(ICommandModule target, MethodInfo methodInfo) : base(target, methodInfo, false)
         {
             if (methodInfo.ReturnType != typeof(CommandResult))
             {
                 throw new Exception($"Delegate for command executor must have return type of {typeof(CommandResult)}");
             }
         }
+        public CommandExecutor(ICommandModule target, MethodInfo methodInfo, bool ignoreParse) : base(target, methodInfo, ignoreParse)
+        {
+            if (methodInfo.ReturnType != typeof(CommandResult))
+            {
+                throw new Exception($"Delegate for command executor must have return type of {typeof(CommandResult)}");
+            }
+            if (ignoreParse)
+            {
+                var parameters = methodInfo.GetParameters();
+                if ((parameters.Length == 1 && parameters[0].ParameterType != typeof(string))
+                    || (parameters.Length == 2 && parameters[1].ParameterType != typeof(string))
+                    || parameters.Length > 2 || parameters.Length < 1)
+                {
+                    throw new Exception($"Delegate for command executor that ignores parse must have one string parameter to receive unparsed input.");
+                }
+            }
+        }
     }
 
     public class CompactExecutor : GenericExecutor<ICompactResponse>
     {
-        public CompactExecutor(ICommandModule target, MethodInfo methodInfo) : base(target, methodInfo)
+        public CompactExecutor(ICommandModule target, MethodInfo methodInfo) : base(target, methodInfo, false)
         {
             if (methodInfo.ReturnType != typeof(ICompactResponse) && methodInfo.ReturnType.GetInterface(nameof(ICompactResponse)) == null)
             {
@@ -38,12 +55,14 @@ namespace LobotJR.Command
         private int MinParams;
         private int MaxParams;
         private bool HasUserParam;
+        private bool SkipParse;
 
-        public GenericExecutor(object target, MethodInfo methodInfo)
+        public GenericExecutor(object target, MethodInfo methodInfo, bool skipParse)
         {
             Target = target;
             MethodInfo = methodInfo;
             Parameters = MethodInfo.GetParameters();
+            SkipParse = skipParse;
             MaxParams = Parameters.Length;
             MinParams = MaxParams - Parameters.Count(x => x.HasDefaultValue);
             var userParams = Parameters.Count(x => x.ParameterType == typeof(User));
@@ -54,7 +73,7 @@ namespace LobotJR.Command
                 MinParams--;
                 if (Parameters[0].ParameterType != typeof(User))
                 {
-                    throw new Exception($"User parameter must be the second parameter");
+                    throw new Exception($"User parameter must be the first parameter");
                 }
             }
             else if (userParams > 1)
@@ -159,11 +178,6 @@ namespace LobotJR.Command
             {
                 parameterString = string.Empty;
             }
-            var passed = SplitParams(parameterString).ToArray();
-            if (passed.Length < MinParams || passed.Length > MaxParams)
-            {
-                throw new ArgumentException($"Invalid parameters. Syntax: {DescribeParameters()}.");
-            }
 
             string typeExceptions = "";
             object[] toPass = new object[Parameters.Length];
@@ -173,30 +187,43 @@ namespace LobotJR.Command
                 paramAdjust++;
                 toPass[0] = user;
             }
-
-            for (var i = 0; i < passed.Length; i++)
+            if (SkipParse)
             {
-                var param = passed[i];
-                var targetParam = Parameters[i + paramAdjust];
-                if (TryChangeType(param, targetParam.ParameterType, out var result))
+                toPass[paramAdjust] = parameterString;
+                return MethodInfo.Invoke(Target, toPass) as T;
+            }
+            else
+            {
+                var passed = SplitParams(parameterString).ToArray();
+                if (passed.Length < MinParams || passed.Length > MaxParams)
                 {
-                    toPass[i + paramAdjust] = result;
+                    throw new ArgumentException($"Invalid parameters. Syntax: {DescribeParameters()}.");
                 }
-                else
-                {
-                    typeExceptions += $"Can't convert {param} to {SimplifyType(targetParam.ParameterType)}.";
-                }
-            }
-            for (var i = passed.Length + paramAdjust; i < MaxParams + paramAdjust; i++)
-            {
-                toPass[i] = Type.Missing;
-            }
 
-            if (!string.IsNullOrWhiteSpace(typeExceptions))
-            {
-                throw new InvalidCastException($"Invalid parameters. {string.Join(" ", typeExceptions)}");
+                for (var i = 0; i < passed.Length; i++)
+                {
+                    var param = passed[i];
+                    var targetParam = Parameters[i + paramAdjust];
+                    if (TryChangeType(param, targetParam.ParameterType, out var result))
+                    {
+                        toPass[i + paramAdjust] = result;
+                    }
+                    else
+                    {
+                        typeExceptions += $"Can't convert {param} to {SimplifyType(targetParam.ParameterType)}.";
+                    }
+                }
+                for (var i = passed.Length + paramAdjust; i < MaxParams + paramAdjust; i++)
+                {
+                    toPass[i] = Type.Missing;
+                }
+
+                if (!string.IsNullOrWhiteSpace(typeExceptions))
+                {
+                    throw new InvalidCastException($"Invalid parameters. {string.Join(" ", typeExceptions)}");
+                }
+                return MethodInfo.Invoke(Target, toPass) as T;
             }
-            return MethodInfo.Invoke(Target, toPass) as T;
         }
     }
 }

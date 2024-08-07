@@ -33,9 +33,14 @@ namespace LobotJR.Command.Model.Dungeons
         /// The chance this item is dropped.
         /// </summary>
         public double DropChance { get; set; }
+        [Required]
         /// <summary>
-        /// Whether the item only drops in heroic mode dungeons.
+        /// The foreign key id for the dungeon mode this item is dropped in.
         /// </summary>
-        public bool IsHeroic { get; set; }
+        public int ModeId { get; set; }
+        /// <summary>
+        /// The dungeon mode this item is dropped in.
+        /// </summary>
+        public virtual DungeonMode Mode { get; set; }
     }
 }

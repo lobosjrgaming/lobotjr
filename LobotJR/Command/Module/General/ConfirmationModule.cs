@@ -31,8 +31,8 @@ namespace LobotJR.Command.Module.General
             ConfirmationSystem = confirmationSystem;
             Commands = new List<CommandHandler>()
             {
-                new CommandHandler("Confirm", this, CommandMethod.GetInfo(Confirm), "y", "yes"),
-                new CommandHandler("Cancel", this, CommandMethod.GetInfo(Cancel), "n", "no"),
+                new CommandHandler("Confirm", this, CommandMethod.GetInfo(Confirm), "y", "yes", "accept", "confirm"),
+                new CommandHandler("Cancel", this, CommandMethod.GetInfo(Cancel), "n", "no", "decline", "cancel"),
             };
         }
 

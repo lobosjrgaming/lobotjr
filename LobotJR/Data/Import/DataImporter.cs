@@ -158,7 +158,7 @@ namespace LobotJR.Data.Import
             Logger.Info("Item data migration complete!");
         }
 
-        private static bool ImportDungeonData(IRepository<Dungeon> dungeonRepository, IRepository<DungeonTimer> timerRepository, Dictionary<int, Item> itemMap)
+        private static bool ImportDungeonData(IRepository<Dungeon> dungeonRepository, IRepository<DungeonTimer> timerRepository, IRepository<DungeonMode> modeRepository, Dictionary<int, Item> itemMap)
         {
             var content = DungeonDataImport.ContentFolderName;
             var listPath = DungeonDataImport.DungeonListPath;
@@ -172,7 +172,7 @@ namespace LobotJR.Data.Import
                     Logger.Error("Dungeon database already contains data.");
                     throw new Exception("Legacy import error. Aborting import to avoid data loss.");
                 }
-                DungeonDataImport.ImportDungeonDataIntoSql(content, listPath, DungeonDataImport.DungeonFolder, dungeonRepository, timerRepository, itemMap);
+                DungeonDataImport.ImportDungeonDataIntoSql(content, listPath, DungeonDataImport.DungeonFolder, dungeonRepository, timerRepository, modeRepository, itemMap);
             }
             return true;
         }
@@ -278,7 +278,7 @@ namespace LobotJR.Data.Import
                 var itemMap = ImportItemData(database.ItemData, database.ItemTypeData, database.ItemSlotData, database.ItemQualityData);
                 if (itemMap.Any())
                 {
-                    var dungeonImport = ImportDungeonData(database.DungeonData, database.DungeonTimerData, itemMap);
+                    var dungeonImport = ImportDungeonData(database.DungeonData, database.DungeonTimerData, database.DungeonModeData, itemMap);
                     if (dungeonImport)
                     {
                         var playerImport = await ImportPlayerData(database.PlayerCharacters, database.CharacterClassData, database.Inventories, database.Stables, userSystem, itemMap, petMap);

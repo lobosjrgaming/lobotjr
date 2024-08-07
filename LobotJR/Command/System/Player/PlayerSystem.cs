@@ -180,6 +180,16 @@ namespace LobotJR.Command.System.Player
         }
 
         /// <summary>
+        /// Gets the cost to pry on another player.
+        /// </summary>
+        /// <returns>The amount of currency required to pry.</returns>
+        public int GetPryCost()
+        {
+            var settings = SettingsManager.GetGameSettings();
+            return settings.PryCost;
+        }
+
+        /// <summary>
         /// Clears the class from a player. This should only be used for
         /// debugging purposes.
         /// </summary>
@@ -345,14 +355,9 @@ namespace LobotJR.Command.System.Player
                         player.Currency += coinsToAward;
                         // I don't think we need to store mod/vip/sub flags in the database once everything is ported over to the new system
                         // The only time we would need access is when someone references them in a command, since any command they send comes with the flags in the chat message
-                        // Probably still need it for batch operations, like grant double xp to all subs
+                        //   This is not true of whispers, I'm an idiot.
+                        //   We definitely need to store them, so we know their chat state when a whisper comes in.
                         // Maybe instead of doing batch user syncing operations, we can do it granularly each time someone sends a message
-                        // Check their user in the database against their flags on an incoming message
-                        // We could update their user object right then, and just not commit it until the batch, so every 15 minutes all changes detected from incoming messages are committed to the database
-                        //   That would be much faster, but I don't know what state that would leave users in between when the change is detected and when it's committed
-                        //     We shouldn't even be holding onto the database context for that long. The way we're doing it now is wrong (that's on me)
-                        //   If we stored a local copy of (what the whole user table?!?) and just flagged the users in that local copy, we could select out the flagged users and update/commit during the sync
-                        //   We don't even need to store it, just write the changes to the database if it's different when we get a message from them, why hold onto it?
                         // If we only update on message received, then people who don't talk will end up stale
                         //  Could swap the batch sync to once a day or something?
                         //  If someone gets the wrong xp amount for at most a day if they change state and don't talk in chat, that's not the end of the world

@@ -1,7 +1,10 @@
-﻿using LobotJR.Command.System.Gloat;
+﻿using LobotJR.Command.Module.Pets;
+using LobotJR.Command.System.Fishing;
+using LobotJR.Command.System.Gloat;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace LobotJR.Command.Module.Gloat
 {
@@ -11,7 +14,32 @@ namespace LobotJR.Command.Module.Gloat
     /// </summary>
     public class GloatModule : ICommandModule
     {
+        private readonly IEnumerable<string> CheerMessages = new List<string>()
+        {
+            "Just a baby! lobosMindBlank",
+            "Scrubtastic!",
+            "Pretty weak!",
+            "Not too shabby.",
+            "They can hold their own!",
+            "Getting pretty strong Kreygasm",
+            "A formidable opponent!",
+            "A worthy adversary!",
+            "A most powerful combatant!",
+            "A seasoned war veteran!",
+            "A fearsome champion of the Wolfpack!",
+            "A vicious pack leader!",
+            "A famed Wolfpack Captain!",
+            "A brutal commandef of the Wolfpack!",
+            "Decorated Chieftain of the Wolfpack!",
+            "A WarChieftain of the Wolfpack!",
+            "A sacred Wolfpack Justicar",
+            "Demigod of the Wolfpack!",
+            "A legendary Wolfpack demigod veteran!",
+            "The Ultimate Wolfpack God Rank. A truly dedicated individual."
+        };
+
         private readonly GloatSystem GloatSystem;
+        private readonly LeaderboardSystem LeaderboardSystem;
 
         /// <summary>
         /// Prefix applied to names of commands within this module.
@@ -26,40 +54,77 @@ namespace LobotJR.Command.Module.Gloat
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public GloatModule(GloatSystem gloatSystem)
+        public GloatModule(GloatSystem gloatSystem, LeaderboardSystem leaderboardSystem)
         {
             GloatSystem = gloatSystem;
+            LeaderboardSystem = leaderboardSystem;
             Commands = new CommandHandler[]
             {
+                new CommandHandler("GloatLevel", this, CommandMethod.GetInfo(GloatLevel), "gloat", "gloatlevel", "levelgloat"),
+                new CommandHandler("GloatPet", this, CommandMethod.GetInfo(GloatPet), "gloatpet", "petgloat"),
                 new CommandHandler("GloatFish", this, CommandMethod.GetInfo<int>(GloatFish), "gloatfish", "fishgloat", "gloat-fish")
             };
+        }
+
+        public CommandResult GloatLevel(User user)
+        {
+            var cost = GloatSystem.GetLevelCost();
+            if (GloatSystem.CanGloatLevel(user))
+            {
+                var player = GloatSystem.LevelGloat(user);
+                var levelWithPrestige = $"Level {player.Level}";
+                if (player.Prestige > 0)
+                {
+                    levelWithPrestige += $", Prestige Level {player.Prestige}";
+                }
+                var cheer = CheerMessages.ElementAtOrDefault(player.Level - 1) ?? "Something broke though...";
+                return new CommandResult(true, $"{user.Username} has spent {cost} Wolfcoins to show off that they are {levelWithPrestige}! {cheer}");
+            }
+            return new CommandResult($"You don't have enough coins to gloat (Cost: {cost} Wolfcoins)");
+        }
+
+        public CommandResult GloatPet(User user)
+        {
+            if (GloatSystem.CanGloatPet(user))
+            {
+                var cost = GloatSystem.GetPetCost();
+                var pet = GloatSystem.PetGloat(user);
+                if (pet != null)
+                {
+                    return new CommandResult(true, $"{user.Username} watches proudly as their level {pet.Level} {PetModule.GetPetName(pet)} named {pet.Name} struts around!")
+                    {
+                        Responses = new List<string>() { $"You spent {cost} Wolfcoins to brag about {pet.Name}." }
+                    };
+                }
+                return new CommandResult("You don't have an active pet to show off! Activate one with !summon {id}");
+            }
+            return new CommandResult("You don't have enough coins to gloat!");
         }
 
         public CommandResult GloatFish(User user, int index)
         {
             if (GloatSystem.CanGloatFishing(user))
             {
-                var max = GloatSystem.GetFishCount(user);
-                if (max == 0)
+                var records = LeaderboardSystem.GetPersonalLeaderboard(user);
+                var cost = GloatSystem.GetFishCost();
+                var max = records.Count();
+                if (max > 0)
                 {
-                    return new CommandResult("You don't have any fish! Type !cast to try and fish for some!");
-                }
-                else if (index < 1 || index >= max)
-                {
+                    if (index > 0 && index <= max)
+                    {
+                        var record = GloatSystem.FishingGloat(user, index - 1);
+                        if (record != null)
+                        {
+                            return new CommandResult($"You spent {cost} wolfcoins to brag about your biggest {record.Fish.Name}.")
+                            {
+                                Messages = new string[] { $"{user.Username} gloats about the time they caught a {record.Length} in. long, {record.Weight} pound {record.Fish.Name} lobosSmug" }
+                            };
+                        }
+                        return new CommandResult($"An error occurred trying to fetch the fish at index {index}");
+                    }
                     return new CommandResult($"Invalid index. Please use a number between 1 and {max}");
                 }
-                else
-                {
-                    var record = GloatSystem.FishingGloat(user, index - 1);
-                    if (record != null)
-                    {
-                        return new CommandResult($"You spent {GloatSystem.FishingGloatCost} wolfcoins to brag about your biggest {record.Fish.Name}.")
-                        {
-                            Messages = new string[] { $"{user.Username} gloats about the time they caught a {record.Length} in. long, {record.Weight} pound {record.Fish.Name} lobosSmug" }
-                        };
-                    }
-                }
-                return new CommandResult("Uh oh! Something went wrong trying to gloat, please check your inputs and try again.");
+                return new CommandResult("You don't have any fish! Type !cast to try and fish for some!");
             }
             return new CommandResult("You don't have enough coins to gloat!");
         }

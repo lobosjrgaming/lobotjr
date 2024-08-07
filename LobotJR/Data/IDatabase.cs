@@ -41,9 +41,12 @@ namespace LobotJR.Data
         IRepository<ItemQuality> ItemQualityData { get; }
         IRepository<Pet> PetData { get; }
         IRepository<PetRarity> PetRarityData { get; }
+        IRepository<DungeonMode> DungeonModeData { get; }
         IRepository<Dungeon> DungeonData { get; }
+        IRepository<LevelRange> LevelRangeData { get; }
         IRepository<Loot> LootData { get; }
         IRepository<Encounter> EncounterData { get; }
+        IRepository<EncounterLevel> EncounterLevelData { get; }
         IRepository<DungeonTimer> DungeonTimerData { get; }
         IRepository<CharacterClass> CharacterClassData { get; }
     }

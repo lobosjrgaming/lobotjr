@@ -1,6 +1,6 @@
 ﻿using LobotJR.Command.Model.Player;
+using LobotJR.Command.System.General;
 using LobotJR.Command.System.Player;
-using LobotJR.Data;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using System;
@@ -16,7 +16,6 @@ namespace LobotJR.Command.Module.Player
     public class PlayerModule : ICommandModule
     {
         private readonly PlayerSystem PlayerSystem;
-        private readonly SettingsManager SettingsManager;
 
         /// <summary>
         /// Prefix applied to names of commands within this module.
@@ -31,12 +30,12 @@ namespace LobotJR.Command.Module.Player
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public PlayerModule(PlayerSystem playerSystem, SettingsManager settingsManager)
+        public PlayerModule(PlayerSystem playerSystem, ConfirmationSystem confirmationSystem)
         {
             PlayerSystem = playerSystem;
             PlayerSystem.LevelUp += PlayerSystem_LevelUp;
             PlayerSystem.ExperienceAwarded += PlayerSystem_ExperienceAwarded;
-            SettingsManager = settingsManager;
+            confirmationSystem.Canceled += ConfirmationSystem_Canceled;
             Commands = new List<CommandHandler>()
             {
                 new CommandHandler("Coins", this, CommandMethod.GetInfo(GetCoins), "coins"),
@@ -47,6 +46,16 @@ namespace LobotJR.Command.Module.Player
                 new CommandHandler("Respec", this, CommandMethod.GetInfo(Respec), "respec"),
                 new CommandHandler("CancelRespec", this, CommandMethod.GetInfo(CancelRespec), "nevermind")
             };
+        }
+
+        private void ConfirmationSystem_Canceled(User user)
+        {
+            var player = PlayerSystem.GetPlayerByUser(user);
+            if (PlayerSystem.IsFlaggedForRespec(player))
+            {
+                PlayerSystem.UnflagForRespec(player);
+                PushNotification?.Invoke(user, new CommandResult("Respec cancelled. No Wolfcoins deducted from your balance."));
+            }
         }
 
         private void PlayerSystem_LevelUp(User user, PlayerCharacter player)
@@ -141,7 +150,7 @@ namespace LobotJR.Command.Module.Player
             else
             {
                 var pryingPlayer = PlayerSystem.GetPlayerByUser(user);
-                var settings = SettingsManager.GetGameSettings();
+                var cost = PlayerSystem.GetPryCost();
                 if (PlayerSystem.CanPry(pryingPlayer))
                 {
                     var targetPlayer = PlayerSystem.Pry(pryingPlayer, target);
@@ -157,11 +166,11 @@ namespace LobotJR.Command.Module.Player
                         {
                             message = $"{target} is Level {targetPlayer.Level} ({targetPlayer.Experience} XP), and has {targetPlayer.Currency} Wolfcoins.";
                         }
-                        return new CommandResult(message, $"It cost you {settings.PryCost} Wolfcoins to discover this information.");
+                        return new CommandResult(message, $"It cost you {cost} Wolfcoins to discover this information.");
                     }
                     return new CommandResult($"User {target} does not exist in the database. You were not charged any Wolfcoins.");
                 }
-                return new CommandResult($"It costs {settings.PryCost} to pry. You have {pryingPlayer.Currency} Wolfcoins.");
+                return new CommandResult($"It costs {cost} to pry. You have {pryingPlayer.Currency} Wolfcoins.");
             }
         }
 
@@ -181,7 +190,6 @@ namespace LobotJR.Command.Module.Player
         {
             if (PlayerSystem.IsFlaggedForRespec(player))
             {
-                var settings = SettingsManager.GetGameSettings();
                 var cost = PlayerSystem.GetRespecCost(player.Level);
                 if (PlayerSystem.Respec(player, characterClass, cost))
                 {

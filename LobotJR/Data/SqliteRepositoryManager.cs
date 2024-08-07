@@ -42,8 +42,11 @@ namespace LobotJR.Data
         public IRepository<Pet> PetData { get; private set; }
         public IRepository<PetRarity> PetRarityData { get; private set; }
         public IRepository<Dungeon> DungeonData { get; private set; }
+        public IRepository<DungeonMode> DungeonModeData { get; private set; }
+        public IRepository<LevelRange> LevelRangeData { get; private set; }
         public IRepository<Loot> LootData { get; private set; }
         public IRepository<Encounter> EncounterData { get; private set; }
+        public IRepository<EncounterLevel> EncounterLevelData { get; private set; }
         public IRepository<DungeonTimer> DungeonTimerData { get; private set; }
         public IRepository<CharacterClass> CharacterClassData { get; private set; }
 
@@ -85,8 +88,11 @@ namespace LobotJR.Data
             PetData = new SqliteRepository<Pet>(context);
             PetRarityData = new SqliteRepository<PetRarity>(context);
             DungeonData = new SqliteRepository<Dungeon>(context);
+            DungeonModeData = new SqliteRepository<DungeonMode>(context);
+            LevelRangeData = new SqliteRepository<LevelRange>(context);
             LootData = new SqliteRepository<Loot>(context);
             EncounterData = new SqliteRepository<Encounter>(context);
+            EncounterLevelData = new SqliteRepository<EncounterLevel>(context);
             DungeonTimerData = new SqliteRepository<DungeonTimer>(context);
             CharacterClassData = new SqliteRepository<CharacterClass>(context);
         }

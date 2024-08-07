@@ -25,23 +25,9 @@ namespace LobotJR.Command.Model.Dungeons
         /// </summary>
         public string FailureText { get; set; }
         /// <summary>
-        /// The minimum level a player can attempt the dungeon.
+        /// The collection of level ranges for this dungeon.
         /// </summary>
-        public int LevelMinimum { get; set; }
-        /// <summary>
-        /// The maximum level a player can attempt the dungeon.
-        /// </summary>
-        public int LevelMaximum { get; set; }
-        /// <summary>
-        /// The minimum level a player can attempt the heroic version of this
-        /// dungeon.
-        /// </summary>
-        public int HeroicMinimum { get; set; }
-        /// <summary>
-        /// The maximum level a player can attempt the heroic version of this
-        /// dungeon.
-        /// </summary>
-        public int HeroicMaximum { get; set; }
+        public virtual List<LevelRange> LevelRanges { get; set; }
         /// <summary>
         /// The collection of loot drops in this dungeon.
         /// </summary>

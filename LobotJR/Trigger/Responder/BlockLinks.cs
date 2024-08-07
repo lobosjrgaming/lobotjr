@@ -1,4 +1,5 @@
 ﻿using LobotJR.Twitch.Model;
+using System;
 using System.Text.RegularExpressions;
 using Wolfcoins;
 
@@ -6,8 +7,11 @@ namespace LobotJR.Trigger.Responder
 {
     public class BlockLinks : ITriggerResponder
     {
+        private static readonly TimeSpan Cooldown = TimeSpan.FromSeconds(30);
+
         public Regex Pattern { get; private set; } = new Regex(@"([A-Za-z0-9])\.([A-Za-z])([A-Za-z0-9])", RegexOptions.IgnoreCase);
         private Currency UserList;
+        private DateTime LastTrigger = DateTime.Now - Cooldown;
 
         public BlockLinks(Currency currency)
         {
@@ -20,13 +24,15 @@ namespace LobotJR.Trigger.Responder
                 && !user.IsSub
                 && !user.IsMod
                 && UserList.determineLevel(user.Username) < 2
-                && UserList.determinePrestige(user.Username) < 1)
+                && UserList.determinePrestige(user.Username) < 1
+                && LastTrigger + Cooldown <= DateTime.Now)
             {
+                LastTrigger = DateTime.Now;
                 return new TriggerResult()
                 {
                     Messages = new string[] { "Links may only be posted by viewers of Level 2 or above. (Message me '?' for more details)" },
                     TimeoutSender = true,
-                    TimeoutMessage = "Links may only be posted by viewers of Level 2 or above. (Message me '?' for more details)"
+                    TimeoutMessage = $"@{user.Username} Links may only be posted by viewers of Level 2 or above. (Message me '?' for more details)"
                 };
             }
             return null;

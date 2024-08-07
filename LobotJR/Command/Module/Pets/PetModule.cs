@@ -17,6 +17,16 @@ namespace LobotJR.Command.Module.Pets
 
     public class PetModule : ICommandModule
     {
+        /// <summary>
+        /// Gets the name of the type of pet in a stable, properly formatted.
+        /// </summary>
+        /// <param name="stable">The stable record to get the pet name from.</param>
+        /// <returns>The name of the type of pet in stable record.</returns>
+        public static string GetPetName(Stable stable)
+        {
+            return stable.IsSparkly ? $"✨{stable.Pet.Name}✨" : stable.Pet.Name;
+        }
+
         private readonly PetSystem PetSystem;
         private readonly PlayerSystem PlayerSystem;
         private readonly SettingsManager SettingsManager;
@@ -112,11 +122,6 @@ namespace LobotJR.Command.Module.Pets
                 PetSystem.UnflagForDelete(user);
                 PushNotification?.Invoke(user, new CommandResult($"You decided to keep {toRelease}."));
             }
-        }
-
-        private string GetPetName(Stable stable)
-        {
-            return stable.IsSparkly ? $"✨{stable.Pet.Name}✨" : stable.Pet.Name;
         }
 
         private CommandResult CreateDefaultResult()

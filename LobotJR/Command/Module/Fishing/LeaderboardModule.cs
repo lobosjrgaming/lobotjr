@@ -132,7 +132,7 @@ namespace LobotJR.Command.Module.Fishing
                 return new CommandResult("You don't have any fish! Type !cast to try and fish for some!");
             }
             var count = records.Count();
-            if (count >= index && index > 0)
+            if (index > 0 && index <= count)
             {
                 var fishName = records.ElementAtOrDefault(index - 1).Fish.Name;
                 TournamentSystem.DeleteFish(user, index - 1);

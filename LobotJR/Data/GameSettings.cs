@@ -29,12 +29,14 @@
         /// The cost to fetch info about another user.
         /// </summary>
         public int PryCost { get; set; } = 1;
-        public int LevelGloatCost { get; set; } = 10;
+        public int LevelGloatCost { get; set; } = 25;
+        public int PetGloatCost { get; set; } = 25;
         public int PetExperienceToLevel { get; set; } = 150;
         public int PetLevelMax { get; set; } = 10;
         public int PetFeedingAffection { get; set; } = 5;
         public int PetFeedingCost { get; set; } = 5;
         public int PetHungerMax { get; set; } = 100;
+        public int DungeonPartySize { get; set; } = 3;
 
         /// <summary>
         /// The shortest time, in seconds, it can take to hook a fish. Default

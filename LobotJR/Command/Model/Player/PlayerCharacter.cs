@@ -35,5 +35,16 @@ namespace LobotJR.Command.Model.Player
         /// The number of times the player has prestiged.
         /// </summary>
         public int Prestige { get; set; }
+
+        public override bool Equals(object obj)
+        {
+            PlayerCharacter other = obj as PlayerCharacter;
+            return UserId.Equals(other?.UserId);
+        }
+
+        public override int GetHashCode()
+        {
+            return UserId.GetHashCode();
+        }
     }
 }
