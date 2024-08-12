@@ -71,9 +71,9 @@ namespace LobotJR.Command.Module.Dungeons
                 new CommandHandler("PartyData", this, CommandMethod.GetInfo(PartyData), "partydata"),
                 new CommandHandler("PartyChat", new CommandExecutor(this, CommandMethod.GetInfo<string>(PartyChat), true), "p", "party"),
 
-                new CommandHandler("Ready", this, CommandMethod.GetInfo(), "ready"),
-                new CommandHandler("Unready", this, CommandMethod.GetInfo(), "unready"),
-                new CommandHandler("Start", this, CommandMethod.GetInfo(), "start"),
+                new CommandHandler("Ready", this, CommandMethod.GetInfo(SetReady), "ready"),
+                new CommandHandler("Unready", this, CommandMethod.GetInfo(UnsetReady), "unready"),
+                new CommandHandler("Start", this, CommandMethod.GetInfo<string>(StartDungeon), "start"),
 
                 new CommandHandler("EnterQueue", this, CommandMethod.GetInfo(), "queue"),
                 new CommandHandler("LeaveQueue", this, CommandMethod.GetInfo(), "leavequeue"),
@@ -86,14 +86,58 @@ namespace LobotJR.Command.Module.Dungeons
 
         private void ConfirmationSystem_Confirmed(User user)
         {
-            // User accepted party invite
-            throw new global::System.NotImplementedException();
+            var player = PlayerSystem.GetPlayerByUser(user);
+            var party = DungeonSystem.GetCurrentGroup(player);
+            if (party != null)
+            {
+                if (DungeonSystem.AcceptInvite(party, player))
+                {
+                    var members = party.Members.Where(x => !x.Equals(player)).Select(x => UserSystem.GetUserById(x.UserId).Username);
+                    PushNotification?.Invoke(user, new CommandResult($"You successfully joined a party with the following members: {string.Join(", ", members)}"));
+                    var settings = SettingsManager.GetGameSettings();
+                    PushToParty(party, $"{user.Username}, level {player.Level} {player.CharacterClass.Name} has joined your party ({party.Members.Count}/{settings.DungeonPartySize})", player);
+                    if (party.State == PartyState.Full)
+                    {
+                        PushNotification?.Invoke(UserSystem.GetUserById(party.Leader.UserId), new CommandResult($"You've reached {settings.DungeonPartySize} party members! You're ready to dungeon!"));
+                    }
+                    Logger.Info("{user} accepted invite to group with {members}", user.Username, string.Join(", ", members));
+                }
+            }
         }
 
         private void ConfirmationSystem_Canceled(User user)
         {
-            // User declined party invite
-            throw new global::System.NotImplementedException();
+            var player = PlayerSystem.GetPlayerByUser(user);
+            var party = DungeonSystem.GetCurrentGroup(player);
+            if (party != null)
+            {
+                DungeonSystem.DeclineInvite(party, player);
+                var leader = UserSystem.GetUserById(party.Leader.UserId);
+                PushNotification?.Invoke(user, new CommandResult($"You declined {leader.Username}'s invite."));
+                PushNotification?.Invoke(leader, new CommandResult($"{user.Username} has declined your party invite."));
+                Logger.Info("{user} delcined party invite from {leader}.", user.Username, leader.Username);
+            }
+        }
+
+        private bool CanExecuteCommand(User user, bool requiresLeader, out PlayerCharacter player, out Party party, out string errorMessage)
+        {
+            errorMessage = "Party commands are not available while in the dungeon finder queue. Use !leavequeue to exit the queue.";
+            party = null;
+            player = PlayerSystem.GetPlayerByUser(user);
+            if (!DungeonSystem.IsPlayerQueued(player))
+            {
+                party = DungeonSystem.GetCurrentGroup(player);
+                if (party != null)
+                {
+                    if (!requiresLeader || party.Leader.Equals(player))
+                    {
+                        return true;
+                    }
+                    errorMessage = "You are not the party leader.";
+                }
+                errorMessage = "You are not in a party.";
+            }
+            return false;
         }
 
         private void PushToParty(Party party, string message, params PlayerCharacter[] skip)
@@ -104,6 +148,12 @@ namespace LobotJR.Command.Module.Dungeons
             }
         }
 
+        private string GetDungeonName(DungeonRun run)
+        {
+            var modeName = run.Mode.IsDefault ? "" : $" [{run.Mode.Name}]";
+            return $"{run.Dungeon.Name}{modeName}";
+        }
+
         public CommandResult ListDungeons()
         {
             return new CommandResult("List of Wolfpack RPG Adventures: http://tinyurl.com/WolfpackAdventureList");
@@ -112,13 +162,13 @@ namespace LobotJR.Command.Module.Dungeons
         public CommandResult DungeonDetails(string id)
         {
             var dungeonData = DungeonSystem.ParseDungeonId(id);
-            if (dungeonData.Dungeon != null && dungeonData.Mode != null)
+            if (dungeonData != null)
             {
-                var modeName = dungeonData.Mode.IsDefault ? "" : $" [{dungeonData.Mode.Name}]";
+                var name = GetDungeonName(dungeonData);
                 var range = dungeonData.Dungeon.LevelRanges.FirstOrDefault(x => x.ModeId == dungeonData.Mode.Id);
                 if (range != null)
                 {
-                    return new CommandResult($"{dungeonData.Dungeon.Name}{modeName} (Levels {range.Minimum} - {range.Maximum}) -- {dungeonData.Dungeon.Description}");
+                    return new CommandResult($"{name} (Levels {range.Minimum} - {range.Maximum}) -- {dungeonData.Dungeon.Description}");
                 }
                 return new CommandResult($"This dungeon is missing level range data, please contact the streamer to let them know.");
             }
@@ -219,53 +269,13 @@ namespace LobotJR.Command.Module.Dungeons
 
         public CommandResult RemovePlayer(User user, string playerName)
         {
-            var player = PlayerSystem.GetPlayerByUser(user);
-            var party = DungeonSystem.GetCurrentGroup(player);
-            if (party != null)
+            var canExecute = CanExecuteCommand(user, true, out var player, out var party, out var errorMessage);
+            if (canExecute)
             {
-                if (party.Leader.Equals(player))
-                {
-                    if (!playerName.Equals(user.Username, StringComparison.OrdinalIgnoreCase))
-                    {
-                        if (party.State != PartyState.Started)
-                        {
-                            var targetUser = UserSystem.GetUserByName(playerName);
-                            if (targetUser != null)
-                            {
-                                var targetPlayer = PlayerSystem.GetPlayerByUser(targetUser);
-                                if (party.Members.Contains(targetPlayer))
-                                {
-                                    PushNotification.Invoke(targetUser, new CommandResult($"You were removed from {user.Username}'s party."));
-                                    party.Members.Remove(targetPlayer);
-                                    if (party.Members.Count > 1)
-                                    {
-                                        PushToParty(party, $"{targetUser.Username} was removed from the party.", player);
-                                        return new CommandResult($"{targetUser.Username} was removed from the party.");
-                                    }
-                                    DungeonSystem.DisbandParty(party);
-                                    return new CommandResult("Your party has been disbanded.");
-                                }
-                            }
-                            return new CommandResult("Couldn't find that party member to remove.");
-                        }
-                        return new CommandResult("You can't kick a party member in the middle of a dungeon!");
-                    }
-                    return new CommandResult("You can't kick yourself from a group! Do !leaveparty instead.");
-                }
-                return new CommandResult("You are not the party leader.");
-            }
-            return new CommandResult("You are not in a party.");
-        }
 
-        public CommandResult PromotePlayer(User user, string playerName)
-        {
-            var player = PlayerSystem.GetPlayerByUser(user);
-            var party = DungeonSystem.GetCurrentGroup(player);
-            if (party != null)
-            {
-                if (party.Leader.Equals(player))
+                if (!playerName.Equals(user.Username, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (!playerName.Equals(user.Username, StringComparison.OrdinalIgnoreCase))
+                    if (party.State != PartyState.Started)
                     {
                         var targetUser = UserSystem.GetUserByName(playerName);
                         if (targetUser != null)
@@ -273,31 +283,61 @@ namespace LobotJR.Command.Module.Dungeons
                             var targetPlayer = PlayerSystem.GetPlayerByUser(targetUser);
                             if (party.Members.Contains(targetPlayer))
                             {
-                                party.SetLeader(targetPlayer);
-                                PushNotification?.Invoke(targetUser, new CommandResult($"{user.Username} has promoted you to Party Leader."));
-                                PushToParty(party, $"{user.Username} has promoted {targetUser.Username} to Party Leader.", player, targetPlayer);
-                                return new CommandResult($"You have promoted {targetUser.Username} to Party Leader.");
+                                PushNotification.Invoke(targetUser, new CommandResult($"You were removed from {user.Username}'s party."));
+                                party.Members.Remove(targetPlayer);
+                                if (party.Members.Count > 1)
+                                {
+                                    PushToParty(party, $"{targetUser.Username} was removed from the party.", player);
+                                    return new CommandResult($"{targetUser.Username} was removed from the party.");
+                                }
+                                DungeonSystem.DisbandParty(party);
+                                return new CommandResult("Your party has been disbanded.");
                             }
                         }
-                        return new CommandResult($"Party member '{playerName}' not found. You are still party leader.");
+                        return new CommandResult("Couldn't find that party member to remove.");
                     }
-                    return new CommandResult("You are already the party leader!");
+                    return new CommandResult("You can't kick a party member in the middle of a dungeon!");
                 }
-                return new CommandResult("You are not the party leader.");
+                return new CommandResult("You can't kick yourself from a group! Do !leaveparty instead.");
             }
-            return new CommandResult("You are not in a party.");
+            return new CommandResult(errorMessage);
+        }
+
+        public CommandResult PromotePlayer(User user, string playerName)
+        {
+            var canExecute = CanExecuteCommand(user, true, out var player, out var party, out var errorMessage);
+            if (canExecute)
+            {
+                if (!playerName.Equals(user.Username, StringComparison.OrdinalIgnoreCase))
+                {
+                    var targetUser = UserSystem.GetUserByName(playerName);
+                    if (targetUser != null)
+                    {
+                        var targetPlayer = PlayerSystem.GetPlayerByUser(targetUser);
+                        if (party.Members.Contains(targetPlayer))
+                        {
+                            DungeonSystem.SetLeader(party, targetPlayer);
+                            PushNotification?.Invoke(targetUser, new CommandResult($"{user.Username} has promoted you to Party Leader."));
+                            PushToParty(party, $"{user.Username} has promoted {targetUser.Username} to Party Leader.", player, targetPlayer);
+                            return new CommandResult($"You have promoted {targetUser.Username} to Party Leader.");
+                        }
+                    }
+                    return new CommandResult($"Party member '{playerName}' not found. You are still party leader.");
+                }
+                return new CommandResult("You are already the party leader!");
+            }
+            return new CommandResult(errorMessage);
         }
 
         public CommandResult LeaveParty(User user)
         {
-            var player = PlayerSystem.GetPlayerByUser(user);
-            var party = DungeonSystem.GetCurrentGroup(player);
-            if (party != null)
+            var canExecute = CanExecuteCommand(user, false, out var player, out var party, out var errorMessage);
+            if (canExecute)
             {
                 if (party.State != PartyState.Started)
                 {
                     var wasLeader = party.Leader.Equals(player);
-                    party.RemoveMember(player);
+                    DungeonSystem.RemovePlayer(party, player);
                     if (party.Members.Count > 1)
                     {
                         if (wasLeader)
@@ -320,25 +360,23 @@ namespace LobotJR.Command.Module.Dungeons
                 }
                 return new CommandResult("You can't leave your party while a dungeon is in progress!");
             }
-            return new CommandResult("You are not in a party.");
+            return new CommandResult(errorMessage);
         }
 
         public CommandResult PartyData(User user)
         {
-            var player = PlayerSystem.GetPlayerByUser(user);
-            var party = DungeonSystem.GetCurrentGroup(player);
-            if (party != null)
+            var canExecute = CanExecuteCommand(user, false, out var player, out var party, out var errorMessage);
+            if (canExecute)
             {
                 return new CommandResult(true, $"{user.Username} request their Party Data. Members: {string.Join(", ", party.Members.Select(x => UserSystem.GetUserById(x.UserId).Username))}; Status: {party.State}");
             }
-            return new CommandResult("You are not in a party.");
+            return new CommandResult(errorMessage);
         }
 
         public CommandResult PartyChat(User user, string message)
         {
-            var player = PlayerSystem.GetPlayerByUser(user);
-            var party = DungeonSystem.GetCurrentGroup(player);
-            if (party != null)
+            var canExecute = CanExecuteCommand(user, false, out var player, out var party, out var errorMessage);
+            if (canExecute)
             {
                 if (!string.IsNullOrEmpty(message))
                 {
@@ -347,51 +385,82 @@ namespace LobotJR.Command.Module.Dungeons
                 }
                 return new CommandResult();
             }
-            return new CommandResult("You are not in a party.");
+            return new CommandResult(errorMessage);
         }
 
         public CommandResult SetReady(User user)
         {
-            var player = PlayerSystem.GetPlayerByUser(user);
-            var party = DungeonSystem.GetCurrentGroup(player);
-            if (party != null)
+            var canExecute = CanExecuteCommand(user, true, out var player, out var party, out var errorMessage);
+            if (canExecute)
             {
-                if (party.Leader.Equals(player))
+                var success = DungeonSystem.SetReady(party);
+                if (success)
                 {
-                    var success = party.SetReady();
-                    if (success)
-                    {
-                        return new CommandResult("Party set to 'Ready'. Be careful adventuring without a full party!");
-                    }
-                    else if (party.PendingInvites.Count > 0)
-                    {
-                        return new CommandResult("One or more members have not accepted their invitation.");
-                    }
-                    return new CommandResult("Your party can't be readied at this time.");
+                    return new CommandResult("Party set to 'Ready'. Be careful adventuring without a full party!");
                 }
-                return new CommandResult("You are not the party leader.");
+                else if (party.PendingInvites.Count > 0)
+                {
+                    return new CommandResult("One or more members have not accepted their invitation.");
+                }
+                return new CommandResult("Your party can't be readied at this time.");
             }
-            return new CommandResult("You are not in a party.");
+            return new CommandResult(errorMessage);
         }
 
         public CommandResult UnsetReady(User user)
         {
-            var player = PlayerSystem.GetPlayerByUser(user);
-            var party = DungeonSystem.GetCurrentGroup(player);
-            if (party != null)
+            var canExecute = CanExecuteCommand(user, true, out var player, out var party, out var errorMessage);
+            if (canExecute)
             {
-                if (party.Leader.Equals(player))
+                var success = DungeonSystem.UnsetReady(party);
+                if (success)
                 {
-                    var success = party.UnsetReady();
-                    if (success)
-                    {
-                        return new CommandResult("Party 'Ready' status has been revoked.");
-                    }
-                    return new CommandResult("Your party status can't be changed at this time.");
+                    return new CommandResult("Party 'Ready' status has been revoked.");
                 }
-                return new CommandResult("You are not the party leader.");
+                return new CommandResult("Your party status can't be changed at this time.");
             }
-            return new CommandResult("You are not in a party.");
+            return new CommandResult(errorMessage);
+        }
+
+        public CommandResult StartDungeon(User user, string dungeonId)
+        {
+            var canExecute = CanExecuteCommand(user, true, out var player, out var party, out var errorMessage);
+            if (canExecute)
+            {
+                var run = DungeonSystem.ParseDungeonId(dungeonId);
+                if (run != null)
+                {
+                    if (DungeonSystem.CanStartDungeon(party))
+                    {
+                        var success = DungeonSystem.TryStartDungeon(party, run, out var broke);
+                        if (success)
+                        {
+                            PushToParty(party, $"Successfully initiated {GetDungeonName(party.Run)}! Wolfcoins deducted.");
+                            var members = party.Members.Select(x => $"{UserSystem.GetUserById(x.UserId)} (Level {x.Level} {x.CharacterClass.Name})");
+                            PushToParty(party, $"Your party consists of: {string.Join(", ", members)}");
+                            return new CommandResult();
+                        }
+                        if (broke.Any())
+                        {
+                            PushToParty(party, $"The following party members do not have enough money to run a dungeon: {string.Join(", ", broke.Select(x => UserSystem.GetUserById(x.UserId).Username))}");
+                            return new CommandResult();
+                        }
+                    }
+                    return new CommandResult("You don't have enough members to start a dungeon. Use !invite to add players, or !ready to enable dungeons with with a partial party.");
+                }
+                return new CommandResult("Invalid Dungeon ID provided.");
+            }
+            return new CommandResult(errorMessage);
+        }
+
+        public CommandResult QueueForDungeonFinder(User user)
+        {
+            var player = PlayerSystem.GetPlayerByUser(user);
+            if (!DungeonSystem.IsPlayerQueued(player))
+            {
+
+            }
+            return new CommandResult("");
         }
     }
 }

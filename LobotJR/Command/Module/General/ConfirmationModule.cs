@@ -32,7 +32,7 @@ namespace LobotJR.Command.Module.General
             Commands = new List<CommandHandler>()
             {
                 new CommandHandler("Confirm", this, CommandMethod.GetInfo(Confirm), "y", "yes", "accept", "confirm"),
-                new CommandHandler("Cancel", this, CommandMethod.GetInfo(Cancel), "n", "no", "decline", "cancel"),
+                new CommandHandler("Cancel", this, CommandMethod.GetInfo(Cancel), "n", "no", "decline", "cancel", "nevermind"),
             };
         }
 

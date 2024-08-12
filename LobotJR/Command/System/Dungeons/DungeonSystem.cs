@@ -1,5 +1,6 @@
 ﻿using LobotJR.Command.Model.Dungeons;
 using LobotJR.Command.Model.Player;
+using LobotJR.Command.System.Player;
 using LobotJR.Command.System.Twitch;
 using LobotJR.Data;
 using System;
@@ -17,6 +18,7 @@ namespace LobotJR.Command.System.Dungeons
         private readonly IConnectionManager ConnectionManager;
         private readonly SettingsManager SettingsManager;
         private readonly UserSystem UserSystem;
+        private readonly PlayerSystem PlayerSystem;
 
         private readonly List<PlayerCharacter> DungeonFinderQueue = new List<PlayerCharacter>();
         private readonly List<Party> DungeonGroups = new List<Party>();
@@ -51,14 +53,15 @@ namespace LobotJR.Command.System.Dungeons
         /// </summary>
         public event DungeonQueueHandler PartyFound;
 
-        public DungeonSystem(IConnectionManager connectionManager, SettingsManager settingsManager, UserSystem userSystem)
+        public DungeonSystem(IConnectionManager connectionManager, SettingsManager settingsManager, UserSystem userSystem, PlayerSystem playerSystem)
         {
             ConnectionManager = connectionManager;
             SettingsManager = settingsManager;
             UserSystem = userSystem;
+            PlayerSystem = playerSystem;
         }
 
-        public (Dungeon Dungeon, DungeonMode Mode) ParseDungeonId(string dungeonId)
+        public DungeonRun ParseDungeonId(string dungeonId)
         {
             var modes = ConnectionManager.CurrentConnection.DungeonModeData.Read().ToArray();
             var defaultMode = modes.FirstOrDefault(x => x.IsDefault);
@@ -72,9 +75,9 @@ namespace LobotJR.Command.System.Dungeons
             if (int.TryParse(id, out var idNumber) && mode != null)
             {
                 var dungeon = ConnectionManager.CurrentConnection.DungeonData.FirstOrDefault(x => x.Id == idNumber);
-                return (dungeon, mode);
+                return new DungeonRun(dungeon, mode);
             }
-            return (null, null);
+            return null;
         }
 
         public TimeSpan GetLockoutTime(PlayerCharacter player, string lockoutName)
@@ -108,9 +111,19 @@ namespace LobotJR.Command.System.Dungeons
             return TimeSpan.Zero;
         }
 
+        public bool IsPlayerQueued(PlayerCharacter player)
+        {
+            return DungeonFinderQueue.Contains(player);
+        }
+
+        public Party GetCurrentGroup(PlayerCharacter player)
+        {
+            return DungeonGroups.FirstOrDefault(x => x.Members.Contains(player) || x.PendingInvites.Contains(player));
+        }
+
         public Party CreateParty(bool isQueueGroup, params PlayerCharacter[] players)
         {
-            var party = new Party(SettingsManager.GetGameSettings().DungeonPartySize, isQueueGroup, players);
+            var party = new Party(isQueueGroup, players);
             DungeonGroups.Add(party);
             return party;
         }
@@ -120,14 +133,146 @@ namespace LobotJR.Command.System.Dungeons
             DungeonGroups.Remove(party);
         }
 
-        public bool IsPlayerQueued(PlayerCharacter player)
+        public bool IsLeader(Party party, PlayerCharacter player)
         {
-            return DungeonFinderQueue.Contains(player);
+            return party.Leader.Equals(player);
         }
 
-        public Party GetCurrentGroup(PlayerCharacter player)
+        public bool SetLeader(Party party, PlayerCharacter player)
         {
-            return DungeonGroups.FirstOrDefault(x => x.Members.Contains(player) || x.PendingInvites.Contains(player));
+            if (party.Members.Any(x => x.Equals(player)))
+            {
+                party.Members.Remove(player);
+                party.Members.Insert(0, player);
+                return true;
+            }
+            return false;
+        }
+
+        public bool InvitePlayer(Party party, PlayerCharacter player)
+        {
+            var settings = SettingsManager.GetGameSettings();
+            if (!party.Members.Contains(player)
+                && !party.PendingInvites.Contains(player)
+                && party.Members.Count + party.PendingInvites.Count < settings.DungeonPartySize)
+            {
+                party.PendingInvites.Add(player);
+                return true;
+            }
+            return false;
+        }
+
+        public bool AcceptInvite(Party party, PlayerCharacter player)
+        {
+            var settings = SettingsManager.GetGameSettings();
+            if (party.PendingInvites.Contains(player)
+                && party.Members.Count + party.PendingInvites.Count < settings.DungeonPartySize)
+            {
+                party.PendingInvites.Remove(player);
+                AddPlayer(party, player);
+                return true;
+            }
+            return false;
+        }
+
+        public bool DeclineInvite(Party party, PlayerCharacter player)
+        {
+            if (party.PendingInvites.Contains(player))
+            {
+                party.PendingInvites.Remove(player);
+                return true;
+            }
+            return false;
+        }
+
+        public bool AddPlayer(Party party, PlayerCharacter player)
+        {
+            if (party.State == PartyState.Forming)
+            {
+                var settings = SettingsManager.GetGameSettings();
+                if (party.Members.Count < settings.DungeonPartySize)
+                {
+                    party.Members.Add(player);
+                    if (party.Members.Count == settings.DungeonPartySize)
+                    {
+                        party.State = PartyState.Full;
+                    }
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public bool RemovePlayer(Party party, PlayerCharacter player)
+        {
+            if (party.Members.Contains(player))
+            {
+                if (party.State != PartyState.Started && party.State != PartyState.Complete)
+                {
+                    party.Members.Remove(player);
+                    if (party.Members.Count <= 0)
+                    {
+                        party.State = PartyState.Disbanded;
+                    }
+                    else
+                    {
+                        party.State = PartyState.Forming;
+                    }
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public bool SetReady(Party party)
+        {
+            if (party.State == PartyState.Forming && party.PendingInvites.Count == 0)
+            {
+                party.State = PartyState.Full;
+                return true;
+            }
+            return false;
+        }
+
+        public bool UnsetReady(Party party)
+        {
+            var settings = SettingsManager.GetGameSettings();
+            if (party.State == PartyState.Full && party.Members.Count < settings.DungeonPartySize)
+            {
+                party.State = PartyState.Forming;
+                return true;
+            }
+            return false;
+        }
+
+        public bool CanStartDungeon(Party party)
+        {
+            return party.State == PartyState.Full;
+        }
+
+        public bool TryStartDungeon(Party party, DungeonRun run, out IEnumerable<PlayerCharacter> playersWithoutCoins)
+        {
+            if (run != null)
+            {
+                if (CanStartDungeon(party))
+                {
+                    var settings = SettingsManager.GetGameSettings();
+                    var costs = party.Members.ToDictionary(x => x, x => settings.DungeonBaseCost + (x.Level - PlayerSystem.MinLevel) * settings.DungeonLevelCost);
+                    playersWithoutCoins = costs.Where(x => x.Key.Currency < x.Value).Select(x => x.Key);
+                    if (!playersWithoutCoins.Any())
+                    {
+                        foreach (var pair in costs)
+                        {
+                            pair.Key.Currency -= pair.Value;
+                        }
+                        party.Run = run;
+                        party.State = PartyState.Started;
+                        return true;
+                    }
+                }
+            }
+            playersWithoutCoins = Array.Empty<PlayerCharacter>();
+            return false;
         }
 
         public Task Process()

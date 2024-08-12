@@ -152,6 +152,7 @@
     <Compile Include="Command\ICommandManager.cs" />
     <Compile Include="Command\ICompactResponse.cs" />
     <Compile Include="Command\IMetaModule.cs" />
+    <Compile Include="Command\Model\Dungeons\DungeonRun.cs" />
     <Compile Include="Command\Model\Dungeons\Dungeon.cs" />
     <Compile Include="Command\Model\Dungeons\DungeonLockout.cs" />
     <Compile Include="Command\Model\Dungeons\DungeonMode.cs" />

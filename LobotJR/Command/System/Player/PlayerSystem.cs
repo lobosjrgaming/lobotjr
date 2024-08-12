@@ -16,7 +16,8 @@ namespace LobotJR.Command.System.Player
     public class PlayerSystem : ISystem
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-        private static readonly int MaxLevel = 20;
+        public static readonly int MaxLevel = 20;
+        public static readonly int MinLevel = 3;
 
         private readonly IConnectionManager ConnectionManager;
         private readonly SettingsManager SettingsManager;
@@ -98,7 +99,7 @@ namespace LobotJR.Command.System.Player
             {
                 if (newLevel > MaxLevel)
                 {
-                    player.Level = 3;
+                    player.Level = MinLevel;
                     player.Experience = 200;
                     player.Prestige++;
                 }
@@ -271,7 +272,7 @@ namespace LobotJR.Command.System.Player
         /// <returns>True if the player can select a class.</returns>
         public bool CanSelectClass(PlayerCharacter player)
         {
-            return IsFlaggedForRespec(player) || (!player.CharacterClass.CanPlay && player.Level >= 3);
+            return IsFlaggedForRespec(player) || (!player.CharacterClass.CanPlay && player.Level >= MinLevel);
         }
 
         /// <summary>

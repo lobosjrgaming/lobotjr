@@ -34,16 +34,14 @@ namespace LobotJR.Command.Model.Dungeons
 
     public class Party
     {
-        private int MaxSize;
-
         public List<PlayerCharacter> Members { get; private set; } = new List<PlayerCharacter>();
         public List<PlayerCharacter> PendingInvites { get; private set; } = new List<PlayerCharacter>();
         public PartyState State { get; set; }
+        public DungeonRun Run { get; set; }
         public bool IsQueueGroup { get; set; }
 
-        public Party(int size, bool isQueueGroup, params PlayerCharacter[] players)
+        public Party(bool isQueueGroup, params PlayerCharacter[] players)
         {
-            MaxSize = size;
             IsQueueGroup = isQueueGroup;
             Members.AddRange(players);
             State = PartyState.Forming;
@@ -55,87 +53,6 @@ namespace LobotJR.Command.Model.Dungeons
             {
                 return Members.FirstOrDefault();
             }
-        }
-
-        public void SetLeader(PlayerCharacter leader)
-        {
-            if (Members.Any(x => x.UserId.Equals(leader.UserId)))
-            {
-                Members.Remove(leader);
-                Members.Insert(0, leader);
-            }
-        }
-
-        public void AcceptInvite(PlayerCharacter player)
-        {
-            if (PendingInvites.Any(x => x.UserId.Equals(player.UserId)))
-            {
-                PendingInvites.Remove(player);
-                AddMember(player);
-            }
-        }
-
-        public void DeclineInvite(PlayerCharacter player)
-        {
-            if (PendingInvites.Any(x => x.UserId.Equals(player.UserId)))
-            {
-                PendingInvites.Remove(player);
-            }
-        }
-
-        public bool AddMember(PlayerCharacter player)
-        {
-            if (State == PartyState.Forming)
-            {
-                if (Members.Count < MaxSize)
-                {
-                    Members.Add(player);
-                    if (Members.Count == MaxSize)
-                    {
-                        State = PartyState.Full;
-                    }
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        public bool RemoveMember(PlayerCharacter player)
-        {
-            if (State != PartyState.Started && State != PartyState.Complete)
-            {
-                Members.Remove(player);
-                if (Members.Count <= 1)
-                {
-                    State = PartyState.Disbanded;
-                }
-                else
-                {
-                    State = PartyState.Forming;
-                }
-                return true;
-            }
-            return false;
-        }
-
-        public bool SetReady()
-        {
-            if (State == PartyState.Forming && PendingInvites.Count == 0)
-            {
-                State = PartyState.Ready;
-                return true;
-            }
-            return false;
-        }
-
-        public bool UnsetReady()
-        {
-            if (State == PartyState.Ready && Members.Count < MaxSize)
-            {
-                State = PartyState.Forming;
-                return true;
-            }
-            return false;
         }
     }
 }

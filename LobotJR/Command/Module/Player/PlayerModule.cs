@@ -1,4 +1,5 @@
 ﻿using LobotJR.Command.Model.Player;
+using LobotJR.Command.System.Dungeons;
 using LobotJR.Command.System.General;
 using LobotJR.Command.System.Player;
 using LobotJR.Twitch.Model;
@@ -16,6 +17,7 @@ namespace LobotJR.Command.Module.Player
     public class PlayerModule : ICommandModule
     {
         private readonly PlayerSystem PlayerSystem;
+        private readonly DungeonSystem DungeonSystem;
 
         /// <summary>
         /// Prefix applied to names of commands within this module.
@@ -30,13 +32,14 @@ namespace LobotJR.Command.Module.Player
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public PlayerModule(PlayerSystem playerSystem, ConfirmationSystem confirmationSystem)
+        public PlayerModule(PlayerSystem playerSystem, DungeonSystem dungeonSystem, ConfirmationSystem confirmationSystem)
         {
             PlayerSystem = playerSystem;
+            DungeonSystem = dungeonSystem;
             PlayerSystem.LevelUp += PlayerSystem_LevelUp;
             PlayerSystem.ExperienceAwarded += PlayerSystem_ExperienceAwarded;
             confirmationSystem.Canceled += ConfirmationSystem_Canceled;
-            Commands = new List<CommandHandler>()
+            var commands = new List<CommandHandler>()
             {
                 new CommandHandler("Coins", this, CommandMethod.GetInfo(GetCoins), "coins"),
                 new CommandHandler("Experience", this, CommandMethod.GetInfo(GetExperience), "xp", "level", "lvl"),
@@ -44,8 +47,14 @@ namespace LobotJR.Command.Module.Player
                 new CommandHandler("ClassDistribution", this, CommandMethod.GetInfo(GetClassStats), "classes"),
                 new CommandHandler("ClassSelect", this, CommandMethod.GetInfo<string>(SelectClass), "c", "class"),
                 new CommandHandler("Respec", this, CommandMethod.GetInfo(Respec), "respec"),
-                new CommandHandler("CancelRespec", this, CommandMethod.GetInfo(CancelRespec), "nevermind")
             };
+            //This adds aliases for each class in the database to allow for class selection in the form of "!c1", instead of "!c 1"
+            var classes = PlayerSystem.GetPlayableClasses();
+            foreach (var playerClass in classes)
+            {
+                commands.Add(new CommandHandler($"ClassSelect{playerClass.Name}", this, CommandMethod.GetInfo((User user) => { return SelectClass(user, playerClass.Id.ToString()); }), $"c{playerClass.Id}"));
+            }
+            Commands = commands;
         }
 
         private void ConfirmationSystem_Canceled(User user)
@@ -235,33 +244,27 @@ namespace LobotJR.Command.Module.Player
 
         public CommandResult Respec(User user)
         {
-            //TODO: When the dungeon stuff is done, prevent respec from working while in a party
             var player = PlayerSystem.GetPlayerByUser(user);
             if (player.CharacterClass.CanPlay)
             {
-                var cost = PlayerSystem.GetRespecCost(player.Level);
-                if (player.Currency < cost)
+                var party = DungeonSystem.GetCurrentGroup(player);
+                if (party == null)
                 {
+
+                    var cost = PlayerSystem.GetRespecCost(player.Level);
+                    if (player.Currency >= cost)
+                    {
+                        PlayerSystem.FlagForRespec(player);
+                        var classes = PlayerSystem.GetPlayableClasses();
+                        return new CommandResult(
+                            $"You've chosen to respec your class! It will cost you {cost} coins to respec and you will lose all your items. Reply 'Nevermind' to cancel or one of the following codes to select your new class: ",
+                            string.Join(", ", classes.Select(x => $"!C {x.Id} ({x.Name})")));
+                    }
                     return new CommandResult($"It costs {cost} Wolfcoins to respec at your level. You have {player.Currency} coins.");
                 }
-                PlayerSystem.FlagForRespec(player);
-                var classes = PlayerSystem.GetPlayableClasses();
-                return new CommandResult(
-                    $"You've chosen to respec your class! It will cost you {cost} coins to respec and you will lose all your items. Reply 'Nevermind' to cancel or one of the following codes to select your new class: ",
-                    string.Join(", ", classes.Select(x => $"!C {x.Id} ({x.Name})")));
+                return new CommandResult("You can't respec while in a party!");
             }
             return new CommandResult("You are not high enough level to choose a class. Continue watching the stream to gain experience.");
-        }
-
-        public CommandResult CancelRespec(User user)
-        {
-            var player = PlayerSystem.GetPlayerByUser(user);
-            if (PlayerSystem.IsFlaggedForRespec(player))
-            {
-                PlayerSystem.UnflagForRespec(player);
-                return new CommandResult("Respec cancelled. No Wolfcoins deducted from your balance.");
-            }
-            return new CommandResult("Nothing to cancel, you are not currently trying to respec.");
         }
     }
 }

@@ -37,6 +37,8 @@
         public int PetFeedingCost { get; set; } = 5;
         public int PetHungerMax { get; set; } = 100;
         public int DungeonPartySize { get; set; } = 3;
+        public int DungeonBaseCost { get; set; } = 25;
+        public int DungeonLevelCost { get; set; } = 10;
 
         /// <summary>
         /// The shortest time, in seconds, it can take to hook a fish. Default
