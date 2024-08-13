@@ -26,8 +26,9 @@ namespace LobotJR.Command.Model.Dungeons
         public virtual DungeonMode Mode { get; set; }
         /// <summary>
         /// The difficulty rating of this encounter, used to determine success
-        /// chance.
+        /// chance. This is the base %chance for the encounter to end in
+        /// success.
         /// </summary>
-        public int Difficulty { get; set; }
+        public float Difficulty { get; set; }
     }
 }

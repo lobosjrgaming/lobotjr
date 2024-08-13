@@ -1,4 +1,5 @@
 ﻿using LobotJR.Command.Model.Player;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -27,18 +28,49 @@ namespace LobotJR.Command.Model.Dungeons
         /// </summary>
         Complete,
         /// <summary>
-        /// Appears to be an alias of Full
+        /// Party has just failed a dungeon.
         /// </summary>
-        Ready,
+        Failed
     }
 
+    /// <summary>
+    /// A party of players for running through dungeons.
+    /// </summary>
     public class Party
     {
+        /// <summary>
+        /// The players that are currently in the group.
+        /// </summary>
         public List<PlayerCharacter> Members { get; private set; } = new List<PlayerCharacter>();
+        /// <summary>
+        /// The players that have been invited to the group but not yet joined.
+        /// </summary>
         public List<PlayerCharacter> PendingInvites { get; private set; } = new List<PlayerCharacter>();
+        /// <summary>
+        /// The current state of the party.
+        /// </summary>
         public PartyState State { get; set; }
+        /// <summary>
+        /// The dungeon and mode the party is running through.
+        /// </summary>
         public DungeonRun Run { get; set; }
+        /// <summary>
+        /// Whether this group was created automatically by the group finder.
+        /// </summary>
         public bool IsQueueGroup { get; set; }
+        /// <summary>
+        /// The timestamp the most recent encounter of the dungeon was
+        /// completed.
+        /// </summary>
+        public DateTime? LastUpdate { get; set; }
+        /// <summary>
+        /// The index of the current encounter the party is processing.
+        /// </summary>
+        public int CurrentEncounter { get; set; }
+        /// <summary>
+        /// Whether the current step is complete or still pending.
+        /// </summary>
+        public bool StepComplete { get; set; }
 
         public Party(bool isQueueGroup, params PlayerCharacter[] players)
         {

@@ -646,107 +646,6 @@ namespace TwitchBot
                             {
                                 if (wolfcoins.Exists(wolfcoins.classList, whisperSender) && wolfcoins.classList[whisperSender].name != "NAMELESS ONE")
                                 {
-                                    if (whisperMessage == "!queuetime")
-                                    {
-                                        if (wolfcoins.classList[whisperSender].queueDungeons.Count == 0)
-                                        {
-                                            Logger.Debug(">>{user}: Queuestatus command failed as there are no queued dungeons.", whisperSender);
-                                            continue;
-                                        }
-
-                                        string myQueuedDungeons = "You are queued for the following dungeons: ";
-                                        bool firstAdded = false;
-                                        foreach (var dung in wolfcoins.classList[whisperSender].queueDungeons)
-                                        {
-                                            if (!firstAdded)
-                                            {
-                                                firstAdded = true;
-                                            }
-                                            else
-                                            {
-                                                myQueuedDungeons += ",";
-                                            }
-                                            myQueuedDungeons += dung;
-                                        }
-
-                                        double timeSpan = ((DateTime.Now - wolfcoins.classList[whisperSender].queueTime)).TotalSeconds;
-                                        double seconds = timeSpan % 60;
-                                        seconds = Math.Truncate(seconds);
-                                        double minutes = ((DateTime.Now - wolfcoins.classList[whisperSender].queueTime)).TotalMinutes % 60;
-                                        minutes = Math.Truncate(minutes);
-                                        if (minutes >= 60)
-                                            minutes = minutes % 60;
-
-                                        double hours = ((DateTime.Now - wolfcoins.classList[whisperSender].queueTime)).TotalHours;
-                                        string timeMessage = "You've been waiting in the Group Finder queue for ";
-                                        string lastFormed = "The last group was formed ";
-                                        hours = Math.Truncate(hours);
-                                        if (hours > 0)
-                                            timeMessage += hours + " hours, ";
-
-                                        if (minutes > 0)
-                                            timeMessage += minutes + " minutes, and ";
-
-                                        timeMessage += seconds + " seconds.";
-
-                                        timeSpan = ((DateTime.Now - groupFinder.lastFormed).TotalSeconds);
-                                        seconds = timeSpan % 60;
-                                        seconds = Math.Truncate(seconds);
-                                        minutes = timeSpan / 60;
-                                        minutes = Math.Truncate(minutes);
-                                        hours = minutes / 60;
-                                        hours = Math.Truncate(hours);
-
-                                        if (minutes >= 60)
-                                            minutes = minutes % 60;
-
-                                        if (hours > 0)
-                                            lastFormed += hours + " hours, ";
-
-                                        if (minutes > 0)
-                                            lastFormed += minutes + " minutes, and ";
-
-                                        lastFormed += seconds + " seconds ago.";
-
-                                        Logger.Debug(">>{user}: Queuetime command executed.", whisperSender);
-                                        twitchClient.QueueWhisper(whisperer, myQueuedDungeons);
-                                        twitchClient.QueueWhisper(whisperer, timeMessage);
-                                        twitchClient.QueueWhisper(whisperer, lastFormed);
-                                        continue;
-                                    }
-                                    if (whisperMessage == "!queuestatus" && (whisperSender == tokenData.BroadcastUser || whisperSender == tokenData.ChatUser))
-                                    {
-                                        if (groupFinder.queue.Count == 0)
-                                        {
-                                            twitchClient.QueueWhisper(whisperer, "No players in queue.");
-                                        }
-
-                                        twitchClient.QueueWhisper(whisperer, groupFinder.queue.Count + " players in queue.");
-                                        Dictionary<int, int> queueData = new Dictionary<int, int>();
-                                        foreach (var player in groupFinder.queue)
-                                        {
-                                            foreach (var dungeonID in player.queueDungeons)
-                                            {
-                                                if (!queueData.ContainsKey(dungeonID))
-                                                {
-                                                    queueData.Add(dungeonID, 1);
-                                                }
-                                                else
-                                                {
-                                                    queueData[dungeonID]++;
-                                                }
-                                            }
-                                        }
-
-                                        foreach (var dataPoint in queueData)
-                                        {
-                                            twitchClient.QueueWhisper(whisperer, "Dungeon ID <" + dataPoint.Key + ">: " + dataPoint.Value + " players");
-                                        }
-
-                                        Logger.Debug(">>{user}: Queuestatus command executed.", whisperSender);
-                                        continue;
-                                    }
-
                                     if (wolfcoins.classList[whisperSender].queueDungeons.Count > 0)
                                     {
                                         Logger.Debug(">>{user}: Queue command failed as user is already queued.", whisperSender);
@@ -953,28 +852,6 @@ namespace TwitchBot
                                 else
                                 {
                                     Logger.Debug(">>{user}: Queue command failed as user not found in class list or has not selected a class.", whisperSender);
-                                }
-                            }
-                            else if (whisperMessage == "!leavequeue")
-                            {
-                                if (wolfcoins.Exists(wolfcoins.classList, whisperSender))
-                                {
-                                    if (wolfcoins.classList[whisperSender].queueDungeons.Count > 0)
-                                    {
-                                        groupFinder.RemoveMember(whisperSender);
-                                        wolfcoins.classList[whisperSender].ClearQueue();
-
-                                        Logger.Debug(">>{user}: Leave queue command executed.", whisperSender);
-                                        twitchClient.QueueWhisper(whisperer, "You were removed from the Group Finder.");
-                                    }
-                                    else
-                                    {
-                                        Logger.Debug(">>{user}: Leave queue command failed as no dungeons are queued.", whisperSender);
-                                    }
-                                }
-                                else
-                                {
-                                    Logger.Debug(">>{user}: Leave queue command failed as user is not in class list.", whisperSender);
                                 }
                             }
                             else if ((whisperMessage.StartsWith("!bet") || whisperMessage.StartsWith("bet")) && betsAllowed && betActive && wolfcoins.Exists(wolfcoins.coinList, whisperSender))

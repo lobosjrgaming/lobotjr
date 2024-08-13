@@ -20,20 +20,20 @@ namespace LobotJR.Command.Module.Dungeons
     public class DungeonModule : ICommandModule
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        public static readonly Dictionary<PartyState, string> PartyDescriptions = new Dictionary<PartyState, string>()
+        {
+            { PartyState.Forming, "Party is currently forming. Add members with '!add <username>'" },
+            { PartyState.Full, "Party is filled and ready to adventure! Type '!start' to begin!" },
+            { PartyState.Started, "Your party is currently on an adventure!" },
+            { PartyState.Complete, "Your party just finished an adventure!" },
+            { PartyState.Failed, "Your party just finished an adventure!" },
+        };
 
         private readonly DungeonSystem DungeonSystem;
+        private readonly GroupFinderSystem GroupFinderSystem;
         private readonly PlayerSystem PlayerSystem;
         private readonly UserSystem UserSystem;
         private readonly SettingsManager SettingsManager;
-        private readonly string DailyTimerName = "Daily Dungeon";
-        private readonly Dictionary<PartyState, string> PartyDescriptions = new Dictionary<PartyState, string>()
-        {
-            { PartyState.Forming, "Party is currently forming. Add members with '!add <username>'" },
-            { PartyState.Ready, "Party is filled and ready to adventure! Type '!start' to begin!" },
-            { PartyState.Started, "Your party is currently on an adventure!" },
-            { PartyState.Complete, "Your party just finished an adventure!" },
-            { PartyState.Full, "I have no idea the status of your party." }
-        };
 
         /// <summary>
         /// Prefix applied to names of commands within this module.
@@ -49,9 +49,10 @@ namespace LobotJR.Command.Module.Dungeons
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public DungeonModule(DungeonSystem dungeonSystem, PlayerSystem playerSystem, UserSystem userSystem, ConfirmationSystem confirmationSystem, SettingsManager settingsManager)
+        public DungeonModule(DungeonSystem dungeonSystem, GroupFinderSystem groupFinderSystem, PlayerSystem playerSystem, UserSystem userSystem, ConfirmationSystem confirmationSystem, SettingsManager settingsManager)
         {
             DungeonSystem = dungeonSystem;
+            GroupFinderSystem = groupFinderSystem;
             PlayerSystem = playerSystem;
             UserSystem = userSystem;
             SettingsManager = settingsManager;
@@ -61,7 +62,6 @@ namespace LobotJR.Command.Module.Dungeons
             {
                 new CommandHandler("DungeonList", this, CommandMethod.GetInfo(ListDungeons), "dungeonlist"),
                 new CommandHandler("DungeonDetails", this, CommandMethod.GetInfo<string>(DungeonDetails), "dungeon"),
-                new CommandHandler("DailyStatus", this, CommandMethod.GetInfo(DailyStatus), "daily"),
 
                 new CommandHandler("CreateParty", this, CommandMethod.GetInfo(CreateParty), "createparty"),
                 new CommandHandler("AddPlayer", this, CommandMethod.GetInfo<string>(AddPlayer), "add", "invite"),
@@ -74,13 +74,6 @@ namespace LobotJR.Command.Module.Dungeons
                 new CommandHandler("Ready", this, CommandMethod.GetInfo(SetReady), "ready"),
                 new CommandHandler("Unready", this, CommandMethod.GetInfo(UnsetReady), "unready"),
                 new CommandHandler("Start", this, CommandMethod.GetInfo<string>(StartDungeon), "start"),
-
-                new CommandHandler("EnterQueue", this, CommandMethod.GetInfo(), "queue"),
-                new CommandHandler("LeaveQueue", this, CommandMethod.GetInfo(), "leavequeue"),
-                new CommandHandler("QueueTime", this, CommandMethod.GetInfo(), "queuetime"),
-                
-                //This is an admin command
-                new CommandHandler("QueueStatus", this, CommandMethod.GetInfo(), "queuestatus"),
             };
         }
 
@@ -124,7 +117,7 @@ namespace LobotJR.Command.Module.Dungeons
             errorMessage = "Party commands are not available while in the dungeon finder queue. Use !leavequeue to exit the queue.";
             party = null;
             player = PlayerSystem.GetPlayerByUser(user);
-            if (!DungeonSystem.IsPlayerQueued(player))
+            if (!GroupFinderSystem.IsPlayerQueued(player))
             {
                 party = DungeonSystem.GetCurrentGroup(player);
                 if (party != null)
@@ -148,12 +141,6 @@ namespace LobotJR.Command.Module.Dungeons
             }
         }
 
-        private string GetDungeonName(DungeonRun run)
-        {
-            var modeName = run.Mode.IsDefault ? "" : $" [{run.Mode.Name}]";
-            return $"{run.Dungeon.Name}{modeName}";
-        }
-
         public CommandResult ListDungeons()
         {
             return new CommandResult("List of Wolfpack RPG Adventures: http://tinyurl.com/WolfpackAdventureList");
@@ -164,7 +151,7 @@ namespace LobotJR.Command.Module.Dungeons
             var dungeonData = DungeonSystem.ParseDungeonId(id);
             if (dungeonData != null)
             {
-                var name = GetDungeonName(dungeonData);
+                var name = DungeonSystem.GetDungeonName(dungeonData);
                 var range = dungeonData.Dungeon.LevelRanges.FirstOrDefault(x => x.ModeId == dungeonData.Mode.Id);
                 if (range != null)
                 {
@@ -175,21 +162,10 @@ namespace LobotJR.Command.Module.Dungeons
             return new CommandResult($"Invalid Dungeon ID provided.");
         }
 
-        public CommandResult DailyStatus(User user)
-        {
-            var player = PlayerSystem.GetPlayerByUser(user);
-            var remaining = DungeonSystem.GetLockoutTime(player, DailyTimerName);
-            if (remaining.TotalMilliseconds > 0)
-            {
-                return new CommandResult($"Your daily Group Finder reward resets in {TimeSpan.FromSeconds(remaining.TotalSeconds).ToString("c")}.");
-            }
-            return new CommandResult("You are eligible for daily Group Finder rewards! Go queue up!");
-        }
-
         public CommandResult CreateParty(User user)
         {
             var player = PlayerSystem.GetPlayerByUser(user);
-            if (!DungeonSystem.IsPlayerQueued(player))
+            if (!GroupFinderSystem.IsPlayerQueued(player))
             {
                 var currentParty = DungeonSystem.GetCurrentGroup(player);
                 if (currentParty == null)
@@ -217,7 +193,7 @@ namespace LobotJR.Command.Module.Dungeons
         public CommandResult AddPlayer(User user, string playerName)
         {
             var player = PlayerSystem.GetPlayerByUser(user);
-            if (!DungeonSystem.IsPlayerQueued(player))
+            if (!GroupFinderSystem.IsPlayerQueued(player))
             {
                 var targetUser = UserSystem.GetUserByName(playerName);
                 if (targetUser != null)
@@ -229,7 +205,7 @@ namespace LobotJR.Command.Module.Dungeons
                         {
                             if (targetPlayer.CharacterClass.CanPlay)
                             {
-                                if (!DungeonSystem.IsPlayerQueued(targetPlayer) && DungeonSystem.GetCurrentGroup(targetPlayer) == null)
+                                if (!GroupFinderSystem.IsPlayerQueued(targetPlayer) && DungeonSystem.GetCurrentGroup(targetPlayer) == null)
                                 {
                                     var currentParty = DungeonSystem.GetCurrentGroup(player);
                                     if (currentParty == null)
@@ -239,7 +215,7 @@ namespace LobotJR.Command.Module.Dungeons
                                     if (currentParty.Leader.Equals(player))
                                     {
                                         var settings = SettingsManager.GetGameSettings();
-                                        if (currentParty.State == PartyState.Forming || currentParty.State == PartyState.Ready)
+                                        if (currentParty.State == PartyState.Forming || currentParty.State == PartyState.Full)
                                         {
                                             if (currentParty.Members.Count + currentParty.PendingInvites.Count < settings.DungeonPartySize)
                                             {
@@ -451,16 +427,6 @@ namespace LobotJR.Command.Module.Dungeons
                 return new CommandResult("Invalid Dungeon ID provided.");
             }
             return new CommandResult(errorMessage);
-        }
-
-        public CommandResult QueueForDungeonFinder(User user)
-        {
-            var player = PlayerSystem.GetPlayerByUser(user);
-            if (!DungeonSystem.IsPlayerQueued(player))
-            {
-
-            }
-            return new CommandResult("");
         }
     }
 }

@@ -18,6 +18,7 @@ namespace LobotJR.Command.Module.Player
     {
         private readonly PlayerSystem PlayerSystem;
         private readonly DungeonSystem DungeonSystem;
+        private readonly GroupFinderSystem GroupFinderSystem;
 
         /// <summary>
         /// Prefix applied to names of commands within this module.
@@ -32,10 +33,11 @@ namespace LobotJR.Command.Module.Player
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public PlayerModule(PlayerSystem playerSystem, DungeonSystem dungeonSystem, ConfirmationSystem confirmationSystem)
+        public PlayerModule(PlayerSystem playerSystem, DungeonSystem dungeonSystem, GroupFinderSystem groupFinderSystem, ConfirmationSystem confirmationSystem)
         {
             PlayerSystem = playerSystem;
             DungeonSystem = dungeonSystem;
+            GroupFinderSystem = groupFinderSystem;
             PlayerSystem.LevelUp += PlayerSystem_LevelUp;
             PlayerSystem.ExperienceAwarded += PlayerSystem_ExperienceAwarded;
             confirmationSystem.Canceled += ConfirmationSystem_Canceled;
@@ -96,7 +98,7 @@ namespace LobotJR.Command.Module.Player
                 {
                     messages.Add("It looks like you are elligible to choose a class but haven't yet done so. Choose by whispering me one of the following:");
                 }
-                var classes = PlayerSystem.GetPlayableClasses().Select(x => $"!C {x.Id} ({x.Name})");
+                var classes = PlayerSystem.GetPlayableClasses().Select(x => $"!C{x.Id} ({x.Name})");
                 messages.Add(string.Join(", ", classes));
             }
             PushNotification?.Invoke(user, new CommandResult(user, messages.ToArray()));
@@ -216,7 +218,7 @@ namespace LobotJR.Command.Module.Player
             if (PlayerSystem.CanSelectClass(player))
             {
                 var classes = PlayerSystem.GetPlayableClasses();
-                var output = new CommandResult($"Invalid selection. Please whisper me one of the following: ", string.Join(", ", classes.Select(x => $"!C {x.Id} ({x.Name})")));
+                var output = new CommandResult($"Invalid selection. Please whisper me one of the following: ", string.Join(", ", classes.Select(x => $"!C{x.Id} ({x.Name})")));
                 if (int.TryParse(choice, out var choiceInt))
                 {
                     var classChoice = classes.FirstOrDefault(x => x.Id == choiceInt);
@@ -250,17 +252,20 @@ namespace LobotJR.Command.Module.Player
                 var party = DungeonSystem.GetCurrentGroup(player);
                 if (party == null)
                 {
-
-                    var cost = PlayerSystem.GetRespecCost(player.Level);
-                    if (player.Currency >= cost)
+                    if (GroupFinderSystem.IsPlayerQueued(player))
                     {
-                        PlayerSystem.FlagForRespec(player);
-                        var classes = PlayerSystem.GetPlayableClasses();
-                        return new CommandResult(
-                            $"You've chosen to respec your class! It will cost you {cost} coins to respec and you will lose all your items. Reply 'Nevermind' to cancel or one of the following codes to select your new class: ",
-                            string.Join(", ", classes.Select(x => $"!C {x.Id} ({x.Name})")));
+                        var cost = PlayerSystem.GetRespecCost(player.Level);
+                        if (player.Currency >= cost)
+                        {
+                            PlayerSystem.FlagForRespec(player);
+                            var classes = PlayerSystem.GetPlayableClasses();
+                            return new CommandResult(
+                                $"You've chosen to respec your class! It will cost you {cost} coins to respec and you will lose all your items. Reply 'Nevermind' to cancel or one of the following codes to select your new class: ",
+                                string.Join(", ", classes.Select(x => $"!C{x.Id} ({x.Name})")));
+                        }
+                        return new CommandResult($"It costs {cost} Wolfcoins to respec at your level. You have {player.Currency} coins.");
                     }
-                    return new CommandResult($"It costs {cost} Wolfcoins to respec at your level. You have {player.Currency} coins.");
+                    return new CommandResult("You can't respec while in the dungeon queue!");
                 }
                 return new CommandResult("You can't respec while in a party!");
             }

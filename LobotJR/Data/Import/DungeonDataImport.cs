@@ -84,8 +84,8 @@ namespace LobotJR.Data.Import
             var heroicEncounterList = heroicData.ElementAt(2).Split(',');
             var heroicLoot = heroicData.FirstOrDefault(x => x.StartsWith("Loot="))?.Substring(5).Split(',').Select(x => int.Parse(x)) ?? new List<int>();
             var encounterCount = metadata[1];
-            var successRate = int.Parse(metadata[2]);
-            var heroicSuccessRate = int.Parse(heroicMetadata[2]);
+            var successRate = float.Parse(metadata[2]) / 100f;
+            var heroicSuccessRate = float.Parse(heroicMetadata[2]) / 100f;
             var encounters = new List<Encounter>();
             for (var i = 0; i < encounterList.Length / 2; i++)
             {
@@ -99,12 +99,12 @@ namespace LobotJR.Data.Import
                     {
                         new EncounterLevel()
                         {
-                            Difficulty = int.Parse(difficulty),
+                            Difficulty = successRate - float.Parse(difficulty),
                             ModeId = modeMap["N"].Id
                         },
                         new EncounterLevel()
                         {
-                            Difficulty = int.Parse(heroicDifficulty),
+                            Difficulty = heroicSuccessRate - float.Parse(heroicDifficulty),
                             ModeId = modeMap["H"].Id
                         },
                     },
