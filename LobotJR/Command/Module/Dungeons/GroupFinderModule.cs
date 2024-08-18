@@ -16,8 +16,8 @@ namespace LobotJR.Command.Module.Dungeons
     {
         private readonly GroupFinderSystem GroupFinderSystem;
         private readonly DungeonSystem DungeonSystem;
+        private readonly PartySystem PartySystem;
         private readonly PlayerSystem PlayerSystem;
-        private readonly string DailyTimerName = "Daily Dungeon";
 
         /// <summary>
         /// Prefix applied to names of commands within this module.
@@ -33,10 +33,11 @@ namespace LobotJR.Command.Module.Dungeons
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public GroupFinderModule(GroupFinderSystem groupFinderSystem, DungeonSystem dungeonSystem, PlayerSystem playerSystem)
+        public GroupFinderModule(GroupFinderSystem groupFinderSystem, DungeonSystem dungeonSystem, PartySystem partySystem, PlayerSystem playerSystem)
         {
             GroupFinderSystem = groupFinderSystem;
             DungeonSystem = dungeonSystem;
+            PartySystem = partySystem;
             PlayerSystem = playerSystem;
             Commands = new List<CommandHandler>()
             {
@@ -53,7 +54,7 @@ namespace LobotJR.Command.Module.Dungeons
         public CommandResult DailyStatus(User user)
         {
             var player = PlayerSystem.GetPlayerByUser(user);
-            var remaining = GroupFinderSystem.GetLockoutTime(player, DailyTimerName);
+            var remaining = GroupFinderSystem.GetLockoutTime(player);
             if (remaining.TotalMilliseconds > 0)
             {
                 return new CommandResult($"Your daily Group Finder reward resets in {TimeSpan.FromSeconds(remaining.TotalSeconds).ToString("c")}.");
@@ -70,7 +71,7 @@ namespace LobotJR.Command.Module.Dungeons
                 {
                     if (player.CharacterClass.CanPlay)
                     {
-                        var party = DungeonSystem.GetCurrentGroup(player);
+                        var party = PartySystem.GetCurrentGroup(player);
                         if (party == null)
                         {
                             var cost = DungeonSystem.GetDungeonCost(player);
@@ -79,9 +80,7 @@ namespace LobotJR.Command.Module.Dungeons
                                 var dungeons = dungeonIds.Split(',').Select(x => DungeonSystem.ParseDungeonId(x.Trim()));
                                 if (!dungeons.Any())
                                 {
-                                    // This was disabled previously, but has been implemented in case we want to turn it back on
-                                    // dungeons = DungeonSystem.GetEligibleDungeons(player);
-                                    dungeons = DungeonSystem.GetAllDungeons();
+                                    dungeons = DungeonSystem.GetEligibleDungeons(player);
                                 }
                                 if (GroupFinderSystem.QueuePlayer(player, dungeons))
                                 {
@@ -97,7 +96,7 @@ namespace LobotJR.Command.Module.Dungeons
                         }
                         return new CommandResult($"You already have a party created! {DungeonModule.PartyDescriptions[party.State]}");
                     }
-                    return new CommandResult("You must select a class before you can queue in the Group Finder.");
+                    return new CommandResult("You must select a class before you can queue in the Group Finder. Type !classhelp for details.");
                 }
                 return new CommandResult($"You must be level {PlayerSystem.MinLevel} to queue in the Group Finder. (Current level: {player.Level})");
             }
@@ -140,7 +139,7 @@ namespace LobotJR.Command.Module.Dungeons
             if (entry != null)
             {
                 return new CommandResult(
-                    $"You are queued for {entry.Dungeons.Count()} dungeons and have been waiting {ReadableTime(DateTime.Now - entry.QueueTime)}."
+                    $"You are queued for {entry.Dungeons.Count()} dungeons and have been waiting {ReadableTime(DateTime.Now - entry.QueueTime)}.",
                     $"The last group was formed {ReadableTime(DateTime.Now - GroupFinderSystem.LastGroupFormed)} ago.");
             }
             return new CommandResult("You are not queued in the Group Finder.");

@@ -11,7 +11,7 @@ namespace LobotJR.Command.System.Fishing
     /// <summary>
     /// Runs the tournament logic for the fishing system.
     /// </summary>
-    public class LeaderboardSystem : ISystem
+    public class LeaderboardSystem : ISystemProcess
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 

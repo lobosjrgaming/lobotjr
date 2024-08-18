@@ -1,5 +1,8 @@
-﻿using LobotJR.Data;
+﻿using LobotJR.Command.System.General;
+using LobotJR.Data;
+using LobotJR.Twitch.Model;
 using LobotJR.Utils;
+using NLog;
 using System.Collections.Generic;
 
 namespace LobotJR.Command.Module.General
@@ -9,6 +12,9 @@ namespace LobotJR.Command.Module.General
     /// </summary>
     public class InfoModule : ICommandModule
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
+        private readonly BugReportSystem BugSystem;
         private readonly SettingsManager SettingsManager;
 
         /// <summary>
@@ -24,9 +30,10 @@ namespace LobotJR.Command.Module.General
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public InfoModule(SettingsManager settingsManager)
+        public InfoModule(BugReportSystem bugSystem, SettingsManager settingsManager)
         {
             SettingsManager = settingsManager;
+            BugSystem = bugSystem;
             Commands = new List<CommandHandler>()
             {
                 new CommandHandler("Help", this, CommandMethod.GetInfo(Help), "help", "faq"),
@@ -34,6 +41,7 @@ namespace LobotJR.Command.Module.General
                 new CommandHandler("LevelInfo", this, CommandMethod.GetInfo(LevelInfo), "2"),
                 new CommandHandler("PetInfo", this, CommandMethod.GetInfo(LevelInfo), "3", "pethelp"),
                 new CommandHandler("ShopInfo", this, CommandMethod.GetInfo(ShopInfo), "shop"),
+                new CommandHandler("BugReport", new CommandExecutor(this,CommandMethod.GetInfo<string>(ReportBug), true), "bug")
             };
         }
 
@@ -67,6 +75,13 @@ namespace LobotJR.Command.Module.General
         {
             var settings = SettingsManager.GetGameSettings();
             return new CommandResult($"Whisper me '!stats <username>' to check another users stats! (Cost: {settings.PryCost} coin)   Whisper me '!gloat' to spend {settings.LevelGloatCost} coins and show off your level! (Cost: {settings.LevelGloatCost} coins)");
+        }
+
+        public CommandResult ReportBug(User user, string message)
+        {
+            BugSystem.SubmitReport(user, message);
+            Logger.Warn(">>{user}: A bug has been reported. {message}", user.Username, message);
+            return new CommandResult("Bug report submitted");
         }
     }
 }

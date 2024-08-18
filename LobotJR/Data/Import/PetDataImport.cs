@@ -18,7 +18,7 @@ namespace LobotJR.Data.Import
             {
                 "Common", "Uncommon", "Rare", "Epic", "Legendary"
             };
-            List<int> drops = new List<int>() { 150, 50, 25, 10, 1 };
+            List<float> drops = new List<float>() { 150f / 2000f, 50f / 2000f, 25f / 2000f, 10f / 2000f, 1f / 2000f };
             for (var i = 0; i < names.Count; i++)
             {
                 rarityRepository.Create(new PetRarity() { Name = names[i], DropRate = drops[i] });

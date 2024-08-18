@@ -1,7 +1,4 @@
-﻿using Autofac;
-using LobotJR.Data;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace LobotJR.Command.System
@@ -14,32 +11,28 @@ namespace LobotJR.Command.System
         /// <summary>
         /// Collection of all loaded systems.
         /// </summary>
-        public IEnumerable<ISystem> Systems { get; private set; }
+        private IEnumerable<ISystemProcess> Systems { get; set; }
         /// <summary>
-        /// Repository manager with references to all repositories for run-time data.
+        /// Collection of all loaded systems.
         /// </summary>
-        public IRepositoryManager RepositoryManager { get; private set; }
-        /// <summary>
-        /// Content manager with references to all content data.
-        /// </summary>
-        public IContentManager ContentManager { get; private set; }
+        private IEnumerable<IDatabaseInitialize> SystemsToInitialize { get; set; }
 
-
-        public SystemManager(IEnumerable<ISystem> systems, IRepositoryManager repositoryManager, IContentManager contentManager)
+        public SystemManager(IEnumerable<ISystemProcess> systems, IEnumerable<IDatabaseInitialize> initializeSystems)
         {
             Systems = systems;
-            RepositoryManager = repositoryManager;
-            ContentManager = contentManager;
+            SystemsToInitialize = initializeSystems;
         }
 
         /// <summary>
-        /// Gets the system with the requested type.
+        /// Initializes all systems that require database access during
+        /// initalization.
         /// </summary>
-        /// <typeparam name="T">The type of system to request.</typeparam>
-        /// <returns>The loaded system of the given type, or null if none exists.</returns>
-        public T Get<T>() where T : class, ISystem
+        public void Initialize()
         {
-            return Systems.Where(x => x is T).FirstOrDefault() as T;
+            foreach (var system in SystemsToInitialize)
+            {
+                system.Initialize();
+            }
         }
 
         /// <summary>

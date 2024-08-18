@@ -1,5 +1,6 @@
 ﻿using NuGet.Versioning;
 using System.Data.Entity;
+using System.Threading.Tasks;
 
 namespace LobotJR.Data.Migration
 {
@@ -28,6 +29,6 @@ namespace LobotJR.Data.Migration
         /// </summary>
         /// <param name="context">The database context to update.</param>
         /// <returns>The database migration results object.</returns>
-        DatabaseMigrationResult Update(DbContext context);
+        Task<DatabaseMigrationResult> Update(DbContext context);
     }
 }

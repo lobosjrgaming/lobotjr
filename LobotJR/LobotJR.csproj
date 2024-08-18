@@ -168,7 +168,10 @@
     <Compile Include="Command\Model\Equipment\ItemQuality.cs" />
     <Compile Include="Command\Model\Equipment\ItemSlot.cs" />
     <Compile Include="Command\Model\Equipment\ItemType.cs" />
+    <Compile Include="Command\Model\General\Bet.cs" />
+    <Compile Include="Command\Model\General\BugReport.cs" />
     <Compile Include="Command\Model\Player\CharacterClass.cs" />
+    <Compile Include="Command\Model\Player\Equippables.cs" />
     <Compile Include="Command\Model\Player\PlayerCharacter.cs" />
     <Compile Include="Command\Model\Player\PlayerStats.cs" />
     <Compile Include="Command\Model\Fishing\Catch.cs" />
@@ -181,8 +184,10 @@
     <Compile Include="Command\Model\Pets\PetRarity.cs" />
     <Compile Include="Command\Model\Pets\Stable.cs" />
     <Compile Include="Command\Module\Dungeons\DungeonModule.cs" />
+    <Compile Include="Command\Module\Dungeons\GroupFinderModule.cs" />
     <Compile Include="Command\Module\Equipment\EquipmentAdmin.cs" />
     <Compile Include="Command\Module\Equipment\EquipmentModule.cs" />
+    <Compile Include="Command\Module\General\BettingModule.cs" />
     <Compile Include="Command\Module\General\ConfirmationModule.cs" />
     <Compile Include="Command\Module\General\InfoModule.cs" />
     <Compile Include="Command\Module\Pets\PetAdmin.cs" />
@@ -192,9 +197,14 @@
     <Compile Include="Command\Module\Gloat\GloatModule.cs" />
     <Compile Include="Command\Module\Twitch\UserModule.cs" />
     <Compile Include="Command\Restriction.cs" />
+    <Compile Include="Command\System\Dungeons\GroupFinderSystem.cs" />
     <Compile Include="Command\System\Dungeons\DungeonSystem.cs" />
+    <Compile Include="Command\System\Dungeons\PartySystem.cs" />
     <Compile Include="Command\System\Equipment\EquipmentSystem.cs" />
+    <Compile Include="Command\System\General\BettingSystem.cs" />
+    <Compile Include="Command\System\General\BugReportSystem.cs" />
     <Compile Include="Command\System\General\ConfirmationSystem.cs" />
+    <Compile Include="Command\System\IDatabaseInitialize.cs" />
     <Compile Include="Command\System\Pets\PetSystem.cs" />
     <Compile Include="Command\System\Player\PlayerSystem.cs" />
     <Compile Include="Command\System\Fishing\TournamentSystem.cs" />
@@ -230,7 +240,6 @@
     <Compile Include="Data\Migration\SqliteUpdateContext.cs" />
     <Compile Include="Data\SettingsManager.cs" />
     <Compile Include="Data\TableObject.cs" />
-    <Compile Include="Data\IContentManager.cs" />
     <Compile Include="Data\IRepositoryManager.cs" />
     <Compile Include="Data\SqliteRepositoryManager.cs" />
     <Compile Include="Data\SqliteInitializer.cs" />
@@ -238,10 +247,6 @@
     <Compile Include="Data\IRepository.cs" />
     <Compile Include="Data\SqliteContext.cs" />
     <Compile Include="Twitch\Model\User.cs" />
-    <Compile Include="Dungeon.cs" />
-    <Compile Include="Classes.cs" />
-    <Compile Include="GroupFinder.cs" />
-    <Compile Include="Items.cs" />
     <Compile Include="Data\Import\FisherDataImport.cs" />
     <Compile Include="Data\Import\FishDataImport.cs" />
     <Compile Include="Command\Module\AccessControl\AccessControlAdmin.cs" />
@@ -254,10 +259,9 @@
     <Compile Include="Command\System\Fishing\LeaderboardSystem.cs" />
     <Compile Include="Command\System\Gloat\GloatSystem.cs" />
     <Compile Include="Command\Module\ICommandModule.cs" />
-    <Compile Include="Command\System\ISystem.cs" />
+    <Compile Include="Command\System\ISystemProcess.cs" />
     <Compile Include="Command\System\ISystemManager.cs" />
     <Compile Include="Command\System\SystemManager.cs" />
-    <Compile Include="Pets.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Settings.Designer.cs">
@@ -285,7 +289,6 @@
     <Compile Include="Utils\KeyComparer.cs" />
     <Compile Include="Utils\CommandMethod.cs" />
     <Compile Include="Utils\RollingTimer.cs" />
-    <Compile Include="Wolfcoins.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config">

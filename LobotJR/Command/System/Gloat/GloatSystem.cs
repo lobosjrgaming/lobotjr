@@ -14,7 +14,7 @@ namespace LobotJR.Command.System.Gloat
     /// <summary>
     /// Runs the tournament logic for the fishing system.
     /// </summary>
-    public class GloatSystem : ISystem
+    public class GloatSystem : ISystemProcess
     {
         private readonly IConnectionManager ConnectionManager;
         private readonly SettingsManager SettingsManager;
@@ -103,7 +103,7 @@ namespace LobotJR.Command.System.Gloat
         {
             var cost = GetPetCost();
             var player = PlayerSystem.GetPlayerByUser(user);
-            var pet = PetSystem.GetActivePet(user).FirstOrDefault();
+            var pet = PetSystem.GetActivePet(user);
             if (pet != null)
             {
                 player.Currency -= cost;

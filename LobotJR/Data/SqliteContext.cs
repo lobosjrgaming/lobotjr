@@ -2,6 +2,7 @@
 using LobotJR.Command.Model.Dungeons;
 using LobotJR.Command.Model.Equipment;
 using LobotJR.Command.Model.Fishing;
+using LobotJR.Command.Model.General;
 using LobotJR.Command.Model.Pets;
 using LobotJR.Command.Model.Player;
 using LobotJR.Twitch;
@@ -19,6 +20,7 @@ namespace LobotJR.Data
         public DbSet<Metadata> Metadata { get; set; }
         public DbSet<AppSettings> AppSettings { get; set; }
         public DbSet<GameSettings> GameSettings { get; set; }
+        public DbSet<BugReport> BugReports { get; set; }
         public DbSet<DataTimer> DataTimers { get; set; }
 
         /** Admin data */
@@ -52,6 +54,7 @@ namespace LobotJR.Data
         public DbSet<Encounter> EncounterData { get; set; }
         public DbSet<DungeonTimer> DungeonTimerData { get; set; }
         public DbSet<CharacterClass> ClassData { get; set; }
+        public DbSet<Equippables> EquippableData { get; set; }
 
         public SqliteContext() { }
 

@@ -1,5 +1,6 @@
 ﻿using LobotJR.Command.Model.Pets;
 using LobotJR.Command.Model.Player;
+using LobotJR.Command.System.Player;
 using LobotJR.Data;
 using LobotJR.Twitch.Model;
 using System;
@@ -9,9 +10,10 @@ using System.Threading.Tasks;
 
 namespace LobotJR.Command.System.Pets
 {
-    public class PetSystem : ISystem
+    public class PetSystem : ISystemProcess
     {
         private readonly IConnectionManager ConnectionManager;
+        private readonly PlayerSystem PlayerSystem;
         private readonly SettingsManager SettingsManager;
         private readonly Dictionary<string, int> PendingRelease = new Dictionary<string, int>();
         private readonly Random Random = new Random();
@@ -27,9 +29,32 @@ namespace LobotJR.Command.System.Pets
         /// </summary>
         public event PetFoundHandler PetFound;
 
-        public PetSystem(IConnectionManager connectionManager, SettingsManager settingsManager)
+        /// <summary>
+        /// Event handler for pet death events.
+        /// </summary>
+        /// <param name="user">The user that owns the stable.</param>
+        /// <param name="stable">The stable entry for the pet that died.</param>
+        public delegate void PetDeathHandler(User user, Stable stable);
+        /// <summary>
+        /// Event fired when a pet dies.
+        /// </summary>
+        public event PetDeathHandler PetDeath;
+
+        /// <summary>
+        /// Event handler for low pet hunger warnings.
+        /// </summary>
+        /// <param name="user">The user that owns the stable.</param>
+        /// <param name="stable">The stable entry for the pet that is hungry.</param>
+        public delegate void PetWarningHandler(User user, Stable stable);
+        /// <summary>
+        /// Event fired when a pet's hunger is low.
+        /// </summary>
+        public event PetWarningHandler PetWarning;
+
+        public PetSystem(IConnectionManager connectionManager, PlayerSystem playerSystem, SettingsManager settingsManager)
         {
             ConnectionManager = connectionManager;
+            PlayerSystem = playerSystem;
             SettingsManager = settingsManager;
         }
 
@@ -43,16 +68,33 @@ namespace LobotJR.Command.System.Pets
             return ConnectionManager.CurrentConnection.Stables.Read(x => x.UserId.Equals(user.TwitchId)).OrderBy(x => x.PetId);
         }
 
+        private Stable GetActivePet(string userId)
+        {
+            return ConnectionManager.CurrentConnection.Stables.Read(x => x.UserId.Equals(userId) && x.IsActive).FirstOrDefault();
+        }
+
         /// <summary>
         /// Gets all active pets for a given user. Only one pet is allowed to
         /// be active at a time, but this method returns a collection in case
         /// that rule is somehow violated.
         /// </summary>
         /// <param name="user">The user to get pets for.</param>
-        /// <returns>A collection of all active pets for the user.</returns>
-        public IEnumerable<Stable> GetActivePet(User user)
+        /// <returns>The active pet for the user.</returns>
+        public Stable GetActivePet(User user)
         {
-            return ConnectionManager.CurrentConnection.Stables.Read(x => x.UserId.Equals(user.TwitchId) && x.IsActive);
+            return GetActivePet(user.TwitchId);
+        }
+
+        /// <summary>
+        /// Gets all active pets for a given player. Only one pet is allowed to
+        /// be active at a time, but this method returns a collection in case
+        /// that rule is somehow violated.
+        /// </summary>
+        /// <param name="player">The player to get pets for.</param>
+        /// <returns>The active pet for the player.</returns>
+        public Stable GetActivePet(PlayerCharacter player)
+        {
+            return GetActivePet(player.UserId);
         }
 
         /// <summary>
@@ -60,8 +102,8 @@ namespace LobotJR.Command.System.Pets
         /// </summary>
         /// <param name="user">The user who owns the stable.</param>
         /// <param name="stable">The stable record to activate.</param>
-        /// <returns>A collection of previously active pets.</returns>
-        public IEnumerable<Stable> ActivatePet(User user, Stable stable)
+        /// <returns>The previously active pet.</returns>
+        public Stable ActivatePet(User user, Stable stable)
         {
             var active = DeactivatePet(user);
             stable.IsActive = true;
@@ -72,13 +114,13 @@ namespace LobotJR.Command.System.Pets
         /// Deactivates all active pets for a user.
         /// </summary>
         /// <param name="user">The user to deactivate pets for.</param>
-        /// <returns>A collection of pets that were deactivated.</returns>
-        public IEnumerable<Stable> DeactivatePet(User user)
+        /// <returns>The pet that was deactivated.</returns>
+        public Stable DeactivatePet(User user)
         {
-            var active = GetActivePet(user).ToList();
-            foreach (var activePet in active)
+            var active = GetActivePet(user);
+            if (active != null)
             {
-                activePet.IsActive = false;
+                active.IsActive = false;
             }
             return active;
         }
@@ -126,6 +168,30 @@ namespace LobotJR.Command.System.Pets
                 return true;
             }
             return false;
+        }
+
+        /// <summary>
+        /// Adds hunger and processes other effects triggered when a pet is
+        /// taken through a dungeon.
+        /// </summary>
+        /// <param name="player">The player that own the stable entry.</param>
+        /// <param name="stable">The stable entry for the pet.</param>
+        /// <returns></returns>
+        public void AddHunger(PlayerCharacter player, Stable stable)
+        {
+            int hungerToLose = Random.Next(5, 5 + 6);
+            stable.Hunger -= hungerToLose;
+            stable.Affection = Math.Max(0, stable.Affection - 1);
+
+            if (stable.Hunger <= 0)
+            {
+                DeletePet(stable);
+                PetDeath?.Invoke(PlayerSystem.GetUserByPlayer(player), stable);
+            }
+            else if (stable.Hunger <= 25)
+            {
+                PetWarning?.Invoke(PlayerSystem.GetUserByPlayer(player), stable);
+            }
         }
 
         /// <summary>
@@ -201,16 +267,16 @@ namespace LobotJR.Command.System.Pets
         {
             PetRarity output = null;
             var petRarities = ConnectionManager.CurrentConnection.PetRarityData.Read().OrderBy(x => x.DropRate);
-            var roll = Random.Next(1, 2000);
+            var roll = Random.NextDouble();
             foreach (var petRarity in petRarities)
             {
-                if (roll <= petRarity.DropRate)
+                if (roll < petRarity.DropRate)
                 {
                     output = petRarity;
                     break;
                 }
             }
-            return output;
+            return petRarities.FirstOrDefault(x => roll < x.DropRate);
         }
 
         /// <summary>
@@ -232,7 +298,7 @@ namespace LobotJR.Command.System.Pets
                 {
                     UserId = user.TwitchId,
                     Pet = toGrant,
-                    IsSparkly = Random.Next(0, 100) == 0
+                    IsSparkly = Random.NextDouble() < 0.01f
                 };
                 ConnectionManager.CurrentConnection.Stables.Create(toAdd);
                 PetFound?.Invoke(user, toAdd);

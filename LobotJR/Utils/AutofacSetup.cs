@@ -21,8 +21,6 @@ using LobotJR.Shared.Client;
 using LobotJR.Trigger;
 using LobotJR.Trigger.Responder;
 using LobotJR.Twitch;
-using System.Data.Entity;
-using Wolfcoins;
 
 namespace LobotJR.Utils
 {
@@ -50,27 +48,22 @@ namespace LobotJR.Utils
 
         private static void RegisterDatabase(ContainerBuilder builder, ClientData clientData, TokenData tokenData)
         {
-            builder.RegisterType<SqliteContext>().AsSelf().As<DbContext>().InstancePerLifetimeScope();
-            builder.RegisterType<SqliteRepositoryManager>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
+            // builder.RegisterType<SqliteContext>().AsSelf().As<DbContext>().InstancePerLifetimeScope();
+            // builder.RegisterType<SqliteRepositoryManager>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
+            // These are created by the connection manager now, I think
             builder.RegisterType<ConnectionManager>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
             builder.RegisterType<SettingsManager>().AsSelf().InstancePerLifetimeScope();
         }
 
-        private static void RegisterRpg(ContainerBuilder builder, ClientData clientData, TokenData tokenData)
-        {
-            builder.RegisterType<Currency>().AsSelf().SingleInstance()
-                .WithParameters(new Parameter[] { new TypedParameter(typeof(ClientData), clientData), new TypedParameter(typeof(TokenData), tokenData) });
-        }
-
         private static void RegisterSystems(ContainerBuilder builder)
         {
-            builder.RegisterType<UserSystem>().AsSelf().As<ISystem>().InstancePerLifetimeScope();
-            builder.RegisterType<FishingSystem>().AsSelf().As<ISystem>().InstancePerLifetimeScope();
-            builder.RegisterType<LeaderboardSystem>().AsSelf().As<ISystem>().InstancePerLifetimeScope();
-            builder.RegisterType<TournamentSystem>().AsSelf().As<ISystem>().InstancePerLifetimeScope();
-            builder.RegisterType<PlayerSystem>().AsSelf().As<ISystem>().InstancePerLifetimeScope();
-            builder.RegisterType<EquipmentSystem>().AsSelf().As<ISystem>().InstancePerLifetimeScope();
-            builder.RegisterType<GloatSystem>().AsSelf().As<ISystem>().InstancePerLifetimeScope();
+            builder.RegisterType<UserSystem>().AsSelf().As<ISystemProcess>().InstancePerLifetimeScope();
+            builder.RegisterType<FishingSystem>().AsSelf().As<ISystemProcess>().InstancePerLifetimeScope();
+            builder.RegisterType<LeaderboardSystem>().AsSelf().As<ISystemProcess>().InstancePerLifetimeScope();
+            builder.RegisterType<TournamentSystem>().AsSelf().As<ISystemProcess>().InstancePerLifetimeScope();
+            builder.RegisterType<PlayerSystem>().AsSelf().As<ISystemProcess>().InstancePerLifetimeScope();
+            builder.RegisterType<EquipmentSystem>().AsSelf().As<ISystemProcess>().InstancePerLifetimeScope();
+            builder.RegisterType<GloatSystem>().AsSelf().As<ISystemProcess>().InstancePerLifetimeScope();
         }
 
         private static void RegisterModules(ContainerBuilder builder)
@@ -113,7 +106,6 @@ namespace LobotJR.Utils
             var builder = new ContainerBuilder();
 
             RegisterDatabase(builder, clientData, tokenData);
-            RegisterRpg(builder, clientData, tokenData);
             RegisterSystems(builder);
             RegisterModules(builder);
             RegisterTriggers(builder, tokenData);

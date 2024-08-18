@@ -2,6 +2,7 @@
 using LobotJR.Command.Model.Dungeons;
 using LobotJR.Command.Model.Equipment;
 using LobotJR.Command.Model.Fishing;
+using LobotJR.Command.Model.General;
 using LobotJR.Command.Model.Pets;
 using LobotJR.Command.Model.Player;
 using LobotJR.Twitch;
@@ -20,6 +21,7 @@ namespace LobotJR.Data
         public IRepository<Metadata> Metadata { get; private set; }
         public IRepository<AppSettings> AppSettings { get; private set; }
         public IRepository<GameSettings> GameSettings { get; private set; }
+        public IRepository<BugReport> BugReports { get; private set; }
         public IRepository<DataTimer> DataTimers { get; private set; }
         public IRepository<User> Users { get; private set; }
         public IRepository<AccessGroup> AccessGroups { get; private set; }
@@ -49,6 +51,7 @@ namespace LobotJR.Data
         public IRepository<EncounterLevel> EncounterLevelData { get; private set; }
         public IRepository<DungeonTimer> DungeonTimerData { get; private set; }
         public IRepository<CharacterClass> CharacterClassData { get; private set; }
+        public IRepository<Equippables> EquippableData { get; private set; }
 
         public SqliteRepositoryManager(DbContext context)
         {
@@ -95,6 +98,7 @@ namespace LobotJR.Data
             EncounterLevelData = new SqliteRepository<EncounterLevel>(context);
             DungeonTimerData = new SqliteRepository<DungeonTimer>(context);
             CharacterClassData = new SqliteRepository<CharacterClass>(context);
+            EquippableData = new SqliteRepository<Equippables>(context);
         }
 
         public void Dispose()

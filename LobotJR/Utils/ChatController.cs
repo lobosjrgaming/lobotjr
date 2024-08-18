@@ -1,12 +1,12 @@
 ﻿using LobotJR.Twitch;
 using LobotJR.Twitch.Model;
-using NLog;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace LobotJR.Utils
 {
@@ -158,8 +158,6 @@ namespace LobotJR.Utils
 
     public class ChatController
     {
-        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-
         [DllImport("User32.dll")]
         static extern int SetForegroundWindow(IntPtr point);
 
@@ -199,7 +197,7 @@ namespace LobotJR.Utils
             { "dd", new KeyPress('F') }
         };
 
-        public void Play(ITwitchIrcClient irc)
+        public async Task Play(ITwitchIrcClient irc)
         {
             Process[] p = Process.GetProcessesByName("DARKSOULS");
             IntPtr h = (IntPtr)0;
@@ -221,8 +219,8 @@ namespace LobotJR.Utils
                         keyPress.Send();
                     }
                 }
+                await Task.Delay(10);
             }
-            Logger.Info("Connection terminated.");
         }
     }
 }

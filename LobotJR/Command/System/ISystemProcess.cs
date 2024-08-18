@@ -6,7 +6,7 @@ namespace LobotJR.Command.System
     /// Describes a system that processes the logic of a module continuously,
     /// not just in response to commands from users.
     /// </summary>
-    public interface ISystem
+    public interface ISystemProcess
     {
         /// <summary>
         /// Called once per frame to process the logic of a system.

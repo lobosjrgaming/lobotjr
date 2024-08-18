@@ -1,4 +1,5 @@
 ﻿using LobotJR.Command.Model.Equipment;
+using LobotJR.Command.Model.Player;
 using LobotJR.Data;
 using LobotJR.Twitch.Model;
 using System;
@@ -11,13 +12,18 @@ namespace LobotJR.Command.System.Equipment
     /// <summary>
     /// Runs the logic for the equipment system.
     /// </summary>
-    public class EquipmentSystem : ISystem
+    public class EquipmentSystem : ISystemProcess
     {
         private readonly IConnectionManager ConnectionManager;
 
         public EquipmentSystem(IConnectionManager connectionManager)
         {
             ConnectionManager = connectionManager;
+        }
+
+        private IEnumerable<Inventory> GetInventoryByUserId(string userId)
+        {
+            return ConnectionManager.CurrentConnection.Inventories.Read(x => x.UserId.Equals(userId)).OrderBy(x => x.Id);
         }
 
         /// <summary>
@@ -28,7 +34,18 @@ namespace LobotJR.Command.System.Equipment
         /// <returns>A collection of inventory records for the user.</returns>
         public IEnumerable<Inventory> GetInventoryByUser(User user)
         {
-            return ConnectionManager.CurrentConnection.Inventories.Read(x => x.UserId.Equals(user.TwitchId)).OrderBy(x => x.Id);
+            return GetInventoryByUserId(user.TwitchId);
+        }
+
+        /// <summary>
+        /// Gets the full inventory for a given player, sorted by the order the
+        /// items were acquired.
+        /// </summary>
+        /// <param name="user">A player object.</param>
+        /// <returns>A collection of inventory records for the user.</returns>
+        public IEnumerable<Inventory> GetInventoryByPlayer(PlayerCharacter player)
+        {
+            return GetInventoryByUserId(player.UserId);
         }
 
         /// <summary>
@@ -37,9 +54,9 @@ namespace LobotJR.Command.System.Equipment
         /// <param name="user">A user object.</param>
         /// <returns>A collection of inventory records for items the user has
         /// equipped.</returns>
-        public IEnumerable<Item> GetEquippedGear(User user)
+        public IEnumerable<Item> GetEquippedGear(PlayerCharacter player)
         {
-            return ConnectionManager.CurrentConnection.Inventories.Read(x => x.UserId.Equals(user.TwitchId) && x.IsEquipped).Select(x => x.Item);
+            return ConnectionManager.CurrentConnection.Inventories.Read(x => x.UserId.Equals(player.UserId) && x.IsEquipped).Select(x => x.Item);
         }
 
         /// <summary>

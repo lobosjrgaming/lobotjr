@@ -1,4 +1,5 @@
-﻿using LobotJR.Command.System.Player;
+﻿using LobotJR.Command.System.Equipment;
+using LobotJR.Command.System.Player;
 using LobotJR.Command.System.Twitch;
 using LobotJR.Data;
 using LobotJR.Twitch.Model;
@@ -18,6 +19,7 @@ namespace LobotJR.Command.Module.Player
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         private readonly PlayerSystem PlayerSystem;
+        private readonly EquipmentSystem EquipmentSystem;
         private readonly UserSystem UserSystem;
         private readonly SettingsManager SettingsManager;
 
@@ -36,9 +38,10 @@ namespace LobotJR.Command.Module.Player
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public PlayerAdmin(PlayerSystem playerSystem, UserSystem userSystem, SettingsManager settingsManager)
+        public PlayerAdmin(PlayerSystem playerSystem, EquipmentSystem equipmentSystem, UserSystem userSystem, SettingsManager settingsManager)
         {
             PlayerSystem = playerSystem;
+            EquipmentSystem = equipmentSystem;
             UserSystem = userSystem;
             SettingsManager = settingsManager;
             Commands = new List<CommandHandler>()
@@ -57,8 +60,8 @@ namespace LobotJR.Command.Module.Player
                 new CommandHandler("SetInterval", this, CommandMethod.GetInfo<int>(SetInterval), "setinterval") { WhisperOnly = false },
                 new CommandHandler("SetMultiplier", this, CommandMethod.GetInfo<int>(SetMultiplier), "setmultiplier") { WhisperOnly = false } ,
 
-                new CommandHandler("ExperienceOn", this, CommandMethod.GetInfo(EnableExperience), "xpon"),
-                new CommandHandler("ExperienceOff", this, CommandMethod.GetInfo(DisableExperience), "xpoff"),
+                new CommandHandler("ExperienceOn", new CommandExecutor(this, CommandMethod.GetInfo<string>(EnableExperience), true), "xpon") { WhisperOnly = false },
+                new CommandHandler("ExperienceOff", new CommandExecutor(this, CommandMethod.GetInfo<string>(DisableExperience), true), "xpoff") { WhisperOnly = false },
 
                 new CommandHandler("NextAward", this, CommandMethod.GetInfo(PrintNextAward), "nextaward"),
                 new CommandHandler("PrintInfo", this, CommandMethod.GetInfo<string>(PrintUserInfo), "printinfo"),
@@ -200,7 +203,8 @@ namespace LobotJR.Command.Module.Player
             return new CommandResult(true, $"{multiplier}x XP & Coins will now be awarded.");
         }
 
-        public CommandResult EnableExperience(User user)
+        //throwaway param is there because sometimes mods like to put memes next to the !xpon and !xpoff commands, this way that won't break them.
+        public CommandResult EnableExperience(User user, string throwaway)
         {
             if (PlayerSystem.AwardsEnabled)
             {
@@ -210,7 +214,8 @@ namespace LobotJR.Command.Module.Player
             return new CommandResult(true, "Wolfcoins & XP will be awarded.");
         }
 
-        public CommandResult DisableExperience()
+        //throwaway param is there because sometimes mods like to put memes next to the !xpon and !xpoff commands, this way that won't break them.
+        public CommandResult DisableExperience(string throwaway)
         {
             if (!PlayerSystem.AwardsEnabled)
             {
@@ -222,9 +227,17 @@ namespace LobotJR.Command.Module.Player
 
         public CommandResult PrintNextAward()
         {
-            var settings = SettingsManager.GetGameSettings();
-            var toNext = (PlayerSystem.LastAward + TimeSpan.FromMinutes(settings.ExperienceFrequency) - DateTime.Now).Value;
-            return new CommandResult(true, $"{toNext.Minutes} minutes and {toNext.Seconds} seconds until next coins/xp are awarded.");
+            if (PlayerSystem.AwardsEnabled)
+            {
+                var settings = SettingsManager.GetGameSettings();
+                var toNext = (PlayerSystem.LastAward + TimeSpan.FromMinutes(settings.ExperienceFrequency) - DateTime.Now);
+                if (toNext > TimeSpan.Zero)
+                {
+                    return new CommandResult(true, $"{toNext.Minutes} minutes and {toNext.Seconds} seconds until next coins/xp are awarded.");
+                }
+                return new CommandResult(true, $"Coin/xp awards are overdue, something might be wrong.");
+            }
+            return new CommandResult(true, "Awards are not currently enabled.");
         }
 
         public CommandResult PrintUserInfo(string target)
@@ -239,9 +252,9 @@ namespace LobotJR.Command.Module.Player
                     Logger.Info($"Level: {targetPlayer.Level}");
                     Logger.Info($"Prestige: {targetPlayer.Prestige}");
                     Logger.Info($"Class: {targetPlayer.CharacterClass.Name}");
-                    Logger.Info($"Dungeon Success Chance: {targetPlayer.CharacterClass.SuccessChance}");
-                    //TODO: Fix the dungeon success chance to include equipment, add item output
-                    // Logger.Info($"Number of Items: {targetPlayer.Level}");
+                    var successChance = targetPlayer.CharacterClass.SuccessChance + EquipmentSystem.GetEquippedGear(targetPlayer).Sum(x => x.SuccessChance);
+                    Logger.Info($"Dungeon Success Chance: {Math.Round(successChance * 100)}%");
+                    Logger.Info($"Number of Items: {EquipmentSystem.GetInventoryByPlayer(targetPlayer).Count()}");
                 }
             }
             return new CommandResult(true);

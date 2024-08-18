@@ -4,6 +4,7 @@ using LobotJR.Data;
 using LobotJR.Twitch;
 using LobotJR.Twitch.Model;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace LobotJR.Command
 {
@@ -56,6 +57,6 @@ namespace LobotJR.Command
         /// <param name="result">The command result object.</param>
         /// <param name="irc">The twitch irc client to send messages through.</param>
         /// <param name="twitchClient">The twitch API client to send whispers through.</param>
-        void HandleCommandResult(string whisperMessage, CommandResult result, ITwitchIrcClient irc, ITwitchClient twitchClient);
+        Task HandleResult(string whisperMessage, CommandResult result, ITwitchIrcClient irc, ITwitchClient twitchClient);
     }
 }

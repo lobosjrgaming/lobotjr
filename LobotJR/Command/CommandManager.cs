@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace LobotJR.Command
 {
@@ -324,11 +325,11 @@ namespace LobotJR.Command
         /// <param name="result">The command result object.</param>
         /// <param name="irc">The twitch irc client to send messages through.</param>
         /// <param name="twitchClient">The twitch API client to send whispers through.</param>
-        public void HandleCommandResult(string whisperMessage, CommandResult result, ITwitchIrcClient irc, ITwitchClient twitchClient)
+        public async Task HandleResult(string whisperMessage, CommandResult result, ITwitchIrcClient irc, ITwitchClient twitchClient)
         {
             if (result.TimeoutSender)
             {
-                twitchClient.Timeout(result.Sender, 1, result.TimeoutMessage);
+                await twitchClient.TimeoutAsync(result.Sender, 1, result.TimeoutMessage);
             }
             if (result.Responses?.Count > 0)
             {

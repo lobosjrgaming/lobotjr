@@ -24,15 +24,15 @@ namespace LobotJR.Command.Model.Player
         /// <summary>
         /// The base item find bonus.
         /// </summary>
-        public int ItemFind { get; set; }
+        public float ItemFind { get; set; }
         /// <summary>
         /// The bonus to wolfcoins earned in dungeons.
         /// </summary>
-        public int CoinBonus { get; set; }
+        public float CoinBonus { get; set; }
         /// <summary>
         /// The bonus to experience earned in dungeons.
         /// </summary>
-        public int XpBonus { get; set; }
+        public float XpBonus { get; set; }
         /// <summary>
         /// The chance to avoid player death when a dungeon is failed.
         /// </summary>
@@ -40,9 +40,10 @@ namespace LobotJR.Command.Model.Player
 
         public CharacterClass() { }
 
-        public CharacterClass(string name, float successChance, int itemFind, int coinBonus, int xpBonus, float preventDeathBonus)
+        public CharacterClass(string name, bool canPlay, float successChance, float itemFind, float coinBonus, float xpBonus, float preventDeathBonus)
         {
             Name = name;
+            CanPlay = canPlay;
             SuccessChance = successChance;
             ItemFind = itemFind;
             CoinBonus = coinBonus;

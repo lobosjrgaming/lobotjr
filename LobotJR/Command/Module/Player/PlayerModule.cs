@@ -17,7 +17,7 @@ namespace LobotJR.Command.Module.Player
     public class PlayerModule : ICommandModule
     {
         private readonly PlayerSystem PlayerSystem;
-        private readonly DungeonSystem DungeonSystem;
+        private readonly PartySystem PartySystem;
         private readonly GroupFinderSystem GroupFinderSystem;
 
         /// <summary>
@@ -33,10 +33,10 @@ namespace LobotJR.Command.Module.Player
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public PlayerModule(PlayerSystem playerSystem, DungeonSystem dungeonSystem, GroupFinderSystem groupFinderSystem, ConfirmationSystem confirmationSystem)
+        public PlayerModule(PlayerSystem playerSystem, PartySystem partySystem, GroupFinderSystem groupFinderSystem, ConfirmationSystem confirmationSystem)
         {
             PlayerSystem = playerSystem;
-            DungeonSystem = dungeonSystem;
+            PartySystem = partySystem;
             GroupFinderSystem = groupFinderSystem;
             PlayerSystem.LevelUp += PlayerSystem_LevelUp;
             PlayerSystem.ExperienceAwarded += PlayerSystem_ExperienceAwarded;
@@ -48,6 +48,7 @@ namespace LobotJR.Command.Module.Player
                 new CommandHandler("Stats", this, CommandMethod.GetInfo<string>(GetStats), CommandMethod.GetInfo(GetStatsCompact), "stats"),
                 new CommandHandler("ClassDistribution", this, CommandMethod.GetInfo(GetClassStats), "classes"),
                 new CommandHandler("ClassSelect", this, CommandMethod.GetInfo<string>(SelectClass), "c", "class"),
+                new CommandHandler("ClassHelp", this, CommandMethod.GetInfo(ClassHelp), "classhelp"),
                 new CommandHandler("Respec", this, CommandMethod.GetInfo(Respec), "respec"),
             };
             //This adds aliases for each class in the database to allow for class selection in the form of "!c1", instead of "!c 1"
@@ -244,12 +245,24 @@ namespace LobotJR.Command.Module.Player
             return new CommandResult("You are not high enough level to choose a class. Continue watching the stream to gain experience.");
         }
 
+        public CommandResult ClassHelp(User user)
+        {
+            var player = PlayerSystem.GetPlayerByUser(user);
+            if (player.Level >= PlayerSystem.MinLevel)
+            {
+                var classes = PlayerSystem.GetPlayableClasses().Select(x => $"!C{x.Id} ({x.Name})");
+                return new CommandResult("It looks like you are elligible to choose a class but haven't yet done so. Choose by whispering me one of the following:",
+                    string.Join(", ", classes));
+            }
+            return new CommandResult("You are not high enough level to choose a class. Continue watching the stream to gain experience.");
+        }
+
         public CommandResult Respec(User user)
         {
             var player = PlayerSystem.GetPlayerByUser(user);
             if (player.CharacterClass.CanPlay)
             {
-                var party = DungeonSystem.GetCurrentGroup(player);
+                var party = PartySystem.GetCurrentGroup(player);
                 if (party == null)
                 {
                     if (GroupFinderSystem.IsPlayerQueued(player))

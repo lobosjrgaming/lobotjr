@@ -204,6 +204,8 @@ namespace LobotJR.Data.Import
         private static async Task<bool> ImportPlayerData(
             IRepository<PlayerCharacter> playerRepository,
             IRepository<CharacterClass> classRepository,
+            IRepository<ItemType> typeRepository,
+            IRepository<Equippables> equippablesRepository,
             IRepository<Inventory> inventoryRepository,
             IRepository<Stable> stableRepository,
             UserSystem userSystem,
@@ -222,7 +224,7 @@ namespace LobotJR.Data.Import
                     Logger.Error("Player database already contains data, aborting import.");
                     throw new Exception("Legacy import error. Aborting import to avoid data loss.");
                 }
-                return await PlayerDataImport.ImportPlayerDataIntoSql(PlayerDataImport.CoinDataPath, PlayerDataImport.ExperienceDataPath, PlayerDataImport.ClassDataPath, playerRepository, classRepository, inventoryRepository, stableRepository, userSystem, itemMap, petMap);
+                return await PlayerDataImport.ImportPlayerDataIntoSql(PlayerDataImport.CoinDataPath, PlayerDataImport.ExperienceDataPath, PlayerDataImport.ClassDataPath, playerRepository, classRepository, typeRepository, equippablesRepository, inventoryRepository, stableRepository, userSystem, itemMap, petMap);
             }
             return false;
         }
@@ -281,7 +283,7 @@ namespace LobotJR.Data.Import
                     var dungeonImport = ImportDungeonData(database.DungeonData, database.DungeonTimerData, database.DungeonModeData, itemMap);
                     if (dungeonImport)
                     {
-                        var playerImport = await ImportPlayerData(database.PlayerCharacters, database.CharacterClassData, database.Inventories, database.Stables, userSystem, itemMap, petMap);
+                        var playerImport = await ImportPlayerData(database.PlayerCharacters, database.CharacterClassData, database.ItemTypeData, database.EquippableData, database.Inventories, database.Stables, userSystem, itemMap, petMap);
                         if (playerImport)
                         {
                             FinalizePlayerData();

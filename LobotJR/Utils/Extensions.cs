@@ -216,5 +216,17 @@ namespace LobotJR.Utils
             }
             return -1;
         }
+
+        /// <summary>
+        /// Returns a random element from a collection.
+        /// </summary>
+        /// <typeparam name="T">The collection type.</typeparam>
+        /// <param name="current"></param>
+        /// <param name="elements">A collection of type T.</param>
+        /// <returns>A randomly-selected element from that collection.</returns>
+        public static T RandomElement<T>(this Random current, IEnumerable<T> elements)
+        {
+            return elements.ElementAt(current.Next(elements.Count()));
+        }
     }
 }

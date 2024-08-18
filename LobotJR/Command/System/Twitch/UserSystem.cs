@@ -27,12 +27,12 @@ namespace LobotJR.Command.System.Twitch
     /// <summary>
     /// System for managing Twitch user data.
     /// </summary>
-    public class UserSystem : ISystem
+    public class UserSystem : ISystemProcess
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        private readonly IRepository<User> Users;
-        private readonly AppSettings Settings;
+        private readonly IConnectionManager ConnectionManager;
+        private readonly SettingsManager SettingsManager;
         private readonly ITwitchClient TwitchClient;
         private DateTime? LookupTimer = null;
         private List<LookupRequest> LookupRequests = new List<LookupRequest>();
@@ -58,10 +58,10 @@ namespace LobotJR.Command.System.Twitch
         /// </summary>
         public bool IsBroadcasting { get; private set; }
 
-        public UserSystem(IRepositoryManager repositoryManager, ITwitchClient twitchClient)
+        public UserSystem(IConnectionManager connectionManager, SettingsManager settingsManager, ITwitchClient twitchClient)
         {
-            Users = repositoryManager.Users;
-            Settings = repositoryManager.AppSettings.Read().First();
+            ConnectionManager = connectionManager;
+            SettingsManager = settingsManager;
             TwitchClient = twitchClient;
         }
 
@@ -73,7 +73,7 @@ namespace LobotJR.Command.System.Twitch
         /// none exists.</returns>
         public User GetUserByName(string username)
         {
-            return Users.Read(x => x.Username.Equals(username, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            return ConnectionManager.CurrentConnection.Users.Read(x => x.Username.Equals(username, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
         }
 
         /// <summary>
@@ -83,7 +83,7 @@ namespace LobotJR.Command.System.Twitch
         /// <returns>The user object for each user provided.</returns>
         public async Task<IEnumerable<User>> GetUsersByNames(params string[] names)
         {
-            var known = Users.Read(x => names.Contains(x.Username, StringComparer.OrdinalIgnoreCase)).ToList();
+            var known = ConnectionManager.CurrentConnection.Users.Read(x => names.Contains(x.Username, StringComparer.OrdinalIgnoreCase)).ToList();
             var missing = names.Except(known.Select(x => x.Username), StringComparer.OrdinalIgnoreCase);
             if (missing.Any())
             {
@@ -115,7 +115,7 @@ namespace LobotJR.Command.System.Twitch
         /// user lookup call.</param>
         public void GetUserByNameAsync(string username, Action<User> callback)
         {
-            var user = Users.Read(x => x.Username.Equals(username, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            var user = ConnectionManager.CurrentConnection.Users.Read(x => x.Username.Equals(username, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
             if (user != null)
             {
                 callback(user);
@@ -134,7 +134,7 @@ namespace LobotJR.Command.System.Twitch
         /// none exists.</returns>
         public User GetUserById(string twitchId)
         {
-            return Users.Read(x => x.TwitchId.Equals(twitchId)).FirstOrDefault();
+            return ConnectionManager.CurrentConnection.Users.Read(x => x.TwitchId.Equals(twitchId)).FirstOrDefault();
         }
 
         /// <summary>
@@ -145,21 +145,21 @@ namespace LobotJR.Command.System.Twitch
         /// </summary>
         /// <param name="twitchId">The Twitch id of the user.</param>
         /// <param name="username">The user's Twitch display name.</param>
+        /// <param name="isSub">True if the user is a channel subscriber.</param>
+        /// <param name="isVip">True if the user is a channel VIP.</param>
+        /// <param name="isMod">True if the user is a channel moderator.</param>
         /// <returns>The user object from the database.</returns>
         public User GetOrCreateUser(string twitchId, string username)
         {
-            var existing = Users.Read(x => twitchId.Equals(x.TwitchId)).FirstOrDefault();
+            var existing = ConnectionManager.CurrentConnection.Users.Read(x => twitchId.Equals(x.TwitchId)).FirstOrDefault();
             if (existing == null)
             {
                 existing = new User() { Username = username, TwitchId = twitchId };
-                Users.Create(existing);
-                Users.Commit();
+                ConnectionManager.CurrentConnection.Users.Create(existing);
             }
             else if (!existing.Username.Equals(username))
             {
                 existing.Username = username;
-                Users.Update(existing);
-                Users.Commit();
             }
             return existing;
         }
@@ -191,14 +191,10 @@ namespace LobotJR.Command.System.Twitch
             if (!broadcastUser.IsAdmin)
             {
                 broadcastUser.IsAdmin = true;
-                Users.Update(broadcastUser);
-                Users.Commit();
             }
             if (!chatUser.IsAdmin)
             {
                 chatUser.IsAdmin = true;
-                Users.Update(chatUser);
-                Users.Commit();
             }
         }
 
@@ -209,8 +205,6 @@ namespace LobotJR.Command.System.Twitch
         public void SetSub(User user)
         {
             user.IsSub = true;
-            Users.Update(user);
-            Users.Commit();
         }
 
         private void SyncLists(IEnumerable<User> allUsers, IEnumerable<string> target, Func<User, bool> checkLambda, Action<User, bool> updateLambda)
@@ -223,12 +217,10 @@ namespace LobotJR.Command.System.Twitch
             foreach (var user in toRemove)
             {
                 updateLambda(user, false);
-                Users.Update(user);
             }
             foreach (var user in toAdd)
             {
                 updateLambda(user, true);
-                Users.Update(user);
             }
         }
 
@@ -253,15 +245,15 @@ namespace LobotJR.Command.System.Twitch
             }
 
             var allUsers = userPairs.ToDictionary(x => x.Key, x => x.Value);
-            var existingUsers = Users.Read(x => allUsers.Keys.Contains(x.TwitchId)).ToDictionary(x => x.TwitchId, x => x.Username);
+            var existingUsers = ConnectionManager.CurrentConnection.Users.Read(x => allUsers.Keys.Contains(x.TwitchId)).ToDictionary(x => x.TwitchId, x => x.Username);
             var newUsers = allUsers.Except(existingUsers, new KeyComparer<string, string>());
 
             foreach (var user in newUsers)
             {
-                Users.Create(new User() { TwitchId = user.Key, Username = user.Value });
+                ConnectionManager.CurrentConnection.Users.Create(new User() { TwitchId = user.Key, Username = user.Value });
             }
-            Users.Commit();
-            var dbUsers = Users.Read().ToList();
+            ConnectionManager.CurrentConnection.Users.Commit();
+            var dbUsers = ConnectionManager.CurrentConnection.Users.Read().ToList();
 
             if (mods.Any())
             {
@@ -289,7 +281,7 @@ namespace LobotJR.Command.System.Twitch
             {
                 Logger.Warn("Null response attempting to retrieve subscriber list.");
             }
-            Users.Commit();
+            ConnectionManager.CurrentConnection.Users.Commit();
 
             if (chatters.Any())
             {
@@ -311,7 +303,6 @@ namespace LobotJR.Command.System.Twitch
 
         private IEnumerable<User> CreateUsers(IEnumerable<UserResponseData> users)
         {
-            Users.BeginTransaction();
             Logger.Info("Writing {count} user records to database.", users.Count());
             var total = users.Count();
             var output = new List<User>();
@@ -328,11 +319,10 @@ namespace LobotJR.Command.System.Twitch
                     logTime = DateTime.Now;
                 }
                 var request = LookupRequests.FirstOrDefault(x => x.Username.Equals(user.DisplayName));
-                var existing = Users.Read(x => x.TwitchId.Equals(user.Id)).FirstOrDefault();
+                var existing = ConnectionManager.CurrentConnection.Users.Read(x => x.TwitchId.Equals(user.Id)).FirstOrDefault();
                 if (existing != null)
                 {
                     existing.Username = user.DisplayName;
-                    Users.Update(existing);
                     output.Add(existing);
                 }
                 else
@@ -342,12 +332,11 @@ namespace LobotJR.Command.System.Twitch
                         TwitchId = user.Id,
                         Username = user.DisplayName,
                     };
-                    Users.Create(newUser);
+                    ConnectionManager.CurrentConnection.Users.Create(newUser);
                     output.Add(newUser);
                 }
                 processed++;
             }
-            Users.Commit();
             Logger.Info("Data for {count} users inserted into the database!", processed);
             return output;
         }
@@ -379,7 +368,8 @@ namespace LobotJR.Command.System.Twitch
         public async Task Process()
         {
             var elapsed = DateTime.Now - LastUpdate;
-            if (elapsed > TimeSpan.FromMinutes(Settings.UserDatabaseUpdateTime))
+            var settings = SettingsManager.GetAppSettings();
+            if (elapsed > TimeSpan.FromMinutes(settings.UserDatabaseUpdateTime))
             {
                 LastUpdate = DateTime.Now;
                 var mods = await TwitchClient.GetModeratorListAsync();
@@ -389,7 +379,7 @@ namespace LobotJR.Command.System.Twitch
                 ProcessUpdate(mods, vips, subs, chatters);
             }
 
-            if (LookupTimer != null && DateTime.Now - LookupTimer > TimeSpan.FromSeconds(Settings.UserLookupBatchTime))
+            if (LookupTimer != null && DateTime.Now - LookupTimer > TimeSpan.FromSeconds(settings.UserLookupBatchTime))
             {
                 var users = await TwitchClient.GetTwitchUsers(LookupRequests.Select(x => x.Username));
                 ProcessLookups(users);

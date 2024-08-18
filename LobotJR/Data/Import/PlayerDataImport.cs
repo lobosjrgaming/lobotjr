@@ -55,18 +55,18 @@ namespace LobotJR.Data.Import
             }
         }
 
-        public static Dictionary<int, CharacterClass> SeedClassData(IRepository<CharacterClass> classRepository)
+        public static Dictionary<int, CharacterClass> SeedClassData(IRepository<CharacterClass> classRepository, IRepository<ItemType> typeRepository, IRepository<Equippables> equippableRepository)
         {
-            var deprived = new CharacterClass("Deprived", 0, 0, 0, 0, 0) { CanPlay = false };
+            var deprived = new CharacterClass("Deprived", false, 0f, 0f, 0f, 0f, 0f) { CanPlay = false };
             var output = new Dictionary<int, CharacterClass>()
             {
                 { -1, deprived },
                 { 0, deprived },
-                { 1, new CharacterClass("Warrior", 0.1f, 3, 5, 0, 0) },
-                { 2, new CharacterClass("Mage", 0.03f, 10, 0, 5, 0) },
-                { 3, new CharacterClass("Rogue", 0, 5, 10, 3, 0) },
-                { 4, new CharacterClass("Ranger", 0.05f, 0, 3, 10, 0) },
-                { 5, new CharacterClass("Cleric", 0.03f, 3, 3, 3, 0.1f) }
+                { 1, new CharacterClass("Warrior", true, 0.1f, 0.03f, 0.05f, 0f, 0f) },
+                { 2, new CharacterClass("Mage", true, 0.03f, 0.1f, 0f, 0.05f, 0.05f) },
+                { 3, new CharacterClass("Rogue", true, 0f, 0.05f, 0.1f, 0.03f, 0.03f) },
+                { 4, new CharacterClass("Ranger", true, 0.05f, 0f, 0.03f, 0.1f, 0f) },
+                { 5, new CharacterClass("Cleric", true, 0.03f, 0.03f, 0.03f, 0.03f, 0.1f) }
             };
 
             foreach (var entry in output.OrderBy(x => x.Key))
@@ -74,6 +74,17 @@ namespace LobotJR.Data.Import
                 classRepository.Create(entry.Value);
             }
             classRepository.Commit();
+
+            var types = typeRepository.Read();
+            foreach (var entry in output.OrderBy(x => x.Key))
+            {
+                var classType = typeRepository.Read(x => x.Name.Equals(entry.Value.Name)).FirstOrDefault();
+                if (classType != null)
+                {
+                    equippableRepository.Create(new Equippables() { CharacterClassId = entry.Value.Id, ItemTypeId = classType.Id });
+                }
+            }
+            equippableRepository.Commit();
             return output;
         }
 
@@ -83,13 +94,15 @@ namespace LobotJR.Data.Import
             string classDataPath,
             IRepository<PlayerCharacter> playerRepository,
             IRepository<CharacterClass> classRepository,
+            IRepository<ItemType> typeRepository,
+            IRepository<Equippables> equippableRepository,
             IRepository<Inventory> inventoryRepository,
             IRepository<Stable> stableRepository,
             UserSystem userSystem,
             Dictionary<int, Item> itemMap,
             Dictionary<int, Pet> petMap)
         {
-            var classMap = SeedClassData(classRepository);
+            var classMap = SeedClassData(classRepository, typeRepository, equippableRepository);
             var coinList = LoadLegacyCoinData(coinDataPath);
             var xpList = LoadLegacyExperienceData(xpDataPath);
             var classList = LoadLegacyClassData(classDataPath);

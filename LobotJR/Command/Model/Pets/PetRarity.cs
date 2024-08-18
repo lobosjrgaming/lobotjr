@@ -14,6 +14,6 @@ namespace LobotJR.Command.Model.Pets
         /// <summary>
         /// The base droprate for pets with this rarity.
         /// </summary>
-        public int DropRate { get; set; }
+        public float DropRate { get; set; }
     }
 }

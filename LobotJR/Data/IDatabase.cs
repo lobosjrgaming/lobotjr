@@ -2,6 +2,7 @@
 using LobotJR.Command.Model.Dungeons;
 using LobotJR.Command.Model.Equipment;
 using LobotJR.Command.Model.Fishing;
+using LobotJR.Command.Model.General;
 using LobotJR.Command.Model.Pets;
 using LobotJR.Command.Model.Player;
 using LobotJR.Twitch;
@@ -18,6 +19,7 @@ namespace LobotJR.Data
         // Application Data
         IRepository<Metadata> Metadata { get; }
         IRepository<AppSettings> AppSettings { get; }
+        IRepository<BugReport> BugReports { get; }
         IRepository<DataTimer> DataTimers { get; }
         IRepository<User> Users { get; }
         IRepository<AccessGroup> AccessGroups { get; }
@@ -49,5 +51,6 @@ namespace LobotJR.Data
         IRepository<EncounterLevel> EncounterLevelData { get; }
         IRepository<DungeonTimer> DungeonTimerData { get; }
         IRepository<CharacterClass> CharacterClassData { get; }
+        IRepository<Equippables> EquippableData { get; }
     }
 }

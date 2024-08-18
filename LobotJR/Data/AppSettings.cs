@@ -35,5 +35,9 @@
         /// The number of archived logging files and crash dumps to keep.
         /// </summary>
         public int LoggingMaxArchives { get; set; } = 8;
+        /// <summary>
+        /// Whether or not to enable Twitch Plays instead of the normal bot.
+        /// </summary>
+        public bool TwitchPlays { get; set; } = false;
     }
 }

@@ -1,6 +1,7 @@
 ﻿using LobotJR.Command.Model.Dungeons;
 using LobotJR.Command.Model.Player;
 using LobotJR.Data;
+using LobotJR.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,9 +12,13 @@ namespace LobotJR.Command.System.Dungeons
     /// <summary>
     /// System for managing the group finder.
     /// </summary>
-    public class GroupFinderSystem : ISystem
+    public class GroupFinderSystem : ISystemProcess
     {
+        private readonly string DailyTimerName = "Daily Dungeon";
+        private readonly Random random = new Random();
         private readonly IConnectionManager ConnectionManager;
+        private readonly SettingsManager SettingsManager;
+        private readonly PartySystem PartySystem;
         private readonly List<QueueEntry> GroupFinderQueue = new List<QueueEntry>();
 
         public DateTime LastGroupFormed { get; private set; } = DateTime.MinValue;
@@ -21,23 +26,68 @@ namespace LobotJR.Command.System.Dungeons
         /// <summary>
         /// Event handler for events related to the dungeon finder queue.
         /// </summary>
-        /// <param name="player">The player object for the user that the event
-        /// happened to.</param>
-        public delegate void DungeonQueueHandler(PlayerCharacter player);
+        /// <param name="party">The newly created party.</param>
+        public delegate void DungeonQueueHandler(Party party);
         /// <summary>
         /// Event fired when a player is added to a group through the dungeon
         /// finder queue.
         /// </summary>
         public event DungeonQueueHandler PartyFound;
 
-        public GroupFinderSystem(ConnectionManager connectionManager)
+        public GroupFinderSystem(ConnectionManager connectionManager, SettingsManager settingsManager, PartySystem partySystem)
         {
             ConnectionManager = connectionManager;
+            SettingsManager = settingsManager;
+            PartySystem = partySystem;
         }
 
-        public TimeSpan GetLockoutTime(PlayerCharacter player, string lockoutName)
+        private bool IsViableParty(IEnumerable<QueueEntry> players)
         {
-            var dailyTimer = ConnectionManager.CurrentConnection.DungeonTimerData.FirstOrDefault(x => x.Name.Equals(lockoutName));
+            var distribution = players.Select(x => x.Player).GroupBy(x => x.CharacterClass);
+            return !distribution.Any(x => x.Count() > 2);
+        }
+
+        private IEnumerable<DungeonRun> GetGroupDungeons(IEnumerable<QueueEntry> players)
+        {
+            var dungeons = players.First().Dungeons;
+            foreach (var player in players.Skip(1))
+            {
+                dungeons = dungeons.Intersect(player.Dungeons);
+            }
+            return dungeons;
+        }
+
+        private bool TryCreateParty(out Party party)
+        {
+            party = null;
+            var settings = SettingsManager.GetGameSettings();
+            if (GroupFinderQueue.Count() >= settings.DungeonPartySize)
+            {
+                for (var skip = 0; skip < GroupFinderQueue.Count - settings.DungeonPartySize; skip++)
+                {
+                    var group = GroupFinderQueue.Take(settings.DungeonPartySize - 1);
+                    group.Concat(GroupFinderQueue.Skip(group.Count() + skip).Take(1));
+                    if (IsViableParty(group))
+                    {
+                        var dungeons = GetGroupDungeons(group);
+                        if (dungeons.Any())
+                        {
+                            var newParty = PartySystem.CreateParty(true, group.Select(x => x.Player).ToArray());
+                            newParty.Run = random.RandomElement(dungeons);
+                            party = newParty;
+                            var leader = group.OrderByDescending(x => x.QueueTime).First();
+                            PartySystem.SetLeader(party, leader.Player);
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        public TimeSpan GetLockoutTime(PlayerCharacter player)
+        {
+            var dailyTimer = ConnectionManager.CurrentConnection.DungeonTimerData.FirstOrDefault(x => x.Name.Equals(DailyTimerName));
             if (dailyTimer != null)
             {
                 var lockout = ConnectionManager.CurrentConnection.DungeonLockouts.FirstOrDefault(x => x.UserId.Equals(player.UserId) && x.TimerId.Equals(dailyTimer.Id));
@@ -81,6 +131,10 @@ namespace LobotJR.Command.System.Dungeons
             if (!IsPlayerQueued(player))
             {
                 GroupFinderQueue.Add(new QueueEntry(player, dungeons));
+                if (TryCreateParty(out var party))
+                {
+                    PartyFound?.Invoke(party);
+                }
                 return true;
             }
             return false;
@@ -104,7 +158,7 @@ namespace LobotJR.Command.System.Dungeons
 
         public Task Process()
         {
-            throw new global::System.NotImplementedException();
+            return Task.CompletedTask;
         }
     }
 }

@@ -5,6 +5,9 @@ using System.Linq;
 
 namespace LobotJR.Command.Model.Dungeons
 {
+    /// <summary>
+    /// The state of a party.
+    /// </summary>
     public enum PartyState
     {
         /// <summary>
@@ -31,6 +34,26 @@ namespace LobotJR.Command.Model.Dungeons
         /// Party has just failed a dungeon.
         /// </summary>
         Failed
+    }
+
+    /// <summary>
+    /// The state of a step being processing during a dungeon. Determines what
+    /// action should be taken the next time dungeon progress is processed.
+    /// </summary>
+    public enum StepState
+    {
+        /// <summary>
+        /// The step should send the the setup text.
+        /// </summary>
+        Setup,
+        /// <summary>
+        /// The step should check for success.
+        /// </summary>
+        Resolving,
+        /// <summary>
+        /// The step should send the post-encounter text.
+        /// </summary>
+        Complete
     }
 
     /// <summary>
@@ -70,7 +93,7 @@ namespace LobotJR.Command.Model.Dungeons
         /// <summary>
         /// Whether the current step is complete or still pending.
         /// </summary>
-        public bool StepComplete { get; set; }
+        public StepState StepState { get; set; }
 
         public Party(bool isQueueGroup, params PlayerCharacter[] players)
         {
@@ -85,6 +108,13 @@ namespace LobotJR.Command.Model.Dungeons
             {
                 return Members.FirstOrDefault();
             }
+        }
+
+        public void Reset()
+        {
+            State = PartyState.Full;
+            CurrentEncounter = 0;
+            StepState = StepState.Setup;
         }
     }
 }

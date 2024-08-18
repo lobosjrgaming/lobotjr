@@ -13,7 +13,7 @@ namespace LobotJR.Command.System.Player
     /// <summary>
     /// System for managing player experience and currency.
     /// </summary>
-    public class PlayerSystem : ISystem
+    public class PlayerSystem
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         public static readonly int MaxLevel = 20;
@@ -47,9 +47,20 @@ namespace LobotJR.Command.System.Player
         /// </summary>
         public event ExperienceAwardHandler ExperienceAwarded;
         /// <summary>
+        /// Event handler for events related to periodic awards.
+        /// </summary>
+        /// <param name="enabled">True if experience was enabled, false if it
+        /// was disabled.</param>
+        public delegate void ExperienceToggleHandler(bool enabled);
+        /// <summary>
+        /// Event fired when periodic experience and currency are awarded.
+        /// </summary>
+        public event ExperienceToggleHandler ExperienceToggled;
+
+        /// <summary>
         /// The last time experience was awarded to viewers.
         /// </summary>
-        public DateTime? LastAward { get; set; }
+        public DateTime LastAward { get; set; }
         /// <summary>
         /// Multiplier applied to experience and currency awards.
         /// </summary>
@@ -112,6 +123,18 @@ namespace LobotJR.Command.System.Player
         }
 
         /// <summary>
+        /// Gives experience to a player. Raises the LevelUp event if the
+        /// player levels up or prestiges as a result of this experience gain.
+        /// </summary>
+        /// <param name="player">The player character object.</param>
+        /// <param name="experience">The amount of experience to add.</param>
+        public void GainExperience(PlayerCharacter player, int experience)
+        {
+            var user = UserSystem.GetUserById(player.UserId);
+            GainExperience(user, player, experience);
+        }
+
+        /// <summary>
         /// Gets a player character object for a given user.
         /// </summary>
         /// <param name="user">The user to get the player character for.</param>
@@ -130,6 +153,16 @@ namespace LobotJR.Command.System.Player
                 ConnectionManager.CurrentConnection.PlayerCharacters.Commit();
             }
             return player;
+        }
+
+        /// <summary>
+        /// Gets the user object for a given player.
+        /// </summary>
+        /// <param name="player">The player to get the user object for.</param>
+        /// <returns>A user object tied to the player.</returns>
+        public User GetUserByPlayer(PlayerCharacter player)
+        {
+            return ConnectionManager.CurrentConnection.Users.Read(x => x.TwitchId.Equals(player.UserId)).FirstOrDefault();
         }
 
         /// <summary>
@@ -314,10 +347,11 @@ namespace LobotJR.Command.System.Player
         /// <param name="user">The user triggering the enable.</param>
         public void EnableAwards(User user)
         {
+            LastAward = DateTime.Now;
             AwardsEnabled = true;
             AwardSetter = user;
+            ExperienceToggled?.Invoke(true);
         }
-
 
         /// <summary>
         /// Disables periodic experience and currency awards.
@@ -326,6 +360,7 @@ namespace LobotJR.Command.System.Player
         {
             AwardsEnabled = false;
             AwardSetter = null;
+            ExperienceToggled?.Invoke(false);
         }
 
         public Task Process()
@@ -333,11 +368,7 @@ namespace LobotJR.Command.System.Player
             var settings = SettingsManager.GetGameSettings();
             if (AwardsEnabled)
             {
-                if (LastAward == null)
-                {
-                    LastAward = DateTime.Now;
-                }
-                else if (LastAward + TimeSpan.FromMinutes(settings.ExperienceFrequency) <= DateTime.Now)
+                if (LastAward + TimeSpan.FromMinutes(settings.ExperienceFrequency) <= DateTime.Now)
                 {
                     var chatters = UserSystem.Viewers.ToList();
                     var xpToAward = settings.ExperienceValue * CurrentMultiplier;
@@ -354,21 +385,9 @@ namespace LobotJR.Command.System.Player
                         var player = GetPlayerByUser(chatter);
                         GainExperience(chatter, player, xpToAward);
                         player.Currency += coinsToAward;
-                        // I don't think we need to store mod/vip/sub flags in the database once everything is ported over to the new system
-                        // The only time we would need access is when someone references them in a command, since any command they send comes with the flags in the chat message
-                        //   This is not true of whispers, I'm an idiot.
-                        //   We definitely need to store them, so we know their chat state when a whisper comes in.
-                        // Maybe instead of doing batch user syncing operations, we can do it granularly each time someone sends a message
-                        // If we only update on message received, then people who don't talk will end up stale
-                        //  Could swap the batch sync to once a day or something?
-                        //  If someone gets the wrong xp amount for at most a day if they change state and don't talk in chat, that's not the end of the world
                     }
                     ExperienceAwarded?.Invoke(xpToAward, coinsToAward, subMultiplier);
                 }
-            }
-            else
-            {
-                LastAward = null;
             }
             return Task.CompletedTask;
         }

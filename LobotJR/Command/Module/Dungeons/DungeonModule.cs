@@ -1,4 +1,5 @@
 ﻿using LobotJR.Command.Model.Dungeons;
+using LobotJR.Command.Model.Equipment;
 using LobotJR.Command.Model.Player;
 using LobotJR.Command.System.Dungeons;
 using LobotJR.Command.System.General;
@@ -20,6 +21,7 @@ namespace LobotJR.Command.Module.Dungeons
     public class DungeonModule : ICommandModule
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        private static readonly Random Random = new Random();
         public static readonly Dictionary<PartyState, string> PartyDescriptions = new Dictionary<PartyState, string>()
         {
             { PartyState.Forming, "Party is currently forming. Add members with '!add <username>'" },
@@ -30,6 +32,7 @@ namespace LobotJR.Command.Module.Dungeons
         };
 
         private readonly DungeonSystem DungeonSystem;
+        private readonly PartySystem PartySystem;
         private readonly GroupFinderSystem GroupFinderSystem;
         private readonly PlayerSystem PlayerSystem;
         private readonly UserSystem UserSystem;
@@ -49,7 +52,7 @@ namespace LobotJR.Command.Module.Dungeons
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public DungeonModule(DungeonSystem dungeonSystem, GroupFinderSystem groupFinderSystem, PlayerSystem playerSystem, UserSystem userSystem, ConfirmationSystem confirmationSystem, SettingsManager settingsManager)
+        public DungeonModule(DungeonSystem dungeonSystem, PartySystem partySystem, GroupFinderSystem groupFinderSystem, PlayerSystem playerSystem, UserSystem userSystem, ConfirmationSystem confirmationSystem, SettingsManager settingsManager)
         {
             DungeonSystem = dungeonSystem;
             GroupFinderSystem = groupFinderSystem;
@@ -58,6 +61,10 @@ namespace LobotJR.Command.Module.Dungeons
             SettingsManager = settingsManager;
             confirmationSystem.Confirmed += ConfirmationSystem_Confirmed;
             confirmationSystem.Canceled += ConfirmationSystem_Canceled;
+            DungeonSystem.DungeonProgress += DungeonSystem_DungeonProgress;
+            DungeonSystem.DungeonFailure += DungeonSystem_DungeonFailure;
+            DungeonSystem.PlayerDeath += DungeonSystem_PlayerDeath;
+            DungeonSystem.DungeonComplete += DungeonSystem_DungeonComplete;
             Commands = new List<CommandHandler>()
             {
                 new CommandHandler("DungeonList", this, CommandMethod.GetInfo(ListDungeons), "dungeonlist"),
@@ -77,21 +84,61 @@ namespace LobotJR.Command.Module.Dungeons
             };
         }
 
+        private void DungeonSystem_DungeonComplete(PlayerCharacter player, int experience, int currency, Item loot, bool groupFinderBonus)
+        {
+            var user = PlayerSystem.GetUserByPlayer(player);
+            var messages = new List<string>()
+            {
+                "Dungeon complete. Your party remains intact."
+            };
+            if (groupFinderBonus)
+            {
+                messages.Add("You earned double rewards for completing a daily Group Finder dungeon! Queue up again in 24 hours to receive the 2x bonus again! (You can whisper me '!daily' for a status.)");
+            }
+            messages.Add($"{user.Username}, you've earned {experience} XP and {currency} Wolfcoins for completing the dungeon!");
+            if (loot != null)
+            {
+                messages.Add($"You looted {loot.Name}!");
+            }
+            if (groupFinderBonus)
+            {
+                messages.Add("You completed a group finder dungeon. Type !queue to join another group!");
+            }
+            PushNotification?.Invoke(user, new CommandResult(messages.ToArray()));
+        }
+
+        private void DungeonSystem_DungeonFailure(Party party, IEnumerable<PlayerCharacter> deceased)
+        {
+            var deadUsers = deceased.Select(x => PlayerSystem.GetUserByPlayer(x));
+            PushToParty(party, $"In the chaos, {string.Join(", and ", deadUsers.Select(x => x.Username))} lost their life. Seek vengeance in their honor!", deceased.ToArray());
+            PushToParty(party, "It's a sad thing your adventure has ended here. No XP or Coins have been awarded.");
+        }
+
+        private void DungeonSystem_PlayerDeath(PlayerCharacter player, int experienceLost, int currencyLost)
+        {
+            PushNotification?.Invoke(PlayerSystem.GetUserByPlayer(player), new CommandResult($"Sadly, you have died. You lost {experienceLost} XP and {currencyLost} Coins."));
+        }
+
+        private void DungeonSystem_DungeonProgress(Party party, string result)
+        {
+            PushToParty(party, result);
+        }
+
         private void ConfirmationSystem_Confirmed(User user)
         {
             var player = PlayerSystem.GetPlayerByUser(user);
-            var party = DungeonSystem.GetCurrentGroup(player);
+            var party = PartySystem.GetCurrentGroup(player);
             if (party != null)
             {
-                if (DungeonSystem.AcceptInvite(party, player))
+                if (PartySystem.AcceptInvite(party, player))
                 {
-                    var members = party.Members.Where(x => !x.Equals(player)).Select(x => UserSystem.GetUserById(x.UserId).Username);
+                    var members = party.Members.Where(x => !x.Equals(player)).Select(x => PlayerSystem.GetUserByPlayer(x).Username);
                     PushNotification?.Invoke(user, new CommandResult($"You successfully joined a party with the following members: {string.Join(", ", members)}"));
                     var settings = SettingsManager.GetGameSettings();
                     PushToParty(party, $"{user.Username}, level {player.Level} {player.CharacterClass.Name} has joined your party ({party.Members.Count}/{settings.DungeonPartySize})", player);
                     if (party.State == PartyState.Full)
                     {
-                        PushNotification?.Invoke(UserSystem.GetUserById(party.Leader.UserId), new CommandResult($"You've reached {settings.DungeonPartySize} party members! You're ready to dungeon!"));
+                        PushNotification?.Invoke(PlayerSystem.GetUserByPlayer(party.Leader), new CommandResult($"You've reached {settings.DungeonPartySize} party members! You're ready to dungeon!"));
                     }
                     Logger.Info("{user} accepted invite to group with {members}", user.Username, string.Join(", ", members));
                 }
@@ -101,11 +148,11 @@ namespace LobotJR.Command.Module.Dungeons
         private void ConfirmationSystem_Canceled(User user)
         {
             var player = PlayerSystem.GetPlayerByUser(user);
-            var party = DungeonSystem.GetCurrentGroup(player);
+            var party = PartySystem.GetCurrentGroup(player);
             if (party != null)
             {
-                DungeonSystem.DeclineInvite(party, player);
-                var leader = UserSystem.GetUserById(party.Leader.UserId);
+                PartySystem.DeclineInvite(party, player);
+                var leader = PlayerSystem.GetUserByPlayer(party.Leader);
                 PushNotification?.Invoke(user, new CommandResult($"You declined {leader.Username}'s invite."));
                 PushNotification?.Invoke(leader, new CommandResult($"{user.Username} has declined your party invite."));
                 Logger.Info("{user} delcined party invite from {leader}.", user.Username, leader.Username);
@@ -119,7 +166,7 @@ namespace LobotJR.Command.Module.Dungeons
             player = PlayerSystem.GetPlayerByUser(user);
             if (!GroupFinderSystem.IsPlayerQueued(player))
             {
-                party = DungeonSystem.GetCurrentGroup(player);
+                party = PartySystem.GetCurrentGroup(player);
                 if (party != null)
                 {
                     if (!requiresLeader || party.Leader.Equals(player))
@@ -137,7 +184,7 @@ namespace LobotJR.Command.Module.Dungeons
         {
             foreach (var member in party.Members.Except(skip))
             {
-                PushNotification?.Invoke(UserSystem.GetUserById(member.UserId), new CommandResult(message));
+                PushNotification?.Invoke(PlayerSystem.GetUserByPlayer(member), new CommandResult(message));
             }
         }
 
@@ -167,12 +214,12 @@ namespace LobotJR.Command.Module.Dungeons
             var player = PlayerSystem.GetPlayerByUser(user);
             if (!GroupFinderSystem.IsPlayerQueued(player))
             {
-                var currentParty = DungeonSystem.GetCurrentGroup(player);
+                var currentParty = PartySystem.GetCurrentGroup(player);
                 if (currentParty == null)
                 {
-                    var party = DungeonSystem.CreateParty(false, player);
+                    var party = PartySystem.CreateParty(false, player);
                     Logger.Info("Party Created by {user}", user.Username);
-                    Logger.Info("Total number of parties: {count}", DungeonSystem.PartyCount);
+                    Logger.Info("Total number of parties: {count}", PartySystem.PartyCount);
                     return new CommandResult("Party created! Use '!add <username>' to invite party members.");
                 }
                 else if (currentParty.Leader.Equals(player))
@@ -205,21 +252,20 @@ namespace LobotJR.Command.Module.Dungeons
                         {
                             if (targetPlayer.CharacterClass.CanPlay)
                             {
-                                if (!GroupFinderSystem.IsPlayerQueued(targetPlayer) && DungeonSystem.GetCurrentGroup(targetPlayer) == null)
+                                if (!GroupFinderSystem.IsPlayerQueued(targetPlayer) && PartySystem.GetCurrentGroup(targetPlayer) == null)
                                 {
-                                    var currentParty = DungeonSystem.GetCurrentGroup(player);
+                                    var currentParty = PartySystem.GetCurrentGroup(player);
                                     if (currentParty == null)
                                     {
-                                        currentParty = DungeonSystem.CreateParty(false, player);
+                                        currentParty = PartySystem.CreateParty(false, player);
                                     }
                                     if (currentParty.Leader.Equals(player))
                                     {
                                         var settings = SettingsManager.GetGameSettings();
                                         if (currentParty.State == PartyState.Forming || currentParty.State == PartyState.Full)
                                         {
-                                            if (currentParty.Members.Count + currentParty.PendingInvites.Count < settings.DungeonPartySize)
+                                            if (PartySystem.InvitePlayer(currentParty, targetPlayer))
                                             {
-                                                currentParty.PendingInvites.Add(targetPlayer);
                                                 PushNotification?.Invoke(targetUser, new CommandResult($"{user.Username}, Level {player.Level} {player.CharacterClass.Name}, has invited you to join a party. Accept? (!y/!n)"));
                                                 PushToParty(currentParty, $"{targetUser.Username} was invited to your group.", player);
                                                 return new CommandResult($"You invited {targetUser.Username} to your group.");
@@ -232,6 +278,7 @@ namespace LobotJR.Command.Module.Dungeons
                                 }
                                 return new CommandResult($"{targetUser.Username} is already in a group, or in the dungeon finder queue.");
                             }
+                            PushNotification?.Invoke(targetUser, new CommandResult("Someone tried to invite you to a group, but you haven't picked a class yet! Type !classhelp for details."));
                             return new CommandResult($"{targetUser.Username} is high enough level, but has not picked a class!");
                         }
                         return new CommandResult($"{targetUser.Username} is not high enough level. ({targetPlayer.Level})");
@@ -266,7 +313,7 @@ namespace LobotJR.Command.Module.Dungeons
                                     PushToParty(party, $"{targetUser.Username} was removed from the party.", player);
                                     return new CommandResult($"{targetUser.Username} was removed from the party.");
                                 }
-                                DungeonSystem.DisbandParty(party);
+                                PartySystem.DisbandParty(party);
                                 return new CommandResult("Your party has been disbanded.");
                             }
                         }
@@ -292,7 +339,7 @@ namespace LobotJR.Command.Module.Dungeons
                         var targetPlayer = PlayerSystem.GetPlayerByUser(targetUser);
                         if (party.Members.Contains(targetPlayer))
                         {
-                            DungeonSystem.SetLeader(party, targetPlayer);
+                            PartySystem.SetLeader(party, targetPlayer);
                             PushNotification?.Invoke(targetUser, new CommandResult($"{user.Username} has promoted you to Party Leader."));
                             PushToParty(party, $"{user.Username} has promoted {targetUser.Username} to Party Leader.", player, targetPlayer);
                             return new CommandResult($"You have promoted {targetUser.Username} to Party Leader.");
@@ -313,12 +360,12 @@ namespace LobotJR.Command.Module.Dungeons
                 if (party.State != PartyState.Started)
                 {
                     var wasLeader = party.Leader.Equals(player);
-                    DungeonSystem.RemovePlayer(party, player);
+                    PartySystem.RemovePlayer(party, player);
                     if (party.Members.Count > 1)
                     {
                         if (wasLeader)
                         {
-                            var newLeader = UserSystem.GetUserById(party.Leader.UserId);
+                            var newLeader = PlayerSystem.GetUserByPlayer(party.Leader);
                             PushNotification?.Invoke(newLeader, new CommandResult($"{user.Username} has left the party, you have been promoted to party leader."));
                             PushToParty(party, $"{user.Username} has left the party.", party.Leader);
                         }
@@ -330,7 +377,7 @@ namespace LobotJR.Command.Module.Dungeons
                     else
                     {
                         PushToParty(party, $"{user.Username} has left the party, your party has been disbanded.");
-                        DungeonSystem.DisbandParty(party);
+                        PartySystem.DisbandParty(party);
                     }
                     return new CommandResult($"You left the party.");
                 }
@@ -344,7 +391,7 @@ namespace LobotJR.Command.Module.Dungeons
             var canExecute = CanExecuteCommand(user, false, out var player, out var party, out var errorMessage);
             if (canExecute)
             {
-                return new CommandResult(true, $"{user.Username} request their Party Data. Members: {string.Join(", ", party.Members.Select(x => UserSystem.GetUserById(x.UserId).Username))}; Status: {party.State}");
+                return new CommandResult(true, $"{user.Username} request their Party Data. Members: {string.Join(", ", party.Members.Select(x => PlayerSystem.GetUserByPlayer(x).Username))}; Status: {party.State}");
             }
             return new CommandResult(errorMessage);
         }
@@ -369,7 +416,7 @@ namespace LobotJR.Command.Module.Dungeons
             var canExecute = CanExecuteCommand(user, true, out var player, out var party, out var errorMessage);
             if (canExecute)
             {
-                var success = DungeonSystem.SetReady(party);
+                var success = PartySystem.SetReady(party);
                 if (success)
                 {
                     return new CommandResult("Party set to 'Ready'. Be careful adventuring without a full party!");
@@ -388,7 +435,7 @@ namespace LobotJR.Command.Module.Dungeons
             var canExecute = CanExecuteCommand(user, true, out var player, out var party, out var errorMessage);
             if (canExecute)
             {
-                var success = DungeonSystem.UnsetReady(party);
+                var success = PartySystem.UnsetReady(party);
                 if (success)
                 {
                     return new CommandResult("Party 'Ready' status has been revoked.");
@@ -398,29 +445,41 @@ namespace LobotJR.Command.Module.Dungeons
             return new CommandResult(errorMessage);
         }
 
-        public CommandResult StartDungeon(User user, string dungeonId)
+        public CommandResult StartDungeon(User user, string dungeonId = "")
         {
             var canExecute = CanExecuteCommand(user, true, out var player, out var party, out var errorMessage);
             if (canExecute)
             {
-                var run = DungeonSystem.ParseDungeonId(dungeonId);
+                DungeonRun run;
+                if (string.IsNullOrWhiteSpace(dungeonId))
+                {
+                    if (party.Run != null)
+                    {
+                        run = party.Run;
+                    }
+                    else
+                    {
+                        run = Random.RandomElement(DungeonSystem.GetEligibleDungeons(party));
+                    }
+                }
+                else
+                {
+                    run = DungeonSystem.ParseDungeonId(dungeonId);
+                }
                 if (run != null)
                 {
-                    if (DungeonSystem.CanStartDungeon(party))
+                    var success = DungeonSystem.TryStartDungeon(party, run, out var broke);
+                    if (success)
                     {
-                        var success = DungeonSystem.TryStartDungeon(party, run, out var broke);
-                        if (success)
-                        {
-                            PushToParty(party, $"Successfully initiated {GetDungeonName(party.Run)}! Wolfcoins deducted.");
-                            var members = party.Members.Select(x => $"{UserSystem.GetUserById(x.UserId)} (Level {x.Level} {x.CharacterClass.Name})");
-                            PushToParty(party, $"Your party consists of: {string.Join(", ", members)}");
-                            return new CommandResult();
-                        }
-                        if (broke.Any())
-                        {
-                            PushToParty(party, $"The following party members do not have enough money to run a dungeon: {string.Join(", ", broke.Select(x => UserSystem.GetUserById(x.UserId).Username))}");
-                            return new CommandResult();
-                        }
+                        PushToParty(party, $"Successfully initiated {DungeonSystem.GetDungeonName(party.Run)}! Wolfcoins deducted.");
+                        var members = party.Members.Select(x => $"{PlayerSystem.GetUserByPlayer(x)} (Level {x.Level} {x.CharacterClass.Name})");
+                        PushToParty(party, $"Your party consists of: {string.Join(", ", members)}");
+                        return new CommandResult();
+                    }
+                    if (broke.Any())
+                    {
+                        PushToParty(party, $"The following party members do not have enough money to run a dungeon: {string.Join(", ", broke.Select(x => PlayerSystem.GetUserByPlayer(x).Username))}");
+                        return new CommandResult();
                     }
                     return new CommandResult("You don't have enough members to start a dungeon. Use !invite to add players, or !ready to enable dungeons with with a partial party.");
                 }

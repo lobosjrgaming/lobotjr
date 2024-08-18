@@ -6,7 +6,7 @@ namespace LobotJR.Command.System.General
     /// <summary>
     /// System for handling events or commands that require confirmation.
     /// </summary>
-    public class ConfirmationSystem : ISystem
+    public class ConfirmationSystem : ISystemProcess
     {
         /// <summary>
         /// Event handler for confirmation events.

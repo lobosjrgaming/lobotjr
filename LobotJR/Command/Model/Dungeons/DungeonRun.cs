@@ -19,5 +19,25 @@
             Dungeon = dungeon;
             Mode = mode;
         }
+
+        public override bool Equals(object obj)
+        {
+            var other = obj as DungeonRun;
+            if (other != null)
+            {
+                return other.Dungeon.Equals(Dungeon) && other.Mode.Equals(Mode);
+            }
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            var prime1 = 108301;
+            var prime2 = 150151;
+            var hash = prime1;
+            hash = (hash * prime2) ^ Dungeon.GetHashCode();
+            hash = (hash * prime2) ^ Mode.GetHashCode();
+            return hash;
+        }
     }
 }

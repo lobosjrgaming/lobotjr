@@ -51,6 +51,8 @@ namespace LobotJR.Command.Module.Pets
             PetSystem = petSystem;
             PlayerSystem = playerSystem;
             PetSystem.PetFound += PetSystem_PetFound;
+            PetSystem.PetWarning += PetSystem_PetWarning;
+            PetSystem.PetDeath += PetSystem_PetDeath;
             confirmationSystem.Confirmed += ConfirmationSystem_Confirmed;
             confirmationSystem.Canceled += ConfirmationSystem_Canceled;
             SettingsManager = settingsManager;
@@ -64,6 +66,19 @@ namespace LobotJR.Command.Module.Pets
                 new CommandHandler("DeactivatePet", this, CommandMethod.GetInfo(DeactivatePet), "dismiss"),
                 new CommandHandler("DeletePet", this, CommandMethod.GetInfo<int>(DeletePet), "release"),
             };
+        }
+
+        private void PetSystem_PetDeath(User user, Stable stable)
+        {
+            PushNotification?.Invoke(user, new CommandResult($"{stable.Name} starved to death."));
+        }
+
+        private void PetSystem_PetWarning(User user, Stable stable)
+        {
+            var message = stable.Hunger <= 10
+                ? $"{stable.Name} is very hungry and will die if you don't feed it soon!"
+                : $"{stable.Name} is hungry! Be sure to !feed them!";
+            PushNotification?.Invoke(user, new CommandResult(message));
         }
 
         private void PetSystem_PetFound(User user, Stable stable)
@@ -244,9 +259,9 @@ namespace LobotJR.Command.Module.Pets
                     {
                         var active = PetSystem.ActivatePet(user, pet);
                         var dismissMessage = "";
-                        if (active.Any())
+                        if (active != null)
                         {
-                            dismissMessage = $" and sent {string.Join(", ", active.Select(x => x.Name))} back to the stable";
+                            dismissMessage = $" and sent {active.Name} back to the stable";
                         }
                         var output = $"You summoned {pet.Name}{dismissMessage}.";
                     }
@@ -260,9 +275,9 @@ namespace LobotJR.Command.Module.Pets
         public CommandResult DeactivatePet(User user)
         {
             var active = PetSystem.DeactivatePet(user);
-            if (active.Any())
+            if (active != null)
             {
-                return new CommandResult($"You dismissed {string.Join(", ", active.Select(x => x.Name))}.");
+                return new CommandResult($"You dismissed {active.Name}.");
             }
             return new CommandResult("You do not have a pet summoned.");
         }

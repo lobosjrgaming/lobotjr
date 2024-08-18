@@ -1,7 +1,7 @@
-﻿using LobotJR.Twitch.Model;
+﻿using LobotJR.Command.System.Player;
+using LobotJR.Twitch.Model;
 using System;
 using System.Text.RegularExpressions;
-using Wolfcoins;
 
 namespace LobotJR.Trigger.Responder
 {
@@ -10,21 +10,22 @@ namespace LobotJR.Trigger.Responder
         private static readonly TimeSpan Cooldown = TimeSpan.FromSeconds(30);
 
         public Regex Pattern { get; private set; } = new Regex(@"([A-Za-z0-9])\.([A-Za-z])([A-Za-z0-9])", RegexOptions.IgnoreCase);
-        private Currency UserList;
+        private readonly PlayerSystem PlayerSystem;
         private DateTime LastTrigger = DateTime.Now - Cooldown;
 
-        public BlockLinks(Currency currency)
+        public BlockLinks(PlayerSystem playerSystem)
         {
-            UserList = currency;
+            PlayerSystem = playerSystem;
         }
 
         public TriggerResult Process(Match match, User user)
         {
+            var player = PlayerSystem.GetPlayerByUser(user);
             if (!match.Groups[0].Value.Equals("d.va")
                 && !user.IsSub
                 && !user.IsMod
-                && UserList.determineLevel(user.Username) < 2
-                && UserList.determinePrestige(user.Username) < 1
+                && player.Level < 2
+                && player.Prestige < 1
                 && LastTrigger + Cooldown <= DateTime.Now)
             {
                 LastTrigger = DateTime.Now;

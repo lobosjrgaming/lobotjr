@@ -13,28 +13,31 @@ namespace LobotJR.Command.System.Fishing
     /// <summary>
     /// Runs the logic for the fishing system.
     /// </summary>
-    public class FishingSystem : ISystem
+    public class FishingSystem : ISystemProcess, IDatabaseInitialize
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
+        private readonly IConnectionManager ConnectionManager;
+        private readonly SettingsManager SettingsManager;
 
         private readonly Random Random = new Random();
         private readonly int[] Chances = new int[] { 40, 70, 95, 99, 100 };
 
-        private readonly List<Fisher> Fishers;
+        private readonly List<Fisher> Fishers = new List<Fisher>();
 
         /// <summary>
         /// Event handler for events related to a specific user.
         /// </summary>
         /// <param name="database">A connection to the database.</param>
         /// <param name="fisher">The fisher object for the user.</param>
-        public delegate void FisherEventHandler(IDatabase database, Fisher fisher);
+        public delegate void FisherEventHandler(Fisher fisher);
         /// <summary>
         /// Event handler for when a fisher catches a fish.
         /// </summary>
         /// <param name="database">A connection to the database.</param>
         /// <param name="fisher">The fisher object for the user.</param>
         /// <param name="catchData">The catch data for the fish caught.</param>
-        public delegate void FishCatchEventHandler(IDatabase database, Fisher fisher, Catch catchData);
+        public delegate void FishCatchEventHandler(Fisher fisher, Catch catchData);
 
         /// <summary>
         /// Event fired when a user hooks a fish.
@@ -52,10 +55,15 @@ namespace LobotJR.Command.System.Fishing
         public int CastTimeMinimum { get; set; }
         public int CastTimeMaximum { get; set; }
 
-        public FishingSystem(IDatabase database)
+        public FishingSystem(IConnectionManager connectionManager, SettingsManager settingsManager)
         {
-            Fishers = database.Users.Read().Select(x => new Fisher() { User = x }).ToList();
-            var settings = SettingsManager.GetGameSettings(database);
+            ConnectionManager = connectionManager;
+            SettingsManager = settingsManager;
+        }
+
+        public void Initialize()
+        {
+            var settings = SettingsManager.GetGameSettings();
             CastTimeMinimum = settings.FishingCastMinimum;
             CastTimeMaximum = settings.FishingCastMaximum;
         }
@@ -190,10 +198,10 @@ namespace LobotJR.Command.System.Fishing
         /// a normal distribution when determining the rarity of the hooked
         /// fish.</param>
         /// <returns>True if a fish was hooked.</returns>
-        public bool HookFish(IDatabase database, Fisher fisher, bool useNormalRarity)
+        public bool HookFish(Fisher fisher, bool useNormalRarity)
         {
             var index = -1;
-            var rarities = database.FishData.Read().Select(x => x.Rarity).Distinct().ToList();
+            var rarities = ConnectionManager.CurrentConnection.FishData.Read().Select(x => x.Rarity).Distinct().ToList();
             if (useNormalRarity)
             {
                 index = Random.NextNormalIndex(rarities.Count);
@@ -205,8 +213,8 @@ namespace LobotJR.Command.System.Fishing
             if (index >= 0)
             {
                 var rarityId = rarities[index].Id;
-                var fishList = database.FishData.Read(x => x.Rarity.Id == rarityId).ToList();
-                var fish = fishList[Random.Next(0, fishList.Count)];
+                var fishList = ConnectionManager.CurrentConnection.FishData.Read(x => x.Rarity.Id == rarityId).ToList();
+                var fish = Random.RandomElement(fishList);
                 fisher.Hooked = fish;
                 Logger.Debug("Fish {fish} hooked for user {userId}.", fish?.Name, fisher.User.TwitchId);
                 return true;
@@ -231,10 +239,10 @@ namespace LobotJR.Command.System.Fishing
         /// </summary>
         /// <param name="fisher">The fisher that is trying to catch.</param>
         /// <returns>The catch data for this fish.</returns>
-        public Catch CatchFish(IDatabase database, Fisher fisher)
+        public Catch CatchFish(Fisher fisher)
         {
             var catchData = default(Catch);
-            var settings = SettingsManager.GetGameSettings(database);
+            var settings = SettingsManager.GetGameSettings();
             if (fisher != null)
             {
                 catchData = CalculateFishSizes(fisher, settings.FishingUseNormalSizes);
@@ -253,10 +261,10 @@ namespace LobotJR.Command.System.Fishing
         /// <summary>
         /// Runs all active fishers to process hooking and releasing events.
         /// </summary>
-        public Task Process(IDatabase database, bool broadcasting)
+        public Task Process()
         {
             var messages = new Dictionary<string, IEnumerable<string>>();
-            var settings = SettingsManager.GetGameSettings(database);
+            var settings = SettingsManager.GetGameSettings();
             foreach (var fisher in Fishers.Where(x => x.IsFishing))
             {
                 if (fisher.IsFishing
@@ -264,9 +272,9 @@ namespace LobotJR.Command.System.Fishing
                     && DateTime.Now >= fisher.HookedTime)
                 {
                     Logger.Debug("Hooking fish for user {userId}.", fisher.User.TwitchId);
-                    if (HookFish(database, fisher, settings.FishingUseNormalRarity))
+                    if (HookFish(fisher, settings.FishingUseNormalRarity))
                     {
-                        OnFishHooked(fisher);
+                        FishHooked?.Invoke(fisher);
                     }
                 }
                 if (fisher.Hooked != null
@@ -275,7 +283,7 @@ namespace LobotJR.Command.System.Fishing
                 {
                     Logger.Debug("Fish got away for user {userId}.", fisher.User.TwitchId);
                     UnhookFish(fisher);
-                    OnFishGotAway(fisher);
+                    FishGotAway?.Invoke(fisher);
                 }
             }
             return Task.CompletedTask;

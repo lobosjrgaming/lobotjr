@@ -17,5 +17,17 @@
         /// connection has been opened.
         /// </summary>
         IDatabase CurrentConnection { get; }
+        /// <summary>
+        /// Creates a new metadata record if none exists in the database.
+        /// </summary>
+        Metadata SeedMetadata();
+        /// <summary>
+        /// Creates a new app settings record if none exists in the database.
+        /// </summary>
+        AppSettings SeedAppSettings();
+        /// <summary>
+        /// Creates a new game settings record if none exists in the database.
+        /// </summary>
+        GameSettings SeedGameSettings();
     }
 }

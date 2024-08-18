@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace LobotJR.Data.Migration
 {
@@ -25,7 +26,7 @@ namespace LobotJR.Data.Migration
             ClientData = client;
         }
 
-        public DatabaseMigrationResult Update(DbContext context)
+        public async Task<DatabaseMigrationResult> Update(DbContext context)
         {
             var result = new DatabaseMigrationResult { Success = true };
             var commands = new string[]
@@ -63,7 +64,7 @@ namespace LobotJR.Data.Migration
             var roleNames = roleNameLists.SelectMany(x => x.Split(','));
             var allNames = new List<string>(tournamentNames);
             allNames.AddRange(roleNames);
-            var ids = Users.Get(TokenData.BroadcastToken, ClientData, allNames.Distinct()).GetAwaiter().GetResult();
+            var ids = await Users.Get(TokenData.BroadcastToken, ClientData, allNames.Distinct());
             if (ids == null || ids.Any(x => x.Data == null))
             {
                 return new DatabaseMigrationResult { Success = false };

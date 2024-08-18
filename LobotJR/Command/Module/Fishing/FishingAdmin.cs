@@ -15,6 +15,7 @@ namespace LobotJR.Command.Module.Fishing
     {
         private readonly FishingSystem FishingSystem;
         private readonly TournamentSystem TournamentSystem;
+        private readonly SettingsManager SettingsManager;
 
         /// <summary>
         /// Prefix applied to names of commands within this module.
@@ -29,10 +30,11 @@ namespace LobotJR.Command.Module.Fishing
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public FishingAdmin(FishingSystem fishingSystem, TournamentSystem tournamentSystem)
+        public FishingAdmin(FishingSystem fishingSystem, TournamentSystem tournamentSystem, SettingsManager settingsManager)
         {
             FishingSystem = fishingSystem;
             TournamentSystem = tournamentSystem;
+            SettingsManager = settingsManager;
             Commands = new List<CommandHandler>()
             {
                 new CommandHandler("DebugTournament", this, CommandMethod.GetInfo(DebugTournament), "debugtournament", "debug-tournament"),
@@ -40,20 +42,20 @@ namespace LobotJR.Command.Module.Fishing
             };
         }
 
-        public CommandResult DebugTournament(IDatabase database)
+        public CommandResult DebugTournament()
         {
-            TournamentSystem.StartTournament(database);
+            TournamentSystem.StartTournament();
             return new CommandResult(true);
         }
 
-        public CommandResult DebugCatch(IDatabase database)
+        public CommandResult DebugCatch()
         {
-            var settings = SettingsManager.GetGameSettings(database);
+            var settings = SettingsManager.GetGameSettings();
             var fisher = new Fisher() { User = new User("", "") };
             var output = new List<string>();
             for (var i = 0; i < 50; i++)
             {
-                FishingSystem.HookFish(database, fisher, settings.FishingUseNormalRarity);
+                FishingSystem.HookFish(fisher, settings.FishingUseNormalRarity);
                 var fish = FishingSystem.CalculateFishSizes(fisher, settings.FishingUseNormalSizes);
                 output.Add($"{fish.Fish.Name} ({fish.Fish.Rarity.Name}) caght.");
             }

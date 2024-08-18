@@ -98,6 +98,8 @@ namespace LobotJR.Twitch
                         $"NICK {TokenData.ChatUser.ToLower()}",
                         $"JOIN #{TokenData.BroadcastUser}");
                     ExpectResponse();
+                    Logger.Info("Logged in to Twitch IRC server as {user}", TokenData.ChatUser);
+                    LastReconnect = null;
                     return true;
                 }
                 else
@@ -109,25 +111,23 @@ namespace LobotJR.Twitch
             {
                 Logger.Error(ex);
             }
+            LastReconnect = DateTime.Now;
             return false;
         }
 
         private async Task Reconnect()
         {
             PingSent = false;
-            Client.Dispose();
-            Client = new TcpClient();
+            Restart();
             var connected = await Connect(IsSecure);
             if (!connected)
             {
-                LastReconnect = DateTime.Now;
                 ReconnectTimer = TimeSpan.FromSeconds(Math.Min(ReconnectTimer.TotalSeconds * 2, ReconnectTimerMax.TotalSeconds));
                 Logger.Error("Connection failed. Retrying in {seconds} seconds.", ReconnectTimer.TotalSeconds);
             }
             else
             {
                 await WriteLine("PING");
-                LastReconnect = null;
                 ReconnectTimer = TimeSpan.FromSeconds(ReconnectTimerBase.TotalSeconds);
             }
         }
@@ -255,7 +255,7 @@ namespace LobotJR.Twitch
                     await Reconnect();
                 }
             }
-            else if (LastReconnect != null && DateTime.Now - LastReconnect > ReconnectTimer)
+            else if (LastReconnect.HasValue && DateTime.Now - LastReconnect.Value > ReconnectTimer)
             {
                 await Reconnect();
             }

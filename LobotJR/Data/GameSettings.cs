@@ -41,6 +41,9 @@
         public int DungeonLevelCost { get; set; } = 10;
         public int DungeonStepTime { get; set; } = 9000;
         public float DungeonDeathChance { get; set; } = 0.25f;
+        public float DungeonCritChance { get; set; } = 0.25f;
+        public float DungeonCritBonus { get; set; } = 1f;
+        public bool DungeonLevelRestrictions { get; set; } = false;
 
         /// <summary>
         /// The shortest time, in seconds, it can take to hook a fish. Default

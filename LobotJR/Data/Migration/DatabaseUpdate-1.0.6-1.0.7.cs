@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace LobotJR.Data.Migration
 {
@@ -34,7 +35,7 @@ namespace LobotJR.Data.Migration
             return Regex.Split(value, "(?<!\\\\),").Select(x => x.Replace("\\,", ",")).ToList();
         }
 
-        public DatabaseMigrationResult Update(DbContext context)
+        public Task<DatabaseMigrationResult> Update(DbContext context)
         {
             var result = new DatabaseMigrationResult { Success = true };
             var commands = new string[]
@@ -95,7 +96,7 @@ namespace LobotJR.Data.Migration
                 }
             }
 
-            return result;
+            return Task.FromResult(result);
         }
     }
 }

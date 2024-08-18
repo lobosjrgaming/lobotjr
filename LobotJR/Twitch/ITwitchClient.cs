@@ -51,15 +51,6 @@ namespace LobotJR.Twitch
         Task<bool> TimeoutAsync(User user, int? duration, string message);
 
         /// <summary>
-        /// Times out a user synchronously.
-        /// </summary>
-        /// <param name="user">The user object of the user to timeout.</param>
-        /// <param name="duration">The duration of the timeout. Null for a permanent ban.</param>
-        /// <param name="message">The message to send along with the timeout.</param>
-        /// <returns>True if the timeout was executed successfully.</returns>
-        bool Timeout(User user, int? duration, string message);
-
-        /// <summary>
         /// Gets the details of all subscribers to the broadcast user.
         /// </summary>
         /// <returns>A collection of subscription responses from Twitch.</returns>
