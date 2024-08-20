@@ -1,5 +1,5 @@
 ﻿using LobotJR.Command.Model.Equipment;
-using LobotJR.Command.System.Equipment;
+using LobotJR.Command.Controller.Equipment;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using System;
@@ -14,7 +14,7 @@ namespace LobotJR.Command.Module.Equipment
     /// </summary>
     public class EquipmentModule : ICommandModule
     {
-        private readonly EquipmentSystem EquipmentSystem;
+        private readonly EquipmentController EquipmentSystem;
 
         /// <summary>
         /// Prefix applied to names of commands within this module.
@@ -29,7 +29,7 @@ namespace LobotJR.Command.Module.Equipment
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public EquipmentModule(EquipmentSystem equipmentSystem)
+        public EquipmentModule(EquipmentController equipmentSystem)
         {
             EquipmentSystem = equipmentSystem;
             Commands = new List<CommandHandler>()

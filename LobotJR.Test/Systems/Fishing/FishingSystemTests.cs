@@ -1,5 +1,5 @@
 ﻿using LobotJR.Command.Model.Fishing;
-using LobotJR.Command.System.Fishing;
+using LobotJR.Command.Controller.Fishing;
 using LobotJR.Data;
 using LobotJR.Test.Mocks;
 using LobotJR.Twitch.Model;
@@ -8,7 +8,7 @@ using Moq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static LobotJR.Command.System.Fishing.FishingSystem;
+using static LobotJR.Command.Controller.Fishing.FishingController;
 
 namespace LobotJR.Test.Systems.Fishing
 {
@@ -16,7 +16,7 @@ namespace LobotJR.Test.Systems.Fishing
     public class FishingSystemTests
     {
         private SqliteRepositoryManager Manager;
-        private FishingSystem FishingSystem;
+        private FishingController FishingSystem;
 
         [TestInitialize]
         public void Initialize()

@@ -1,5 +1,5 @@
-﻿using LobotJR.Command.System.Dungeons;
-using LobotJR.Command.System.Player;
+﻿using LobotJR.Command.Controller.Dungeons;
+using LobotJR.Command.Controller.Player;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using System;
@@ -14,10 +14,10 @@ namespace LobotJR.Command.Module.Dungeons
     /// </summary>
     public class GroupFinderModule : ICommandModule
     {
-        private readonly GroupFinderSystem GroupFinderSystem;
-        private readonly DungeonSystem DungeonSystem;
-        private readonly PartySystem PartySystem;
-        private readonly PlayerSystem PlayerSystem;
+        private readonly GroupFinderController GroupFinderSystem;
+        private readonly DungeonController DungeonSystem;
+        private readonly PartyController PartySystem;
+        private readonly PlayerController PlayerSystem;
 
         /// <summary>
         /// Prefix applied to names of commands within this module.
@@ -33,7 +33,7 @@ namespace LobotJR.Command.Module.Dungeons
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public GroupFinderModule(GroupFinderSystem groupFinderSystem, DungeonSystem dungeonSystem, PartySystem partySystem, PlayerSystem playerSystem)
+        public GroupFinderModule(GroupFinderController groupFinderSystem, DungeonController dungeonSystem, PartyController partySystem, PlayerController playerSystem)
         {
             GroupFinderSystem = groupFinderSystem;
             DungeonSystem = dungeonSystem;
@@ -67,7 +67,7 @@ namespace LobotJR.Command.Module.Dungeons
             var player = PlayerSystem.GetPlayerByUser(user);
             if (!PlayerSystem.IsFlaggedForRespec(player))
             {
-                if (player.Level >= PlayerSystem.MinLevel)
+                if (player.Level >= PlayerController.MinLevel)
                 {
                     if (player.CharacterClass.CanPlay)
                     {
@@ -98,7 +98,7 @@ namespace LobotJR.Command.Module.Dungeons
                     }
                     return new CommandResult("You must select a class before you can queue in the Group Finder. Type !classhelp for details.");
                 }
-                return new CommandResult($"You must be level {PlayerSystem.MinLevel} to queue in the Group Finder. (Current level: {player.Level})");
+                return new CommandResult($"You must be level {PlayerController.MinLevel} to queue in the Group Finder. (Current level: {player.Level})");
             }
             return new CommandResult("You can't queue in the Group Finder with an outstanding respec. Choose a class or cancel your respec first.");
         }

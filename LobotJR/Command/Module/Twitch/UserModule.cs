@@ -1,4 +1,4 @@
-﻿using LobotJR.Command.System.Twitch;
+﻿using LobotJR.Command.Controller.Twitch;
 using LobotJR.Data;
 using LobotJR.Utils;
 using System;
@@ -11,7 +11,7 @@ namespace LobotJR.Command.Module.Twitch
     /// </summary>
     public class UserModule : ICommandModule
     {
-        private readonly UserSystem UserSystem;
+        private readonly UserController UserSystem;
         private readonly SettingsManager SettingsManager;
 
         /// <summary>
@@ -27,7 +27,7 @@ namespace LobotJR.Command.Module.Twitch
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public UserModule(UserSystem userSystem, SettingsManager settingsManager)
+        public UserModule(UserController userSystem, SettingsManager settingsManager)
         {
             UserSystem = userSystem;
             SettingsManager = settingsManager;

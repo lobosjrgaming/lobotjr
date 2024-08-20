@@ -1,6 +1,6 @@
 ﻿using LobotJR.Command.Model.Fishing;
-using LobotJR.Command.System.Fishing;
-using LobotJR.Command.System.Twitch;
+using LobotJR.Command.Controller.Fishing;
+using LobotJR.Command.Controller.Twitch;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using System;
@@ -14,8 +14,8 @@ namespace LobotJR.Command.Module.Fishing
     /// </summary>
     public class TournamentModule : ICommandModule
     {
-        private readonly TournamentSystem TournamentSystem;
-        private readonly UserSystem UserSystem;
+        private readonly TournamentController TournamentSystem;
+        private readonly UserController UserSystem;
 
         /// <summary>
         /// Prefix applied to names of commands within this module.
@@ -30,7 +30,7 @@ namespace LobotJR.Command.Module.Fishing
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public TournamentModule(TournamentSystem system, UserSystem userSystem)
+        public TournamentModule(TournamentController system, UserController userSystem)
         {
             TournamentSystem = system;
             system.TournamentStarted += System_TournamentStarted;

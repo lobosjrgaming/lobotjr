@@ -1,7 +1,7 @@
 ﻿using LobotJR.Command.Model.Pets;
-using LobotJR.Command.System.General;
-using LobotJR.Command.System.Pets;
-using LobotJR.Command.System.Player;
+using LobotJR.Command.Controller.General;
+using LobotJR.Command.Controller.Pets;
+using LobotJR.Command.Controller.Player;
 using LobotJR.Data;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
@@ -27,8 +27,8 @@ namespace LobotJR.Command.Module.Pets
             return stable.IsSparkly ? $"✨{stable.Pet.Name}✨" : stable.Pet.Name;
         }
 
-        private readonly PetSystem PetSystem;
-        private readonly PlayerSystem PlayerSystem;
+        private readonly PetController PetSystem;
+        private readonly PlayerController PlayerSystem;
         private readonly SettingsManager SettingsManager;
 
         /// <summary>
@@ -46,7 +46,7 @@ namespace LobotJR.Command.Module.Pets
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public PetModule(PetSystem petSystem, PlayerSystem playerSystem, ConfirmationSystem confirmationSystem, SettingsManager settingsManager)
+        public PetModule(PetController petSystem, PlayerController playerSystem, ConfirmationController confirmationSystem, SettingsManager settingsManager)
         {
             PetSystem = petSystem;
             PlayerSystem = playerSystem;

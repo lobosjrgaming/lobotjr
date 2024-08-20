@@ -1,6 +1,6 @@
-﻿using LobotJR.Command.System.Equipment;
-using LobotJR.Command.System.Player;
-using LobotJR.Command.System.Twitch;
+﻿using LobotJR.Command.Controller.Equipment;
+using LobotJR.Command.Controller.Player;
+using LobotJR.Command.Controller.Twitch;
 using LobotJR.Data;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
@@ -18,9 +18,9 @@ namespace LobotJR.Command.Module.Player
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        private readonly PlayerSystem PlayerSystem;
-        private readonly EquipmentSystem EquipmentSystem;
-        private readonly UserSystem UserSystem;
+        private readonly PlayerController PlayerSystem;
+        private readonly EquipmentController EquipmentSystem;
+        private readonly UserController UserSystem;
         private readonly SettingsManager SettingsManager;
 
         /// <summary>
@@ -38,7 +38,7 @@ namespace LobotJR.Command.Module.Player
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public PlayerAdmin(PlayerSystem playerSystem, EquipmentSystem equipmentSystem, UserSystem userSystem, SettingsManager settingsManager)
+        public PlayerAdmin(PlayerController playerSystem, EquipmentController equipmentSystem, UserController userSystem, SettingsManager settingsManager)
         {
             PlayerSystem = playerSystem;
             EquipmentSystem = equipmentSystem;

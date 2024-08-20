@@ -1,5 +1,5 @@
 ﻿using LobotJR.Command.Model.Fishing;
-using LobotJR.Command.System.Fishing;
+using LobotJR.Command.Controller.Fishing;
 using LobotJR.Data;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
@@ -13,8 +13,8 @@ namespace LobotJR.Command.Module.Fishing
     /// </summary>
     public class FishingAdmin : ICommandModule
     {
-        private readonly FishingSystem FishingSystem;
-        private readonly TournamentSystem TournamentSystem;
+        private readonly FishingController FishingSystem;
+        private readonly TournamentController TournamentSystem;
         private readonly SettingsManager SettingsManager;
 
         /// <summary>
@@ -30,7 +30,7 @@ namespace LobotJR.Command.Module.Fishing
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public FishingAdmin(FishingSystem fishingSystem, TournamentSystem tournamentSystem, SettingsManager settingsManager)
+        public FishingAdmin(FishingController fishingSystem, TournamentController tournamentSystem, SettingsManager settingsManager)
         {
             FishingSystem = fishingSystem;
             TournamentSystem = tournamentSystem;

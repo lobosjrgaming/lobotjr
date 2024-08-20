@@ -1,7 +1,7 @@
 ﻿using LobotJR.Command.Model.Player;
-using LobotJR.Command.System.Dungeons;
-using LobotJR.Command.System.General;
-using LobotJR.Command.System.Player;
+using LobotJR.Command.Controller.Dungeons;
+using LobotJR.Command.Controller.General;
+using LobotJR.Command.Controller.Player;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using System;
@@ -16,9 +16,9 @@ namespace LobotJR.Command.Module.Player
     /// </summary>
     public class PlayerModule : ICommandModule
     {
-        private readonly PlayerSystem PlayerSystem;
-        private readonly PartySystem PartySystem;
-        private readonly GroupFinderSystem GroupFinderSystem;
+        private readonly PlayerController PlayerSystem;
+        private readonly PartyController PartySystem;
+        private readonly GroupFinderController GroupFinderSystem;
 
         /// <summary>
         /// Prefix applied to names of commands within this module.
@@ -33,7 +33,7 @@ namespace LobotJR.Command.Module.Player
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public PlayerModule(PlayerSystem playerSystem, PartySystem partySystem, GroupFinderSystem groupFinderSystem, ConfirmationSystem confirmationSystem)
+        public PlayerModule(PlayerController playerSystem, PartyController partySystem, GroupFinderController groupFinderSystem, ConfirmationController confirmationSystem)
         {
             PlayerSystem = playerSystem;
             PartySystem = partySystem;
@@ -248,7 +248,7 @@ namespace LobotJR.Command.Module.Player
         public CommandResult ClassHelp(User user)
         {
             var player = PlayerSystem.GetPlayerByUser(user);
-            if (player.Level >= PlayerSystem.MinLevel)
+            if (player.Level >= PlayerController.MinLevel)
             {
                 var classes = PlayerSystem.GetPlayableClasses().Select(x => $"!C{x.Id} ({x.Name})");
                 return new CommandResult("It looks like you are elligible to choose a class but haven't yet done so. Choose by whispering me one of the following:",

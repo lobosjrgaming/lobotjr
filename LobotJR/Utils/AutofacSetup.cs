@@ -1,6 +1,16 @@
 ﻿using Autofac;
 using Autofac.Core;
 using LobotJR.Command;
+using LobotJR.Command.Controller;
+using LobotJR.Command.Controller.AccessControl;
+using LobotJR.Command.Controller.Dungeons;
+using LobotJR.Command.Controller.Equipment;
+using LobotJR.Command.Controller.Fishing;
+using LobotJR.Command.Controller.General;
+using LobotJR.Command.Controller.Gloat;
+using LobotJR.Command.Controller.Pets;
+using LobotJR.Command.Controller.Player;
+using LobotJR.Command.Controller.Twitch;
 using LobotJR.Command.Module;
 using LobotJR.Command.Module.AccessControl;
 using LobotJR.Command.Module.Equipment;
@@ -8,12 +18,6 @@ using LobotJR.Command.Module.Fishing;
 using LobotJR.Command.Module.Gloat;
 using LobotJR.Command.Module.Player;
 using LobotJR.Command.Module.Twitch;
-using LobotJR.Command.System;
-using LobotJR.Command.System.Equipment;
-using LobotJR.Command.System.Fishing;
-using LobotJR.Command.System.Gloat;
-using LobotJR.Command.System.Player;
-using LobotJR.Command.System.Twitch;
 using LobotJR.Data;
 using LobotJR.Data.Migration;
 using LobotJR.Shared.Authentication;
@@ -55,15 +59,28 @@ namespace LobotJR.Utils
             builder.RegisterType<SettingsManager>().AsSelf().InstancePerLifetimeScope();
         }
 
-        private static void RegisterSystems(ContainerBuilder builder)
+        private static void RegisterControllers(ContainerBuilder builder)
         {
-            builder.RegisterType<UserSystem>().AsSelf().As<ISystemProcess>().InstancePerLifetimeScope();
-            builder.RegisterType<FishingSystem>().AsSelf().As<ISystemProcess>().InstancePerLifetimeScope();
-            builder.RegisterType<LeaderboardSystem>().AsSelf().As<ISystemProcess>().InstancePerLifetimeScope();
-            builder.RegisterType<TournamentSystem>().AsSelf().As<ISystemProcess>().InstancePerLifetimeScope();
-            builder.RegisterType<PlayerSystem>().AsSelf().As<ISystemProcess>().InstancePerLifetimeScope();
-            builder.RegisterType<EquipmentSystem>().AsSelf().As<ISystemProcess>().InstancePerLifetimeScope();
-            builder.RegisterType<GloatSystem>().AsSelf().As<ISystemProcess>().InstancePerLifetimeScope();
+            builder.RegisterType<UserController>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
+            builder.RegisterType<AccessControlController>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
+
+            builder.RegisterType<BettingController>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
+            builder.RegisterType<BugReportController>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
+            builder.RegisterType<ConfirmationController>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
+
+            builder.RegisterType<PlayerController>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
+            builder.RegisterType<EquipmentController>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
+            builder.RegisterType<PetController>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
+
+            builder.RegisterType<DungeonController>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
+            builder.RegisterType<GroupFinderController>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
+            builder.RegisterType<PartyController>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
+
+            builder.RegisterType<FishingController>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
+            builder.RegisterType<LeaderboardController>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
+            builder.RegisterType<TournamentController>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
+
+            builder.RegisterType<GloatController>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
         }
 
         private static void RegisterModules(ContainerBuilder builder)
@@ -96,7 +113,7 @@ namespace LobotJR.Utils
                 .WithParameters(new Parameter[] { new TypedParameter(typeof(ClientData), clientData), new TypedParameter(typeof(TokenData), tokenData) });
             builder.RegisterType<TwitchIrcClient>().AsSelf().As<ITwitchIrcClient>().InstancePerLifetimeScope()
                 .WithParameters(new Parameter[] { new TypedParameter(typeof(TokenData), tokenData) });
-            builder.RegisterType<SystemManager>().AsSelf().As<ISystemManager>().InstancePerLifetimeScope();
+            builder.RegisterType<ControllerManager>().AsSelf().As<IControllerManager>().InstancePerLifetimeScope();
             builder.RegisterType<CommandManager>().AsSelf().As<ICommandManager>().InstancePerLifetimeScope();
             builder.RegisterType<TriggerManager>().AsSelf().InstancePerLifetimeScope();
         }
@@ -106,7 +123,7 @@ namespace LobotJR.Utils
             var builder = new ContainerBuilder();
 
             RegisterDatabase(builder, clientData, tokenData);
-            RegisterSystems(builder);
+            RegisterControllers(builder);
             RegisterModules(builder);
             RegisterTriggers(builder, tokenData);
             RegisterManagers(builder, clientData, tokenData);

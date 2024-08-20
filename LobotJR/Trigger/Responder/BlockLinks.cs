@@ -1,4 +1,4 @@
-﻿using LobotJR.Command.System.Player;
+﻿using LobotJR.Command.Controller.Player;
 using LobotJR.Twitch.Model;
 using System;
 using System.Text.RegularExpressions;
@@ -10,10 +10,10 @@ namespace LobotJR.Trigger.Responder
         private static readonly TimeSpan Cooldown = TimeSpan.FromSeconds(30);
 
         public Regex Pattern { get; private set; } = new Regex(@"([A-Za-z0-9])\.([A-Za-z])([A-Za-z0-9])", RegexOptions.IgnoreCase);
-        private readonly PlayerSystem PlayerSystem;
+        private readonly PlayerController PlayerSystem;
         private DateTime LastTrigger = DateTime.Now - Cooldown;
 
-        public BlockLinks(PlayerSystem playerSystem)
+        public BlockLinks(PlayerController playerSystem)
         {
             PlayerSystem = playerSystem;
         }

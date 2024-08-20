@@ -1,6 +1,6 @@
 ﻿using Autofac;
 using LobotJR.Command.Module;
-using LobotJR.Command.System.Twitch;
+using LobotJR.Command.Controller.Twitch;
 using LobotJR.Data;
 using LobotJR.Twitch;
 using LobotJR.Twitch.Model;
@@ -46,7 +46,7 @@ namespace LobotJR.Command
         /// <summary>
         /// User lookup service used to translate between usernames and user ids.
         /// </summary>
-        public UserSystem UserSystem { get; private set; }
+        public UserController UserSystem { get; private set; }
         /// <summary>
         /// List of ids for registered commands.
         /// </summary>
@@ -97,9 +97,9 @@ namespace LobotJR.Command
         {
             // For modules that need access to the command manager, we can't
             // use DI to inject or it would create a circular dependency
-            if (module is IMetaModule)
+            if (module is IMetaController)
             {
-                (module as IMetaModule).CommandManager = this;
+                (module as IMetaController).CommandManager = this;
             }
 
             module.PushNotification += Module_PushNotification;
@@ -155,7 +155,7 @@ namespace LobotJR.Command
             return !whisperOnlyCommands.Contains(commandId);
         }
 
-        public CommandManager(IEnumerable<ICommandModule> modules, IRepositoryManager repositoryManager, UserSystem userSystem)
+        public CommandManager(IEnumerable<ICommandModule> modules, IRepositoryManager repositoryManager, UserController userSystem)
         {
             CommandModules = modules;
             RepositoryManager = repositoryManager;

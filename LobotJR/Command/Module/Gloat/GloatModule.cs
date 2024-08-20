@@ -1,6 +1,6 @@
 ﻿using LobotJR.Command.Module.Pets;
-using LobotJR.Command.System.Fishing;
-using LobotJR.Command.System.Gloat;
+using LobotJR.Command.Controller.Fishing;
+using LobotJR.Command.Controller.Gloat;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using System.Collections.Generic;
@@ -38,8 +38,8 @@ namespace LobotJR.Command.Module.Gloat
             "The Ultimate Wolfpack God Rank. A truly dedicated individual."
         };
 
-        private readonly GloatSystem GloatSystem;
-        private readonly LeaderboardSystem LeaderboardSystem;
+        private readonly GloatController GloatSystem;
+        private readonly LeaderboardController LeaderboardSystem;
 
         /// <summary>
         /// Prefix applied to names of commands within this module.
@@ -54,7 +54,7 @@ namespace LobotJR.Command.Module.Gloat
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public GloatModule(GloatSystem gloatSystem, LeaderboardSystem leaderboardSystem)
+        public GloatModule(GloatController gloatSystem, LeaderboardController leaderboardSystem)
         {
             GloatSystem = gloatSystem;
             LeaderboardSystem = leaderboardSystem;

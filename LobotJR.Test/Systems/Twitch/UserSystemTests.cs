@@ -1,4 +1,4 @@
-﻿using LobotJR.Command.System.Twitch;
+﻿using LobotJR.Command.Controller.Twitch;
 using LobotJR.Data;
 using LobotJR.Shared.Channel;
 using LobotJR.Shared.User;
@@ -20,7 +20,7 @@ namespace LobotJR.Test.Systems.Twitch
     {
         private SqliteRepositoryManager Manager;
         private Mock<ITwitchClient> Client;
-        private UserSystem System;
+        private UserController System;
 
         [TestInitialize]
         public void Initialize()

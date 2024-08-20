@@ -2,8 +2,8 @@
 using LobotJR.Command.Model.Fishing;
 using LobotJR.Command.Module;
 using LobotJR.Command.Module.Fishing;
-using LobotJR.Command.System.Fishing;
-using LobotJR.Command.System.Twitch;
+using LobotJR.Command.Controller.Fishing;
+using LobotJR.Command.Controller.Twitch;
 using LobotJR.Data;
 using LobotJR.Test.Mocks;
 using LobotJR.Utils;
@@ -54,8 +54,8 @@ namespace LobotJR.Test.Modules.Fishing
         }
 
         private SqliteRepositoryManager Manager;
-        private UserSystem UserLookup;
-        private TournamentSystem TournamentSystem;
+        private UserController UserLookup;
+        private TournamentController TournamentSystem;
         private TournamentModule TournamentModule;
 
         [TestInitialize]

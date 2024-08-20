@@ -1,5 +1,5 @@
 ﻿using LobotJR.Command.Model.Fishing;
-using LobotJR.Command.System.Twitch;
+using LobotJR.Command.Controller.Twitch;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -73,7 +73,7 @@ namespace LobotJR.Data.Import
         /// <exception cref="DirectoryNotFoundException">If the path to fisherDataPath does not exist.</exception>
         /// <exception cref="IOException">If the attempt to access the file at fisherDataPath throws an IOException.</exception>
         /// <exception cref="FileNotFoundException">If the file at fisherDataPath does not exist.</exception>
-        public static void ImportFisherDataIntoSql(Dictionary<string, LegacyFisher> fisherList, IRepository<Fish> fishRepository, IRepository<Catch> leaderboardRepository, UserSystem userSystem)
+        public static void ImportFisherDataIntoSql(Dictionary<string, LegacyFisher> fisherList, IRepository<Fish> fishRepository, IRepository<Catch> leaderboardRepository, UserController userSystem)
         {
             foreach (var fisher in fisherList)
             {
@@ -116,7 +116,7 @@ namespace LobotJR.Data.Import
         /// <param name="leaderboardRepository">The repository to import the leaderboard data to.</param>
         /// <param name="fishRepository">The repository containing the fish data.</param>
         /// <param name="userSystem">The user lookup system to convert the stored usernames into user ids.</param>
-        public static void ImportLeaderboardDataIntoSql(List<LegacyCatch> fishingLeaderboard, IRepository<LeaderboardEntry> leaderboardRepository, IRepository<Fish> fishRepository, UserSystem userSystem)
+        public static void ImportLeaderboardDataIntoSql(List<LegacyCatch> fishingLeaderboard, IRepository<LeaderboardEntry> leaderboardRepository, IRepository<Fish> fishRepository, UserController userSystem)
         {
             foreach (var record in fishingLeaderboard)
             {

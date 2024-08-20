@@ -1,7 +1,7 @@
 ﻿using LobotJR.Command;
 using LobotJR.Command.Module;
 using LobotJR.Command.Module.AccessControl;
-using LobotJR.Command.System.Twitch;
+using LobotJR.Command.Controller.Twitch;
 using LobotJR.Test.Command;
 
 namespace LobotJR.Test.Modules.AccessControl

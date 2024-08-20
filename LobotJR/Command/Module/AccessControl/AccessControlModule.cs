@@ -12,6 +12,8 @@ namespace LobotJR.Command.Module.AccessControl
     /// </summary>
     public class AccessControlModule : ICommandModule
     {
+        private readonly IConnectionManager ConnectionManager;
+
         /// <summary>
         /// Prefix applied to names of commands within this module.
         /// </summary>
@@ -25,20 +27,21 @@ namespace LobotJR.Command.Module.AccessControl
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public AccessControlModule()
+        public AccessControlModule(IConnectionManager connectionManager)
         {
+            ConnectionManager = connectionManager;
             Commands = new CommandHandler[]
             {
                 new CommandHandler("CheckAccess", this, CommandMethod.GetInfo<string>(CheckAccess), "CheckAccess", "check-access"),
             };
         }
 
-        private CommandResult CheckAccess(IDatabase database, User user, string groupName = "")
+        private CommandResult CheckAccess(User user, string groupName = "")
         {
             if (string.IsNullOrWhiteSpace(groupName))
             {
-                var groupIds = database.Enrollments.Read(x => x.UserId.Equals(user.TwitchId, StringComparison.OrdinalIgnoreCase)).Select(x => x.GroupId).ToList();
-                var groups = database.AccessGroups.Read(x => groupIds.Contains(x.Id));
+                var groupIds = ConnectionManager.CurrentConnection.Enrollments.Read(x => x.UserId.Equals(user.TwitchId, StringComparison.OrdinalIgnoreCase)).Select(x => x.GroupId).ToList();
+                var groups = ConnectionManager.CurrentConnection.AccessGroups.Read(x => groupIds.Contains(x.Id));
                 if (groups.Any())
                 {
                     var count = groups.Count();
@@ -50,13 +53,13 @@ namespace LobotJR.Command.Module.AccessControl
                 }
             }
 
-            var group = database.AccessGroups.Read(x => x.Name.Equals(groupName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            var group = ConnectionManager.CurrentConnection.AccessGroups.Read(x => x.Name.Equals(groupName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
             if (group == null)
             {
                 return new CommandResult($"Error: No group with name \"{groupName}\" was found.");
             }
 
-            var access = database.Enrollments.Read(x => x.GroupId == group.Id && x.UserId.Equals(user.TwitchId, StringComparison.OrdinalIgnoreCase)).Any() ? "are" : "are not";
+            var access = ConnectionManager.CurrentConnection.Enrollments.Read(x => x.GroupId == group.Id && x.UserId.Equals(user.TwitchId, StringComparison.OrdinalIgnoreCase)).Any() ? "are" : "are not";
             return new CommandResult($"You {access} a member of \"{group.Name}\"!");
         }
     }

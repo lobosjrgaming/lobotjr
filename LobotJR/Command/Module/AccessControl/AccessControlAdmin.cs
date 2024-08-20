@@ -1,5 +1,6 @@
-﻿using LobotJR.Command.System.Twitch;
-using LobotJR.Data;
+﻿using LobotJR.Command.Controller.AccessControl;
+using LobotJR.Command.Controller.Twitch;
+using LobotJR.Command.Model.AccessControl;
 using LobotJR.Utils;
 using System;
 using System.Collections.Generic;
@@ -9,17 +10,11 @@ namespace LobotJR.Command.Module.AccessControl
 {
     /// <summary>
     /// Module containing commands for managing access groups.
-    /// TODO: Remove direct database calls to the system
     /// </summary>
-    public class AccessControlAdmin : ICommandModule, IMetaModule
+    public class AccessControlAdmin : ICommandModule
     {
-        private readonly IConnectionManager ConnectionManager;
-        private readonly UserSystem UserSystem;
-
-        /// <summary>
-        /// Entry point to inject fully resolved command manager into the
-        /// module.
-        public ICommandManager CommandManager { get; set; }
+        private readonly AccessControlController AccessControlController;
+        private readonly UserController UserSystem;
 
         /// <summary>
         /// Prefix applied to names of commands within this module.
@@ -34,9 +29,9 @@ namespace LobotJR.Command.Module.AccessControl
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public AccessControlAdmin(IConnectionManager connectionManager, UserSystem userSystem)
+        public AccessControlAdmin(AccessControlController accessControlController, UserController userSystem)
         {
-            ConnectionManager = connectionManager;
+            AccessControlController = accessControlController;
             UserSystem = userSystem;
             Commands = new CommandHandler[]
             {
@@ -58,205 +53,165 @@ namespace LobotJR.Command.Module.AccessControl
 
         private CommandResult ListGroups()
         {
-            var groups = ConnectionManager.CurrentConnection.AccessGroups.Read().ToList();
+            var groups = AccessControlController.GetAllGroups();
             return new CommandResult($"There are {groups.Count()} groups: {string.Join(", ", groups.Select(x => x.Name))}");
         }
 
         private CommandResult CreateGroup(string groupName)
         {
-            var accessGroups = ConnectionManager.CurrentConnection.AccessGroups;
-            var existingGroup = accessGroups.Read(x => x.Name.Equals(groupName)).FirstOrDefault();
-            if (existingGroup != null)
+            if (!AccessControlController.DoesGroupExist(groupName))
             {
-                return new CommandResult($"Error: Unable to create group, \"{groupName}\" already exists.");
+                AccessControlController.CreateGroup(groupName);
+                return new CommandResult($"Access group \"{groupName}\" created successfully!");
             }
-
-            accessGroups.Create(new AccessGroup() { Name = groupName });
-            accessGroups.Commit();
-            return new CommandResult($"Access group \"{groupName}\" created successfully!");
+            return new CommandResult($"Error: Unable to create group, \"{groupName}\" already exists.");
         }
 
         private CommandResult DescribeGroup(string groupName)
         {
-            var existingGroup = ConnectionManager.CurrentConnection.AccessGroups.Read(x => x.Name.Equals(groupName)).FirstOrDefault();
-            if (existingGroup == null)
+            var existingGroup = AccessControlController.GetGroupByName(groupName);
+            if (existingGroup != null)
             {
-                return new CommandResult($"Error: Group \"{groupName}\" not found.");
-            }
-            var enrollments = ConnectionManager.CurrentConnection.Enrollments.Read(x => x.GroupId.Equals(existingGroup.Id));
-            var restrictions = ConnectionManager.CurrentConnection.Restrictions.Read(x => x.GroupId.Equals(existingGroup.Id));
-            var names = new List<string>();
-            if (existingGroup.IncludeAdmins)
-            {
-                names.Add("Admins");
-            }
-            if (existingGroup.IncludeMods)
-            {
-                names.Add("Mods");
-            }
-            if (existingGroup.IncludeVips)
-            {
-                names.Add("VIPs");
-            }
-            if (existingGroup.IncludeSubs)
-            {
-                names.Add("Subs");
-            }
-            foreach (var enrollment in enrollments)
-            {
-                var enrolledUser = UserSystem.GetUserById(enrollment.UserId);
-                if (enrolledUser != null)
+                var enrollments = AccessControlController.GetGroupEnrollments(existingGroup);
+                var restrictions = AccessControlController.GetGroupRestrictions(existingGroup);
+                var names = new List<string>();
+                if (existingGroup.IncludeAdmins)
                 {
-                    names.Add(enrolledUser.Username);
+                    names.Add("Admins");
                 }
+                if (existingGroup.IncludeMods)
+                {
+                    names.Add("Mods");
+                }
+                if (existingGroup.IncludeVips)
+                {
+                    names.Add("VIPs");
+                }
+                if (existingGroup.IncludeSubs)
+                {
+                    names.Add("Subs");
+                }
+                names.AddRange(enrollments.Select(x => UserSystem.GetUserById(x.UserId)?.Username).Where(x => x != null));
+                return new CommandResult(
+                    $"Access group \"{groupName}\" contains the following commands: {string.Join(", ", restrictions.Select(x => x.Command))}.",
+                    $"Access group \"{groupName}\" contains the following users: {string.Join(", ", names)}."
+                );
             }
-            return new CommandResult(
-                $"Access group \"{groupName}\" contains the following commands: {string.Join(", ", restrictions.Select(x => x.Command))}.",
-                $"Access group \"{groupName}\" contains the following users: {string.Join(", ", names)}."
-            );
+            return new CommandResult($"Error: Group \"{groupName}\" not found.");
         }
 
         private CommandResult DeleteGroup(string groupName)
         {
-            var accessGroups = ConnectionManager.CurrentConnection.AccessGroups;
-            var existingGroup = accessGroups.Read(x => x.Name.Equals(groupName)).FirstOrDefault();
-            if (existingGroup == null)
+            var existingGroup = AccessControlController.GetGroupByName(groupName);
+            if (existingGroup != null)
             {
-                return new CommandResult($"Error: Unable to delete group, \"{groupName}\" does not exist.");
-            }
-
-            var enrollments = ConnectionManager.CurrentConnection.Enrollments.Read(x => x.GroupId.Equals(existingGroup.Id));
-            if (enrollments.Any())
-            {
+                if (!AccessControlController.GetGroupEnrollments(existingGroup).Any())
+                {
+                    if (!AccessControlController.GetGroupRestrictions(existingGroup).Any())
+                    {
+                        AccessControlController.DeleteGroup(existingGroup);
+                        return new CommandResult($"Group \"{groupName}\" deleted successfully!");
+                    }
+                    return new CommandResult($"Error: Unable to delete group, please unrestrict all commands first.");
+                }
                 return new CommandResult($"Error: Unable to delete group, please unenroll all users first.");
             }
-
-            var restrictions = ConnectionManager.CurrentConnection.Restrictions.Read(x => x.GroupId.Equals(existingGroup.Id));
-            if (restrictions.Any())
-            {
-                return new CommandResult($"Error: Unable to delete group, please unrestrict all commands first.");
-            }
-
-            accessGroups.Delete(existingGroup);
-            accessGroups.Commit();
-            return new CommandResult($"Group \"{groupName}\" deleted successfully!");
+            return new CommandResult($"Error: Unable to delete group, \"{groupName}\" does not exist.");
         }
 
         private CommandResult SetGroupFlag(string groupName, string flag, bool value)
         {
-            var accessGroups = ConnectionManager.CurrentConnection.AccessGroups;
-            var existingGroup = accessGroups.Read(x => x.Name.Equals(groupName)).FirstOrDefault();
-            if (existingGroup == null)
+            if (Enum.TryParse<GroupFlags>(flag, true, out var enumFlag))
             {
+                var existingGroup = AccessControlController.GetGroupByName(groupName);
+                if (existingGroup != null)
+                {
+                    switch (enumFlag)
+                    {
+                        case GroupFlags.Admin:
+                            existingGroup.IncludeAdmins = value;
+                            break;
+                        case GroupFlags.Mod:
+                            existingGroup.IncludeMods = value;
+                            break;
+                        case GroupFlags.Vip:
+                            existingGroup.IncludeVips = value;
+                            break;
+                        case GroupFlags.Sub:
+                            existingGroup.IncludeSubs = value;
+                            break;
+                    }
+                    var includeClause = value ? "includes" : "does not include";
+                    return new CommandResult($"Access group \"{existingGroup.Name}\" now {includeClause} {flag}s.");
+                }
                 return new CommandResult($"Error: Group \"{groupName}\" not found.");
             }
-
-            if (flag.Equals("mod", StringComparison.OrdinalIgnoreCase))
-            {
-                existingGroup.IncludeMods = value;
-            }
-            else if (flag.Equals("vip", StringComparison.OrdinalIgnoreCase))
-            {
-                existingGroup.IncludeVips = value;
-            }
-            else if (flag.Equals("sub", StringComparison.OrdinalIgnoreCase))
-            {
-                existingGroup.IncludeSubs = value;
-            }
-            else if (flag.Equals("admin", StringComparison.OrdinalIgnoreCase))
-            {
-                existingGroup.IncludeAdmins = value;
-            }
-            else
-            {
-                return new CommandResult($"Error: Invalid flag, must be one of \"mod\", \"vip\", \"sub\", or \"admin\".");
-            }
-            accessGroups.Update(existingGroup);
-            accessGroups.Commit();
-            var includeClause = value ? "includes" : "does not include";
-            return new CommandResult($"Access group \"{existingGroup.Name}\" now {includeClause} {flag}s.");
+            var names = Enum.GetNames(typeof(GroupFlags));
+            return new CommandResult($"Error: Invalid flag, must be one of {string.Join(", ", names.Select(x => $"\"{x}\""))}.");
         }
 
         private CommandResult AddUserToGroup(string username, string groupName)
         {
-            var enrollments = ConnectionManager.CurrentConnection.Enrollments;
-            var userToAdd = UserSystem.GetUserByName(username);
-            if (userToAdd == null)
+            var user = UserSystem.GetUserByName(username);
+            if (user != null)
             {
-                return new CommandResult("Error: User id not present in id cache, please try again in a few minutes.");
-            }
-
-            var group = ConnectionManager.CurrentConnection.AccessGroups.Read(x => x.Name.Equals(groupName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-            if (group == null)
-            {
+                var group = AccessControlController.GetGroupByName(groupName);
+                if (group != null)
+                {
+                    var success = AccessControlController.EnrollUserInGroup(group, user);
+                    if (success)
+                    {
+                        return new CommandResult($"User \"{user.Username}\" was added to group \"{group.Name}\" successfully!");
+                    }
+                    return new CommandResult($"Error: User \"{user.Username}\" is already a member of \"{group.Name}\".");
+                }
                 return new CommandResult($"Error: No group with name \"{groupName}\" was found.");
             }
-
-            var groupEnrollments = enrollments.Read(x => x.GroupId.Equals(group.Id));
-            if (groupEnrollments.Any(x => userToAdd.TwitchId.Equals(x.UserId)))
-            {
-                return new CommandResult($"Error: User \"{username}\" is already a member of \"{groupName}\".");
-            }
-            enrollments.Create(new Enrollment(group, userToAdd.TwitchId));
-            enrollments.Commit();
-
-            return new CommandResult($"User \"{username}\" was added to group \"{group.Name}\" successfully!");
+            return new CommandResult($"Error: User {username} not present in database, please try again in a few minutes.");
         }
 
         private CommandResult RemoveUserFromGroup(string username, string groupName)
         {
-            var enrollments = ConnectionManager.CurrentConnection.Enrollments;
-            var group = ConnectionManager.CurrentConnection.AccessGroups.Read(x => x.Name.Equals(groupName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-            if (group == null)
+            var user = UserSystem.GetUserByName(username);
+            if (user != null)
             {
+                var group = AccessControlController.GetGroupByName(groupName);
+                if (group != null)
+                {
+                    var success = AccessControlController.UnenrollUserFromGroup(group, user);
+                    if (success)
+                    {
+                        return new CommandResult($"User \"{user.Username}\" was removed from group \"{group.Name}\" successfully!");
+                    }
+                    return new CommandResult($"Error: User \"{user.Username}\" is not a member of \"{group.Name}\".");
+                }
                 return new CommandResult($"Error: No group with name \"{groupName}\" was found.");
             }
-
-            var userToRemove = UserSystem.GetUserByName(username);
-            if (userToRemove == null)
-            {
-                return new CommandResult($"Error: User \"{username}\" not found in user ConnectionManager.CurrentConnection. Please ensure the name is correct and the user has been in chat before.");
-            }
-
-            var enrollment = enrollments.Read(x => x.GroupId.Equals(group.Id) && x.UserId.Equals(userToRemove.TwitchId)).FirstOrDefault();
-            if (enrollment == null)
-            {
-                return new CommandResult($"Error: User \"{username}\" is not a member of \"{groupName}\".");
-            }
-            enrollments.Delete(enrollment);
-            enrollments.Commit();
-
-            return new CommandResult($"User \"{username}\" was removed from group \"{group.Name}\" successfully!");
+            return new CommandResult($"Error: User {username} not present in database, please try again in a few minutes.");
         }
 
         private CommandResult AddCommandToGroup(string commandName, string groupName)
         {
-            var restrictions = ConnectionManager.CurrentConnection.Restrictions;
-            if (!CommandManager.IsValidCommand(commandName))
+            if (AccessControlController.IsValidCommand(commandName))
             {
-                return new CommandResult($"Error: Command {commandName} does not match any commands.");
+                var group = AccessControlController.GetGroupByName(groupName);
+                if (group != null)
+                {
+                    var success = AccessControlController.RestrictCommandToGroup(group, commandName);
+                    if (success)
+                    {
+                        return new CommandResult($"Command \"{commandName}\" was added to group \"{group.Name}\" successfully!");
+                    }
+                    return new CommandResult($"Error: Command \"{commandName}\" is already restricted to \"{group.Name}\".");
+                }
+                return new CommandResult($"Error: No group with name \"{groupName}\" was found.");
             }
-
-            var group = ConnectionManager.CurrentConnection.AccessGroups.Read(x => x.Name.Equals(groupName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-            if (group == null)
-            {
-                return new CommandResult($"Error: Group \"{groupName}\" does not exist.");
-            }
-
-            var groupRestrictions = restrictions.Read(x => x.GroupId == group.Id && x.Command.Equals(commandName, StringComparison.OrdinalIgnoreCase));
-            if (groupRestrictions.Any())
-            {
-                return new CommandResult($"Error: \"{groupName}\" already has access to \"{commandName}\".");
-            }
-
-            restrictions.Create(new Restriction() { GroupId = group.Id, Command = commandName });
-            restrictions.Commit();
-            return new CommandResult($"Command \"{commandName}\" was added to the group \"{group.Name}\" successfully!");
+            return new CommandResult($"Error: Command {commandName} does not match any commands.");
         }
 
         private CommandResult ListCommands()
         {
-            var commands = CommandManager.Commands;
+            var commands = AccessControlController.GetAllCommands();
             var modules = commands.Where(x => x.LastIndexOf('.') != -1).Select(x => x.Substring(0, x.LastIndexOf('.'))).Distinct().ToList();
             var response = new string[modules.Count + 1];
             response[0] = $"There are {commands.Count()} commands across {modules.Count} modules.";
@@ -269,29 +224,17 @@ namespace LobotJR.Command.Module.AccessControl
 
         private CommandResult RemoveCommandFromGroup(string commandName, string groupName)
         {
-            var restrictions = ConnectionManager.CurrentConnection.Restrictions;
-            if (!CommandManager.IsValidCommand(commandName))
+            var group = AccessControlController.GetGroupByName(groupName);
+            if (group != null)
             {
-                return new CommandResult($"Error: Command {commandName} does not match any commands.");
+                var success = AccessControlController.UnrestrictCommandFromGroup(group, commandName);
+                if (success)
+                {
+                    return new CommandResult($"Command \"{commandName}\" was removed from group \"{group.Name}\" successfully!");
+                }
+                return new CommandResult($"Error: Command \"{commandName}\" is not restricted to \"{group.Name}\".");
             }
-
-            var group = ConnectionManager.CurrentConnection.AccessGroups.Read(x => x.Name.Equals(groupName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-            if (group == null)
-            {
-                return new CommandResult($"Error: Group \"{groupName}\" does not exist.");
-            }
-
-            var groupRestrictions = restrictions.Read(x => x.GroupId == group.Id && x.Command.Equals(commandName, StringComparison.OrdinalIgnoreCase));
-            if (!groupRestrictions.Any())
-            {
-                return new CommandResult($"Error: \"{groupName}\" doesn't have access to \"{commandName}\".");
-            }
-
-            var toRemove = groupRestrictions.First();
-            restrictions.Delete(toRemove);
-            restrictions.Commit();
-
-            return new CommandResult($"Command \"{commandName}\" was removed from group \"{group.Name}\" successfully!");
+            return new CommandResult($"Error: No group with name \"{groupName}\" was found.");
         }
     }
 }

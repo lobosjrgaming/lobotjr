@@ -3,7 +3,7 @@ using LobotJR.Command.Model.Equipment;
 using LobotJR.Command.Model.Fishing;
 using LobotJR.Command.Model.Pets;
 using LobotJR.Command.Model.Player;
-using LobotJR.Command.System.Twitch;
+using LobotJR.Command.Controller.Twitch;
 using NLog;
 using System;
 using System.Collections.Generic;
@@ -30,7 +30,7 @@ namespace LobotJR.Data.Import
             return false;
         }
 
-        private static async Task<bool> ImportFisherData(IRepository<Fish> fishRepository, IRepository<Catch> catchRepository, IRepository<LeaderboardEntry> leaderboardRepository, UserSystem userSystem)
+        private static async Task<bool> ImportFisherData(IRepository<Fish> fishRepository, IRepository<Catch> catchRepository, IRepository<LeaderboardEntry> leaderboardRepository, UserController userSystem)
         {
             var hasFisherData = FileSystem.Exists(FisherDataImport.FisherDataPath);
             var hasLeaderboardData = FileSystem.Exists(FisherDataImport.FishingLeaderboardPath);
@@ -208,7 +208,7 @@ namespace LobotJR.Data.Import
             IRepository<Equippables> equippablesRepository,
             IRepository<Inventory> inventoryRepository,
             IRepository<Stable> stableRepository,
-            UserSystem userSystem,
+            UserController userSystem,
             Dictionary<int, Item> itemMap,
             Dictionary<int, Pet> petMap)
         {
@@ -272,7 +272,7 @@ namespace LobotJR.Data.Import
             Logger.Info("Player data migration complete!");
         }
 
-        private static async Task<bool> ImportPlayerData(IDatabase database, UserSystem userSystem)
+        private static async Task<bool> ImportPlayerData(IDatabase database, UserController userSystem)
         {
             var petMap = ImportPetData(database.PetData, database.PetRarityData);
             if (petMap.Any())
@@ -303,7 +303,7 @@ namespace LobotJR.Data.Import
             return false;
         }
 
-        public static async Task ImportLegacyData(IDatabase database, UserSystem userSystem)
+        public static async Task ImportLegacyData(IDatabase database, UserController userSystem)
         {
             ImportFishData(database.FishData);
             await ImportFisherData(database.FishData, database.Catches, database.FishingLeaderboard, userSystem);

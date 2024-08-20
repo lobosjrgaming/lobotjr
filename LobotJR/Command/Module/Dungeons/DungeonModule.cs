@@ -1,10 +1,10 @@
 ﻿using LobotJR.Command.Model.Dungeons;
 using LobotJR.Command.Model.Equipment;
 using LobotJR.Command.Model.Player;
-using LobotJR.Command.System.Dungeons;
-using LobotJR.Command.System.General;
-using LobotJR.Command.System.Player;
-using LobotJR.Command.System.Twitch;
+using LobotJR.Command.Controller.Dungeons;
+using LobotJR.Command.Controller.General;
+using LobotJR.Command.Controller.Player;
+using LobotJR.Command.Controller.Twitch;
 using LobotJR.Data;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
@@ -31,11 +31,11 @@ namespace LobotJR.Command.Module.Dungeons
             { PartyState.Failed, "Your party just finished an adventure!" },
         };
 
-        private readonly DungeonSystem DungeonSystem;
-        private readonly PartySystem PartySystem;
-        private readonly GroupFinderSystem GroupFinderSystem;
-        private readonly PlayerSystem PlayerSystem;
-        private readonly UserSystem UserSystem;
+        private readonly DungeonController DungeonSystem;
+        private readonly PartyController PartySystem;
+        private readonly GroupFinderController GroupFinderSystem;
+        private readonly PlayerController PlayerSystem;
+        private readonly UserController UserSystem;
         private readonly SettingsManager SettingsManager;
 
         /// <summary>
@@ -52,7 +52,7 @@ namespace LobotJR.Command.Module.Dungeons
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public DungeonModule(DungeonSystem dungeonSystem, PartySystem partySystem, GroupFinderSystem groupFinderSystem, PlayerSystem playerSystem, UserSystem userSystem, ConfirmationSystem confirmationSystem, SettingsManager settingsManager)
+        public DungeonModule(DungeonController dungeonSystem, PartyController partySystem, GroupFinderController groupFinderSystem, PlayerController playerSystem, UserController userSystem, ConfirmationController confirmationSystem, SettingsManager settingsManager)
         {
             DungeonSystem = dungeonSystem;
             GroupFinderSystem = groupFinderSystem;

@@ -1,5 +1,5 @@
 ﻿using LobotJR.Command.Module.Fishing;
-using LobotJR.Command.System.Fishing;
+using LobotJR.Command.Controller.Fishing;
 using LobotJR.Data;
 using LobotJR.Test.Mocks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -14,7 +14,7 @@ namespace LobotJR.Test.Modules.Fishing
     public class FishingAdminModuleTests
     {
         private SqliteRepositoryManager Manager;
-        private TournamentSystem TournamentSystem;
+        private TournamentController TournamentSystem;
         private FishingAdmin AdminModule;
 
         [TestInitialize]

@@ -1,12 +1,12 @@
 ﻿using LobotJR.Command.Model.Fishing;
-using LobotJR.Command.System.Fishing;
+using LobotJR.Command.Controller.Fishing;
 using LobotJR.Data;
 using LobotJR.Test.Mocks;
 using LobotJR.Twitch.Model;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using System.Linq;
-using static LobotJR.Command.System.Fishing.LeaderboardSystem;
+using static LobotJR.Command.Controller.Fishing.LeaderboardController;
 
 namespace LobotJR.Test.Systems.Fishing
 {
@@ -14,9 +14,9 @@ namespace LobotJR.Test.Systems.Fishing
     public class LeaderboardSystemTests
     {
         private SqliteRepositoryManager Manager;
-        private FishingSystem FishingSystem;
-        private TournamentSystem TournamentSystem;
-        private LeaderboardSystem LeaderboardSystem;
+        private FishingController FishingSystem;
+        private TournamentController TournamentSystem;
+        private LeaderboardController LeaderboardSystem;
 
         [TestInitialize]
         public void Initialize()

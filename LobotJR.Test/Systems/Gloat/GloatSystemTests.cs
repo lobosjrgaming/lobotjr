@@ -1,4 +1,4 @@
-﻿using LobotJR.Command.System.Gloat;
+﻿using LobotJR.Command.Controller.Gloat;
 using LobotJR.Data;
 using LobotJR.Test.Mocks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -12,7 +12,7 @@ namespace LobotJR.Test.Systems.Gloat
     public class GloatSystemTests
     {
         private SqliteRepositoryManager Manager;
-        private GloatSystem GloatSystem;
+        private GloatController GloatSystem;
         private Dictionary<string, int> Wolfcoins;
 
         [TestInitialize]

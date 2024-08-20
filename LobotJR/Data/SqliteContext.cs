@@ -1,4 +1,5 @@
 ﻿using LobotJR.Command;
+using LobotJR.Command.Model.AccessControl;
 using LobotJR.Command.Model.Dungeons;
 using LobotJR.Command.Model.Equipment;
 using LobotJR.Command.Model.Fishing;

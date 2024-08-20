@@ -1,7 +1,7 @@
 ﻿using LobotJR.Command.Model.Equipment;
 using LobotJR.Command.Model.Pets;
 using LobotJR.Command.Model.Player;
-using LobotJR.Command.System.Twitch;
+using LobotJR.Command.Controller.Twitch;
 using Newtonsoft.Json;
 using NLog;
 using System;
@@ -98,7 +98,7 @@ namespace LobotJR.Data.Import
             IRepository<Equippables> equippableRepository,
             IRepository<Inventory> inventoryRepository,
             IRepository<Stable> stableRepository,
-            UserSystem userSystem,
+            UserController userSystem,
             Dictionary<int, Item> itemMap,
             Dictionary<int, Pet> petMap)
         {

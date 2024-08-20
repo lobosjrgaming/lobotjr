@@ -1,4 +1,4 @@
-﻿using LobotJR.Command.System.General;
+﻿using LobotJR.Command.Controller.General;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using System.Collections.Generic;
@@ -11,7 +11,7 @@ namespace LobotJR.Command.Module.General
     /// </summary>
     public class ConfirmationModule : ICommandModule
     {
-        private readonly ConfirmationSystem ConfirmationSystem;
+        private readonly ConfirmationController ConfirmationSystem;
 
         /// <summary>
         /// Prefix applied to names of commands within this module.
@@ -26,7 +26,7 @@ namespace LobotJR.Command.Module.General
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public ConfirmationModule(ConfirmationSystem confirmationSystem)
+        public ConfirmationModule(ConfirmationController confirmationSystem)
         {
             ConfirmationSystem = confirmationSystem;
             Commands = new List<CommandHandler>()

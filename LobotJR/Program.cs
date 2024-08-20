@@ -1,8 +1,8 @@
 ﻿using Autofac;
 using LobotJR.Command;
-using LobotJR.Command.System;
-using LobotJR.Command.System.Player;
-using LobotJR.Command.System.Twitch;
+using LobotJR.Command.Controller;
+using LobotJR.Command.Controller.Player;
+using LobotJR.Command.Controller.Twitch;
 using LobotJR.Data;
 using LobotJR.Data.Import;
 using LobotJR.Data.Migration;
@@ -29,6 +29,7 @@ namespace LobotJR
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
+        private static string logFile = "output.log";
         private static bool isLive = false;
         private static bool hasCrashed = false;
 
@@ -52,9 +53,9 @@ namespace LobotJR
                     Logger.Error(ex);
                     Logger.Error("The application has encountered an unexpected error: {message}", ex.Message);
                     Directory.CreateDirectory(folder);
-                    File.Copy("./output.log", $"{folder}/output.log");
+                    File.Copy($"./{logFile}", $"{folder}/{logFile}");
                     ZipFile.CreateFromDirectory(folder, $"{folder}.zip");
-                    File.Delete($"{folder}/output.log");
+                    File.Delete($"{folder}/{logFile}");
                     Directory.Delete(folder);
                     Logger.Error("The full details of the error can be found in {file}", $"{folder}.zip");
                     hasCrashed = true;
@@ -114,15 +115,15 @@ namespace LobotJR
             return container.BeginLifetimeScope();
         }
 
-        private static void SeedDatabase(IConnectionManager connectionManager, UserSystem userSystem, ClientData clientData, TokenData tokenData)
+        private static void SeedDatabase(IConnectionManager connectionManager, UserController userController, ClientData clientData, TokenData tokenData)
         {
             using (connectionManager.OpenConnection())
             {
                 connectionManager.SeedMetadata();
                 connectionManager.SeedAppSettings();
                 connectionManager.SeedGameSettings();
-                userSystem.LastUpdate = DateTime.MinValue;
-                userSystem.SetBotUsers(userSystem.GetOrCreateUser(tokenData.BroadcastId, tokenData.BroadcastUser), userSystem.GetOrCreateUser(tokenData.ChatId, tokenData.ChatUser));
+                userController.LastUpdate = DateTime.MinValue;
+                userController.SetBotUsers(userController.GetOrCreateUser(tokenData.BroadcastId, tokenData.BroadcastUser), userController.GetOrCreateUser(tokenData.ChatId, tokenData.ChatUser));
             }
         }
 
@@ -131,6 +132,7 @@ namespace LobotJR
             using (connectionManager.OpenConnection())
             {
                 var appSettings = connectionManager.CurrentConnection.AppSettings.Read().First();
+                logFile = appSettings.LoggingFile;
                 LogManager.Setup().LoadConfiguration(builder =>
                 {
                     builder.ForLogger().FilterMinLevel(LogLevel.Debug)
@@ -155,15 +157,15 @@ namespace LobotJR
             }
         }
 
-        private static async Task ImportLegacyData(UserSystem userSystem)
+        private static async Task ImportLegacyData(UserController userController)
         {
             using (var database = new SqliteRepositoryManager())
             {
-                await DataImporter.ImportLegacyData(database, userSystem);
+                await DataImporter.ImportLegacyData(database, userController);
             }
         }
 
-        private static void HandleSubNotifications(IEnumerable<IrcMessage> notifications, UserSystem userSystem)
+        private static void HandleSubNotifications(IEnumerable<IrcMessage> notifications, UserController userController)
         {
             foreach (var sub in notifications)
             {
@@ -174,10 +176,10 @@ namespace LobotJR
                     {
                         if (sub.Tags.TryGetValue("login", out var user) && sub.Tags.TryGetValue("user-id", out var userId))
                         {
-                            var subUser = userSystem.GetOrCreateUser(userId, user);
+                            var subUser = userController.GetOrCreateUser(userId, user);
                             if (!subUser.IsSub)
                             {
-                                userSystem.SetSub(subUser);
+                                userController.SetSub(subUser);
                                 Logger.Info("Added {user} to the subs list.", user);
                             }
                         }
@@ -186,10 +188,10 @@ namespace LobotJR
                     {
                         if (sub.Tags.TryGetValue("msg-param-recipient-name", out var user) && sub.Tags.TryGetValue("msg-param-recipient-id", out var userId))
                         {
-                            var subUser = userSystem.GetOrCreateUser(userId, user);
+                            var subUser = userController.GetOrCreateUser(userId, user);
                             if (!subUser.IsSub)
                             {
-                                userSystem.SetSub(subUser);
+                                userController.SetSub(subUser);
                                 Logger.Info("Added {user} to the subs list.", user);
                             }
                         }
@@ -198,13 +200,13 @@ namespace LobotJR
             }
         }
 
-        private static async Task HandleTriggersAndCommands(IEnumerable<IrcMessage> messages, UserSystem userSystem, ICommandManager commandManager, TriggerManager triggerManager, ITwitchIrcClient ircClient, ITwitchClient twitchClient)
+        private static async Task HandleTriggersAndCommands(IEnumerable<IrcMessage> messages, UserController userController, ICommandManager commandManager, TriggerManager triggerManager, ITwitchIrcClient ircClient, ITwitchClient twitchClient)
         {
             foreach (var message in messages)
             {
                 if (!string.IsNullOrWhiteSpace(message.Message))
                 {
-                    var chatter = userSystem.GetOrCreateUser(message.UserId, message.UserName);
+                    var chatter = userController.GetOrCreateUser(message.UserId, message.UserName);
                     if (message.Message[0] == CommandManager.Prefix)
                     {
                         // This can't be inside of the command module manager since that automatically catches exceptions thrown by commands
@@ -221,7 +223,7 @@ namespace LobotJR
                     }
                     else if (message.IsChat)
                     {
-                        userSystem.UpdateUser(chatter, message);
+                        userController.UpdateUser(chatter, message);
                         var triggerResult = triggerManager.ProcessTrigger(message.Message, chatter);
                         if (triggerResult != null && triggerResult.Processed)
                         {
@@ -237,19 +239,19 @@ namespace LobotJR
         {
             var twitchClient = scope.Resolve<ITwitchClient>();
             var ircClient = scope.Resolve<ITwitchIrcClient>();
-            var systemManager = scope.Resolve<ISystemManager>();
+            var controllerManager = scope.Resolve<IControllerManager>();
             var commandManager = scope.Resolve<ICommandManager>();
             var connectionManager = scope.Resolve<IConnectionManager>();
             var triggerManager = scope.Resolve<TriggerManager>();
 
-            var userSystem = scope.Resolve<UserSystem>();
-            var playerSystem = scope.Resolve<PlayerSystem>();
+            var userController = scope.Resolve<UserController>();
+            var playerController = scope.Resolve<PlayerController>();
 
-            await ImportLegacyData(userSystem);
-            playerSystem.ExperienceToggled += (bool enabled) => { isLive = enabled; };
+            await ImportLegacyData(userController);
+            playerController.ExperienceToggled += (bool enabled) => { isLive = enabled; };
             if (isLive)
             {
-                playerSystem.EnableAwards(new User("Auto Recovery", ""));
+                playerController.EnableAwards(new User("Auto Recovery", ""));
                 CrashAlert();
             }
 
@@ -263,14 +265,14 @@ namespace LobotJR
 
             using (connectionManager.OpenConnection())
             {
-                systemManager.Initialize();
+                controllerManager.Initialize();
             }
 
             await ircClient.Connect();
 
             while (true)
             {
-                await systemManager.Process();
+                await controllerManager.Process();
                 await twitchClient.ProcessQueue();
                 var ircMessages = await ircClient.Process();
 
@@ -278,8 +280,8 @@ namespace LobotJR
                 {
                     using (connectionManager.OpenConnection())
                     {
-                        HandleSubNotifications(ircMessages.Where(x => x.IsUserNotice), userSystem);
-                        await HandleTriggersAndCommands(ircMessages.Where(x => x.IsChat || x.IsWhisper), userSystem, commandManager, triggerManager, ircClient, twitchClient);
+                        HandleSubNotifications(ircMessages.Where(x => x.IsUserNotice), userController);
+                        await HandleTriggersAndCommands(ircMessages.Where(x => x.IsChat || x.IsWhisper), userController, commandManager, triggerManager, ircClient, twitchClient);
                     }
                 }
                 // Nominal delay so it doesn't chew up the CPU
@@ -298,10 +300,10 @@ namespace LobotJR
             using (var scope = CreateApplicationScope(clientData, tokenData))
             {
                 var connectionManager = scope.Resolve<IConnectionManager>();
-                var userSystem = scope.Resolve<UserSystem>();
+                var userController = scope.Resolve<UserController>();
                 using (connectionManager.OpenConnection())
                 {
-                    SeedDatabase(connectionManager, userSystem, clientData, tokenData);
+                    SeedDatabase(connectionManager, userController, clientData, tokenData);
                     ConfigureLogging(connectionManager);
                     var appSettings = connectionManager.CurrentConnection.AppSettings.Read().First();
                     twitchPlays = appSettings.TwitchPlays;

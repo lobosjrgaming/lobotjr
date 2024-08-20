@@ -1,6 +1,6 @@
 ﻿using LobotJR.Command.Model.Pets;
-using LobotJR.Command.System.Pets;
-using LobotJR.Command.System.Twitch;
+using LobotJR.Command.Controller.Pets;
+using LobotJR.Command.Controller.Twitch;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using System;
@@ -17,8 +17,8 @@ namespace LobotJR.Command.Module.Pets
     {
         private readonly Random Random = new Random();
         private readonly PetModule PetModule;
-        private readonly PetSystem PetSystem;
-        private readonly UserSystem UserSystem;
+        private readonly PetController PetSystem;
+        private readonly UserController UserSystem;
 
         /// <summary>
         /// Prefix applied to names of commands within this module.
@@ -34,7 +34,7 @@ namespace LobotJR.Command.Module.Pets
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public PetAdmin(PetModule petModule, PetSystem petSystem, UserSystem userSystem)
+        public PetAdmin(PetModule petModule, PetController petSystem, UserController userSystem)
         {
             PetModule = petModule;
             PetSystem = petSystem;

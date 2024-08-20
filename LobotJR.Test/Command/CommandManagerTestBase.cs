@@ -1,6 +1,6 @@
 ﻿using LobotJR.Command;
 using LobotJR.Command.Module;
-using LobotJR.Command.System.Twitch;
+using LobotJR.Command.Controller.Twitch;
 using LobotJR.Data;
 using LobotJR.Test.Mocks;
 using LobotJR.Twitch.Model;
@@ -8,6 +8,7 @@ using Moq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using LobotJR.Command.Model.AccessControl;
 
 namespace LobotJR.Test.Command
 {

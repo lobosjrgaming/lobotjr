@@ -1,5 +1,5 @@
 ﻿using LobotJR.Command.Module;
-using LobotJR.Command.System.Twitch;
+using LobotJR.Command.Controller.Twitch;
 using LobotJR.Data;
 using LobotJR.Twitch;
 using LobotJR.Twitch.Model;
@@ -25,7 +25,7 @@ namespace LobotJR.Command
         /// <summary>
         /// User lookup service used to translate between usernames and user ids.
         /// </summary>
-        UserSystem UserSystem { get; }
+        UserController UserSystem { get; }
         /// <summary>
         /// List of ids for registered commands.
         /// </summary>

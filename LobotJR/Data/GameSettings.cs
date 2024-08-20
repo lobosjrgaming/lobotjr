@@ -29,22 +29,74 @@
         /// The cost to fetch info about another user.
         /// </summary>
         public int PryCost { get; set; } = 1;
+        /// <summary>
+        /// The cost to gloat about a player's level.
+        /// </summary>
         public int LevelGloatCost { get; set; } = 25;
+        /// <summary>
+        /// The cost to gloat about a player's pet.
+        /// </summary>
         public int PetGloatCost { get; set; } = 25;
+        /// <summary>
+        /// The amount of experience a pet needs to gain a level.
+        /// </summary>
         public int PetExperienceToLevel { get; set; } = 150;
+        /// <summary>
+        /// The maximum level a pet can be.
+        /// </summary>
         public int PetLevelMax { get; set; } = 10;
+        /// <summary>
+        /// The amount of affection a pet gains when fed.
+        /// </summary>
         public int PetFeedingAffection { get; set; } = 5;
+        /// <summary>
+        /// The cost to feed a pet.
+        /// </summary>
         public int PetFeedingCost { get; set; } = 5;
+        /// <summary>
+        /// The value the pet's hunger is set to when fed.
+        /// </summary>
         public int PetHungerMax { get; set; } = 100;
+        /// <summary>
+        /// The max number of players in a dungeon party.
+        /// </summary>
         public int DungeonPartySize { get; set; } = 3;
+        /// <summary>
+        /// The base cost for running a dungeon.
+        /// </summary>
         public int DungeonBaseCost { get; set; } = 25;
+        /// <summary>
+        /// The additional cost, per level, for running a dungeon.
+        /// </summary>
         public int DungeonLevelCost { get; set; } = 10;
+        /// <summary>
+        /// The amount of time, in milliseconds, between each dungeon step
+        /// being processed.
+        /// </summary>
         public int DungeonStepTime { get; set; } = 9000;
+        /// <summary>
+        /// The base chance for a player to die when the party fails a dungeon
+        /// encounter.
+        /// </summary>
         public float DungeonDeathChance { get; set; } = 0.25f;
+        /// <summary>
+        /// The base chance for a player to gain bonus experience from
+        /// completing a dungeon.
+        /// </summary>
         public float DungeonCritChance { get; set; } = 0.25f;
+        /// <summary>
+        /// The additional amount multiplier applied to the experience gained
+        /// when a player triggers bonus experience upon completing a dungeon.
+        /// The bonus experience is this value plus one, times the normal
+        /// experience amount.
+        /// </summary>
         public float DungeonCritBonus { get; set; } = 1f;
+        /// <summary>
+        /// True if the dungeon level ranges are used to determine if a player
+        /// can run a dungeon. If this value is false, any player can run any
+        /// dungeon regardless of level.
+        /// </summary>
         public bool DungeonLevelRestrictions { get; set; } = false;
-
         /// <summary>
         /// The shortest time, in seconds, it can take to hook a fish. Default
         /// is 60 seconds.

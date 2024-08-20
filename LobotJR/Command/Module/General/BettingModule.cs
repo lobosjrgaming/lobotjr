@@ -1,5 +1,5 @@
-﻿using LobotJR.Command.System.General;
-using LobotJR.Command.System.Player;
+﻿using LobotJR.Command.Controller.General;
+using LobotJR.Command.Controller.Player;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using System;
@@ -20,8 +20,8 @@ namespace LobotJR.Command.Module.General
         private static readonly IEnumerable<string> YesVotes = new List<string>() { "y", "yes", "t", "true", "1", "succeed" };
         private static readonly IEnumerable<string> NoVotes = new List<string>() { "n", "no", "f", "false", "2", "fail" };
 
-        private readonly BettingSystem BettingSystem;
-        private readonly PlayerSystem PlayerSystem;
+        private readonly BettingController BettingSystem;
+        private readonly PlayerController PlayerSystem;
 
         /// <summary>
         /// Prefix applied to names of commands within this module.
@@ -37,7 +37,7 @@ namespace LobotJR.Command.Module.General
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public BettingModule(BettingSystem bettingSystem, PlayerSystem playerSystem)
+        public BettingModule(BettingController bettingSystem, PlayerController playerSystem)
         {
             BettingSystem = bettingSystem;
             PlayerSystem = playerSystem;
@@ -51,27 +51,43 @@ namespace LobotJR.Command.Module.General
                 new CommandHandler("Admin.StartBet", this, CommandMethod.GetInfo<string>(StartBet), "startbet"),
                 new CommandHandler("Admin.CloseBet", this, CommandMethod.GetInfo(CloseBet), "closebet"),
                 new CommandHandler("Admin.ResolveBet", this, CommandMethod.GetInfo<string>(ResolveBet), "resolvebet", "endbet"),
+                new CommandHandler("Admin.CancelBet", this, CommandMethod.GetInfo(CancelBet), "cancelbet"),
             };
         }
 
         public CommandResult PlaceBet(User user, int amount, string vote)
         {
-            bool? voteBool = null;
-            if (YesVotes.Any(x => x.Equals(vote, StringComparison.OrdinalIgnoreCase)))
+            if (BettingSystem.IsActive)
             {
-                voteBool = true;
+                if (BettingSystem.IsOpen)
+                {
+                    bool? voteBool = null;
+                    if (YesVotes.Any(x => x.Equals(vote, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        voteBool = true;
+                    }
+                    else if (NoVotes.Any(x => x.Equals(vote, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        voteBool = false;
+                    }
+                    if (voteBool.HasValue)
+                    {
+                        var player = PlayerSystem.GetPlayerByUser(user);
+                        if (BettingSystem.PlaceBet(player, amount, voteBool.Value))
+                        {
+                            return new CommandResult($"You bet {amount} Wolfcoins on \"{(voteBool.Value ? "succeed" : "fail")}\".");
+                        }
+                        if (player.Currency < amount)
+                        {
+                            return new CommandResult($"You can't bet {amount} because you only have {player.Currency} Wolfcoins!");
+                        }
+                        return new CommandResult($"You have already placed a bet!");
+                    }
+                    return new CommandResult("Invalid vote, use \"succeed\" for success or \"fail\" for failure");
+                }
+                return new CommandResult("Betting has already closed!");
             }
-            else if (NoVotes.Any(x => x.Equals(vote, StringComparison.OrdinalIgnoreCase)))
-            {
-                voteBool = false;
-            }
-            if (voteBool.HasValue)
-            {
-                var player = PlayerSystem.GetPlayerByUser(user);
-                BettingSystem.PlaceBet(player, amount, voteBool.Value);
-                return new CommandResult($"You bet {amount} Wolfcoins on \"{(voteBool.Value ? "succeed" : "fail")}\".");
-            }
-            return new CommandResult("Invalid vote, use \"succeed\" for success or \"fail\" for failure");
+            return new CommandResult("There is no bet currently active.");
         }
 
         public CommandResult StartBet(string message)
@@ -88,20 +104,33 @@ namespace LobotJR.Command.Module.General
 
         public CommandResult ResolveBet(string vote)
         {
-            bool? voteBool = null;
-            if (YesVotes.Any(x => x.Equals(vote, StringComparison.OrdinalIgnoreCase)))
+            if (BettingSystem.IsActive)
             {
-                voteBool = true;
+                bool? voteBool = null;
+                if (YesVotes.Any(x => x.Equals(vote, StringComparison.OrdinalIgnoreCase)))
+                {
+                    voteBool = true;
+                }
+                else if (NoVotes.Any(x => x.Equals(vote, StringComparison.OrdinalIgnoreCase)))
+                {
+                    voteBool = false;
+                }
+                if (voteBool.HasValue)
+                {
+                    BettingSystem.Resolve(voteBool.Value);
+                }
+                return new CommandResult("Invalid outcome, use \"succeed\" for success or \"fail\" for failure");
             }
-            else if (NoVotes.Any(x => x.Equals(vote, StringComparison.OrdinalIgnoreCase)))
+            return new CommandResult("There is no bet currently active.");
+        }
+
+        public CommandResult CancelBet()
+        {
+            if (BettingSystem.CancelBet())
             {
-                voteBool = false;
+                return new CommandResult(true, "The current bet has ben canceled, all Wolfcoins wagered have been refunded.");
             }
-            if (voteBool.HasValue)
-            {
-                BettingSystem.Resolve(voteBool.Value);
-            }
-            return new CommandResult("Invalid outcome, use \"succeed\" for success or \"fail\" for failure");
+            return new CommandResult("There is no bet currently active.");
         }
     }
 }

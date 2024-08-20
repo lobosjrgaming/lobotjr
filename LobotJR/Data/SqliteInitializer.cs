@@ -1,4 +1,4 @@
-﻿using LobotJR.Command;
+﻿using LobotJR.Command.Model.AccessControl;
 using SQLite.CodeFirst;
 using System.Data.Entity;
 

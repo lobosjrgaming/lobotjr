@@ -1,4 +1,4 @@
-﻿using LobotJR.Command.System.General;
+﻿using LobotJR.Command.Controller.General;
 using LobotJR.Data;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
@@ -14,7 +14,7 @@ namespace LobotJR.Command.Module.General
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        private readonly BugReportSystem BugSystem;
+        private readonly BugReportController BugSystem;
         private readonly SettingsManager SettingsManager;
 
         /// <summary>
@@ -30,7 +30,7 @@ namespace LobotJR.Command.Module.General
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public InfoModule(BugReportSystem bugSystem, SettingsManager settingsManager)
+        public InfoModule(BugReportController bugSystem, SettingsManager settingsManager)
         {
             SettingsManager = settingsManager;
             BugSystem = bugSystem;
