@@ -209,7 +209,7 @@ namespace LobotJR
                     var chatter = userController.GetOrCreateUser(message.UserId, message.UserName);
                     if (message.Message[0] == CommandManager.Prefix)
                     {
-                        // This can't be inside of the command module manager since that automatically catches exceptions thrown by commands
+                        // This can't be inside of the command view manager since that automatically catches exceptions thrown by commands
                         if (message.Message == "!testcrash" && chatter.IsAdmin)
                         {
                             throw new Exception($"Test crash initiated by {message.UserName} at {DateTime.Now.ToString("yyyyMMddTHHmmssfffZ")}");
@@ -255,7 +255,7 @@ namespace LobotJR
                 CrashAlert();
             }
 
-            commandManager.InitializeModules();
+            commandManager.InitializeViews();
             commandManager.PushNotifications +=
                 (User user, CommandResult commandResult) =>
                 {

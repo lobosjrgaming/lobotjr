@@ -1,18 +1,18 @@
-﻿using LobotJR.Command.Module.Pets;
-using LobotJR.Command.Controller.Fishing;
+﻿using LobotJR.Command.Controller.Fishing;
 using LobotJR.Command.Controller.Gloat;
+using LobotJR.Command.View.Pets;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LobotJR.Command.Module.Gloat
+namespace LobotJR.Command.View.Gloat
 {
     /// <summary>
-    /// Module containing commands that allow players to gloat about their
+    /// View containing commands that allow players to gloat about their
     /// achievements.
     /// </summary>
-    public class GloatModule : ICommandModule
+    public class GloatView : ICommandView
     {
         private readonly IEnumerable<string> CheerMessages = new List<string>()
         {
@@ -38,11 +38,11 @@ namespace LobotJR.Command.Module.Gloat
             "The Ultimate Wolfpack God Rank. A truly dedicated individual."
         };
 
-        private readonly GloatController GloatSystem;
-        private readonly LeaderboardController LeaderboardSystem;
+        private readonly GloatController GloatController;
+        private readonly LeaderboardController LeaderboardController;
 
         /// <summary>
-        /// Prefix applied to names of commands within this module.
+        /// Prefix applied to names of commands within this view.
         /// </summary>
         public string Name => "Gloat";
         /// <summary>
@@ -50,14 +50,14 @@ namespace LobotJR.Command.Module.Gloat
         /// </summary>
         public event PushNotificationHandler PushNotification;
         /// <summary>
-        /// A collection of commands this module provides.
+        /// A collection of commands this view provides.
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public GloatModule(GloatController gloatSystem, LeaderboardController leaderboardSystem)
+        public GloatView(GloatController gloatController, LeaderboardController leaderboardController)
         {
-            GloatSystem = gloatSystem;
-            LeaderboardSystem = leaderboardSystem;
+            GloatController = gloatController;
+            LeaderboardController = leaderboardController;
             Commands = new CommandHandler[]
             {
                 new CommandHandler("GloatLevel", this, CommandMethod.GetInfo(GloatLevel), "gloat", "gloatlevel", "levelgloat"),
@@ -68,10 +68,10 @@ namespace LobotJR.Command.Module.Gloat
 
         public CommandResult GloatLevel(User user)
         {
-            var cost = GloatSystem.GetLevelCost();
-            if (GloatSystem.CanGloatLevel(user))
+            var cost = GloatController.GetLevelCost();
+            if (GloatController.CanGloatLevel(user))
             {
-                var player = GloatSystem.LevelGloat(user);
+                var player = GloatController.LevelGloat(user);
                 var levelWithPrestige = $"Level {player.Level}";
                 if (player.Prestige > 0)
                 {
@@ -85,13 +85,13 @@ namespace LobotJR.Command.Module.Gloat
 
         public CommandResult GloatPet(User user)
         {
-            if (GloatSystem.CanGloatPet(user))
+            if (GloatController.CanGloatPet(user))
             {
-                var cost = GloatSystem.GetPetCost();
-                var pet = GloatSystem.PetGloat(user);
+                var cost = GloatController.GetPetCost();
+                var pet = GloatController.PetGloat(user);
                 if (pet != null)
                 {
-                    return new CommandResult(true, $"{user.Username} watches proudly as their level {pet.Level} {PetModule.GetPetName(pet)} named {pet.Name} struts around!")
+                    return new CommandResult(true, $"{user.Username} watches proudly as their level {pet.Level} {PetView.GetPetName(pet)} named {pet.Name} struts around!")
                     {
                         Responses = new List<string>() { $"You spent {cost} Wolfcoins to brag about {pet.Name}." }
                     };
@@ -103,16 +103,16 @@ namespace LobotJR.Command.Module.Gloat
 
         public CommandResult GloatFish(User user, int index)
         {
-            if (GloatSystem.CanGloatFishing(user))
+            if (GloatController.CanGloatFishing(user))
             {
-                var records = LeaderboardSystem.GetPersonalLeaderboard(user);
-                var cost = GloatSystem.GetFishCost();
+                var records = LeaderboardController.GetPersonalLeaderboard(user);
+                var cost = GloatController.GetFishCost();
                 var max = records.Count();
                 if (max > 0)
                 {
                     if (index > 0 && index <= max)
                     {
-                        var record = GloatSystem.FishingGloat(user, index - 1);
+                        var record = GloatController.FishingGloat(user, index - 1);
                         if (record != null)
                         {
                             return new CommandResult($"You spent {cost} wolfcoins to brag about your biggest {record.Fish.Name}.")

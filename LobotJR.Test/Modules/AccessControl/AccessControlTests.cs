@@ -1,4 +1,4 @@
-﻿using LobotJR.Command.Module.AccessControl;
+﻿using LobotJR.Command.View.AccessControl;
 using LobotJR.Test.Command;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
@@ -11,7 +11,7 @@ namespace LobotJR.Test.Modules.AccessControl
     [TestClass]
     public class AccessControlTests : CommandManagerTestBase
     {
-        protected AccessControlModule Module;
+        protected AccessControlView Module;
 
         [TestInitialize]
         public void Setup()
@@ -24,7 +24,7 @@ namespace LobotJR.Test.Modules.AccessControl
         public void ChecksUsersAccessOfSpecificGroup()
         {
             var command = Module.Commands.Where(x => x.Name.Equals("CheckAccess")).FirstOrDefault();
-            var result = command.Executor.Execute(CommandManager.UserSystem.GetUserByName("Auth"), "TestGroup");
+            var result = command.Executor.Execute(CommandManager.UserController.GetUserByName("Auth"), "TestGroup");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsFalse(result.Responses[0].Contains("not", StringComparison.OrdinalIgnoreCase));
@@ -52,8 +52,8 @@ namespace LobotJR.Test.Modules.AccessControl
         {
             var command = Module.Commands.Where(x => x.Name.Equals("CheckAccess")).FirstOrDefault();
             var username = "Auth";
-            var user = CommandManager.UserSystem.GetUserByName(username);
-            var result = command.Executor.Execute(CommandManager.UserSystem.GetUserByName(username), null);
+            var user = CommandManager.UserController.GetUserByName(username);
+            var result = command.Executor.Execute(CommandManager.UserController.GetUserByName(username), null);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             var enrollments = CommandManager.RepositoryManager.Enrollments.Read(x => x.UserId.Equals(user.TwitchId));
@@ -67,7 +67,7 @@ namespace LobotJR.Test.Modules.AccessControl
         {
             var command = Module.Commands.Where(x => x.Name.Equals("CheckAccess")).FirstOrDefault();
             var groupToCheck = "NotTestGroup";
-            var result = command.Executor.Execute(CommandManager.UserSystem.GetUserByName("Auth"), groupToCheck);
+            var result = command.Executor.Execute(CommandManager.UserController.GetUserByName("Auth"), groupToCheck);
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses[0].StartsWith("Error:", StringComparison.OrdinalIgnoreCase));

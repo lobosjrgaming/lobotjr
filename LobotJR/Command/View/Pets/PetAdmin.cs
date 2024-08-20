@@ -1,44 +1,44 @@
-﻿using LobotJR.Command.Model.Pets;
-using LobotJR.Command.Controller.Pets;
+﻿using LobotJR.Command.Controller.Pets;
 using LobotJR.Command.Controller.Twitch;
+using LobotJR.Command.Model.Pets;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LobotJR.Command.Module.Pets
+namespace LobotJR.Command.View.Pets
 {
     /// <summary>
-    /// Module containing commands for fixing stables in invalid states,
+    /// View containing commands for fixing stables in invalid states,
     /// debugging pet functionality, and providing pets to players.
     /// </summary>
-    public class PetAdmin : ICommandModule
+    public class PetAdmin : ICommandView
     {
         private readonly Random Random = new Random();
-        private readonly PetModule PetModule;
-        private readonly PetController PetSystem;
-        private readonly UserController UserSystem;
+        private readonly PetView PetView;
+        private readonly PetController PetController;
+        private readonly UserController UserController;
 
         /// <summary>
-        /// Prefix applied to names of commands within this module.
+        /// Prefix applied to names of commands within this view.
         /// </summary>
         public string Name => "Pets.Admin";
         /// <summary>
-        /// This module does not issue any push notifications. Notifications
-        /// for pets being granted is handled by the PetModule.
+        /// This view does not issue any push notifications. Notifications
+        /// for pets being granted is handled by the PetView.
         /// </summary>
         public event PushNotificationHandler PushNotification;
         /// <summary>
-        /// A collection of commands this module provides.
+        /// A collection of commands this view provides.
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public PetAdmin(PetModule petModule, PetController petSystem, UserController userSystem)
+        public PetAdmin(PetView petView, PetController petController, UserController userController)
         {
-            PetModule = petModule;
-            PetSystem = petSystem;
-            UserSystem = userSystem;
+            PetView = petView;
+            PetController = petController;
+            UserController = userController;
             Commands = new List<CommandHandler>()
             {
                 new CommandHandler("CheckPets", this, CommandMethod.GetInfo<string>(CheckPets), "checkpets"),
@@ -55,10 +55,10 @@ namespace LobotJR.Command.Module.Pets
 
         public CommandResult CheckPets(string target)
         {
-            var user = UserSystem.GetUserByName(target);
+            var user = UserController.GetUserByName(target);
             if (user != null)
             {
-                return PetModule.ListPets(user);
+                return PetView.ListPets(user);
             }
             return CreateDefaultResult(target);
         }
@@ -66,7 +66,7 @@ namespace LobotJR.Command.Module.Pets
         public CommandResult GrantPet(User user, int rarity = -1)
         {
             PetRarity rarityToGrant;
-            var rarities = PetSystem.GetRarities();
+            var rarities = PetController.GetRarities();
             if (rarity == -1)
             {
                 rarity = Random.Next(0, rarities.Count());
@@ -74,24 +74,24 @@ namespace LobotJR.Command.Module.Pets
             rarityToGrant = rarities.ElementAtOrDefault(rarity);
             if (rarityToGrant != null)
             {
-                PetSystem.GrantPet(user, rarityToGrant);
+                PetController.GrantPet(user, rarityToGrant);
             }
             return new CommandResult(true);
         }
 
         public CommandResult ClearPets(User user)
         {
-            var stables = PetSystem.GetStableForUser(user).ToList();
+            var stables = PetController.GetStableForUser(user).ToList();
             foreach (var stable in stables)
             {
-                PetSystem.DeletePet(stable);
+                PetController.DeletePet(stable);
             }
             return new CommandResult("Pets cleared.");
         }
 
         public CommandResult SetHunger(User user, int index, int hunger)
         {
-            var stable = PetSystem.GetStableForUser(user);
+            var stable = PetController.GetStableForUser(user);
             if (stable.Any())
             {
                 var pet = stable.ElementAtOrDefault(index - 1);

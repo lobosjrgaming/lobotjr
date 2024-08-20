@@ -1,7 +1,7 @@
-﻿using LobotJR.Command.Model.Pets;
-using LobotJR.Command.Controller.General;
+﻿using LobotJR.Command.Controller.General;
 using LobotJR.Command.Controller.Pets;
 using LobotJR.Command.Controller.Player;
+using LobotJR.Command.Model.Pets;
 using LobotJR.Data;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
@@ -9,13 +9,13 @@ using System.Collections.Generic;
 using System.Data.Entity.Core.Common.CommandTrees.ExpressionBuilder;
 using System.Linq;
 
-namespace LobotJR.Command.Module.Pets
+namespace LobotJR.Command.View.Pets
 {
     /// <summary>
-    /// Module containing commands for managing player pets.
+    /// View containing commands for managing player pets.
     /// </summary>
 
-    public class PetModule : ICommandModule
+    public class PetView : ICommandView
     {
         /// <summary>
         /// Gets the name of the type of pet in a stable, properly formatted.
@@ -27,12 +27,12 @@ namespace LobotJR.Command.Module.Pets
             return stable.IsSparkly ? $"✨{stable.Pet.Name}✨" : stable.Pet.Name;
         }
 
-        private readonly PetController PetSystem;
-        private readonly PlayerController PlayerSystem;
+        private readonly PetController PetController;
+        private readonly PlayerController PlayerController;
         private readonly SettingsManager SettingsManager;
 
         /// <summary>
-        /// Prefix applied to names of commands within this module.
+        /// Prefix applied to names of commands within this view.
         /// </summary>
         public string Name => "Pets";
         /// <summary>
@@ -42,19 +42,19 @@ namespace LobotJR.Command.Module.Pets
         /// </summary>
         public event PushNotificationHandler PushNotification;
         /// <summary>
-        /// A collection of commands this module provides.
+        /// A collection of commands this view provides.
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public PetModule(PetController petSystem, PlayerController playerSystem, ConfirmationController confirmationSystem, SettingsManager settingsManager)
+        public PetView(PetController petController, PlayerController playerController, ConfirmationController confirmationController, SettingsManager settingsManager)
         {
-            PetSystem = petSystem;
-            PlayerSystem = playerSystem;
-            PetSystem.PetFound += PetSystem_PetFound;
-            PetSystem.PetWarning += PetSystem_PetWarning;
-            PetSystem.PetDeath += PetSystem_PetDeath;
-            confirmationSystem.Confirmed += ConfirmationSystem_Confirmed;
-            confirmationSystem.Canceled += ConfirmationSystem_Canceled;
+            PetController = petController;
+            PlayerController = playerController;
+            PetController.PetFound += PetController_PetFound;
+            PetController.PetWarning += PetController_PetWarning;
+            PetController.PetDeath += PetController_PetDeath;
+            confirmationController.Confirmed += ConfirmationController_Confirmed;
+            confirmationController.Canceled += ConfirmationController_Canceled;
             SettingsManager = settingsManager;
             Commands = new List<CommandHandler>()
             {
@@ -68,12 +68,12 @@ namespace LobotJR.Command.Module.Pets
             };
         }
 
-        private void PetSystem_PetDeath(User user, Stable stable)
+        private void PetController_PetDeath(User user, Stable stable)
         {
             PushNotification?.Invoke(user, new CommandResult($"{stable.Name} starved to death."));
         }
 
-        private void PetSystem_PetWarning(User user, Stable stable)
+        private void PetController_PetWarning(User user, Stable stable)
         {
             var message = stable.Hunger <= 10
                 ? $"{stable.Name} is very hungry and will die if you don't feed it soon!"
@@ -81,36 +81,35 @@ namespace LobotJR.Command.Module.Pets
             PushNotification?.Invoke(user, new CommandResult(message));
         }
 
-        private void PetSystem_PetFound(User user, Stable stable)
+        private void PetController_PetFound(User user, Stable stable)
         {
             var result = new CommandResult(user);
-            var userStable = PetSystem.GetStableForUser(user);
-            string responseString = string.Empty;
+            var userStable = PetController.GetStableForUser(user);
+            string responseString;
             string messageString;
             var petName = GetPetName(stable);
             if (stable.IsSparkly)
             {
-                responseString = " WOW! And it's a sparkly version! Lucky you!";
                 messageString = $"WOW! {user.Username} just found a SPARKLY pet {petName}! What luck!";
             }
             else
             {
-                responseString = string.Empty;
                 messageString = $"{user.Username} just found a pet {petName}!";
             }
             if (userStable.Count() == 1)
             {
-                responseString = $"You found your first pet! You now have a pet {petName}. Whisper me !pethelp for more info." + responseString;
+                responseString = $"You found your first pet! You now have a pet {petName}. Whisper me !pethelp for more info.";
             }
             else
             {
-                responseString = $"You found a new pet buddy! You earned a {petName} pet!" + responseString;
+                responseString = $"You found a new pet buddy! You earned a {petName} pet!";
             }
             if (stable.IsSparkly)
             {
+                responseString += " WOW! And it's a sparkly version! Lucky you!";
             }
             result.Responses.Add(responseString);
-            if (userStable.Count() == PetSystem.GetPets().Count())
+            if (userStable.Count() == PetController.GetPets().Count())
             {
                 result.Responses.Add("You've collected all of the available pets! Congratulations!");
             }
@@ -118,23 +117,23 @@ namespace LobotJR.Command.Module.Pets
             PushNotification?.Invoke(user, result);
         }
 
-        private void ConfirmationSystem_Confirmed(User user)
+        private void ConfirmationController_Confirmed(User user)
         {
-            var toRelease = PetSystem.IsFlaggedForDelete(user);
+            var toRelease = PetController.IsFlaggedForDelete(user);
             if (toRelease != null)
             {
                 var name = toRelease.Name;
-                PetSystem.DeletePet(toRelease);
+                PetController.DeletePet(toRelease);
                 PushNotification?.Invoke(user, new CommandResult($"You released {name}. Goodbye, {name}!"));
             }
         }
 
-        private void ConfirmationSystem_Canceled(User user)
+        private void ConfirmationController_Canceled(User user)
         {
-            var toRelease = PetSystem.IsFlaggedForDelete(user);
+            var toRelease = PetController.IsFlaggedForDelete(user);
             if (toRelease != null)
             {
-                PetSystem.UnflagForDelete(user);
+                PetController.UnflagForDelete(user);
                 PushNotification?.Invoke(user, new CommandResult($"You decided to keep {toRelease}."));
             }
         }
@@ -166,7 +165,7 @@ namespace LobotJR.Command.Module.Pets
 
         public CommandResult ListPets(User user)
         {
-            var stable = PetSystem.GetStableForUser(user);
+            var stable = PetController.GetStableForUser(user);
             if (stable.Any())
             {
                 var responses = new List<string>() { $"You have {stable.Count()} pets: " };
@@ -182,7 +181,7 @@ namespace LobotJR.Command.Module.Pets
 
         public CommandResult DescribePet(User user, int index)
         {
-            var stable = PetSystem.GetStableForUser(user);
+            var stable = PetController.GetStableForUser(user);
             if (stable.Any())
             {
                 var pet = stable.ElementAtOrDefault(index - 1);
@@ -197,7 +196,7 @@ namespace LobotJR.Command.Module.Pets
 
         public CommandResult RenamePet(User user, int index, string name)
         {
-            var stable = PetSystem.GetStableForUser(user);
+            var stable = PetController.GetStableForUser(user);
             if (stable.Any())
             {
                 var pet = stable.ElementAtOrDefault(index - 1);
@@ -218,7 +217,7 @@ namespace LobotJR.Command.Module.Pets
 
         public CommandResult FeedPet(User user, int index)
         {
-            var stable = PetSystem.GetStableForUser(user);
+            var stable = PetController.GetStableForUser(user);
             if (stable.Any())
             {
                 var pet = stable.ElementAtOrDefault(index - 1);
@@ -226,10 +225,10 @@ namespace LobotJR.Command.Module.Pets
                 {
                     var petLevel = pet.Level;
                     var settings = SettingsManager.GetGameSettings();
-                    if (PetSystem.IsHungry(pet))
+                    if (PetController.IsHungry(pet))
                     {
-                        var player = PlayerSystem.GetPlayerByUser(user);
-                        if (PetSystem.Feed(player, pet))
+                        var player = PlayerController.GetPlayerByUser(user);
+                        if (PetController.Feed(player, pet))
                         {
                             var output = new List<string>() { $"You were charged {settings.PetFeedingCost} wolfcoins to feed {pet.Name}. They feel refreshed!" };
                             if (petLevel > pet.Level)
@@ -249,7 +248,7 @@ namespace LobotJR.Command.Module.Pets
 
         public CommandResult ActivatePet(User user, int index)
         {
-            var stable = PetSystem.GetStableForUser(user);
+            var stable = PetController.GetStableForUser(user);
             if (stable.Any())
             {
                 var pet = stable.ElementAtOrDefault(index - 1);
@@ -257,7 +256,7 @@ namespace LobotJR.Command.Module.Pets
                 {
                     if (!pet.IsActive)
                     {
-                        var active = PetSystem.ActivatePet(user, pet);
+                        var active = PetController.ActivatePet(user, pet);
                         var dismissMessage = "";
                         if (active != null)
                         {
@@ -274,7 +273,7 @@ namespace LobotJR.Command.Module.Pets
 
         public CommandResult DeactivatePet(User user)
         {
-            var active = PetSystem.DeactivatePet(user);
+            var active = PetController.DeactivatePet(user);
             if (active != null)
             {
                 return new CommandResult($"You dismissed {active.Name}.");
@@ -284,17 +283,17 @@ namespace LobotJR.Command.Module.Pets
 
         public CommandResult DeletePet(User user, int index)
         {
-            var stable = PetSystem.GetStableForUser(user);
+            var stable = PetController.GetStableForUser(user);
             if (stable.Any())
             {
                 var pet = stable.ElementAtOrDefault(index - 1);
                 if (pet != null)
                 {
-                    if (PetSystem.FlagForDelete(user, pet))
+                    if (PetController.FlagForDelete(user, pet))
                     {
                         return new CommandResult($"If you release {pet.Name}, they will be gone forever. Are you sure you want to release them? (!y/!n)");
                     }
-                    var flagged = PetSystem.IsFlaggedForDelete(user);
+                    var flagged = PetController.IsFlaggedForDelete(user);
                     return new CommandResult($"You are already trying to release {flagged.Name}. Are you sure you want to release them? (!y/!n)");
                 }
                 return new CommandResult($"Invalid index, please specify a number between 1 and {stable.Count()}.");

@@ -1,5 +1,5 @@
-﻿using LobotJR.Command.Module;
-using LobotJR.Command.Controller.Twitch;
+﻿using LobotJR.Command.Controller.Twitch;
+using LobotJR.Command.View;
 using LobotJR.Data;
 using LobotJR.Twitch;
 using LobotJR.Twitch.Model;
@@ -14,7 +14,7 @@ namespace LobotJR.Command
     public interface ICommandManager
     {
         /// <summary>
-        /// Event raised when a module sends a push notification.
+        /// Event raised when a view sends a push notification.
         /// </summary>
         event PushNotificationHandler PushNotifications;
 
@@ -25,16 +25,16 @@ namespace LobotJR.Command
         /// <summary>
         /// User lookup service used to translate between usernames and user ids.
         /// </summary>
-        UserController UserSystem { get; }
+        UserController UserController { get; }
         /// <summary>
         /// List of ids for registered commands.
         /// </summary>
         IEnumerable<string> Commands { get; }
 
         /// <summary>
-        /// Initializes all registered command modules.
+        /// Initializes all registered command views.
         /// </summary>
-        void InitializeModules();
+        void InitializeViews();
         /// <summary>
         /// Checks if a command id exists or is a valid wildcard pattern.
         /// </summary>

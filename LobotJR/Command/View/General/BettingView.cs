@@ -6,25 +6,25 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LobotJR.Command.Module.General
+namespace LobotJR.Command.View.General
 {
     /// <summary>
     /// There was code in Program.cs for a betting system, but most of the code
     /// was commented out.
-    /// This class, combined with the matching system, has the functionality of
+    /// This class, combined with the matching controller, has the functionality of
     /// that code fully implemented, but is not registered with autofac so it
     /// won't be loaded.
     /// </summary>
-    public class BettingModule : ICommandModule
+    public class BettingView : ICommandView
     {
         private static readonly IEnumerable<string> YesVotes = new List<string>() { "y", "yes", "t", "true", "1", "succeed" };
         private static readonly IEnumerable<string> NoVotes = new List<string>() { "n", "no", "f", "false", "2", "fail" };
 
-        private readonly BettingController BettingSystem;
-        private readonly PlayerController PlayerSystem;
+        private readonly BettingController BettingController;
+        private readonly PlayerController PlayerController;
 
         /// <summary>
-        /// Prefix applied to names of commands within this module.
+        /// Prefix applied to names of commands within this view.
         /// </summary>
         public string Name => "Betting";
         /// <summary>
@@ -33,20 +33,20 @@ namespace LobotJR.Command.Module.General
         /// </summary>
         public event PushNotificationHandler PushNotification;
         /// <summary>
-        /// A collection of commands this module provides.
+        /// A collection of commands this view provides.
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public BettingModule(BettingController bettingSystem, PlayerController playerSystem)
+        public BettingView(BettingController bettingController, PlayerController playerController)
         {
-            BettingSystem = bettingSystem;
-            PlayerSystem = playerSystem;
+            BettingController = bettingController;
+            PlayerController = playerController;
             Commands = new List<CommandHandler>()
             {
                 new CommandHandler("PlaceBet", this, CommandMethod.GetInfo<int, string>(PlaceBet), "bet"),
 
                 // These are admin commands and will need to be moved into
-                // their own module for access control if this gets implemented
+                // their own view for access control if this gets implemented
                 // I just put admin. in front as a hacky way to indicate this
                 new CommandHandler("Admin.StartBet", this, CommandMethod.GetInfo<string>(StartBet), "startbet"),
                 new CommandHandler("Admin.CloseBet", this, CommandMethod.GetInfo(CloseBet), "closebet"),
@@ -57,9 +57,9 @@ namespace LobotJR.Command.Module.General
 
         public CommandResult PlaceBet(User user, int amount, string vote)
         {
-            if (BettingSystem.IsActive)
+            if (BettingController.IsActive)
             {
-                if (BettingSystem.IsOpen)
+                if (BettingController.IsOpen)
                 {
                     bool? voteBool = null;
                     if (YesVotes.Any(x => x.Equals(vote, StringComparison.OrdinalIgnoreCase)))
@@ -72,8 +72,8 @@ namespace LobotJR.Command.Module.General
                     }
                     if (voteBool.HasValue)
                     {
-                        var player = PlayerSystem.GetPlayerByUser(user);
-                        if (BettingSystem.PlaceBet(player, amount, voteBool.Value))
+                        var player = PlayerController.GetPlayerByUser(user);
+                        if (BettingController.PlaceBet(player, amount, voteBool.Value))
                         {
                             return new CommandResult($"You bet {amount} Wolfcoins on \"{(voteBool.Value ? "succeed" : "fail")}\".");
                         }
@@ -92,19 +92,19 @@ namespace LobotJR.Command.Module.General
 
         public CommandResult StartBet(string message)
         {
-            BettingSystem.StartBet();
+            BettingController.StartBet();
             return new CommandResult(true, $"New bet started: {message} Type '!bet succeed {{amount}}' or '!bet fail {{amount}}' to bet.");
         }
 
         public CommandResult CloseBet()
         {
-            BettingSystem.CloseBet();
+            BettingController.CloseBet();
             return new CommandResult(true, "Bets are now closed! Good luck FrankerZ");
         }
 
         public CommandResult ResolveBet(string vote)
         {
-            if (BettingSystem.IsActive)
+            if (BettingController.IsActive)
             {
                 bool? voteBool = null;
                 if (YesVotes.Any(x => x.Equals(vote, StringComparison.OrdinalIgnoreCase)))
@@ -117,7 +117,7 @@ namespace LobotJR.Command.Module.General
                 }
                 if (voteBool.HasValue)
                 {
-                    BettingSystem.Resolve(voteBool.Value);
+                    BettingController.Resolve(voteBool.Value);
                 }
                 return new CommandResult("Invalid outcome, use \"succeed\" for success or \"fail\" for failure");
             }
@@ -126,7 +126,7 @@ namespace LobotJR.Command.Module.General
 
         public CommandResult CancelBet()
         {
-            if (BettingSystem.CancelBet())
+            if (BettingController.CancelBet())
             {
                 return new CommandResult(true, "The current bet has ben canceled, all Wolfcoins wagered have been refunded.");
             }

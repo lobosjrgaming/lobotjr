@@ -1,4 +1,4 @@
-﻿using LobotJR.Command.Module.Fishing;
+﻿using LobotJR.Command.View.Fishing;
 using LobotJR.Command.Controller.Fishing;
 using LobotJR.Data;
 using LobotJR.Test.Mocks;

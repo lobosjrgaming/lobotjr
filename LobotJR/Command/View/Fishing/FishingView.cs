@@ -5,19 +5,19 @@ using LobotJR.Utils;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LobotJR.Command.Module.Fishing
+namespace LobotJR.Command.View.Fishing
 {
     /// <summary>
-    /// Module containing commands used to fish.
+    /// View containing commands used to fish.
     /// </summary>
-    public class FishingModule : ICommandModule
+    public class FishingView : ICommandView
     {
-        private readonly FishingController FishingSystem;
-        private readonly TournamentController TournamentSystem;
-        private readonly LeaderboardController LeaderboardSystem;
+        private readonly FishingController FishingController;
+        private readonly TournamentController TournamentController;
+        private readonly LeaderboardController LeaderboardController;
 
         /// <summary>
-        /// Prefix applied to names of commands within this module.
+        /// Prefix applied to names of commands within this view.
         /// </summary>
         public string Name => "Fishing";
         /// <summary>
@@ -26,17 +26,17 @@ namespace LobotJR.Command.Module.Fishing
         /// </summary>
         public event PushNotificationHandler PushNotification;
         /// <summary>
-        /// A collection of commands this module provides.
+        /// A collection of commands this view provides.
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public FishingModule(FishingController fishingSystem, TournamentController tournamentSystem, LeaderboardController leaderboardSystem)
+        public FishingView(FishingController fishingController, TournamentController tournamentController, LeaderboardController leaderboardController)
         {
-            FishingSystem = fishingSystem;
-            FishingSystem.FishHooked += FishingSystem_FishHooked;
-            FishingSystem.FishGotAway += FishingSystem_FishGotAway;
-            TournamentSystem = tournamentSystem;
-            LeaderboardSystem = leaderboardSystem;
+            FishingController = fishingController;
+            FishingController.FishHooked += FishingController_FishHooked;
+            FishingController.FishGotAway += FishingController_FishGotAway;
+            TournamentController = tournamentController;
+            LeaderboardController = leaderboardController;
             Commands = new CommandHandler[]
             {
                 new CommandHandler("CancelCast", this, CommandMethod.GetInfo(CancelCast), "cancelcast", "cancel-cast"),
@@ -45,23 +45,23 @@ namespace LobotJR.Command.Module.Fishing
             };
         }
 
-        private void FishingSystem_FishHooked(Fisher fisher)
+        private void FishingController_FishHooked(Fisher fisher)
         {
             var hookMessage = $"{fisher.Hooked.SizeCategory.Message} Type !catch to reel it in!";
             PushNotification?.Invoke(fisher.User, new CommandResult(fisher.User, hookMessage));
         }
 
-        private void FishingSystem_FishGotAway(Fisher fisher)
+        private void FishingController_FishGotAway(Fisher fisher)
         {
             PushNotification?.Invoke(fisher.User, new CommandResult(fisher.User, "Heck! The fish got away. Maybe next time..."));
         }
 
         public CommandResult CancelCast(User user)
         {
-            var fisher = FishingSystem.GetFisherByUser(user);
+            var fisher = FishingController.GetFisherByUser(user);
             if (fisher.IsFishing)
             {
-                FishingSystem.UnhookFish(fisher);
+                FishingController.UnhookFish(fisher);
                 return new CommandResult("You reel in the empty line.");
             }
             return new CommandResult("Your line has not been cast.");
@@ -69,25 +69,25 @@ namespace LobotJR.Command.Module.Fishing
 
         public CommandResult CatchFish(User user)
         {
-            var fisher = FishingSystem.GetFisherByUser(user);
+            var fisher = FishingController.GetFisherByUser(user);
             if (fisher.IsFishing)
             {
-                var catchData = FishingSystem.CatchFish(fisher);
+                var catchData = FishingController.CatchFish(fisher);
                 if (catchData == null)
                 {
                     return new CommandResult("Nothing is biting yet! To reset your cast, use !cancelcast");
                 }
 
-                if (TournamentSystem.IsRunning)
+                if (TournamentController.IsRunning)
                 {
-                    var record = LeaderboardSystem.GetUserRecordForFish(user, catchData.Fish);
+                    var record = LeaderboardController.GetUserRecordForFish(user, catchData.Fish);
                     var responses = new List<string>();
                     if (record.Weight == catchData.Weight)
                     {
                         responses.Add($"This is the biggest {catchData.Fish.Name} you've ever caught!");
                     }
-                    var userEntry = TournamentSystem.CurrentTournament.Entries.Where(x => x.UserId.Equals(user.TwitchId)).FirstOrDefault();
-                    var sorted = TournamentSystem.CurrentTournament.Entries.OrderByDescending(x => x.Points).ToList().IndexOf(userEntry) + 1;
+                    var userEntry = TournamentController.CurrentTournament.Entries.Where(x => x.UserId.Equals(user.TwitchId)).FirstOrDefault();
+                    var sorted = TournamentController.CurrentTournament.Entries.OrderByDescending(x => x.Points).ToList().IndexOf(userEntry) + 1;
                     responses.Add($"You caught a {catchData.Length} inch, {catchData.Weight} pound {catchData.Fish.Name} worth {catchData.Points} points! You are in {sorted.ToOrdinal()} place with {userEntry.Points} total points.");
                     return new CommandResult(responses.ToArray());
                 }
@@ -101,7 +101,7 @@ namespace LobotJR.Command.Module.Fishing
 
         public CommandResult Cast(User user)
         {
-            var fisher = FishingSystem.GetFisherByUser(user);
+            var fisher = FishingController.GetFisherByUser(user);
             if (fisher.Hooked != null)
             {
                 return new CommandResult("Something's already bit your line! Quick, type !catch to snag it!");
@@ -110,7 +110,7 @@ namespace LobotJR.Command.Module.Fishing
             {
                 return new CommandResult("Your line is already cast! I'm sure a fish'll be along soon...");
             }
-            FishingSystem.Cast(user);
+            FishingController.Cast(user);
             return new CommandResult("You cast your line out into the water.");
         }
     }

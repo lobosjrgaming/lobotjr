@@ -9,40 +9,40 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LobotJR.Command.Module.Player
+namespace LobotJR.Command.View.Player
 {
     /// <summary>
-    /// Module containing commands for managing player experience.
+    /// View containing commands for managing player experience.
     /// </summary>
-    public class PlayerAdmin : ICommandModule
+    public class PlayerAdmin : ICommandView
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        private readonly PlayerController PlayerSystem;
-        private readonly EquipmentController EquipmentSystem;
-        private readonly UserController UserSystem;
+        private readonly PlayerController PlayerController;
+        private readonly EquipmentController EquipmentController;
+        private readonly UserController UserController;
         private readonly SettingsManager SettingsManager;
 
         /// <summary>
-        /// Prefix applied to names of commands within this module.
+        /// Prefix applied to names of commands within this view.
         /// </summary>
         public string Name => "Player.Admin";
         /// <summary>
-        /// This module does not send any push notifications. If this module
+        /// This view does not send any push notifications. If this view
         /// triggers a level up, that event will be handled by the
-        /// PlayerModule.
+        /// PlayerView.
         /// </summary>
         public event PushNotificationHandler PushNotification;
         /// <summary>
-        /// A collection of commands this module provides.
+        /// A collection of commands this view provides.
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public PlayerAdmin(PlayerController playerSystem, EquipmentController equipmentSystem, UserController userSystem, SettingsManager settingsManager)
+        public PlayerAdmin(PlayerController playerController, EquipmentController equipmentController, UserController userController, SettingsManager settingsManager)
         {
-            PlayerSystem = playerSystem;
-            EquipmentSystem = equipmentSystem;
-            UserSystem = userSystem;
+            PlayerController = playerController;
+            EquipmentController = equipmentController;
+            UserController = userController;
             SettingsManager = settingsManager;
             Commands = new List<CommandHandler>()
             {
@@ -75,11 +75,11 @@ namespace LobotJR.Command.Module.Player
 
         public CommandResult GiveExperienceToUser(string username, int amount)
         {
-            var targetUser = UserSystem.GetUserByName(username);
+            var targetUser = UserController.GetUserByName(username);
             if (targetUser != null)
             {
-                var targetPlayer = PlayerSystem.GetPlayerByUser(targetUser);
-                PlayerSystem.GainExperience(targetUser, targetPlayer, amount);
+                var targetPlayer = PlayerController.GetPlayerByUser(targetUser);
+                PlayerController.GainExperience(targetUser, targetPlayer, amount);
                 return new CommandResult($"Gave {amount} XP to {targetUser.Username}.");
             }
             return CreateDefaultResult(username);
@@ -87,21 +87,21 @@ namespace LobotJR.Command.Module.Player
 
         public CommandResult GiveExperienceToAll(int amount)
         {
-            foreach (var user in UserSystem.Viewers)
+            foreach (var user in UserController.Viewers)
             {
-                var player = PlayerSystem.GetPlayerByUser(user);
-                PlayerSystem.GainExperience(user, player, amount);
+                var player = PlayerController.GetPlayerByUser(user);
+                PlayerController.GainExperience(user, player, amount);
             }
-            return new CommandResult($"Gave {amount} experience to {UserSystem.Viewers.Count()} viewers.");
+            return new CommandResult($"Gave {amount} experience to {UserController.Viewers.Count()} viewers.");
         }
 
         public CommandResult SetExperience(string username, int value)
         {
-            var targetUser = UserSystem.GetUserByName(username);
+            var targetUser = UserController.GetUserByName(username);
             if (targetUser != null)
             {
-                var targetPlayer = PlayerSystem.GetPlayerByUser(targetUser);
-                PlayerSystem.GainExperience(targetUser, targetPlayer, value - targetPlayer.Experience);
+                var targetPlayer = PlayerController.GetPlayerByUser(targetUser);
+                PlayerController.GainExperience(targetUser, targetPlayer, value - targetPlayer.Experience);
                 return new CommandResult($"Set experience to {targetPlayer.Experience} for {targetUser.Username}.");
             }
             return CreateDefaultResult(username);
@@ -109,10 +109,10 @@ namespace LobotJR.Command.Module.Player
 
         public CommandResult SetPrestige(string username, int value)
         {
-            var targetUser = UserSystem.GetUserByName(username);
+            var targetUser = UserController.GetUserByName(username);
             if (targetUser != null)
             {
-                var targetPlayer = PlayerSystem.GetPlayerByUser(targetUser);
+                var targetPlayer = PlayerController.GetPlayerByUser(targetUser);
                 targetPlayer.Prestige = value;
                 return new CommandResult($"Set prestige to {targetPlayer.Prestige} for {targetPlayer.Prestige}.");
             }
@@ -121,10 +121,10 @@ namespace LobotJR.Command.Module.Player
 
         public CommandResult GiveCoins(string username, int amount)
         {
-            var targetUser = UserSystem.GetUserByName(username);
+            var targetUser = UserController.GetUserByName(username);
             if (targetUser != null)
             {
-                var targetPlayer = PlayerSystem.GetPlayerByUser(targetUser);
+                var targetPlayer = PlayerController.GetPlayerByUser(targetUser);
                 targetPlayer.Currency += amount;
                 return new CommandResult($"Gave {amount} Wolfcoins to {targetUser.Username}.");
             }
@@ -133,10 +133,10 @@ namespace LobotJR.Command.Module.Player
 
         public CommandResult SetCoins(string username, int value)
         {
-            var targetUser = UserSystem.GetUserByName(username);
+            var targetUser = UserController.GetUserByName(username);
             if (targetUser != null)
             {
-                var targetPlayer = PlayerSystem.GetPlayerByUser(targetUser);
+                var targetPlayer = PlayerController.GetPlayerByUser(targetUser);
                 targetPlayer.Currency = value;
                 return new CommandResult($"Set Wolfcoins to {value} for {targetUser.Username}.");
             }
@@ -145,10 +145,10 @@ namespace LobotJR.Command.Module.Player
 
         public CommandResult RemoveCoins(string username, int amount)
         {
-            var targetUser = UserSystem.GetUserByName(username);
+            var targetUser = UserController.GetUserByName(username);
             if (targetUser != null)
             {
-                var targetPlayer = PlayerSystem.GetPlayerByUser(targetUser);
+                var targetPlayer = PlayerController.GetPlayerByUser(targetUser);
                 targetPlayer.Currency = Math.Max(0, amount);
                 return new CommandResult($"Removed {amount} Wolfcoins from {targetUser.Username}.");
             }
@@ -157,14 +157,14 @@ namespace LobotJR.Command.Module.Player
 
         public CommandResult ResetPlayer(string username)
         {
-            var targetUser = UserSystem.GetUserByName(username);
+            var targetUser = UserController.GetUserByName(username);
             if (targetUser != null)
             {
-                var targetPlayer = PlayerSystem.GetPlayerByUser(targetUser);
-                PlayerSystem.ClearClass(targetPlayer);
+                var targetPlayer = PlayerController.GetPlayerByUser(targetUser);
+                PlayerController.ClearClass(targetPlayer);
                 targetPlayer.Experience = 1;
                 targetPlayer.Level = 1;
-                PlayerSystem.GainExperience(targetUser, targetPlayer, 599);
+                PlayerController.GainExperience(targetUser, targetPlayer, 599);
                 return new CommandResult($"Cleared class and experience then set level to 5 for {targetUser.Username}.");
             }
             return CreateDefaultResult(username);
@@ -172,11 +172,11 @@ namespace LobotJR.Command.Module.Player
 
         public CommandResult ClearClass(string username)
         {
-            var targetUser = UserSystem.GetUserByName(username);
+            var targetUser = UserController.GetUserByName(username);
             if (targetUser != null)
             {
-                var targetPlayer = PlayerSystem.GetPlayerByUser(targetUser);
-                PlayerSystem.ClearClass(targetPlayer);
+                var targetPlayer = PlayerController.GetPlayerByUser(targetUser);
+                PlayerController.ClearClass(targetPlayer);
                 return new CommandResult($"Cleared class for {targetUser.Username}.");
             }
             return CreateDefaultResult(username);
@@ -199,38 +199,38 @@ namespace LobotJR.Command.Module.Player
 
         public CommandResult SetMultiplier(int multiplier)
         {
-            PlayerSystem.CurrentMultiplier = multiplier;
+            PlayerController.CurrentMultiplier = multiplier;
             return new CommandResult(true, $"{multiplier}x XP & Coins will now be awarded.");
         }
 
         //throwaway param is there because sometimes mods like to put memes next to the !xpon and !xpoff commands, this way that won't break them.
         public CommandResult EnableExperience(User user, string throwaway)
         {
-            if (PlayerSystem.AwardsEnabled)
+            if (PlayerController.AwardsEnabled)
             {
-                return new CommandResult(true, $"XP has already been enabled by {PlayerSystem.AwardSetter.Username}.");
+                return new CommandResult(true, $"XP has already been enabled by {PlayerController.AwardSetter.Username}.");
             }
-            PlayerSystem.EnableAwards(user);
+            PlayerController.EnableAwards(user);
             return new CommandResult(true, "Wolfcoins & XP will be awarded.");
         }
 
         //throwaway param is there because sometimes mods like to put memes next to the !xpon and !xpoff commands, this way that won't break them.
         public CommandResult DisableExperience(string throwaway)
         {
-            if (!PlayerSystem.AwardsEnabled)
+            if (!PlayerController.AwardsEnabled)
             {
                 return new CommandResult(true, "Wolfcoins & XP will no longer be awarded.");
             }
-            PlayerSystem.DisableAwards();
+            PlayerController.DisableAwards();
             return new CommandResult(true, "XP isn't on.");
         }
 
         public CommandResult PrintNextAward()
         {
-            if (PlayerSystem.AwardsEnabled)
+            if (PlayerController.AwardsEnabled)
             {
                 var settings = SettingsManager.GetGameSettings();
-                var toNext = (PlayerSystem.LastAward + TimeSpan.FromMinutes(settings.ExperienceFrequency) - DateTime.Now);
+                var toNext = (PlayerController.LastAward + TimeSpan.FromMinutes(settings.ExperienceFrequency) - DateTime.Now);
                 if (toNext > TimeSpan.Zero)
                 {
                     return new CommandResult(true, $"{toNext.Minutes} minutes and {toNext.Seconds} seconds until next coins/xp are awarded.");
@@ -242,19 +242,19 @@ namespace LobotJR.Command.Module.Player
 
         public CommandResult PrintUserInfo(string target)
         {
-            var targetUser = UserSystem.GetUserByName(target);
+            var targetUser = UserController.GetUserByName(target);
             if (targetUser != null)
             {
-                var targetPlayer = PlayerSystem.GetPlayerByUser(targetUser);
+                var targetPlayer = PlayerController.GetPlayerByUser(targetUser);
                 if (targetPlayer != null)
                 {
                     Logger.Info($"Name: {targetUser.Username}");
                     Logger.Info($"Level: {targetPlayer.Level}");
                     Logger.Info($"Prestige: {targetPlayer.Prestige}");
                     Logger.Info($"Class: {targetPlayer.CharacterClass.Name}");
-                    var successChance = targetPlayer.CharacterClass.SuccessChance + EquipmentSystem.GetEquippedGear(targetPlayer).Sum(x => x.SuccessChance);
+                    var successChance = targetPlayer.CharacterClass.SuccessChance + EquipmentController.GetEquippedGear(targetPlayer).Sum(x => x.SuccessChance);
                     Logger.Info($"Dungeon Success Chance: {Math.Round(successChance * 100)}%");
-                    Logger.Info($"Number of Items: {EquipmentSystem.GetInventoryByPlayer(targetPlayer).Count()}");
+                    Logger.Info($"Number of Items: {EquipmentController.GetInventoryByPlayer(targetPlayer).Count()}");
                 }
             }
             return new CommandResult(true);

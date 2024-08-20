@@ -11,13 +11,16 @@ using LobotJR.Command.Controller.Gloat;
 using LobotJR.Command.Controller.Pets;
 using LobotJR.Command.Controller.Player;
 using LobotJR.Command.Controller.Twitch;
-using LobotJR.Command.Module;
-using LobotJR.Command.Module.AccessControl;
-using LobotJR.Command.Module.Equipment;
-using LobotJR.Command.Module.Fishing;
-using LobotJR.Command.Module.Gloat;
-using LobotJR.Command.Module.Player;
-using LobotJR.Command.Module.Twitch;
+using LobotJR.Command.View;
+using LobotJR.Command.View.AccessControl;
+using LobotJR.Command.View.Dungeons;
+using LobotJR.Command.View.Equipment;
+using LobotJR.Command.View.Fishing;
+using LobotJR.Command.View.General;
+using LobotJR.Command.View.Gloat;
+using LobotJR.Command.View.Pets;
+using LobotJR.Command.View.Player;
+using LobotJR.Command.View.Twitch;
 using LobotJR.Data;
 using LobotJR.Data.Migration;
 using LobotJR.Shared.Authentication;
@@ -64,9 +67,9 @@ namespace LobotJR.Utils
             builder.RegisterType<UserController>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
             builder.RegisterType<AccessControlController>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
 
-            builder.RegisterType<BettingController>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
             builder.RegisterType<BugReportController>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
             builder.RegisterType<ConfirmationController>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
+            // builder.RegisterType<BettingController>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
 
             builder.RegisterType<PlayerController>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
             builder.RegisterType<EquipmentController>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
@@ -83,20 +86,34 @@ namespace LobotJR.Utils
             builder.RegisterType<GloatController>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
         }
 
-        private static void RegisterModules(ContainerBuilder builder)
+        private static void RegisterViews(ContainerBuilder builder)
         {
-            builder.RegisterType<UserModule>().AsSelf().As<ICommandModule>().InstancePerLifetimeScope();
-            builder.RegisterType<AccessControlModule>().AsSelf().As<ICommandModule>().InstancePerLifetimeScope();
-            builder.RegisterType<AccessControlAdmin>().AsSelf().As<ICommandModule>().InstancePerLifetimeScope();
-            builder.RegisterType<FishingModule>().AsSelf().As<ICommandModule>().InstancePerLifetimeScope();
-            builder.RegisterType<FishingAdmin>().AsSelf().As<ICommandModule>().InstancePerLifetimeScope();
-            builder.RegisterType<TournamentModule>().AsSelf().As<ICommandModule>().InstancePerLifetimeScope();
-            builder.RegisterType<LeaderboardModule>().AsSelf().As<ICommandModule>().InstancePerLifetimeScope();
-            builder.RegisterType<PlayerModule>().AsSelf().As<ICommandModule>().InstancePerLifetimeScope();
-            builder.RegisterType<PlayerAdmin>().AsSelf().As<ICommandModule>().InstancePerLifetimeScope();
-            builder.RegisterType<EquipmentModule>().AsSelf().As<ICommandModule>().InstancePerLifetimeScope();
-            builder.RegisterType<EquipmentAdmin>().AsSelf().As<ICommandModule>().InstancePerLifetimeScope();
-            builder.RegisterType<GloatModule>().AsSelf().As<ICommandModule>().InstancePerLifetimeScope();
+            builder.RegisterType<UserAdmin>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
+            builder.RegisterType<AccessControlView>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
+            builder.RegisterType<AccessControlAdmin>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
+
+            builder.RegisterType<InfoView>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
+            builder.RegisterType<ConfirmationView>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
+            // builder.RegisterType<BettingView>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
+
+            builder.RegisterType<EquipmentView>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
+            builder.RegisterType<EquipmentAdmin>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
+            builder.RegisterType<PetView>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
+            builder.RegisterType<PetAdmin>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
+
+            builder.RegisterType<PlayerView>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
+            builder.RegisterType<PlayerAdmin>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
+
+            builder.RegisterType<FishingAdmin>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
+            builder.RegisterType<FishingView>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
+            builder.RegisterType<LeaderboardView>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
+            builder.RegisterType<TournamentView>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
+
+            builder.RegisterType<DungeonView>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
+            builder.RegisterType<GroupFinderView>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
+            builder.RegisterType<GroupFinderAdmin>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
+
+            builder.RegisterType<GloatView>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
         }
 
         private static void RegisterTriggers(ContainerBuilder builder, TokenData tokenData)
@@ -124,7 +141,7 @@ namespace LobotJR.Utils
 
             RegisterDatabase(builder, clientData, tokenData);
             RegisterControllers(builder);
-            RegisterModules(builder);
+            RegisterViews(builder);
             RegisterTriggers(builder, tokenData);
             RegisterManagers(builder, clientData, tokenData);
 

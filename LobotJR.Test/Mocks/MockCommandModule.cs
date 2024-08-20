@@ -1,5 +1,5 @@
 ﻿using LobotJR.Command;
-using LobotJR.Command.Module;
+using LobotJR.Command.View;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using System.Collections.Generic;
@@ -9,7 +9,7 @@ namespace LobotJR.Test.Mocks
     /// <summary>
     /// Mock Command Module used for testing command manager functionality.
     /// </summary>
-    public class MockCommandModule : ICommandModule
+    public class MockCommandModule : ICommandView
     {
         public string Name => "CommandMock";
         public IEnumerable<CommandHandler> Commands { get; private set; }
@@ -145,7 +145,7 @@ namespace LobotJR.Test.Mocks
         }
     }
 
-    public class MockCommandSubModule : ICommandModule
+    public class MockCommandSubModule : ICommandView
     {
         public string Name => "CommandMock.SubMock";
         public IEnumerable<CommandHandler> Commands { get; private set; }

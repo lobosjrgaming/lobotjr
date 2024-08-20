@@ -1,7 +1,7 @@
 ﻿using LobotJR.Command;
 using LobotJR.Command.Model.Fishing;
-using LobotJR.Command.Module;
-using LobotJR.Command.Module.Fishing;
+using LobotJR.Command.View;
+using LobotJR.Command.View.Fishing;
 using LobotJR.Command.Controller.Fishing;
 using LobotJR.Command.Controller.Twitch;
 using LobotJR.Data;
@@ -56,7 +56,7 @@ namespace LobotJR.Test.Modules.Fishing
         private SqliteRepositoryManager Manager;
         private UserController UserLookup;
         private TournamentController TournamentSystem;
-        private TournamentModule TournamentModule;
+        private TournamentView TournamentModule;
 
         [TestInitialize]
         public void Initialize()
@@ -67,7 +67,7 @@ namespace LobotJR.Test.Modules.Fishing
             var fishingSystem = new FishingSystem(Manager, Manager);
             var leaderboardSystem = new LeaderboardSystem(Manager);
             TournamentSystem = new TournamentSystem(fishingSystem, leaderboardSystem, Manager);
-            TournamentModule = new TournamentModule(TournamentSystem, UserLookup);
+            TournamentModule = new TournamentView(TournamentSystem, UserLookup);
         }
 
         [TestMethod]

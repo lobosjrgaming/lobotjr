@@ -1,6 +1,6 @@
 ﻿using Autofac;
-using LobotJR.Command.Module;
 using LobotJR.Command.Controller.Twitch;
+using LobotJR.Command.View;
 using LobotJR.Data;
 using LobotJR.Twitch;
 using LobotJR.Twitch.Model;
@@ -31,14 +31,14 @@ namespace LobotJR.Command
         private readonly Dictionary<string, Regex> commandStringRegexMap = new Dictionary<string, Regex>();
 
         /// <summary>
-        /// Event raised when a module sends a push notification.
+        /// Event raised when a view sends a push notification.
         /// </summary>
         public event PushNotificationHandler PushNotifications;
 
         /// <summary>
-        /// Command modules to be loaded.
+        /// Command views to be loaded.
         /// </summary>
-        public IEnumerable<ICommandModule> CommandModules { get; private set; }
+        public IEnumerable<ICommandView> CommandViews { get; private set; }
         /// <summary>
         /// Repository manager for access to stored data types.
         /// </summary>
@@ -46,7 +46,7 @@ namespace LobotJR.Command
         /// <summary>
         /// User lookup service used to translate between usernames and user ids.
         /// </summary>
-        public UserController UserSystem { get; private set; }
+        public UserController UserController { get; private set; }
         /// <summary>
         /// List of ids for registered commands.
         /// </summary>
@@ -93,23 +93,16 @@ namespace LobotJR.Command
             }
         }
 
-        private void AddModule(ICommandModule module)
+        private void AddView(ICommandView view)
         {
-            // For modules that need access to the command manager, we can't
-            // use DI to inject or it would create a circular dependency
-            if (module is IMetaController)
-            {
-                (module as IMetaController).CommandManager = this;
-            }
-
-            module.PushNotification += Module_PushNotification;
+            view.PushNotification += View_PushNotification;
 
             var exceptions = new List<Exception>();
-            foreach (var command in module.Commands)
+            foreach (var command in view.Commands)
             {
                 try
                 {
-                    AddCommand(command, module.Name);
+                    AddCommand(command, view.Name);
                 }
                 catch (AggregateException e)
                 {
@@ -119,11 +112,11 @@ namespace LobotJR.Command
 
             if (exceptions.Count > 0)
             {
-                throw new AggregateException("Failed to load module", exceptions);
+                throw new AggregateException($"Failed to load view {view.Name}", exceptions);
             }
         }
 
-        private void Module_PushNotification(User user, CommandResult commandResult)
+        private void View_PushNotification(User user, CommandResult commandResult)
         {
             PushNotifications?.Invoke(user, commandResult);
         }
@@ -155,24 +148,29 @@ namespace LobotJR.Command
             return !whisperOnlyCommands.Contains(commandId);
         }
 
-        public CommandManager(IEnumerable<ICommandModule> modules, IRepositoryManager repositoryManager, UserController userSystem)
+        public CommandManager(IEnumerable<ICommandView> views, IEnumerable<IMetaController> metaControllers, IRepositoryManager repositoryManager, UserController userController)
         {
-            CommandModules = modules;
+            CommandViews = views;
             RepositoryManager = repositoryManager;
-            UserSystem = userSystem;
+            UserController = userController;
+            foreach (var meta in metaControllers)
+            {
+                meta.CommandManager = this;
+            }
+
         }
 
         /// <summary>
-        /// Initializes all registered command modules.
+        /// Initializes all registered command views.
         /// </summary>
-        public void InitializeModules()
+        public void InitializeViews()
         {
             var exceptions = new List<Exception>();
-            foreach (var module in CommandModules)
+            foreach (var view in CommandViews)
             {
                 try
                 {
-                    AddModule(module);
+                    AddView(view);
                 }
                 catch (AggregateException e)
                 {

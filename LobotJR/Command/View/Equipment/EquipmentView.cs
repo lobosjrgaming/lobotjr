@@ -1,37 +1,37 @@
-﻿using LobotJR.Command.Model.Equipment;
-using LobotJR.Command.Controller.Equipment;
+﻿using LobotJR.Command.Controller.Equipment;
+using LobotJR.Command.Model.Equipment;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LobotJR.Command.Module.Equipment
+namespace LobotJR.Command.View.Equipment
 {
     /// <summary>
-    /// Module containing commands for retrieving player inventory and managing
+    /// View containing commands for retrieving player inventory and managing
     /// equipped items.
     /// </summary>
-    public class EquipmentModule : ICommandModule
+    public class EquipmentView : ICommandView
     {
-        private readonly EquipmentController EquipmentSystem;
+        private readonly EquipmentController EquipmentController;
 
         /// <summary>
-        /// Prefix applied to names of commands within this module.
+        /// Prefix applied to names of commands within this view.
         /// </summary>
         public string Name => "Equipment";
         /// <summary>
-        /// This module does not issue any push notifications.
+        /// This view does not issue any push notifications.
         /// </summary>
         public event PushNotificationHandler PushNotification;
         /// <summary>
-        /// A collection of commands this module provides.
+        /// A collection of commands this view provides.
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public EquipmentModule(EquipmentController equipmentSystem)
+        public EquipmentView(EquipmentController equipmentController)
         {
-            EquipmentSystem = equipmentSystem;
+            EquipmentController = equipmentController;
             Commands = new List<CommandHandler>()
             {
                 new CommandHandler("Inventory", this, CommandMethod.GetInfo(GetInventory), CommandMethod.GetInfo(GetInventoryCompact), "inventory", "inv"),
@@ -75,13 +75,13 @@ namespace LobotJR.Command.Module.Equipment
 
         public CompactCollection<Inventory> GetInventoryCompact(User user)
         {
-            var inventory = EquipmentSystem.GetInventoryByUser(user);
+            var inventory = EquipmentController.GetInventoryByUser(user);
             return new CompactCollection<Inventory>(inventory, x => $"{x.Item.Name}|{x.Item.Description}|{(x.IsEquipped ? "E" : "U")}|{PrintPercent(x.Item.SuccessChance)}|{PrintPercent(x.Item.XpBonus)}|{PrintPercent(x.Item.CoinBonus)}|{PrintPercent(x.Item.ItemFind)}|{PrintPercent(x.Item.PreventDeathBonus)};");
         }
 
         public CommandResult GetInventory(User user)
         {
-            var inventory = EquipmentSystem.GetInventoryByUser(user);
+            var inventory = EquipmentController.GetInventoryByUser(user);
             if (inventory.Any())
             {
                 var responses = new List<string>() { $"You have {inventory.Count()} items: " };
@@ -97,10 +97,10 @@ namespace LobotJR.Command.Module.Equipment
 
         public CommandResult DescribeItem(User user, int index)
         {
-            var inventory = EquipmentSystem.GetInventoryByUser(user);
+            var inventory = EquipmentController.GetInventoryByUser(user);
             if (inventory.Any())
             {
-                var item = EquipmentSystem.GetInventoryByUser(user).ElementAtOrDefault(index - 1);
+                var item = EquipmentController.GetInventoryByUser(user).ElementAtOrDefault(index - 1);
                 if (item != null)
                 {
                     return new CommandResult($"{item.Item.Name} -- {item.Item.Description}");
@@ -112,7 +112,7 @@ namespace LobotJR.Command.Module.Equipment
 
         public CommandResult EquipItem(User user, int index)
         {
-            var inventory = EquipmentSystem.GetInventoryByUser(user);
+            var inventory = EquipmentController.GetInventoryByUser(user);
             if (inventory.Any())
             {
                 var toEquip = inventory.ElementAtOrDefault(index - 1);
@@ -163,7 +163,7 @@ namespace LobotJR.Command.Module.Equipment
 
         public CommandResult UnequipItem(User user, int index)
         {
-            var inventory = EquipmentSystem.GetInventoryByUser(user);
+            var inventory = EquipmentController.GetInventoryByUser(user);
             if (inventory.Any())
             {
                 var toEquip = inventory.ElementAtOrDefault(index - 1);

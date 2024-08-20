@@ -5,29 +5,29 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LobotJR.Command.Module.AccessControl
+namespace LobotJR.Command.View.AccessControl
 {
     /// <summary>
-    /// Module containing commands for checking access to other commands.
+    /// View containing commands for checking access to other commands.
     /// </summary>
-    public class AccessControlModule : ICommandModule
+    public class AccessControlView : ICommandView
     {
         private readonly IConnectionManager ConnectionManager;
 
         /// <summary>
-        /// Prefix applied to names of commands within this module.
+        /// Prefix applied to names of commands within this view.
         /// </summary>
         public string Name => "AccessControl";
         /// <summary>
-        /// This module does not issue any push notifications.
+        /// This view does not issue any push notifications.
         /// </summary>
         public event PushNotificationHandler PushNotification;
         /// <summary>
-        /// A collection of commands this module provides.
+        /// A collection of commands this view provides.
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public AccessControlModule(IConnectionManager connectionManager)
+        public AccessControlView(IConnectionManager connectionManager)
         {
             ConnectionManager = connectionManager;
             Commands = new CommandHandler[]

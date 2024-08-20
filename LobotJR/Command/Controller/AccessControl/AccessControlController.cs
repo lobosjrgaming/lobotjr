@@ -15,7 +15,7 @@ namespace LobotJR.Command.Controller.AccessControl
 
         /// <summary>
         /// Entry point to inject fully resolved command manager into the
-        /// module.
+        /// controller.
         public ICommandManager CommandManager { get; set; }
 
         public AccessControlController(IConnectionManager connectionManager)

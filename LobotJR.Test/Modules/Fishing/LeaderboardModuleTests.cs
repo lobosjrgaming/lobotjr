@@ -1,6 +1,6 @@
 ﻿using LobotJR.Command;
-using LobotJR.Command.Module;
-using LobotJR.Command.Module.Fishing;
+using LobotJR.Command.View;
+using LobotJR.Command.View.Fishing;
 using LobotJR.Command.Controller.Fishing;
 using LobotJR.Command.Controller.Twitch;
 using LobotJR.Data;
@@ -26,8 +26,8 @@ namespace LobotJR.Test.Modules.Fishing
         private TournamentController TournamentSystem;
         private LeaderboardController LeaderboardSystem;
 
-        private FishingModule FishingModule;
-        private LeaderboardModule LeaderboardModule;
+        private FishingView FishingModule;
+        private LeaderboardView LeaderboardModule;
 
         [TestInitialize]
         public void Initialize()
@@ -38,7 +38,7 @@ namespace LobotJR.Test.Modules.Fishing
             LeaderboardSystem = new LeaderboardSystem(Manager);
             TournamentSystem = new TournamentSystem(FishingSystem, LeaderboardSystem, Manager);
 
-            FishingModule = new FishingModule(
+            FishingModule = new FishingView(
                 FishingSystem,
                 TournamentSystem,
                 LeaderboardSystem);

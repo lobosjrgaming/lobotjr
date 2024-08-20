@@ -6,19 +6,19 @@ using LobotJR.Utils;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LobotJR.Command.Module.Fishing
+namespace LobotJR.Command.View.Fishing
 {
     /// <summary>
-    /// Module containing commands for retrieving leaderboards and managing
+    /// View containing commands for retrieving leaderboards and managing
     /// personal fishing records.
     /// </summary>
-    public class LeaderboardModule : ICommandModule
+    public class LeaderboardView : ICommandView
     {
-        private readonly LeaderboardController TournamentSystem;
-        private readonly UserController UserSystem;
+        private readonly LeaderboardController TournamentController;
+        private readonly UserController UserController;
 
         /// <summary>
-        /// Prefix applied to names of commands within this module.
+        /// Prefix applied to names of commands within this view.
         /// </summary>
         public string Name => "Fishing.Leaderboard";
         /// <summary>
@@ -26,15 +26,15 @@ namespace LobotJR.Command.Module.Fishing
         /// </summary>
         public event PushNotificationHandler PushNotification;
         /// <summary>
-        /// A collection of commands this module provides.
+        /// A collection of commands this view provides.
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public LeaderboardModule(LeaderboardController system, UserController userSystem)
+        public LeaderboardView(LeaderboardController tournamentController, UserController userController)
         {
-            TournamentSystem = system;
-            system.NewGlobalRecord += System_NewGlobalRecord;
-            UserSystem = userSystem;
+            TournamentController = tournamentController;
+            tournamentController.NewGlobalRecord += Controller_NewGlobalRecord;
+            UserController = userController;
             Commands = new CommandHandler[]
             {
                 new CommandHandler("PlayerLeaderboard", this, CommandMethod.GetInfo<int>(PlayerLeaderboard), CommandMethod.GetInfo<int>(PlayerLeaderboardCompact), "fish"),
@@ -43,16 +43,16 @@ namespace LobotJR.Command.Module.Fishing
             };
         }
 
-        private void System_NewGlobalRecord(LeaderboardEntry catchData)
+        private void Controller_NewGlobalRecord(LeaderboardEntry catchData)
         {
-            var recordMessage = $"{UserSystem.GetUserById(catchData.UserId).Username} just caught the heaviest {catchData.Fish.Name} ever! It weighs {catchData.Weight} pounds!";
+            var recordMessage = $"{UserController.GetUserById(catchData.UserId).Username} just caught the heaviest {catchData.Fish.Name} ever! It weighs {catchData.Weight} pounds!";
             PushNotification?.Invoke(null, new CommandResult() { Messages = new string[] { recordMessage } });
         }
 
         public CompactCollection<Catch> PlayerLeaderboardCompact(User user, int index = -1)
         {
             string selectFunc(Catch x) => $"{x.Fish.Name}|{x.Length}|{x.Weight};";
-            var records = TournamentSystem.GetPersonalLeaderboard(user);
+            var records = TournamentController.GetPersonalLeaderboard(user);
             if (index == -1)
             {
                 if (records != null && records.Any())
@@ -96,7 +96,7 @@ namespace LobotJR.Command.Module.Fishing
             {
                 if (compact == null)
                 {
-                    var count = TournamentSystem.GetPersonalLeaderboard(user).Count();
+                    var count = TournamentController.GetPersonalLeaderboard(user).Count();
                     return new CommandResult($"That fish doesn't exist. Fish # must be between 1 and {count}");
                 }
                 var fishCatch = compact.Items.FirstOrDefault();
@@ -114,18 +114,18 @@ namespace LobotJR.Command.Module.Fishing
 
         public CompactCollection<LeaderboardEntry> GlobalLeaderboardCompact()
         {
-            return new CompactCollection<LeaderboardEntry>(TournamentSystem.GetLeaderboard(), x => $"{x.Fish.Name}|{x.Length}|{x.Weight}|{UserSystem.GetUserById(x.UserId).Username};");
+            return new CompactCollection<LeaderboardEntry>(TournamentController.GetLeaderboard(), x => $"{x.Fish.Name}|{x.Length}|{x.Weight}|{UserController.GetUserById(x.UserId).Username};");
         }
 
         public CommandResult GlobalLeaderboard()
         {
             var compact = GlobalLeaderboardCompact();
-            return new CommandResult(compact.Items.Select(x => $"Largest {x.Fish.Name} caught by {UserSystem.GetUserById(x.UserId).Username} at {x.Weight} lbs., {x.Length} in.").ToArray());
+            return new CommandResult(compact.Items.Select(x => $"Largest {x.Fish.Name} caught by {UserController.GetUserById(x.UserId).Username} at {x.Weight} lbs., {x.Length} in.").ToArray());
         }
 
         public CommandResult ReleaseFish(User user, int index)
         {
-            var records = TournamentSystem.GetPersonalLeaderboard(user);
+            var records = TournamentController.GetPersonalLeaderboard(user);
             if (records == null || !records.Any())
             {
                 return new CommandResult("You don't have any fish! Type !cast to try and fish for some!");
@@ -134,7 +134,7 @@ namespace LobotJR.Command.Module.Fishing
             if (index > 0 && index <= count)
             {
                 var fishName = records.ElementAtOrDefault(index - 1).Fish.Name;
-                TournamentSystem.DeleteFish(user, index - 1);
+                TournamentController.DeleteFish(user, index - 1);
                 return new CommandResult($"You released your {fishName}. Bye bye!");
             }
             return new CommandResult($"That fish doesn't exist. Fish # must be between 1 and {count}");

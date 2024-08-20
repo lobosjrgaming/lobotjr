@@ -7,20 +7,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace LobotJR.Command.Module.Dungeons
+namespace LobotJR.Command.View.Dungeons
 {
     /// <summary>
-    /// Module containing commands for the group finder.
+    /// View containing commands for the group finder.
     /// </summary>
-    public class GroupFinderModule : ICommandModule
+    public class GroupFinderView : ICommandView
     {
-        private readonly GroupFinderController GroupFinderSystem;
-        private readonly DungeonController DungeonSystem;
-        private readonly PartyController PartySystem;
-        private readonly PlayerController PlayerSystem;
+        private readonly GroupFinderController GroupFinderController;
+        private readonly DungeonController DungeonController;
+        private readonly PartyController PartyController;
+        private readonly PlayerController PlayerController;
 
         /// <summary>
-        /// Prefix applied to names of commands within this module.
+        /// Prefix applied to names of commands within this view.
         /// </summary>
         public string Name => "GroupFinder";
         /// <summary>
@@ -29,32 +29,29 @@ namespace LobotJR.Command.Module.Dungeons
         /// </summary>
         public event PushNotificationHandler PushNotification;
         /// <summary>
-        /// A collection of commands this module provides.
+        /// A collection of commands this view provides.
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public GroupFinderModule(GroupFinderController groupFinderSystem, DungeonController dungeonSystem, PartyController partySystem, PlayerController playerSystem)
+        public GroupFinderView(GroupFinderController groupFinderController, DungeonController dungeonController, PartyController partyController, PlayerController playerController)
         {
-            GroupFinderSystem = groupFinderSystem;
-            DungeonSystem = dungeonSystem;
-            PartySystem = partySystem;
-            PlayerSystem = playerSystem;
+            GroupFinderController = groupFinderController;
+            DungeonController = dungeonController;
+            PartyController = partyController;
+            PlayerController = playerController;
             Commands = new List<CommandHandler>()
             {
                 new CommandHandler("DailyStatus", this, CommandMethod.GetInfo(DailyStatus), "daily"),
                 new CommandHandler("EnterQueue", this, CommandMethod.GetInfo<string>(QueueForDungeonFinder), "queue"),
                 new CommandHandler("LeaveQueue", this, CommandMethod.GetInfo(LeaveQueue), "leavequeue"),
                 new CommandHandler("QueueTime", this, CommandMethod.GetInfo(GetQueueTime), "queuetime"),
-                
-                //This is an admin command
-                new CommandHandler("QueueStatus", this, CommandMethod.GetInfo(QueueStatus), "queuestatus"),
             };
         }
 
         public CommandResult DailyStatus(User user)
         {
-            var player = PlayerSystem.GetPlayerByUser(user);
-            var remaining = GroupFinderSystem.GetLockoutTime(player);
+            var player = PlayerController.GetPlayerByUser(user);
+            var remaining = GroupFinderController.GetLockoutTime(player);
             if (remaining.TotalMilliseconds > 0)
             {
                 return new CommandResult($"Your daily Group Finder reward resets in {TimeSpan.FromSeconds(remaining.TotalSeconds).ToString("c")}.");
@@ -64,25 +61,25 @@ namespace LobotJR.Command.Module.Dungeons
 
         public CommandResult QueueForDungeonFinder(User user, string dungeonIds)
         {
-            var player = PlayerSystem.GetPlayerByUser(user);
-            if (!PlayerSystem.IsFlaggedForRespec(player))
+            var player = PlayerController.GetPlayerByUser(user);
+            if (!PlayerController.IsFlaggedForRespec(player))
             {
                 if (player.Level >= PlayerController.MinLevel)
                 {
                     if (player.CharacterClass.CanPlay)
                     {
-                        var party = PartySystem.GetCurrentGroup(player);
+                        var party = PartyController.GetCurrentGroup(player);
                         if (party == null)
                         {
-                            var cost = DungeonSystem.GetDungeonCost(player);
+                            var cost = DungeonController.GetDungeonCost(player);
                             if (player.Currency >= cost)
                             {
-                                var dungeons = dungeonIds.Split(',').Select(x => DungeonSystem.ParseDungeonId(x.Trim()));
+                                var dungeons = dungeonIds.Split(',').Select(x => DungeonController.ParseDungeonId(x.Trim()));
                                 if (!dungeons.Any())
                                 {
-                                    dungeons = DungeonSystem.GetEligibleDungeons(player);
+                                    dungeons = DungeonController.GetEligibleDungeons(player);
                                 }
-                                if (GroupFinderSystem.QueuePlayer(player, dungeons))
+                                if (GroupFinderController.QueuePlayer(player, dungeons))
                                 {
                                     return new CommandResult("You have been placed in the Group Finder queue.");
                                 }
@@ -94,7 +91,7 @@ namespace LobotJR.Command.Module.Dungeons
                         {
                             return new CommandResult("You currently have an outstanding invite to another party. Couldn't create new party!");
                         }
-                        return new CommandResult($"You already have a party created! {DungeonModule.PartyDescriptions[party.State]}");
+                        return new CommandResult($"You already have a party created! {DungeonView.PartyDescriptions[party.State]}");
                     }
                     return new CommandResult("You must select a class before you can queue in the Group Finder. Type !classhelp for details.");
                 }
@@ -105,8 +102,8 @@ namespace LobotJR.Command.Module.Dungeons
 
         public CommandResult LeaveQueue(User user)
         {
-            var player = PlayerSystem.GetPlayerByUser(user);
-            if (GroupFinderSystem.DequeuePlayer(player))
+            var player = PlayerController.GetPlayerByUser(user);
+            if (GroupFinderController.DequeuePlayer(player))
             {
                 return new CommandResult("You were removed from the Group Finder.");
             }
@@ -134,27 +131,15 @@ namespace LobotJR.Command.Module.Dungeons
 
         public CommandResult GetQueueTime(User user)
         {
-            var player = PlayerSystem.GetPlayerByUser(user);
-            var entry = GroupFinderSystem.GetPlayerQueueEntry(player);
+            var player = PlayerController.GetPlayerByUser(user);
+            var entry = GroupFinderController.GetPlayerQueueEntry(player);
             if (entry != null)
             {
                 return new CommandResult(
                     $"You are queued for {entry.Dungeons.Count()} dungeons and have been waiting {ReadableTime(DateTime.Now - entry.QueueTime)}.",
-                    $"The last group was formed {ReadableTime(DateTime.Now - GroupFinderSystem.LastGroupFormed)} ago.");
+                    $"The last group was formed {ReadableTime(DateTime.Now - GroupFinderController.LastGroupFormed)} ago.");
             }
             return new CommandResult("You are not queued in the Group Finder.");
-        }
-
-        public CommandResult QueueStatus(User user)
-        {
-            var entries = GroupFinderSystem.GetQueueEntries();
-            var responses = new List<string>
-            {
-                $"There are {entries.Count()} players in queue."
-            };
-            var runs = entries.SelectMany(x => x.Dungeons).GroupBy(x => DungeonSystem.GetDungeonName(x));
-            responses.AddRange(runs.Select(x => $"{x.Key}: {x.Count()}"));
-            return new CommandResult(responses.ToArray());
         }
     }
 }

@@ -9,6 +9,9 @@ namespace LobotJR.Data
         public SqliteInitializer(DbModelBuilder dbModelBuilder) : base(dbModelBuilder) { }
         protected override void Seed(SqliteContext context)
         {
+            // Seeds the access control with two groups
+            // 1. Admin group that includes the chat and broadcast users
+            // 2. UIDev group, which includes the Twitch ID for the primary UI developer (EmpyrealHell)
             context.AccessGroups.Add(new AccessGroup() { Id = 1, Name = "Admin", IncludeAdmins = true });
             context.AccessGroups.Add(new AccessGroup() { Id = 2, Name = "UIDev" });
             context.Enrollments.Add(new Enrollment() { GroupId = 2, UserId = "26374083" });

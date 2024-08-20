@@ -3,8 +3,8 @@
 namespace LobotJR.Command.Controller
 {
     /// <summary>
-    /// Describes a controller that processes the logic of a module
-    /// continuously, not just in response to commands from users.
+    /// Describes a controller that processes logic continuously, not just
+    /// in response to commands from users.
     /// </summary>
     public interface IProcessor
     {

@@ -13,9 +13,9 @@ namespace LobotJR.Trigger.Responder
         private readonly PlayerController PlayerSystem;
         private DateTime LastTrigger = DateTime.Now - Cooldown;
 
-        public BlockLinks(PlayerController playerSystem)
+        public BlockLinks(PlayerController playerController)
         {
-            PlayerSystem = playerSystem;
+            PlayerSystem = playerController;
         }
 
         public TriggerResult Process(Match match, User user)

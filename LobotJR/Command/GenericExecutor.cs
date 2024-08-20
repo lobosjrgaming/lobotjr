@@ -1,4 +1,4 @@
-﻿using LobotJR.Command.Module;
+﻿using LobotJR.Command.View;
 using LobotJR.Twitch.Model;
 using System;
 using System.Collections.Generic;
@@ -10,14 +10,14 @@ namespace LobotJR.Command
 {
     public class CommandExecutor : GenericExecutor<CommandResult>
     {
-        public CommandExecutor(ICommandModule target, MethodInfo methodInfo) : base(target, methodInfo, false)
+        public CommandExecutor(ICommandView target, MethodInfo methodInfo) : base(target, methodInfo, false)
         {
             if (methodInfo.ReturnType != typeof(CommandResult))
             {
                 throw new Exception($"Delegate for command executor must have return type of {typeof(CommandResult)}");
             }
         }
-        public CommandExecutor(ICommandModule target, MethodInfo methodInfo, bool ignoreParse) : base(target, methodInfo, ignoreParse)
+        public CommandExecutor(ICommandView target, MethodInfo methodInfo, bool ignoreParse) : base(target, methodInfo, ignoreParse)
         {
             if (methodInfo.ReturnType != typeof(CommandResult))
             {
@@ -38,7 +38,7 @@ namespace LobotJR.Command
 
     public class CompactExecutor : GenericExecutor<ICompactResponse>
     {
-        public CompactExecutor(ICommandModule target, MethodInfo methodInfo) : base(target, methodInfo, false)
+        public CompactExecutor(ICommandView target, MethodInfo methodInfo) : base(target, methodInfo, false)
         {
             if (methodInfo.ReturnType != typeof(ICompactResponse) && methodInfo.ReturnType.GetInterface(nameof(ICompactResponse)) == null)
             {

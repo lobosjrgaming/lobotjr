@@ -1,24 +1,24 @@
-﻿using LobotJR.Command.Model.Fishing;
-using LobotJR.Command.Controller.Fishing;
+﻿using LobotJR.Command.Controller.Fishing;
+using LobotJR.Command.Model.Fishing;
 using LobotJR.Data;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using System.Collections.Generic;
 
-namespace LobotJR.Command.Module.Fishing
+namespace LobotJR.Command.View.Fishing
 {
     /// <summary>
-    /// Module containing commands for debugging fishing and fishing
+    /// View containing commands for debugging fishing and fishing
     /// tournaments.
     /// </summary>
-    public class FishingAdmin : ICommandModule
+    public class FishingAdmin : ICommandView
     {
-        private readonly FishingController FishingSystem;
-        private readonly TournamentController TournamentSystem;
+        private readonly FishingController FishingController;
+        private readonly TournamentController TournamentController;
         private readonly SettingsManager SettingsManager;
 
         /// <summary>
-        /// Prefix applied to names of commands within this module.
+        /// Prefix applied to names of commands within this view.
         /// </summary>
         public string Name => "Fishing.Admin";
         /// <summary>
@@ -26,14 +26,14 @@ namespace LobotJR.Command.Module.Fishing
         /// </summary>
         public event PushNotificationHandler PushNotification;
         /// <summary>
-        /// A collection of commands this module provides.
+        /// A collection of commands this view provides.
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public FishingAdmin(FishingController fishingSystem, TournamentController tournamentSystem, SettingsManager settingsManager)
+        public FishingAdmin(FishingController fishingController, TournamentController tournamentController, SettingsManager settingsManager)
         {
-            FishingSystem = fishingSystem;
-            TournamentSystem = tournamentSystem;
+            FishingController = fishingController;
+            TournamentController = tournamentController;
             SettingsManager = settingsManager;
             Commands = new List<CommandHandler>()
             {
@@ -44,7 +44,7 @@ namespace LobotJR.Command.Module.Fishing
 
         public CommandResult DebugTournament()
         {
-            TournamentSystem.StartTournament();
+            TournamentController.StartTournament();
             return new CommandResult(true);
         }
 
@@ -55,8 +55,8 @@ namespace LobotJR.Command.Module.Fishing
             var output = new List<string>();
             for (var i = 0; i < 50; i++)
             {
-                FishingSystem.HookFish(fisher, settings.FishingUseNormalRarity);
-                var fish = FishingSystem.CalculateFishSizes(fisher, settings.FishingUseNormalSizes);
+                FishingController.HookFish(fisher, settings.FishingUseNormalRarity);
+                var fish = FishingController.CalculateFishSizes(fisher, settings.FishingUseNormalSizes);
                 output.Add($"{fish.Fish.Name} ({fish.Fish.Rarity.Name}) caght.");
             }
             return new CommandResult(true) { Debug = output };

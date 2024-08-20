@@ -71,7 +71,7 @@ namespace LobotJR.Test.Modules.AccessControl
             }
             foreach (var enrollment in enrollments)
             {
-                var username = CommandManager.UserSystem.GetUserById(enrollment.UserId).Username;
+                var username = CommandManager.UserController.GetUserById(enrollment.UserId).Username;
                 Assert.IsTrue(result.Responses.Any(x => x.Contains(username, StringComparison.OrdinalIgnoreCase)));
             }
         }

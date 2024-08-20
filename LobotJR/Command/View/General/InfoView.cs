@@ -5,35 +5,35 @@ using LobotJR.Utils;
 using NLog;
 using System.Collections.Generic;
 
-namespace LobotJR.Command.Module.General
+namespace LobotJR.Command.View.General
 {
     /// <summary>
-    /// Module containing help and information commands.
+    /// View containing help and information commands.
     /// </summary>
-    public class InfoModule : ICommandModule
+    public class InfoView : ICommandView
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        private readonly BugReportController BugSystem;
+        private readonly BugReportController BugController;
         private readonly SettingsManager SettingsManager;
 
         /// <summary>
-        /// Prefix applied to names of commands within this module.
+        /// Prefix applied to names of commands within this view.
         /// </summary>
         public string Name => "Info";
         /// <summary>
-        /// This module does not issue any push notifications.
+        /// This view does not issue any push notifications.
         /// </summary>
         public event PushNotificationHandler PushNotification;
         /// <summary>
-        /// A collection of commands this module provides.
+        /// A collection of commands this view provides.
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public InfoModule(BugReportController bugSystem, SettingsManager settingsManager)
+        public InfoView(BugReportController bugController, SettingsManager settingsManager)
         {
             SettingsManager = settingsManager;
-            BugSystem = bugSystem;
+            BugController = bugController;
             Commands = new List<CommandHandler>()
             {
                 new CommandHandler("Help", this, CommandMethod.GetInfo(Help), "help", "faq"),
@@ -79,7 +79,7 @@ namespace LobotJR.Command.Module.General
 
         public CommandResult ReportBug(User user, string message)
         {
-            BugSystem.SubmitReport(user, message);
+            BugController.SubmitReport(user, message);
             Logger.Warn(">>{user}: A bug has been reported. {message}", user.Username, message);
             return new CommandResult("Bug report submitted");
         }

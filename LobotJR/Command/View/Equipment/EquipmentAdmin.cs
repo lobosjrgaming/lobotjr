@@ -1,27 +1,27 @@
-﻿using LobotJR.Command.Model.Equipment;
-using LobotJR.Command.Controller.Equipment;
+﻿using LobotJR.Command.Controller.Equipment;
 using LobotJR.Command.Controller.Twitch;
+using LobotJR.Command.Model.Equipment;
 using LobotJR.Utils;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LobotJR.Command.Module.Equipment
+namespace LobotJR.Command.View.Equipment
 {
     /// <summary>
-    /// Module containing commands for debugging player inventories and fixing
+    /// View containing commands for debugging player inventories and fixing
     /// inventories in invalid states.
     /// </summary>
-    public class EquipmentAdmin : ICommandModule
+    public class EquipmentAdmin : ICommandView
     {
-        private readonly EquipmentController EquipmentSystem;
-        private readonly UserController UserSystem;
+        private readonly EquipmentController EquipmentController;
+        private readonly UserController UserController;
 
         /// <summary>
-        /// Prefix applied to names of commands within this module.
+        /// Prefix applied to names of commands within this view.
         /// </summary>
         public string Name => "Equipment.Admin";
         /// <summary>
-        /// This module does not issue any push notifications.
+        /// This view does not issue any push notifications.
         /// </summary>
         public event PushNotificationHandler PushNotification;
         /// <summary>
@@ -29,10 +29,10 @@ namespace LobotJR.Command.Module.Equipment
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public EquipmentAdmin(EquipmentController equipmentSystem, UserController userSystem)
+        public EquipmentAdmin(EquipmentController equipmentController, UserController userController)
         {
-            EquipmentSystem = equipmentSystem;
-            UserSystem = userSystem;
+            EquipmentController = equipmentController;
+            UserController = userController;
             Commands = new List<CommandHandler>()
             {
                 new CommandHandler("ClearItems", this, CommandMethod.GetInfo<string>(ClearItems), "clearitems"),
@@ -48,14 +48,14 @@ namespace LobotJR.Command.Module.Equipment
 
         public CommandResult ClearItems(string target)
         {
-            var user = UserSystem.GetUserByName(target);
+            var user = UserController.GetUserByName(target);
             if (user != null)
             {
-                var inventory = EquipmentSystem.GetInventoryByUser(user);
+                var inventory = EquipmentController.GetInventoryByUser(user);
                 var count = inventory.Count();
                 foreach (var item in inventory)
                 {
-                    EquipmentSystem.RemoveInventoryRecord(item);
+                    EquipmentController.RemoveInventoryRecord(item);
                 }
                 return new CommandResult($"Removed {count} item(s) from {user.Username}'s inventory.");
             }
@@ -64,22 +64,22 @@ namespace LobotJR.Command.Module.Equipment
 
         public CommandResult GiveItem(string target, string item)
         {
-            var user = UserSystem.GetUserByName(target);
+            var user = UserController.GetUserByName(target);
             if (user != null)
             {
-                var inventory = EquipmentSystem.GetInventoryByUser(user);
+                var inventory = EquipmentController.GetInventoryByUser(user);
                 Item itemObject = null;
                 if (int.TryParse(item, out var itemId))
                 {
-                    itemObject = EquipmentSystem.GetItemById(itemId);
+                    itemObject = EquipmentController.GetItemById(itemId);
                 }
                 else
                 {
-                    itemObject = EquipmentSystem.GetItemByName(item);
+                    itemObject = EquipmentController.GetItemByName(item);
                 }
                 if (itemObject != null)
                 {
-                    var record = EquipmentSystem.AddInventoryRecord(user, itemObject);
+                    var record = EquipmentController.AddInventoryRecord(user, itemObject);
                     if (record != null)
                     {
                         return new CommandResult($"Gave {user.Username} a {itemObject.Name}.");
@@ -97,9 +97,9 @@ namespace LobotJR.Command.Module.Equipment
 
         public CommandResult FixInventory(string target)
         {
-            var dupes = EquipmentSystem.RemoveDuplicates();
-            var overages = EquipmentSystem.FixCountErrors();
-            var equipDupes = EquipmentSystem.UnequipDuplicates();
+            var dupes = EquipmentController.RemoveDuplicates();
+            var overages = EquipmentController.FixCountErrors();
+            var equipDupes = EquipmentController.UnequipDuplicates();
             if (dupes.Any() || overages.Any() || equipDupes.Any())
             {
                 return new CommandResult($"Removed {dupes.Count()} duplicate entries, reduced count to max for {overages.Count()}, and unequipped {equipDupes.Count()} invalid equipped items.");

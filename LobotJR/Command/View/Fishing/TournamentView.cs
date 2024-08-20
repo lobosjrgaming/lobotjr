@@ -1,24 +1,24 @@
-﻿using LobotJR.Command.Model.Fishing;
-using LobotJR.Command.Controller.Fishing;
+﻿using LobotJR.Command.Controller.Fishing;
 using LobotJR.Command.Controller.Twitch;
+using LobotJR.Command.Model.Fishing;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LobotJR.Command.Module.Fishing
+namespace LobotJR.Command.View.Fishing
 {
     /// <summary>
-    /// Module containing commands related to fishing tournaments.
+    /// View containing commands related to fishing tournaments.
     /// </summary>
-    public class TournamentModule : ICommandModule
+    public class TournamentView : ICommandView
     {
-        private readonly TournamentController TournamentSystem;
-        private readonly UserController UserSystem;
+        private readonly TournamentController TournamentController;
+        private readonly UserController UserController;
 
         /// <summary>
-        /// Prefix applied to names of commands within this module.
+        /// Prefix applied to names of commands within this view.
         /// </summary>
         public string Name => "Fishing.Tournament";
         /// <summary>
@@ -26,16 +26,16 @@ namespace LobotJR.Command.Module.Fishing
         /// </summary>
         public event PushNotificationHandler PushNotification;
         /// <summary>
-        /// A collection of commands this module provides.
+        /// A collection of commands this view provides.
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public TournamentModule(TournamentController system, UserController userSystem)
+        public TournamentView(TournamentController tournamentController, UserController userController)
         {
-            TournamentSystem = system;
-            system.TournamentStarted += System_TournamentStarted;
-            system.TournamentEnded += System_TournamentEnded;
-            UserSystem = userSystem;
+            TournamentController = tournamentController;
+            tournamentController.TournamentStarted += Controller_TournamentStarted;
+            tournamentController.TournamentEnded += Controller_TournamentEnded;
+            UserController = userController;
             Commands = new CommandHandler[]
             {
                 new CommandHandler("TournamentResults", this, CommandMethod.GetInfo(TournamentResults), CommandMethod.GetInfo(TournamentResultsCompact), "TournamentResults", "tournament-results"),
@@ -44,14 +44,14 @@ namespace LobotJR.Command.Module.Fishing
             };
         }
 
-        private void System_TournamentStarted(DateTime end)
+        private void Controller_TournamentStarted(DateTime end)
         {
             var duration = end - DateTime.Now;
             var message = $"A fishing tournament has just begun! For the next {Math.Round(duration.TotalMinutes)} minutes, fish can be caught more quickly & will be eligible for leaderboard recognition! Head to https://tinyurl.com/PlayWolfpackRPG and type !cast to play!";
             PushNotification?.Invoke(null, new CommandResult(true, message));
         }
 
-        private void System_TournamentEnded(TournamentResult result, DateTime? next)
+        private void Controller_TournamentEnded(TournamentResult result, DateTime? next)
         {
             string message;
             if (next == null)
@@ -59,7 +59,7 @@ namespace LobotJR.Command.Module.Fishing
                 message = "Stream has gone offline, so the fishing tournament was ended early. D:";
                 if (result.Entries.Count > 0)
                 {
-                    message += $" Winner at the time of conclusion: {UserSystem.GetUserById(result.Winner.UserId).Username} with a score of {result.Winner.Points}.";
+                    message += $" Winner at the time of conclusion: {UserController.GetUserById(result.Winner.UserId).Username} with a score of {result.Winner.Points}.";
 
                 }
             }
@@ -67,7 +67,7 @@ namespace LobotJR.Command.Module.Fishing
             {
                 if (result.Entries.Count > 0)
                 {
-                    message = $"The fishing tournament has ended! Out of {result.Entries.Count} participants, {UserSystem.GetUserById(result.Winner.UserId).Username} won with {result.Winner.Points} points!";
+                    message = $"The fishing tournament has ended! Out of {result.Entries.Count} participants, {UserController.GetUserById(result.Winner.UserId).Username} won with {result.Winner.Points} points!";
                 }
                 else
                 {
@@ -112,7 +112,7 @@ namespace LobotJR.Command.Module.Fishing
 
         public TournamentResultsResponse TournamentResultsCompact(User user)
         {
-            var tournament = TournamentSystem.GetLatestResults();
+            var tournament = TournamentController.GetLatestResults();
             if (tournament != null)
             {
                 var winner = tournament.Winner;
@@ -122,7 +122,7 @@ namespace LobotJR.Command.Module.Fishing
                     {
                         Ended = tournament.Date,
                         Participants = tournament.Entries.Count,
-                        Winner = UserSystem.GetUserById(winner.UserId).Username,
+                        Winner = UserController.GetUserById(winner.UserId).Username,
                         WinnerPoints = winner.Points
                     };
                     var userEntry = tournament.GetEntryByUser(user);
@@ -151,7 +151,7 @@ namespace LobotJR.Command.Module.Fishing
         public TournamentRecordsResponse TournamentRecordsCompact(User user)
         {
             var output = new Dictionary<string, string>();
-            var tournaments = TournamentSystem.GetResultsForUser(user);
+            var tournaments = TournamentController.GetResultsForUser(user);
             if (!tournaments.Any())
             {
                 return null;
@@ -186,13 +186,13 @@ namespace LobotJR.Command.Module.Fishing
 
         public CompactCollection<TimeSpan> NextTournamentCompact()
         {
-            if (TournamentSystem.NextTournament == null)
+            if (TournamentController.NextTournament == null)
             {
                 return new CompactCollection<TimeSpan>(new TimeSpan[0], x => x.ToString("c"));
             }
             else
             {
-                var toNext = (DateTime)TournamentSystem.NextTournament - DateTime.Now;
+                var toNext = (DateTime)TournamentController.NextTournament - DateTime.Now;
                 return new CompactCollection<TimeSpan>(new TimeSpan[] { toNext }, x => x.ToString("c"));
             }
         }

@@ -4,32 +4,32 @@ using LobotJR.Utils;
 using System;
 using System.Collections.Generic;
 
-namespace LobotJR.Command.Module.Twitch
+namespace LobotJR.Command.View.Twitch
 {
     /// <summary>
-    /// Module containing commands for managing the user database.
+    /// View containing commands for managing the user database.
     /// </summary>
-    public class UserModule : ICommandModule
+    public class UserAdmin : ICommandView
     {
-        private readonly UserController UserSystem;
+        private readonly UserController UserController;
         private readonly SettingsManager SettingsManager;
 
         /// <summary>
-        /// Prefix applied to names of commands within this module.
+        /// Prefix applied to names of commands within this view.
         /// </summary>
         public string Name => "User.Admin";
         /// <summary>
-        /// This module does not send any push notifications.
+        /// This view does not send any push notifications.
         /// </summary>
         public event PushNotificationHandler PushNotification;
         /// <summary>
-        /// A collection of commands this module provides.
+        /// A collection of commands this view provides.
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public UserModule(UserController userSystem, SettingsManager settingsManager)
+        public UserAdmin(UserController userController, SettingsManager settingsManager)
         {
-            UserSystem = userSystem;
+            UserController = userController;
             SettingsManager = settingsManager;
             Commands = new List<CommandHandler>()
             {
@@ -40,7 +40,7 @@ namespace LobotJR.Command.Module.Twitch
         public CommandResult UpdateViewers()
         {
             var settings = SettingsManager.GetAppSettings();
-            UserSystem.LastUpdate = DateTime.Now - TimeSpan.FromMinutes(settings.UserDatabaseUpdateTime);
+            UserController.LastUpdate = DateTime.Now - TimeSpan.FromMinutes(settings.UserDatabaseUpdateTime);
             return new CommandResult($"Viewer update triggered.");
         }
     }

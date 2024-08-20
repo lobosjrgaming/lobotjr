@@ -1,7 +1,7 @@
 ﻿using LobotJR.Twitch.Model;
 using System.Collections.Generic;
 
-namespace LobotJR.Command.Module
+namespace LobotJR.Command.View
 {
     /// <summary>
     /// Handler for push notification events.
@@ -11,22 +11,22 @@ namespace LobotJR.Command.Module
     public delegate void PushNotificationHandler(User user, CommandResult commandResult);
 
     /// <summary>
-    /// Modules for organizing and grouping commands.
+    /// Holds the view logic for a grouping of commands.
     /// </summary>
-    public interface ICommandModule
+    public interface ICommandView
     {
         /// <summary>
-        /// Event that this module will raise when a push notification needs to be sent.
+        /// Event that this view will raise when a push notification needs to be sent.
         /// </summary>
         event PushNotificationHandler PushNotification;
 
         /// <summary>
-        /// The name of the module used to group commands.
+        /// The name of the view used to group commands.
         /// </summary>
         string Name { get; }
 
         /// <summary>
-        /// A collection containing all commands within this module.
+        /// A collection containing all commands within this view.
         /// </summary>
         IEnumerable<CommandHandler> Commands { get; }
     }

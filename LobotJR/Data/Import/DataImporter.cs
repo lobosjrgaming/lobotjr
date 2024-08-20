@@ -1,9 +1,9 @@
-﻿using LobotJR.Command.Model.Dungeons;
+﻿using LobotJR.Command.Controller.Twitch;
+using LobotJR.Command.Model.Dungeons;
 using LobotJR.Command.Model.Equipment;
 using LobotJR.Command.Model.Fishing;
 using LobotJR.Command.Model.Pets;
 using LobotJR.Command.Model.Player;
-using LobotJR.Command.Controller.Twitch;
 using NLog;
 using System;
 using System.Collections.Generic;
@@ -30,7 +30,7 @@ namespace LobotJR.Data.Import
             return false;
         }
 
-        private static async Task<bool> ImportFisherData(IRepository<Fish> fishRepository, IRepository<Catch> catchRepository, IRepository<LeaderboardEntry> leaderboardRepository, UserController userSystem)
+        private static async Task<bool> ImportFisherData(IRepository<Fish> fishRepository, IRepository<Catch> catchRepository, IRepository<LeaderboardEntry> leaderboardRepository, UserController userController)
         {
             var hasFisherData = FileSystem.Exists(FisherDataImport.FisherDataPath);
             var hasLeaderboardData = FileSystem.Exists(FisherDataImport.FishingLeaderboardPath);
@@ -41,17 +41,17 @@ namespace LobotJR.Data.Import
                 Dictionary<string, LegacyFisher> legacyFisherData = FisherDataImport.LoadLegacyFisherData(FisherDataImport.FisherDataPath);
                 List<LegacyCatch> legacyLeaderboardData = FisherDataImport.LoadLegacyFishingLeaderboardData(FisherDataImport.FishingLeaderboardPath);
                 Logger.Info("Converting usernames to user ids...");
-                await userSystem.GetUsersByNames(legacyFisherData.Keys.Union(legacyLeaderboardData.Select(x => x.caughtBy)).ToArray());
+                await userController.GetUsersByNames(legacyFisherData.Keys.Union(legacyLeaderboardData.Select(x => x.caughtBy)).ToArray());
                 if (hasFisherData)
                 {
                     Logger.Info("Importing user records...");
-                    FisherDataImport.ImportFisherDataIntoSql(legacyFisherData, fishRepository, catchRepository, userSystem);
+                    FisherDataImport.ImportFisherDataIntoSql(legacyFisherData, fishRepository, catchRepository, userController);
                     FileSystem.Move(FisherDataImport.FisherDataPath, $"{FisherDataImport.FisherDataPath}.{DateTime.Now.ToFileTimeUtc()}.backup");
                 }
                 if (hasLeaderboardData)
                 {
                     Logger.Info("Importing leaderboard...");
-                    FisherDataImport.ImportLeaderboardDataIntoSql(legacyLeaderboardData, leaderboardRepository, fishRepository, userSystem);
+                    FisherDataImport.ImportLeaderboardDataIntoSql(legacyLeaderboardData, leaderboardRepository, fishRepository, userController);
                     FileSystem.Move(FisherDataImport.FishingLeaderboardPath, $"{FisherDataImport.FishingLeaderboardPath}.{DateTime.Now.ToFileTimeUtc()}.backup");
                 }
                 Logger.Info("Fisher data migration complete!");
@@ -208,7 +208,7 @@ namespace LobotJR.Data.Import
             IRepository<Equippables> equippablesRepository,
             IRepository<Inventory> inventoryRepository,
             IRepository<Stable> stableRepository,
-            UserController userSystem,
+            UserController userController,
             Dictionary<int, Item> itemMap,
             Dictionary<int, Pet> petMap)
         {
@@ -224,7 +224,7 @@ namespace LobotJR.Data.Import
                     Logger.Error("Player database already contains data, aborting import.");
                     throw new Exception("Legacy import error. Aborting import to avoid data loss.");
                 }
-                return await PlayerDataImport.ImportPlayerDataIntoSql(PlayerDataImport.CoinDataPath, PlayerDataImport.ExperienceDataPath, PlayerDataImport.ClassDataPath, playerRepository, classRepository, typeRepository, equippablesRepository, inventoryRepository, stableRepository, userSystem, itemMap, petMap);
+                return await PlayerDataImport.ImportPlayerDataIntoSql(PlayerDataImport.CoinDataPath, PlayerDataImport.ExperienceDataPath, PlayerDataImport.ClassDataPath, playerRepository, classRepository, typeRepository, equippablesRepository, inventoryRepository, stableRepository, userController, itemMap, petMap);
             }
             return false;
         }
@@ -272,7 +272,7 @@ namespace LobotJR.Data.Import
             Logger.Info("Player data migration complete!");
         }
 
-        private static async Task<bool> ImportPlayerData(IDatabase database, UserController userSystem)
+        private static async Task<bool> ImportPlayerData(IDatabase database, UserController userController)
         {
             var petMap = ImportPetData(database.PetData, database.PetRarityData);
             if (petMap.Any())
@@ -283,7 +283,7 @@ namespace LobotJR.Data.Import
                     var dungeonImport = ImportDungeonData(database.DungeonData, database.DungeonTimerData, database.DungeonModeData, itemMap);
                     if (dungeonImport)
                     {
-                        var playerImport = await ImportPlayerData(database.PlayerCharacters, database.CharacterClassData, database.ItemTypeData, database.EquippableData, database.Inventories, database.Stables, userSystem, itemMap, petMap);
+                        var playerImport = await ImportPlayerData(database.PlayerCharacters, database.CharacterClassData, database.ItemTypeData, database.EquippableData, database.Inventories, database.Stables, userController, itemMap, petMap);
                         if (playerImport)
                         {
                             FinalizePlayerData();
@@ -303,11 +303,11 @@ namespace LobotJR.Data.Import
             return false;
         }
 
-        public static async Task ImportLegacyData(IDatabase database, UserController userSystem)
+        public static async Task ImportLegacyData(IDatabase database, UserController userController)
         {
             ImportFishData(database.FishData);
-            await ImportFisherData(database.FishData, database.Catches, database.FishingLeaderboard, userSystem);
-            var playerImport = await ImportPlayerData(database, userSystem);
+            await ImportFisherData(database.FishData, database.Catches, database.FishingLeaderboard, userController);
+            var playerImport = await ImportPlayerData(database, userController);
             if (!playerImport)
             {
                 Logger.Warn("Player data import failed, please verify your player, dungeon, item, and pet files and try again.");

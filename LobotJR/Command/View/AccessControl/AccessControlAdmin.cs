@@ -6,33 +6,33 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LobotJR.Command.Module.AccessControl
+namespace LobotJR.Command.View.AccessControl
 {
     /// <summary>
-    /// Module containing commands for managing access groups.
+    /// View containing commands for managing access groups.
     /// </summary>
-    public class AccessControlAdmin : ICommandModule
+    public class AccessControlAdmin : ICommandView
     {
         private readonly AccessControlController AccessControlController;
-        private readonly UserController UserSystem;
+        private readonly UserController UserController;
 
         /// <summary>
-        /// Prefix applied to names of commands within this module.
+        /// Prefix applied to names of commands within this view.
         /// </summary>
         public string Name => "AccessControl.Admin";
         /// <summary>
-        /// This module does not issue any push notifications.
+        /// This view does not issue any push notifications.
         /// </summary>
         public event PushNotificationHandler PushNotification;
         /// <summary>
-        /// A collection of commands this module provides.
+        /// A collection of commands this view provides.
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public AccessControlAdmin(AccessControlController accessControlController, UserController userSystem)
+        public AccessControlAdmin(AccessControlController accessControlController, UserController userController)
         {
             AccessControlController = accessControlController;
-            UserSystem = userSystem;
+            UserController = userController;
             Commands = new CommandHandler[]
             {
                 new CommandHandler("ListGroups", this, CommandMethod.GetInfo(ListGroups), "ListGroups", "list-groups", "ListRoles", "list-roles"),
@@ -91,7 +91,7 @@ namespace LobotJR.Command.Module.AccessControl
                 {
                     names.Add("Subs");
                 }
-                names.AddRange(enrollments.Select(x => UserSystem.GetUserById(x.UserId)?.Username).Where(x => x != null));
+                names.AddRange(enrollments.Select(x => UserController.GetUserById(x.UserId)?.Username).Where(x => x != null));
                 return new CommandResult(
                     $"Access group \"{groupName}\" contains the following commands: {string.Join(", ", restrictions.Select(x => x.Command))}.",
                     $"Access group \"{groupName}\" contains the following users: {string.Join(", ", names)}."
@@ -152,7 +152,7 @@ namespace LobotJR.Command.Module.AccessControl
 
         private CommandResult AddUserToGroup(string username, string groupName)
         {
-            var user = UserSystem.GetUserByName(username);
+            var user = UserController.GetUserByName(username);
             if (user != null)
             {
                 var group = AccessControlController.GetGroupByName(groupName);
@@ -172,7 +172,7 @@ namespace LobotJR.Command.Module.AccessControl
 
         private CommandResult RemoveUserFromGroup(string username, string groupName)
         {
-            var user = UserSystem.GetUserByName(username);
+            var user = UserController.GetUserByName(username);
             if (user != null)
             {
                 var group = AccessControlController.GetGroupByName(groupName);
@@ -212,12 +212,12 @@ namespace LobotJR.Command.Module.AccessControl
         private CommandResult ListCommands()
         {
             var commands = AccessControlController.GetAllCommands();
-            var modules = commands.Where(x => x.LastIndexOf('.') != -1).Select(x => x.Substring(0, x.LastIndexOf('.'))).Distinct().ToList();
-            var response = new string[modules.Count + 1];
-            response[0] = $"There are {commands.Count()} commands across {modules.Count} modules.";
-            for (var i = 0; i < modules.Count; i++)
+            var views = commands.Where(x => x.LastIndexOf('.') != -1).Select(x => x.Substring(0, x.LastIndexOf('.'))).Distinct().ToList();
+            var response = new string[views.Count + 1];
+            response[0] = $"There are {commands.Count()} commands across {views.Count} views.";
+            for (var i = 0; i < views.Count; i++)
             {
-                response[i + 1] = $"{modules[i]}: {string.Join(", ", commands.Where(x => x.StartsWith(modules[i])))}";
+                response[i + 1] = $"{views[i]}: {string.Join(", ", commands.Where(x => x.StartsWith(views[i])))}";
             }
             return new CommandResult(response);
         }

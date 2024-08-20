@@ -1,6 +1,6 @@
 ﻿using LobotJR.Command;
-using LobotJR.Command.Module;
-using LobotJR.Command.Module.Fishing;
+using LobotJR.Command.View;
+using LobotJR.Command.View.Fishing;
 using LobotJR.Command.Controller.Fishing;
 using LobotJR.Data;
 using LobotJR.Test.Mocks;
@@ -22,7 +22,7 @@ namespace LobotJR.Test.Modules.Fishing
         private FishingController FishingSystem;
         private TournamentController TournamentSystem;
         private LeaderboardController LeaderboardSystem;
-        private FishingModule FishingModule;
+        private FishingView FishingModule;
 
         [TestInitialize]
         public void Initialize()
@@ -32,7 +32,7 @@ namespace LobotJR.Test.Modules.Fishing
             FishingSystem = new FishingSystem(Manager, Manager);
             LeaderboardSystem = new LeaderboardSystem(Manager);
             TournamentSystem = new TournamentSystem(FishingSystem, LeaderboardSystem, Manager);
-            FishingModule = new FishingModule(FishingSystem, TournamentSystem, LeaderboardSystem);
+            FishingModule = new FishingView(FishingSystem, TournamentSystem, LeaderboardSystem);
         }
 
         [TestMethod]

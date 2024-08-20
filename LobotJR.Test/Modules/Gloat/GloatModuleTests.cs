@@ -1,4 +1,4 @@
-﻿using LobotJR.Command.Module.Gloat;
+﻿using LobotJR.Command.View.Gloat;
 using LobotJR.Command.Controller.Gloat;
 using LobotJR.Data;
 using LobotJR.Test.Mocks;
@@ -20,7 +20,7 @@ namespace LobotJR.Test.Modules.Gloat
         private SqliteRepositoryManager Manager;
         private Dictionary<string, int> Wolfcoins;
         private GloatController GloatSystem;
-        private GloatModule GloatModule;
+        private GloatView GloatModule;
 
         [TestInitialize]
         public void Initialize()

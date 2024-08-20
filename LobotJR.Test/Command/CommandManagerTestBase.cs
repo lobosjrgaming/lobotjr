@@ -1,5 +1,5 @@
 ﻿using LobotJR.Command;
-using LobotJR.Command.Module;
+using LobotJR.Command.View;
 using LobotJR.Command.Controller.Twitch;
 using LobotJR.Data;
 using LobotJR.Test.Mocks;
@@ -21,7 +21,7 @@ namespace LobotJR.Test.Command
     /// an abstract class to be extended. This removes the need to re-establish
     /// these variables in each test class.
     /// </summary>
-    public abstract class CommandManagerTestBase : ICommandModule
+    public abstract class CommandManagerTestBase : ICommandView
     {
         protected List<AccessGroup> AccessGroups;
         protected List<Enrollment> Enrollments;
@@ -111,8 +111,8 @@ namespace LobotJR.Test.Command
 
 
             var userLookup = new UserSystem(RepositoryManagerMock.Object, null);
-            CommandManager = new CommandManager(new ICommandModule[] { CommandModuleMock, SubCommandModuleMock }, RepositoryManagerMock.Object, userLookup);
-            CommandManager.InitializeModules();
+            CommandManager = new CommandManager(new ICommandView[] { CommandModuleMock, SubCommandModuleMock }, RepositoryManagerMock.Object, userLookup);
+            CommandManager.InitializeViews();
         }
     }
 }

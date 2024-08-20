@@ -3,18 +3,18 @@ using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using System.Collections.Generic;
 
-namespace LobotJR.Command.Module.General
+namespace LobotJR.Command.View.General
 {
     /// <summary>
-    /// Module containing commands for responding to events that require
+    /// View containing commands for responding to events that require
     /// confirmation.
     /// </summary>
-    public class ConfirmationModule : ICommandModule
+    public class ConfirmationView : ICommandView
     {
-        private readonly ConfirmationController ConfirmationSystem;
+        private readonly ConfirmationController ConfirmationController;
 
         /// <summary>
-        /// Prefix applied to names of commands within this module.
+        /// Prefix applied to names of commands within this view.
         /// </summary>
         public string Name => "Confirmation";
         /// <summary>
@@ -22,13 +22,13 @@ namespace LobotJR.Command.Module.General
         /// </summary>
         public event PushNotificationHandler PushNotification;
         /// <summary>
-        /// A collection of commands this module provides.
+        /// A collection of commands this view provides.
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public ConfirmationModule(ConfirmationController confirmationSystem)
+        public ConfirmationView(ConfirmationController confirmationController)
         {
-            ConfirmationSystem = confirmationSystem;
+            ConfirmationController = confirmationController;
             Commands = new List<CommandHandler>()
             {
                 new CommandHandler("Confirm", this, CommandMethod.GetInfo(Confirm), "y", "yes", "accept", "confirm"),
@@ -38,13 +38,13 @@ namespace LobotJR.Command.Module.General
 
         public CommandResult Confirm(User user)
         {
-            ConfirmationSystem.Confirm(user);
+            ConfirmationController.Confirm(user);
             return new CommandResult(true);
         }
 
         public CommandResult Cancel(User user)
         {
-            ConfirmationSystem.Cancel(user);
+            ConfirmationController.Cancel(user);
             return new CommandResult(true);
         }
     }

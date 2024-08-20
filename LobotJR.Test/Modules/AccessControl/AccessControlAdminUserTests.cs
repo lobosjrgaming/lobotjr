@@ -27,7 +27,7 @@ namespace LobotJR.Test.Modules.AccessControl
             Assert.IsTrue(result.Responses[0].Contains("success", StringComparison.OrdinalIgnoreCase));
             enrollments = CommandManager.RepositoryManager.Enrollments.Read(x => x.GroupId == group.Id);
             Assert.AreEqual(baseEnrollmentCount + 1, enrollments.Count());
-            var notAuth = CommandManager.UserSystem.GetUserByName("NotAuth");
+            var notAuth = CommandManager.UserController.GetUserByName("NotAuth");
             Assert.IsTrue(CommandManager.RepositoryManager.Enrollments.Read(x => x.GroupId == group.Id && x.UserId.Equals(notAuth.TwitchId)).Any());
         }
 
@@ -88,7 +88,7 @@ namespace LobotJR.Test.Modules.AccessControl
         {
             var command = Module.Commands.Where(x => x.Name.Equals("UnenrollUser")).FirstOrDefault();
             var group = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
-            var userToRemove = CommandManager.UserSystem.GetUserByName("Auth").Username;
+            var userToRemove = CommandManager.UserController.GetUserByName("Auth").Username;
             var result = command.Executor.Execute(null, $"{userToRemove} TestGroup");
             Assert.IsTrue(result.Processed);
             Assert.AreEqual(1, result.Responses.Count());
