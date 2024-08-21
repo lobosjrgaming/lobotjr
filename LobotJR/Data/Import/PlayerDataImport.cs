@@ -205,6 +205,7 @@ namespace LobotJR.Data.Import
         }
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Needed to load in legacy data for conversion to modern standards")]
     public class LegacyCharacterClass
     {
         public string name { get; set; }
@@ -217,12 +218,14 @@ namespace LobotJR.Data.Import
         public List<LegacyPet> myPets { get; set; }
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Needed to load in legacy data for conversion to modern standards")]
     public class LegacyItem
     {
         public int itemID { get; set; }
         public bool isActive { get; set; }
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Needed to load in legacy data for conversion to modern standards")]
     public class LegacyPet
     {
         public int ID { get; set; }

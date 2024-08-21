@@ -30,8 +30,8 @@ namespace LobotJR.Twitch
         private TcpClient Client;
         private StreamReader InputStream;
         private StreamWriter OutputStream;
-        private TokenData TokenData;
-        private ITwitchClient TwitchClient;
+        private readonly TokenData TokenData;
+        private readonly ITwitchClient TwitchClient;
         private bool IsSecure;
 
         private CancellationTokenSource CancellationTokenSource;
@@ -42,8 +42,8 @@ namespace LobotJR.Twitch
         private DateTime LastMessage;
         private bool PingSent;
 
-        private Queue<string> MessageQueue = new Queue<string>();
-        private RollingTimer Timer = new RollingTimer(TimeSpan.FromSeconds(30), 100);
+        private readonly Queue<string> MessageQueue = new Queue<string>();
+        private readonly RollingTimer Timer = new RollingTimer(TimeSpan.FromSeconds(30), 100);
 
         /// <summary>
         /// Creates a new IRC client.
@@ -90,8 +90,10 @@ namespace LobotJR.Twitch
                     }
                     var encoding = new UTF8Encoding(false);
                     InputStream = new StreamReader(stream, encoding);
-                    OutputStream = new StreamWriter(stream, encoding);
-                    OutputStream.AutoFlush = false;
+                    OutputStream = new StreamWriter(stream, encoding)
+                    {
+                        AutoFlush = false
+                    };
 
                     await WriteLines("CAP REQ :twitch.tv/tags twitch.tv/commands",
                         $"PASS oauth:{TokenData.ChatToken.AccessToken}",

@@ -18,7 +18,7 @@ namespace LobotJR.Command.View.Dungeons
     /// <summary>
     /// View containing commands for forming groups and running dungeons.
     /// </summary>
-    public class DungeonView : ICommandView
+    public class DungeonView : ICommandView, IPushNotifier
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private static readonly Random Random = new Random();
@@ -52,11 +52,12 @@ namespace LobotJR.Command.View.Dungeons
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public DungeonView(DungeonController dungeonController, GroupFinderController groupFinderController, PlayerController playerController, UserController userController, ConfirmationController confirmationController, SettingsManager settingsManager)
+        public DungeonView(DungeonController dungeonController, GroupFinderController groupFinderController, PlayerController playerController, PartyController partyController, UserController userController, ConfirmationController confirmationController, SettingsManager settingsManager)
         {
             DungeonController = dungeonController;
             GroupFinderController = groupFinderController;
             PlayerController = playerController;
+            PartyController = partyController;
             UserController = userController;
             SettingsManager = settingsManager;
             confirmationController.Confirmed += ConfirmationController_Confirmed;
@@ -173,6 +174,7 @@ namespace LobotJR.Command.View.Dungeons
                         return true;
                     }
                     errorMessage = "You are not the party leader.";
+                    return false;
                 }
                 errorMessage = "You are not in a party.";
             }
@@ -216,7 +218,7 @@ namespace LobotJR.Command.View.Dungeons
                 var currentParty = PartyController.GetCurrentGroup(player);
                 if (currentParty == null)
                 {
-                    var party = PartyController.CreateParty(false, player);
+                    PartyController.CreateParty(false, player);
                     Logger.Info("Party Created by {user}", user.Username);
                     Logger.Info("Total number of parties: {count}", PartyController.PartyCount);
                     return new CommandResult("Party created! Use '!add <username>' to invite party members.");
@@ -253,11 +255,7 @@ namespace LobotJR.Command.View.Dungeons
                             {
                                 if (!GroupFinderController.IsPlayerQueued(targetPlayer) && PartyController.GetCurrentGroup(targetPlayer) == null)
                                 {
-                                    var currentParty = PartyController.GetCurrentGroup(player);
-                                    if (currentParty == null)
-                                    {
-                                        currentParty = PartyController.CreateParty(false, player);
-                                    }
+                                    var currentParty = PartyController.GetCurrentGroup(player) ?? PartyController.CreateParty(false, player);
                                     if (currentParty.Leader.Equals(player))
                                     {
                                         var settings = SettingsManager.GetGameSettings();
@@ -402,7 +400,7 @@ namespace LobotJR.Command.View.Dungeons
 
         public CommandResult SetReady(User user)
         {
-            var canExecute = CanExecuteCommand(user, true, out var player, out var party, out var errorMessage);
+            var canExecute = CanExecuteCommand(user, true, out _, out var party, out var errorMessage);
             if (canExecute)
             {
                 var success = PartyController.SetReady(party);
@@ -421,7 +419,7 @@ namespace LobotJR.Command.View.Dungeons
 
         public CommandResult UnsetReady(User user)
         {
-            var canExecute = CanExecuteCommand(user, true, out var player, out var party, out var errorMessage);
+            var canExecute = CanExecuteCommand(user, true, out _, out var party, out var errorMessage);
             if (canExecute)
             {
                 var success = PartyController.UnsetReady(party);

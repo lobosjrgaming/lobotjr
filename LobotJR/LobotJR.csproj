@@ -63,10 +63,6 @@
     <Reference Include="Autofac, Version=6.5.0.0, Culture=neutral, PublicKeyToken=17863af14b0044da, processorArchitecture=MSIL">
       <HintPath>..\packages\Autofac.6.5.0\lib\netstandard2.0\Autofac.dll</HintPath>
     </Reference>
-    <Reference Include="AutoHotkey.Interop, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>.\AutoHotkey.Interop.dll</HintPath>
-    </Reference>
     <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <HintPath>..\packages\EntityFramework.6.4.4\lib\net45\EntityFramework.dll</HintPath>
     </Reference>
@@ -175,7 +171,7 @@
     <Compile Include="Command\Model\Player\CharacterClass.cs" />
     <Compile Include="Command\Model\Player\Equippables.cs" />
     <Compile Include="Command\Model\Player\PlayerCharacter.cs" />
-    <Compile Include="Command\Model\Player\PlayerStats.cs" />
+    <Compile Include="Command\Model\Player\IPlayerStats.cs" />
     <Compile Include="Command\Model\Fishing\Catch.cs" />
     <Compile Include="Command\Model\Fishing\Fish.cs" />
     <Compile Include="Command\Model\Fishing\Fisher.cs" />

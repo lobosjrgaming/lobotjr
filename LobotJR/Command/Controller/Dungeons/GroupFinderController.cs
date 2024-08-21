@@ -131,15 +131,12 @@ namespace LobotJR.Command.Controller.Dungeons
             var dailyTimer = ConnectionManager.CurrentConnection.DungeonTimerData.FirstOrDefault(x => x.Name.Equals(DailyTimerName));
             if (dailyTimer != null)
             {
-                var lockout = ConnectionManager.CurrentConnection.DungeonLockouts.FirstOrDefault(x => x.UserId.Equals(player.UserId) && x.TimerId.Equals(dailyTimer.Id));
-                if (lockout == null)
-                {
-                    lockout = ConnectionManager.CurrentConnection.DungeonLockouts.Create(new DungeonLockout()
+                var lockout = ConnectionManager.CurrentConnection.DungeonLockouts.FirstOrDefault(x => x.UserId.Equals(player.UserId) && x.TimerId.Equals(dailyTimer.Id))
+                    ?? ConnectionManager.CurrentConnection.DungeonLockouts.Create(new DungeonLockout()
                     {
                         UserId = player.UserId,
                         Timer = dailyTimer,
                     });
-                }
                 lockout.Time = DateTime.Now;
             }
         }

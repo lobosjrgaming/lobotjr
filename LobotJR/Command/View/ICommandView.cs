@@ -16,11 +16,6 @@ namespace LobotJR.Command.View
     public interface ICommandView
     {
         /// <summary>
-        /// Event that this view will raise when a push notification needs to be sent.
-        /// </summary>
-        event PushNotificationHandler PushNotification;
-
-        /// <summary>
         /// The name of the view used to group commands.
         /// </summary>
         string Name { get; }
@@ -29,5 +24,17 @@ namespace LobotJR.Command.View
         /// A collection containing all commands within this view.
         /// </summary>
         IEnumerable<CommandHandler> Commands { get; }
+    }
+
+    /// <summary>
+    /// Interface for views that send push notifications. Used to send messages
+    /// to players not in direct response to an incoming command.
+    /// </summary>
+    public interface IPushNotifier
+    {
+        /// <summary>
+        /// Event that this view will raise when a push notification needs to be sent.
+        /// </summary>
+        event PushNotificationHandler PushNotification;
     }
 }

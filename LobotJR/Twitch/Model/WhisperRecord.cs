@@ -29,8 +29,7 @@ namespace LobotJR.Twitch.Model
 
         public override bool Equals(object obj)
         {
-            var other = obj as WhisperRecord;
-            return other != null
+            return obj is WhisperRecord other
                 && string.Equals(User?.TwitchId, other.User?.TwitchId, StringComparison.OrdinalIgnoreCase)
                 && string.Equals(Message, other.Message, StringComparison.OrdinalIgnoreCase)
                 && QueueTime.Equals(other.QueueTime);

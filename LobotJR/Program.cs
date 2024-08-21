@@ -33,7 +33,7 @@ namespace LobotJR
         private static bool isLive = false;
         private static bool hasCrashed = false;
 
-        static async Task Main(string[] args)
+        static async Task Main()
         {
             LogManager.Setup().LoadConfiguration(builder =>
             {
@@ -49,7 +49,7 @@ namespace LobotJR
                 catch (Exception ex)
                 {
                     var now = DateTime.UtcNow;
-                    var folder = $"CrashDump.{now.ToString("yyyyMMddTHHmmssfffZ")}";
+                    var folder = $"CrashDump.{now:yyyyMMddTHHmmssfffZ}";
                     Logger.Error(ex);
                     Logger.Error("The application has encountered an unexpected error: {message}", ex.Message);
                     Directory.CreateDirectory(folder);
@@ -115,7 +115,7 @@ namespace LobotJR
             return container.BeginLifetimeScope();
         }
 
-        private static void SeedDatabase(IConnectionManager connectionManager, UserController userController, ClientData clientData, TokenData tokenData)
+        private static void SeedDatabase(IConnectionManager connectionManager, UserController userController, TokenData tokenData)
         {
             using (connectionManager.OpenConnection())
             {
@@ -212,7 +212,7 @@ namespace LobotJR
                         // This can't be inside of the command view manager since that automatically catches exceptions thrown by commands
                         if (message.Message == "!testcrash" && chatter.IsAdmin)
                         {
-                            throw new Exception($"Test crash initiated by {message.UserName} at {DateTime.Now.ToString("yyyyMMddTHHmmssfffZ")}");
+                            throw new Exception($"Test crash initiated by {message.UserName} at {DateTime.Now:yyyyMMddTHHmmssfffZ}");
                         }
                         var result = commandManager.ProcessMessage(message.Message.Substring(1), chatter, message.IsWhisper);
                         if (result != null && result.Processed)
@@ -266,19 +266,20 @@ namespace LobotJR
             using (connectionManager.OpenConnection())
             {
                 controllerManager.Initialize();
+                twitchClient.Initialize();
             }
 
             await ircClient.Connect();
 
             while (true)
             {
-                await controllerManager.Process();
-                await twitchClient.ProcessQueue();
-                var ircMessages = await ircClient.Process();
-
-                if (ircMessages.Any())
+                using (connectionManager.OpenConnection())
                 {
-                    using (connectionManager.OpenConnection())
+                    await controllerManager.Process();
+                    await twitchClient.ProcessQueue();
+                    var ircMessages = await ircClient.Process();
+
+                    if (ircMessages.Any())
                     {
                         HandleSubNotifications(ircMessages.Where(x => x.IsUserNotice), userController);
                         await HandleTriggersAndCommands(ircMessages.Where(x => x.IsChat || x.IsWhisper), userController, commandManager, triggerManager, ircClient, twitchClient);
@@ -303,7 +304,7 @@ namespace LobotJR
                 var userController = scope.Resolve<UserController>();
                 using (connectionManager.OpenConnection())
                 {
-                    SeedDatabase(connectionManager, userController, clientData, tokenData);
+                    SeedDatabase(connectionManager, userController, tokenData);
                     ConfigureLogging(connectionManager);
                     var appSettings = connectionManager.CurrentConnection.AppSettings.Read().First();
                     twitchPlays = appSettings.TwitchPlays;

@@ -22,10 +22,6 @@ namespace LobotJR.Command.View.General
         /// </summary>
         public string Name => "Info";
         /// <summary>
-        /// This view does not issue any push notifications.
-        /// </summary>
-        public event PushNotificationHandler PushNotification;
-        /// <summary>
         /// A collection of commands this view provides.
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }

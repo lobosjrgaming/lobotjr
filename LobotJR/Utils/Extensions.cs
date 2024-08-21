@@ -48,7 +48,7 @@ namespace LobotJR.Utils
             }
         }
 
-        private static string generateCommonString(int amount, string unit)
+        private static string GenerateCommonString(int amount, string unit)
         {
             var value = unit;
             if (amount > 1)
@@ -70,18 +70,18 @@ namespace LobotJR.Utils
             var hours = (int)Math.Floor(current.TotalHours);
             if (hours > 0)
             {
-                return generateCommonString(hours, "hour");
+                return GenerateCommonString(hours, "hour");
             }
             var minutes = (int)Math.Floor(current.TotalMinutes);
             if (minutes > 0)
             {
-                return generateCommonString(minutes, "minute");
+                return GenerateCommonString(minutes, "minute");
             }
             var seconds = (int)Math.Floor(current.TotalSeconds);
-            return generateCommonString(seconds, "second");
+            return GenerateCommonString(seconds, "second");
         }
 
-        private static string capitalizeWord(string word)
+        private static string CapitalizeWord(string word)
         {
             if (word.Length < 2)
             {
@@ -101,9 +101,9 @@ namespace LobotJR.Utils
             if (separator != null)
             {
                 var words = current.Split(new string[] { separator }, StringSplitOptions.RemoveEmptyEntries);
-                return string.Join("", words.Select(x => capitalizeWord(x)));
+                return string.Join("", words.Select(x => CapitalizeWord(x)));
             }
-            return capitalizeWord(current);
+            return CapitalizeWord(current);
         }
 
         /// <summary>

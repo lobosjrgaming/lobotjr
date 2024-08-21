@@ -22,10 +22,6 @@ namespace LobotJR.Command.View.Fishing
         /// </summary>
         public string Name => "Fishing.Admin";
         /// <summary>
-        /// Invoked to notify users when they level up.
-        /// </summary>
-        public event PushNotificationHandler PushNotification;
-        /// <summary>
         /// A collection of commands this view provides.
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }

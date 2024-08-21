@@ -72,14 +72,15 @@ namespace LobotJR.Twitch.Model
             var content = MessagePattern.Match(message);
             if (content.Success)
             {
-                var output = new IrcMessage();
-                output.Tags = content.Groups["tags"].Value
+                var output = new IrcMessage
+                {
+                    Tags = content.Groups["tags"].Value
                     .Split(';')
                     .Select(x => x.Split('='))
                     .Where(x => x.Length == 2)
-                    .ToDictionary(x => x[0], x => x[1]);
-                string id = null;
-                output.Tags.TryGetValue("user-id", out id);
+                    .ToDictionary(x => x[0], x => x[1])
+                };
+                output.Tags.TryGetValue("user-id", out string id);
                 output.UserId = id;
                 output.UserName = content.Groups["user"].Value;
                 output.Command = content.Groups["command"].Value;
@@ -92,9 +93,11 @@ namespace LobotJR.Twitch.Model
                 content = PingPattern.Match(message);
                 if (content.Success)
                 {
-                    var output = new IrcMessage();
-                    output.Command = content.Groups["command"].Value;
-                    output.Message = content.Groups["message"].Value;
+                    var output = new IrcMessage
+                    {
+                        Command = content.Groups["command"].Value,
+                        Message = content.Groups["message"].Value
+                    };
                     return output;
                 }
             }

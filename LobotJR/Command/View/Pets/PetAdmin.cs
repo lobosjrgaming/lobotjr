@@ -25,11 +25,6 @@ namespace LobotJR.Command.View.Pets
         /// </summary>
         public string Name => "Pets.Admin";
         /// <summary>
-        /// This view does not issue any push notifications. Notifications
-        /// for pets being granted is handled by the PetView.
-        /// </summary>
-        public event PushNotificationHandler PushNotification;
-        /// <summary>
         /// A collection of commands this view provides.
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }

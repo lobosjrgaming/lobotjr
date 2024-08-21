@@ -11,7 +11,7 @@ namespace LobotJR.Command
     /// </summary>
     public class Restriction : TableObject
     {
-        private static Dictionary<string, Regex> RegexMap = new Dictionary<string, Regex>();
+        private static readonly Dictionary<string, Regex> RegexMap = new Dictionary<string, Regex>();
 
         public static Regex RegexFromCommand(string command)
         {

@@ -12,7 +12,7 @@ namespace LobotJR.Command.View.Fishing
     /// View containing commands for retrieving leaderboards and managing
     /// personal fishing records.
     /// </summary>
-    public class LeaderboardView : ICommandView
+    public class LeaderboardView : ICommandView, IPushNotifier
     {
         private readonly LeaderboardController TournamentController;
         private readonly UserController UserController;

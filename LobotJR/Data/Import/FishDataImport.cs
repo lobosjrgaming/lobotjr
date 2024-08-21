@@ -136,6 +136,8 @@ namespace LobotJR.Data.Import
         }
     }
 
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Needed to load in legacy data for conversion to modern standards")]
     public class LegacyFish
     {
         public int sizeCategory { get; set; } = -1;

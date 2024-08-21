@@ -14,7 +14,7 @@ namespace LobotJR.Command.View.Player
     /// View containing commands for player class selection and retrieving
     /// information about experience and currency.
     /// </summary>
-    public class PlayerView : ICommandView
+    public class PlayerView : ICommandView, IPushNotifier
     {
         private readonly PlayerController PlayerController;
         private readonly PartyController PartyController;

@@ -7,7 +7,7 @@ namespace LobotJR.Command.Model.Equipment
     /// <summary>
     /// An item players can have. Includes equipment, keys, consumables, etc.
     /// </summary>
-    public class Item : TableObject, PlayerStats
+    public class Item : TableObject, IPlayerStats
     {
         /// <summary>
         /// The foreign key id for the item quality.

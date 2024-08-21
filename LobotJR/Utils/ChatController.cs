@@ -54,16 +54,16 @@ namespace LobotJR.Utils
 
     public class KeyPress
     {
-        const int INPUT_MOUSE = 0;
+        // const int INPUT_MOUSE = 0;
         const int INPUT_KEYBOARD = 1;
-        const int INPUT_HARDWARE = 2;
+        // const int INPUT_HARDWARE = 2;
 
-        const int KEYEVENTF_EXTENDEDKEY = 0x0001;
+        // const int KEYEVENTF_EXTENDEDKEY = 0x0001;
         const int KEYEVENTF_KEYUP = 0x0002;
 
-        const ushort KEYEVENTF_KEYDOWN = 0x0000;
+        // const ushort KEYEVENTF_KEYDOWN = 0x0000;
         const ushort KEYEVENTF_SCANCODE = 0x0008;
-        const ushort KEYEVENTF_UNICODE = 0x0004;
+        // const ushort KEYEVENTF_UNICODE = 0x0004;
 
         [DllImport("user32.dll")]
         static extern byte VkKeyScan(char ch);
@@ -108,8 +108,10 @@ namespace LobotJR.Utils
 
         private INPUT SetupInput()
         {
-            var inputData = new INPUT();
-            inputData.type = INPUT_KEYBOARD;
+            var inputData = new INPUT
+            {
+                type = INPUT_KEYBOARD
+            };
             inputData.ki.dwFlags = KEYEVENTF_SCANCODE;
             return inputData;
         }
@@ -161,7 +163,7 @@ namespace LobotJR.Utils
         [DllImport("User32.dll")]
         static extern int SetForegroundWindow(IntPtr point);
 
-        private Dictionary<string, KeyPress> _commands = new Dictionary<string, KeyPress>()
+        private readonly Dictionary<string, KeyPress> _commands = new Dictionary<string, KeyPress>()
         {
             // M preceds movement. MF = Move Forward, MB = Move Backwards, etc.
             { "mf", new KeyPress('W', 1000) },

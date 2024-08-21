@@ -22,8 +22,7 @@
 
         public override bool Equals(object obj)
         {
-            var other = obj as DungeonRun;
-            if (other != null)
+            if (obj is DungeonRun other)
             {
                 return other.Dungeon.Equals(Dungeon) && other.Mode.Equals(Mode);
             }

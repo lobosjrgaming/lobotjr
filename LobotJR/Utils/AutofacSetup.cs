@@ -53,7 +53,7 @@ namespace LobotJR.Utils
             return builder.Build();
         }
 
-        private static void RegisterDatabase(ContainerBuilder builder, ClientData clientData, TokenData tokenData)
+        private static void RegisterDatabase(ContainerBuilder builder)
         {
             // builder.RegisterType<SqliteContext>().AsSelf().As<DbContext>().InstancePerLifetimeScope();
             // builder.RegisterType<SqliteRepositoryManager>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
@@ -139,7 +139,7 @@ namespace LobotJR.Utils
         {
             var builder = new ContainerBuilder();
 
-            RegisterDatabase(builder, clientData, tokenData);
+            RegisterDatabase(builder);
             RegisterControllers(builder);
             RegisterViews(builder);
             RegisterTriggers(builder, tokenData);

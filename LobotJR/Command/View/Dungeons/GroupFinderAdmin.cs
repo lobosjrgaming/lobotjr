@@ -19,11 +19,6 @@ namespace LobotJR.Command.View.Dungeons
         /// </summary>
         public string Name => "GroupFinder.Admin";
         /// <summary>
-        /// Invoked to notify players of group invitations, group chat, and
-        /// dungeon progress.
-        /// </summary>
-        public event PushNotificationHandler PushNotification;
-        /// <summary>
         /// A collection of commands this view provides.
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }

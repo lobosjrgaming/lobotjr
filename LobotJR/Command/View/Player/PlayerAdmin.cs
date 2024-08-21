@@ -28,12 +28,6 @@ namespace LobotJR.Command.View.Player
         /// </summary>
         public string Name => "Player.Admin";
         /// <summary>
-        /// This view does not send any push notifications. If this view
-        /// triggers a level up, that event will be handled by the
-        /// PlayerView.
-        /// </summary>
-        public event PushNotificationHandler PushNotification;
-        /// <summary>
         /// A collection of commands this view provides.
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }

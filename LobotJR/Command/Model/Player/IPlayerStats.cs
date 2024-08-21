@@ -3,7 +3,7 @@
     /// <summary>
     /// The stats that describe a player character's abilities.
     /// </summary>
-    public interface PlayerStats
+    public interface IPlayerStats
     {
         /// <summary>
         /// The chance of successfully completing a dungeon.

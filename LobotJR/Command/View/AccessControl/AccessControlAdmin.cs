@@ -21,10 +21,6 @@ namespace LobotJR.Command.View.AccessControl
         /// </summary>
         public string Name => "AccessControl.Admin";
         /// <summary>
-        /// This view does not issue any push notifications.
-        /// </summary>
-        public event PushNotificationHandler PushNotification;
-        /// <summary>
         /// A collection of commands this view provides.
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }

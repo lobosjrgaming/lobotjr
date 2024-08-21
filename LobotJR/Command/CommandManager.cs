@@ -95,7 +95,10 @@ namespace LobotJR.Command
 
         private void AddView(ICommandView view)
         {
-            view.PushNotification += View_PushNotification;
+            if (view is IPushNotifier)
+            {
+                (view as IPushNotifier).PushNotification += View_PushNotification;
+            }
 
             var exceptions = new List<Exception>();
             foreach (var command in view.Commands)

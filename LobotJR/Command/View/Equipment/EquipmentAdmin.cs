@@ -21,10 +21,6 @@ namespace LobotJR.Command.View.Equipment
         /// </summary>
         public string Name => "Equipment.Admin";
         /// <summary>
-        /// This view does not issue any push notifications.
-        /// </summary>
-        public event PushNotificationHandler PushNotification;
-        /// <summary>
         /// A collection of commands for managing player experience.
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
@@ -67,8 +63,7 @@ namespace LobotJR.Command.View.Equipment
             var user = UserController.GetUserByName(target);
             if (user != null)
             {
-                var inventory = EquipmentController.GetInventoryByUser(user);
-                Item itemObject = null;
+                Item itemObject;
                 if (int.TryParse(item, out var itemId))
                 {
                     itemObject = EquipmentController.GetItemById(itemId);

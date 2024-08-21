@@ -46,10 +46,6 @@ namespace LobotJR.Command.View.Gloat
         /// </summary>
         public string Name => "Gloat";
         /// <summary>
-        /// Invoked to push gloat messages to public chat.
-        /// </summary>
-        public event PushNotificationHandler PushNotification;
-        /// <summary>
         /// A collection of commands this view provides.
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }

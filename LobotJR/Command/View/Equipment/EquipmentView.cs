@@ -21,10 +21,6 @@ namespace LobotJR.Command.View.Equipment
         /// </summary>
         public string Name => "Equipment";
         /// <summary>
-        /// This view does not issue any push notifications.
-        /// </summary>
-        public event PushNotificationHandler PushNotification;
-        /// <summary>
         /// A collection of commands this view provides.
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }

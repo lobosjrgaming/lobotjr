@@ -137,6 +137,7 @@ namespace LobotJR.Data.Import
         }
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Needed to load in legacy data for conversion to modern standards")]
     public class LegacyFisher
     {
         public string username { get; set; } = "";
@@ -152,6 +153,7 @@ namespace LobotJR.Data.Import
         public DateTime timeSinceHook { get; set; }
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Needed to load in legacy data for conversion to modern standards")]
     public class LegacyCatch : LegacyFish
     {
         public float length { get; set; } = -1;

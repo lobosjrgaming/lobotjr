@@ -12,7 +12,7 @@ namespace LobotJR.Command.View.Fishing
     /// <summary>
     /// View containing commands related to fishing tournaments.
     /// </summary>
-    public class TournamentView : ICommandView
+    public class TournamentView : ICommandView, IPushNotifier
     {
         private readonly TournamentController TournamentController;
         private readonly UserController UserController;

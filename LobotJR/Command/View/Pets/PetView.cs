@@ -15,7 +15,7 @@ namespace LobotJR.Command.View.Pets
     /// View containing commands for managing player pets.
     /// </summary>
 
-    public class PetView : ICommandView
+    public class PetView : ICommandView, IPushNotifier
     {
         /// <summary>
         /// Gets the name of the type of pet in a stable, properly formatted.
@@ -262,7 +262,7 @@ namespace LobotJR.Command.View.Pets
                         {
                             dismissMessage = $" and sent {active.Name} back to the stable";
                         }
-                        var output = $"You summoned {pet.Name}{dismissMessage}.";
+                        return new CommandResult($"You summoned {pet.Name}{dismissMessage}.");
                     }
                     return new CommandResult($"{pet.Name} is already summoned.");
                 }

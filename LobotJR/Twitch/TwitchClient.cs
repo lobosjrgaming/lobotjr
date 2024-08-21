@@ -22,17 +22,25 @@ namespace LobotJR.Twitch
     public class TwitchClient : ITwitchClient
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-        private List<string> Blacklist = new List<string>();
+        private readonly List<string> Blacklist = new List<string>();
 
-        private WhisperQueue Queue;
-        private ClientData ClientData;
-        private TokenData TokenData;
+        private readonly WhisperQueue Queue;
+        private readonly ClientData ClientData;
+        private readonly TokenData TokenData;
 
-        public TwitchClient(IRepositoryManager repositoryManager, ClientData clientData, TokenData tokenData)
+        public TwitchClient(IConnectionManager connectionManager, SettingsManager settingsManager, ClientData clientData, TokenData tokenData)
         {
-            Queue = new WhisperQueue(repositoryManager, 3, 100);
+            Queue = new WhisperQueue(connectionManager, settingsManager, 3, 100);
             ClientData = clientData;
             TokenData = tokenData;
+        }
+
+        /// <summary>
+        /// Initializes properties that require database access.
+        /// </summary>
+        public void Initialize()
+        {
+            Queue.UpdateMaxRecipients();
         }
 
         private async Task<RestResponse<TokenResponse>> RefreshToken(TokenResponse token)
@@ -58,7 +66,7 @@ namespace LobotJR.Twitch
                 {
                     if (response.ErrorException != null || response.ErrorMessage != null)
                     {
-                        throw new Exception($"Encountered an exception trying to refresh the token for {TokenData.ChatUser}. {response.ErrorMessage}. {response.ErrorException.ToString()}");
+                        throw new Exception($"Encountered an exception trying to refresh the token for {TokenData.ChatUser}. {response.ErrorMessage}. {response.ErrorException}");
                     }
                     throw new Exception($"Encountered an unexpected response trying to refresh the token for {TokenData.ChatUser}. {response.StatusCode}: {response.Content}");
                 }
@@ -72,7 +80,7 @@ namespace LobotJR.Twitch
                 {
                     if (response.ErrorException != null || response.ErrorMessage != null)
                     {
-                        throw new Exception($"Encountered an exception trying to refresh the token for {TokenData.ChatUser}. {response.ErrorMessage}. {response.ErrorException.ToString()}");
+                        throw new Exception($"Encountered an exception trying to refresh the token for {TokenData.ChatUser}. {response.ErrorMessage}. {response.ErrorException}");
                     }
                     throw new Exception($"Encountered an unexpected response trying to refresh the token for {TokenData.BroadcastUser}. {response.StatusCode}: {response.Content}");
                 }

@@ -17,8 +17,8 @@ namespace LobotJR.Twitch
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         private static readonly string TimerKey = "WhisperQueue";
-        private IRepository<DataTimer> DataTimers;
-        private IRepository<AppSettings> AppSettings;
+        private readonly IConnectionManager ConnectionManager;
+        private readonly SettingsManager SettingsManager;
         private TimeSpan UniqueWhisperTimer = TimeSpan.FromDays(1);
         private int MaxRecipients;
 
@@ -41,13 +41,21 @@ namespace LobotJR.Twitch
         /// </summary>
         public HashSet<string> WhisperRecipients { get; set; } = new HashSet<string>();
 
-        public WhisperQueue(IRepositoryManager repositoryManager, int maxPerSecond, int maxPerMinute)
+        public WhisperQueue(IConnectionManager connectionManager, SettingsManager settingsManager, int maxPerSecond, int maxPerMinute)
         {
-            AppSettings = repositoryManager.AppSettings;
-            var currentSettings = AppSettings.Read().First();
-            DataTimers = repositoryManager.DataTimers;
+            ConnectionManager = connectionManager;
+            SettingsManager = settingsManager;
             SecondTimer = new RollingTimer(TimeSpan.FromSeconds(1), maxPerSecond);
             MinuteTimer = new RollingTimer(TimeSpan.FromMinutes(1), maxPerMinute);
+        }
+
+        /// <summary>
+        /// Updates the max recipient setting. This requires an open database
+        /// connection.
+        /// </summary>
+        public void UpdateMaxRecipients()
+        {
+            var currentSettings = SettingsManager.GetAppSettings();
             MaxRecipients = currentSettings.MaxWhisperRecipients;
             if (MaxRecipients == 0)
             {
@@ -121,23 +129,23 @@ namespace LobotJR.Twitch
         /// <param name="record">The record that was sent.</param>
         public void ReportSuccess(WhisperRecord record)
         {
-            var dataTimer = DataTimers.Read(x => x.Name.Equals(TimerKey)).FirstOrDefault();
+            var dataTimer = ConnectionManager.CurrentConnection.DataTimers.Read(x => x.Name.Equals(TimerKey)).FirstOrDefault();
             var timerUpdated = false;
             if (dataTimer == null)
             {
                 dataTimer = new DataTimer() { Name = TimerKey, Timestamp = DateTime.Now };
-                DataTimers.Create(dataTimer);
+                ConnectionManager.CurrentConnection.DataTimers.Create(dataTimer);
                 timerUpdated = true;
             }
             else if (DateTime.Now > dataTimer.Timestamp + UniqueWhisperTimer)
             {
                 dataTimer.Timestamp = DateTime.Now;
-                DataTimers.Update(dataTimer);
+                ConnectionManager.CurrentConnection.DataTimers.Update(dataTimer);
                 timerUpdated = true;
             }
             if (timerUpdated)
             {
-                DataTimers.Commit();
+                ConnectionManager.CurrentConnection.DataTimers.Commit();
                 WhisperRecipients.Clear();
             }
 
@@ -164,10 +172,8 @@ namespace LobotJR.Twitch
                 MinuteTimer.AddOccurrence(now);
             }
             MaxRecipients = WhisperRecipients.Count;
-            var currentSettings = AppSettings.Read().First();
+            var currentSettings = SettingsManager.GetAppSettings();
             currentSettings.MaxWhisperRecipients = MaxRecipients;
-            AppSettings.Update(currentSettings);
-            AppSettings.Commit();
             var toRemove = Queue.Where(x => !WhisperRecipients.Contains(x.User?.TwitchId));
             Queue = Queue.Except(toRemove).ToList();
         }

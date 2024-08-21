@@ -1,5 +1,7 @@
 ﻿using LobotJR.Command.Controller.Dungeons;
 using LobotJR.Command.Controller.Player;
+using LobotJR.Command.Controller.Twitch;
+using LobotJR.Command.Model.Dungeons;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using System;
@@ -12,12 +14,13 @@ namespace LobotJR.Command.View.Dungeons
     /// <summary>
     /// View containing commands for the group finder.
     /// </summary>
-    public class GroupFinderView : ICommandView
+    public class GroupFinderView : ICommandView, IPushNotifier
     {
         private readonly GroupFinderController GroupFinderController;
         private readonly DungeonController DungeonController;
         private readonly PartyController PartyController;
         private readonly PlayerController PlayerController;
+        private readonly UserController UserController;
 
         /// <summary>
         /// Prefix applied to names of commands within this view.
@@ -33,12 +36,14 @@ namespace LobotJR.Command.View.Dungeons
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public GroupFinderView(GroupFinderController groupFinderController, DungeonController dungeonController, PartyController partyController, PlayerController playerController)
+        public GroupFinderView(GroupFinderController groupFinderController, DungeonController dungeonController, PartyController partyController, PlayerController playerController, UserController userController)
         {
             GroupFinderController = groupFinderController;
             DungeonController = dungeonController;
             PartyController = partyController;
             PlayerController = playerController;
+            UserController = userController;
+            GroupFinderController.PartyFound += GroupFinderController_PartyFound;
             Commands = new List<CommandHandler>()
             {
                 new CommandHandler("DailyStatus", this, CommandMethod.GetInfo(DailyStatus), "daily"),
@@ -48,13 +53,23 @@ namespace LobotJR.Command.View.Dungeons
             };
         }
 
+        private void GroupFinderController_PartyFound(Party party)
+        {
+            var users = party.Members.Select(x => UserController.GetUserById(x.UserId));
+            foreach (var member in users)
+            {
+                PushNotification?.Invoke(member, new CommandResult($"You've been matched for {DungeonController.GetDungeonName(party.Run)} with: {string.Join(", ", users.Where(x => !x.TwitchId.Equals(member.TwitchId)).Select(x => x.Username))}."));
+            }
+            PushNotification?.Invoke(UserController.GetUserById(party.Leader.UserId), new CommandResult("You are the party leader. Whisper me '!start' to begin!"));
+        }
+
         public CommandResult DailyStatus(User user)
         {
             var player = PlayerController.GetPlayerByUser(user);
             var remaining = GroupFinderController.GetLockoutTime(player);
             if (remaining.TotalMilliseconds > 0)
             {
-                return new CommandResult($"Your daily Group Finder reward resets in {TimeSpan.FromSeconds(remaining.TotalSeconds).ToString("c")}.");
+                return new CommandResult($"Your daily Group Finder reward resets in {TimeSpan.FromSeconds(remaining.TotalSeconds):c}.");
             }
             return new CommandResult("You are eligible for daily Group Finder rewards! Go queue up!");
         }

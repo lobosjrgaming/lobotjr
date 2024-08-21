@@ -19,10 +19,6 @@ namespace LobotJR.Command.View.Twitch
         /// </summary>
         public string Name => "User.Admin";
         /// <summary>
-        /// This view does not send any push notifications.
-        /// </summary>
-        public event PushNotificationHandler PushNotification;
-        /// <summary>
         /// A collection of commands this view provides.
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }

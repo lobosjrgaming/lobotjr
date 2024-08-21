@@ -5,7 +5,7 @@ namespace LobotJR.Command.Model.Player
     /// <summary>
     /// A character class available for players to choose.
     /// </summary>
-    public class CharacterClass : TableObject, PlayerStats
+    public class CharacterClass : TableObject, IPlayerStats
     {
         /// <summary>
         /// The name of the class as shown to the players.

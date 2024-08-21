@@ -18,10 +18,6 @@ namespace LobotJR.Command.View.General
         /// </summary>
         public string Name => "Confirmation";
         /// <summary>
-        /// Triggered when the player confirms or cancels something.
-        /// </summary>
-        public event PushNotificationHandler PushNotification;
-        /// <summary>
         /// A collection of commands this view provides.
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
