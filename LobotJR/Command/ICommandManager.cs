@@ -1,6 +1,4 @@
-﻿using LobotJR.Command.Controller.Twitch;
-using LobotJR.Command.View;
-using LobotJR.Data;
+﻿using LobotJR.Command.View;
 using LobotJR.Twitch;
 using LobotJR.Twitch.Model;
 using System.Collections.Generic;
@@ -17,15 +15,6 @@ namespace LobotJR.Command
         /// Event raised when a view sends a push notification.
         /// </summary>
         event PushNotificationHandler PushNotifications;
-
-        /// <summary>
-        /// Repository manager for access to data.
-        /// </summary>
-        IRepositoryManager RepositoryManager { get; }
-        /// <summary>
-        /// User lookup service used to translate between usernames and user ids.
-        /// </summary>
-        UserController UserController { get; }
         /// <summary>
         /// List of ids for registered commands.
         /// </summary>

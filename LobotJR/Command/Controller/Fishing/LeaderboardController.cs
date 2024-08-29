@@ -14,8 +14,7 @@ namespace LobotJR.Command.Controller.Fishing
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        private readonly IRepository<LeaderboardEntry> Leaderboard;
-        private readonly IRepository<Catch> PersonalLeaderboard;
+        private readonly IConnectionManager ConnectionManager;
 
         /// <summary>
         /// Event handler for events related to the leaderboard.
@@ -28,10 +27,9 @@ namespace LobotJR.Command.Controller.Fishing
         /// </summary>
         public event LeaderboardEventHandler NewGlobalRecord;
 
-        public LeaderboardController(IRepositoryManager repositoryManager)
+        public LeaderboardController(IConnectionManager connectionManager)
         {
-            PersonalLeaderboard = repositoryManager.Catches;
-            Leaderboard = repositoryManager.FishingLeaderboard;
+            ConnectionManager = connectionManager;
         }
 
         /// <summary>
@@ -41,7 +39,7 @@ namespace LobotJR.Command.Controller.Fishing
         /// each fish.</returns>
         public IEnumerable<LeaderboardEntry> GetLeaderboard()
         {
-            return Leaderboard.Read();
+            return ConnectionManager.CurrentConnection.FishingLeaderboard.Read();
         }
 
         /// <summary>
@@ -51,7 +49,7 @@ namespace LobotJR.Command.Controller.Fishing
         /// <returns>A collection of records for the user.</returns>
         public IEnumerable<Catch> GetPersonalLeaderboard(User user)
         {
-            return PersonalLeaderboard.Read(x => x.UserId.Equals(user.TwitchId)).OrderBy(x => x.FishId);
+            return ConnectionManager.CurrentConnection.Catches.Read(x => x.UserId.Equals(user.TwitchId)).OrderBy(x => x.FishId);
         }
 
         /// <summary>
@@ -61,7 +59,7 @@ namespace LobotJR.Command.Controller.Fishing
         /// <returns>A collection of records for the user.</returns>
         public Catch GetUserRecordForFish(User user, Fish fish)
         {
-            return PersonalLeaderboard.Read(x => x.UserId.Equals(user.TwitchId) && x.Fish.Equals(fish)).FirstOrDefault();
+            return ConnectionManager.CurrentConnection.Catches.Read(x => x.UserId.Equals(user.TwitchId) && x.Fish.Equals(fish)).FirstOrDefault();
         }
 
         /// <summary>
@@ -80,20 +78,18 @@ namespace LobotJR.Command.Controller.Fishing
                 return false;
             }
 
-            var record = PersonalLeaderboard.Read(x => x.UserId.Equals(user.TwitchId) && x.Fish.Equals(catchData.Fish)).FirstOrDefault();
+            var record = ConnectionManager.CurrentConnection.Catches.Read(x => x.UserId.Equals(user.TwitchId) && x.Fish.Equals(catchData.Fish)).FirstOrDefault();
             if (record == null || record.Weight < catchData.Weight)
             {
                 Logger.Debug("Catch set a new personal record for user {user}, fish {fish} at {weight} pounds.", user.Username, catchData.Fish?.Name, catchData.Weight);
                 if (record == null)
                 {
-                    PersonalLeaderboard.Create(catchData);
+                    ConnectionManager.CurrentConnection.Catches.Create(catchData);
                 }
                 else
                 {
                     record.CopyFrom(catchData);
-                    PersonalLeaderboard.Update(record);
                 }
-                PersonalLeaderboard.Commit();
                 return true;
             }
             return false;
@@ -108,13 +104,12 @@ namespace LobotJR.Command.Controller.Fishing
         {
             if (user != null)
             {
-                var records = PersonalLeaderboard.Read(x => x.UserId.Equals(user.TwitchId)).OrderBy(x => x.FishId);
+                var records = ConnectionManager.CurrentConnection.Catches.Read(x => x.UserId.Equals(user.TwitchId)).OrderBy(x => x.FishId);
                 if (index >= 0 && records.Count() > index)
                 {
                     var record = records.ElementAt(index);
                     Logger.Debug("Removed fish {fish} at index {index} for user {user}", record?.Fish?.Name, index, user.Username);
-                    PersonalLeaderboard.Delete(record);
-                    PersonalLeaderboard.Commit();
+                    ConnectionManager.CurrentConnection.Catches.Delete(record);
                 }
             }
         }
@@ -140,20 +135,18 @@ namespace LobotJR.Command.Controller.Fishing
                 Weight = catchData.Weight,
                 UserId = catchData.UserId
             };
-            var record = Leaderboard.Read(x => x.Fish.Equals(catchData.Fish)).FirstOrDefault();
+            var record = ConnectionManager.CurrentConnection.FishingLeaderboard.Read(x => x.Fish.Equals(catchData.Fish)).FirstOrDefault();
             if (record == null || record.Weight < catchData.Weight)
             {
                 Logger.Debug("Catch set a new global record for fish {fish} at {weight} pounds.", catchData.Fish?.Name, catchData.Weight);
                 if (record == null)
                 {
-                    Leaderboard.Create(entry);
+                    ConnectionManager.CurrentConnection.FishingLeaderboard.Create(entry);
                 }
                 else
                 {
                     record.CopyFrom(entry);
-                    Leaderboard.Update(record);
                 }
-                Leaderboard.Commit();
                 NewGlobalRecord?.Invoke(entry);
                 return true;
             }

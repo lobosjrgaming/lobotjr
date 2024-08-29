@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 
 namespace LobotJR.Data
 {
@@ -20,13 +19,8 @@ namespace LobotJR.Data
         /// block, with all changes saved just before the context is disposed.
         /// </summary>
         /// <returns>A new connection to the database.</returns>
-        /// <exception cref="Exception">Thrown if a connection is already open.</exception>
         public IDatabase OpenConnection()
         {
-            if (CurrentConnection != null)
-            {
-                throw new Exception("Failed to open database connection, a connection is already open!");
-            }
             var context = new SqliteContext();
             context.Initialize();
             CurrentConnection = new SqliteRepositoryManager(context);
@@ -34,48 +28,23 @@ namespace LobotJR.Data
         }
 
         /// <summary>
-        /// Gets the metadata record for this database. If no record exists, a
-        /// new one will be created with default values.
+        /// Creates default data entries in the database needed for the app to
+        /// run. Only creates new entries if none already exist.
         /// </summary>
-        public Metadata SeedMetadata()
+        public void SeedData()
         {
-            var metadata = CurrentConnection.Metadata.Read().FirstOrDefault();
-            if (metadata == null)
+            if (!CurrentConnection.Metadata.Read().Any())
             {
-                metadata = new Metadata();
-                CurrentConnection.Metadata.Create(metadata);
+                CurrentConnection.Metadata.Create(new Metadata());
             }
-            return metadata;
-        }
-
-        /// <summary>
-        /// Gets the app settings for this database. If no record exists, a new
-        /// one will be created with default values.
-        /// </summary>
-        public AppSettings SeedAppSettings()
-        {
-            var appSettings = CurrentConnection.AppSettings.Read().FirstOrDefault();
-            if (appSettings == null)
+            if (!CurrentConnection.AppSettings.Read().Any())
             {
-                appSettings = new AppSettings();
-                CurrentConnection.AppSettings.Create(appSettings);
+                CurrentConnection.AppSettings.Create(new AppSettings());
             }
-            return appSettings;
-        }
-
-        /// <summary>
-        /// Gets the game settings for this database. If no record exists, a
-        /// new one will be created with default values.
-        /// </summary>
-        public GameSettings SeedGameSettings()
-        {
-            var gameSettings = CurrentConnection.GameSettings.Read().FirstOrDefault();
-            if (gameSettings == null)
+            if (!CurrentConnection.GameSettings.Read().Any())
             {
-                gameSettings = new GameSettings();
-                CurrentConnection.GameSettings.Create(gameSettings);
+                CurrentConnection.GameSettings.Create(new GameSettings());
             }
-            return gameSettings;
         }
     }
 }

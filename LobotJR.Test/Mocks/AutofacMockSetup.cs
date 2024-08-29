@@ -1,5 +1,4 @@
 ﻿using Autofac;
-using Autofac.Core;
 using LobotJR.Command;
 using LobotJR.Command.Controller;
 using LobotJR.Command.Controller.AccessControl;
@@ -22,43 +21,25 @@ using LobotJR.Command.View.Pets;
 using LobotJR.Command.View.Player;
 using LobotJR.Command.View.Twitch;
 using LobotJR.Data;
-using LobotJR.Data.Migration;
-using LobotJR.Shared.Authentication;
-using LobotJR.Shared.Client;
 using LobotJR.Trigger;
 using LobotJR.Trigger.Responder;
 using LobotJR.Twitch;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 
-namespace LobotJR.Utils
+namespace LobotJR.Test.Mocks
 {
-    public static class AutofacSetup
+    [TestClass]
+    public static class AutofacMockSetup
     {
-        public static IContainer SetupUpdater(ClientData clientData, TokenData tokenData)
-        {
-            var builder = new ContainerBuilder();
-
-            builder.RegisterType<DatabaseUpdate_Null_1_0_0>().As<IDatabaseUpdate>().InstancePerLifetimeScope()
-                .WithParameters(new Parameter[] { new TypedParameter(typeof(ClientData), clientData), new TypedParameter(typeof(TokenData), tokenData) });
-            builder.RegisterType<DatabaseUpdate_1_0_0_1_0_1>().As<IDatabaseUpdate>().InstancePerLifetimeScope();
-            builder.RegisterType<DatabaseUpdate_1_0_1_1_0_2>().As<IDatabaseUpdate>().InstancePerLifetimeScope();
-            builder.RegisterType<DatabaseUpdate_1_0_2_1_0_3>().As<IDatabaseUpdate>().InstancePerLifetimeScope();
-            builder.RegisterType<DatabaseUpdate_1_0_3_1_0_4>().As<IDatabaseUpdate>().InstancePerLifetimeScope();
-            builder.RegisterType<DatabaseUpdate_1_0_4_1_0_5>().As<IDatabaseUpdate>().InstancePerLifetimeScope();
-            builder.RegisterType<DatabaseUpdate_1_0_5_1_0_6>().As<IDatabaseUpdate>().InstancePerLifetimeScope();
-            builder.RegisterType<DatabaseUpdate_1_0_6_1_0_7>().As<IDatabaseUpdate>().InstancePerLifetimeScope();
-            builder.RegisterType<DatabaseUpdate_1_0_7_1_0_8>().As<IDatabaseUpdate>().InstancePerLifetimeScope();
-
-            builder.RegisterType<SqliteDatabaseUpdater>().AsSelf().InstancePerLifetimeScope();
-
-            return builder.Build();
-        }
+        public static IContainer Container { get; private set; }
 
         private static void RegisterDatabase(ContainerBuilder builder)
         {
             // builder.RegisterType<SqliteContext>().AsSelf().As<DbContext>().InstancePerLifetimeScope();
             // builder.RegisterType<SqliteRepositoryManager>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
             // These are created by the connection manager now, I think
-            builder.RegisterType<ConnectionManager>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
+            builder.RegisterType<MockConnectionManager>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
             builder.RegisterType<SettingsManager>().AsSelf().InstancePerLifetimeScope();
         }
 
@@ -114,6 +95,9 @@ namespace LobotJR.Utils
             builder.RegisterType<GroupFinderAdmin>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
 
             builder.RegisterType<GloatView>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
+
+            builder.RegisterType<MockCommandView>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
+            builder.RegisterType<MockCommandSubView>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
         }
 
         private static void RegisterTriggers(ContainerBuilder builder)
@@ -123,18 +107,17 @@ namespace LobotJR.Utils
             builder.RegisterType<BadLobot>().AsSelf().As<ITriggerResponder>().InstancePerLifetimeScope();
         }
 
-        private static void RegisterManagers(ContainerBuilder builder, ClientData clientData, TokenData tokenData)
+        private static void RegisterManagers(ContainerBuilder builder)
         {
-            builder.RegisterType<TwitchClient>().AsSelf().As<ITwitchClient>().InstancePerLifetimeScope()
-                .WithParameters(new Parameter[] { new TypedParameter(typeof(ClientData), clientData), new TypedParameter(typeof(TokenData), tokenData) });
-            builder.RegisterType<TwitchIrcClient>().AsSelf().As<ITwitchIrcClient>().InstancePerLifetimeScope()
-                .WithParameters(new Parameter[] { new TypedParameter(typeof(TokenData), tokenData) });
+            builder.RegisterType<MockTwitchClient>().AsSelf().As<ITwitchClient>().InstancePerLifetimeScope();
+            builder.RegisterInstance(new Mock<ITwitchIrcClient>().Object).InstancePerLifetimeScope();
             builder.RegisterType<ControllerManager>().AsSelf().As<IControllerManager>().InstancePerLifetimeScope();
             builder.RegisterType<CommandManager>().AsSelf().As<ICommandManager>().InstancePerLifetimeScope();
             builder.RegisterType<TriggerManager>().AsSelf().InstancePerLifetimeScope();
         }
 
-        public static IContainer Setup(ClientData clientData, TokenData tokenData)
+        [AssemblyInitialize]
+        public static void Setup()
         {
             var builder = new ContainerBuilder();
 
@@ -142,9 +125,19 @@ namespace LobotJR.Utils
             RegisterControllers(builder);
             RegisterViews(builder);
             RegisterTriggers(builder);
-            RegisterManagers(builder, clientData, tokenData);
+            RegisterManagers(builder);
 
-            return builder.Build();
+            var container = builder.Build();
+            var connectionManager = container.Resolve<MockConnectionManager>();
+            using (connectionManager.OpenConnection())
+            {
+                connectionManager.SeedData();
+            }
+
+            var commandManager = container.Resolve<ICommandManager>();
+            commandManager.InitializeViews();
+
+            Container = container;
         }
     }
 }

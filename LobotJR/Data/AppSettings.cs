@@ -9,7 +9,7 @@
         /// The amount of time, in minutes, to wait between calls to update the
         /// viewer, mod, sub, and vip lists.
         /// </summary>
-        public int UserDatabaseUpdateTime { get; set; } = 15;
+        public int UserDatabaseUpdateTime { get; set; } = 1440;
         /// <summary>
         /// The amount of time, in seconds, to wait between the initial request
         /// for a user lookup and the actual call to allow for additional

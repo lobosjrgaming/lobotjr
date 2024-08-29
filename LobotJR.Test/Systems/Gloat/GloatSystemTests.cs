@@ -1,109 +1,133 @@
-﻿using LobotJR.Command.Controller.Gloat;
+﻿using Autofac;
+using LobotJR.Command.Controller.Gloat;
+using LobotJR.Command.Controller.Player;
 using LobotJR.Data;
 using LobotJR.Test.Mocks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System.Collections.Generic;
 using System.Linq;
-using Wolfcoins;
 
 namespace LobotJR.Test.Systems.Gloat
 {
     [TestClass]
     public class GloatSystemTests
     {
-        private SqliteRepositoryManager Manager;
-        private GloatController GloatSystem;
-        private Dictionary<string, int> Wolfcoins;
+        private IConnectionManager ConnectionManager;
+        private SettingsManager SettingsManager;
+        private PlayerController PlayerController;
+        private GloatController GloatController;
 
         [TestInitialize]
         public void Initialize()
         {
-            Manager = new SqliteRepositoryManager(MockContext.Create());
-            var currency = new Currency();
-            Wolfcoins = currency.coinList;
-
-            GloatSystem = new GloatSystem(Manager, currency);
+            ConnectionManager = AutofacMockSetup.Container.Resolve<IConnectionManager>();
+            SettingsManager = AutofacMockSetup.Container.Resolve<SettingsManager>();
+            PlayerController = AutofacMockSetup.Container.Resolve<PlayerController>();
+            GloatController = AutofacMockSetup.Container.Resolve<GloatController>();
         }
 
         [TestMethod]
         public void CanGloatReturnsTrueWithEnoughCoins()
         {
-            var user = Manager.Users.Read().First();
-            Wolfcoins.Add(user.Username, Manager.GameSettings.Read().First().FishingGloatCost);
-            var canGloat = GloatSystem.CanGloatFishing(user);
-            Assert.IsTrue(canGloat);
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var user = db.Users.Read().First();
+                PlayerController.GetPlayerByUser(user).Currency += SettingsManager.GetGameSettings().FishingGloatCost;
+                var canGloat = GloatController.CanGloatFishing(user);
+                Assert.IsTrue(canGloat);
+            }
         }
 
         [TestMethod]
         public void CanGloatReturnsFalseWithoutEnoughCoins()
         {
-            var user = Manager.Users.Read().First();
-            Wolfcoins.Add(user.Username, Manager.GameSettings.Read().First().FishingGloatCost - 1);
-            var canGloat = GloatSystem.CanGloatFishing(user);
-            Assert.IsFalse(canGloat);
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var user = db.Users.Read().First();
+                PlayerController.GetPlayerByUser(user).Currency += SettingsManager.GetGameSettings().FishingGloatCost - 1;
+                var canGloat = GloatController.CanGloatFishing(user);
+                Assert.IsFalse(canGloat);
+            }
         }
 
         [TestMethod]
         public void CanGloatReturnsFalseWithNoCoinEntry()
         {
-            var user = Manager.Users.Read().First();
-            var canGloat = GloatSystem.CanGloatFishing(user);
-            Assert.IsFalse(canGloat);
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var user = db.Users.Read().First();
+                var canGloat = GloatController.CanGloatFishing(user);
+                Assert.IsFalse(canGloat);
+            }
         }
 
         [TestMethod]
         public void GloatReturnsCorrectRecordAndRemovesCoins()
         {
-            var user = Manager.Users.Read().First();
-            var userId = user.TwitchId;
-            var expectedFish = Manager.Catches.Read(x => x.UserId.Equals(userId)).OrderBy(x => x.FishId).First();
-            Wolfcoins.Add(user.Username, Manager.GameSettings.Read().First().FishingGloatCost);
-            var gloat = GloatSystem.FishingGloat(user, 0);
-            Assert.AreEqual(0, Wolfcoins[user.Username]);
-            Assert.AreEqual(expectedFish.FishId, gloat.FishId);
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var user = db.Users.Read().First();
+                var userId = user.TwitchId;
+                var expectedFish = db.Catches.Read(x => x.UserId.Equals(userId)).OrderBy(x => x.FishId).First();
+                var player = PlayerController.GetPlayerByUser(user);
+                player.Currency += SettingsManager.GetGameSettings().FishingGloatCost;
+                var gloat = GloatController.FishingGloat(user, 0);
+                Assert.AreEqual(0, player.Currency);
+                Assert.AreEqual(expectedFish.FishId, gloat.FishId);
+            }
         }
 
         [TestMethod]
         public void GloatReturnsNullWithNoRecords()
         {
-            var user = Manager.Users.Read().First();
-            var userId = user.TwitchId;
-            var records = Manager.Catches.Read(x => x.UserId.Equals(userId)).ToList();
-            foreach (var record in records)
+            using (var db = ConnectionManager.OpenConnection())
             {
-                Manager.Catches.Delete(record);
+                var user = db.Users.Read().First();
+                var userId = user.TwitchId;
+                var records = db.Catches.Read(x => x.UserId.Equals(userId)).ToList();
+                foreach (var record in records)
+                {
+                    db.Catches.Delete(record);
+                }
+                db.Catches.Commit();
+                var cost = SettingsManager.GetGameSettings().FishingGloatCost;
+                var player = PlayerController.GetPlayerByUser(user);
+                player.Currency += cost;
+                var gloat = GloatController.FishingGloat(user, 0);
+                Assert.AreEqual(cost, player.Currency);
+                Assert.IsNull(gloat);
             }
-            Manager.Catches.Commit();
-            var cost = Manager.GameSettings.Read().First().FishingGloatCost;
-            Wolfcoins.Add(user.Username, cost);
-            var gloat = GloatSystem.FishingGloat(user, 0);
-            Assert.AreEqual(cost, Wolfcoins[user.Username]);
-            Assert.IsNull(gloat);
         }
 
         [TestMethod]
         public void GloatReturnsNullWithNegativeIndex()
         {
-            var user = Manager.Users.Read().First();
-            var userId = user.TwitchId;
-            var cost = Manager.GameSettings.Read().First().FishingGloatCost;
-            Wolfcoins.Add(user.Username, cost);
-            var gloat = GloatSystem.FishingGloat(user, -1);
-            Assert.AreEqual(cost, Wolfcoins[user.Username]);
-            Assert.IsNull(gloat);
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var user = db.Users.Read().First();
+                var cost = SettingsManager.GetGameSettings().FishingGloatCost;
+                var player = PlayerController.GetPlayerByUser(user);
+                player.Currency += cost;
+                var gloat = GloatController.FishingGloat(user, -1);
+                Assert.AreEqual(cost, player.Currency);
+                Assert.IsNull(gloat);
+            }
         }
 
         [TestMethod]
         public void GloatReturnsNullWithTooHighIndex()
         {
-            var user = Manager.Users.Read().First();
-            var userId = user.TwitchId;
-            var cost = Manager.GameSettings.Read().First().FishingGloatCost;
-            var recordCount = Manager.Catches.Read(x => x.UserId.Equals(userId)).Count();
-            Wolfcoins.Add(user.Username, cost);
-            var gloat = GloatSystem.FishingGloat(user, recordCount);
-            Assert.AreEqual(cost, Wolfcoins[user.Username]);
-            Assert.IsNull(gloat);
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var user = db.Users.Read().First();
+                var userId = user.TwitchId;
+                var cost = SettingsManager.GetGameSettings().FishingGloatCost;
+                var recordCount = db.Catches.Read(x => x.UserId.Equals(userId)).Count();
+                var player = PlayerController.GetPlayerByUser(user);
+                player.Currency += cost;
+                var gloat = GloatController.FishingGloat(user, recordCount);
+                Assert.AreEqual(cost, player.Currency);
+                Assert.IsNull(gloat);
+            }
         }
     }
 }

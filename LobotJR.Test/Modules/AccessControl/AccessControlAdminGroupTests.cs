@@ -1,4 +1,8 @@
-﻿using LobotJR.Utils;
+﻿using Autofac;
+using LobotJR.Command.View.AccessControl;
+using LobotJR.Data;
+using LobotJR.Test.Mocks;
+using LobotJR.Utils;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Linq;
@@ -6,123 +10,151 @@ using System.Linq;
 namespace LobotJR.Test.Modules.AccessControl
 {
     [TestClass]
-    public class AccessControlAdminGroupTests : AccessControlAdminBase
+    public class AccessControlAdminGroupTests
     {
+        private IConnectionManager ConnectionManager;
+        private AccessControlView Module;
+
         [TestInitialize]
         public void Initialize()
         {
-            InitializeAccessControlModule();
+            ConnectionManager = AutofacMockSetup.Container.Resolve<IConnectionManager>();
+            Module = AutofacMockSetup.Container.Resolve<AccessControlView>();
         }
 
         [TestMethod]
         public void ListsGroups()
         {
-            var command = Module.Commands.Where(x => x.Name.Equals("ListGroups")).FirstOrDefault();
-            var user = CommandManager.RepositoryManager.Users.Read().First();
-            var result = command.Executor.Execute(user, "");
-            Assert.IsTrue(result.Processed);
-            Assert.AreEqual(1, result.Responses.Count());
-            Assert.IsTrue(result.Responses[0].Contains(AccessGroups.Count.ToString()));
-            Assert.IsTrue(result.Responses.Any(x => x.Contains("TestGroup")));
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var command = Module.Commands.Where(x => x.Name.Equals("ListGroups")).FirstOrDefault();
+                var user = db.Users.Read().First();
+                var result = command.Executor.Execute(user, "");
+                Assert.IsTrue(result.Processed);
+                Assert.AreEqual(1, result.Responses.Count());
+                Assert.IsTrue(result.Responses[0].Contains(db.AccessGroups.Read().Count().ToString()));
+                Assert.IsTrue(result.Responses.Any(x => x.Contains("TestGroup")));
+            }
         }
 
         [TestMethod]
         public void CreatesANewGroup()
         {
-            var initialCount = CommandManager.RepositoryManager.AccessGroups.Read().Count();
-            var command = Module.Commands.Where(x => x.Name.Equals("CreateGroup")).FirstOrDefault();
-            var user = CommandManager.RepositoryManager.Users.Read().First();
-            var result = command.Executor.Execute(user, "NewTestGroup");
-            Assert.IsTrue(result.Processed);
-            Assert.AreEqual(1, result.Responses.Count());
-            Assert.IsTrue(result.Responses.Any(x => x.Contains("success", StringComparison.OrdinalIgnoreCase)));
-            Assert.AreEqual(initialCount + 1, CommandManager.RepositoryManager.AccessGroups.Read().Count());
-            Assert.IsTrue(CommandManager.RepositoryManager.AccessGroups.Read().Any(x => x.Name.Equals("NewTestGroup")));
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var initialCount = db.AccessGroups.Read().Count();
+                var command = Module.Commands.Where(x => x.Name.Equals("CreateGroup")).FirstOrDefault();
+                var user = db.Users.Read().First();
+                var result = command.Executor.Execute(user, "NewTestGroup");
+                Assert.IsTrue(result.Processed);
+                Assert.AreEqual(1, result.Responses.Count());
+                Assert.IsTrue(result.Responses.Any(x => x.Contains("success", StringComparison.OrdinalIgnoreCase)));
+                Assert.AreEqual(initialCount + 1, db.AccessGroups.Read().Count());
+                Assert.IsTrue(db.AccessGroups.Read().Any(x => x.Name.Equals("NewTestGroup")));
+            }
         }
 
         [TestMethod]
         public void CreateGroupErrorsOnDuplicateGroupName()
         {
-            var initialCount = CommandManager.RepositoryManager.AccessGroups.Read().Count();
-            var command = Module.Commands.Where(x => x.Name.Equals("CreateGroup")).FirstOrDefault();
-            var user = CommandManager.RepositoryManager.Users.Read().First();
-            var result = command.Executor.Execute(user, "TestGroup");
-            Assert.IsTrue(result.Processed);
-            Assert.AreEqual(1, result.Responses.Count());
-            Assert.IsTrue(result.Responses.Any(x => x.Contains("Error", StringComparison.OrdinalIgnoreCase)));
-            Assert.AreEqual(initialCount, CommandManager.RepositoryManager.AccessGroups.Read().Count());
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var initialCount = db.AccessGroups.Read().Count();
+                var command = Module.Commands.Where(x => x.Name.Equals("CreateGroup")).FirstOrDefault();
+                var user = db.Users.Read().First();
+                var result = command.Executor.Execute(user, "TestGroup");
+                Assert.IsTrue(result.Processed);
+                Assert.AreEqual(1, result.Responses.Count());
+                Assert.IsTrue(result.Responses.Any(x => x.Contains("Error", StringComparison.OrdinalIgnoreCase)));
+                Assert.AreEqual(initialCount, db.AccessGroups.Read().Count());
+            }
         }
 
         [TestMethod]
         public void DescribesGroup()
         {
-            var command = Module.Commands.Where(x => x.Name.Equals("DescribeGroup")).FirstOrDefault();
-            var group = CommandManager.RepositoryManager.AccessGroups.Read().FirstOrDefault();
-            var user = CommandManager.RepositoryManager.Users.Read().First();
-            var result = command.Executor.Execute(user, "TestGroup");
-            Assert.IsTrue(result.Processed);
-            Assert.AreEqual(2, result.Responses.Count());
-            Assert.IsTrue(result.Responses.All(x => x.Contains("TestGroup")));
-            var restrictions = CommandManager.RepositoryManager.Restrictions.Read(x => x.GroupId == group.Id);
-            var enrollments = CommandManager.RepositoryManager.Enrollments.Read(x => x.GroupId == group.Id);
-            foreach (var commandString in restrictions)
+            using (var db = ConnectionManager.OpenConnection())
             {
-                Assert.IsTrue(result.Responses.Any(x => x.Contains(commandString.Command)));
-            }
-            foreach (var enrollment in enrollments)
-            {
-                var username = CommandManager.UserController.GetUserById(enrollment.UserId).Username;
-                Assert.IsTrue(result.Responses.Any(x => x.Contains(username, StringComparison.OrdinalIgnoreCase)));
+                var command = Module.Commands.Where(x => x.Name.Equals("DescribeGroup")).FirstOrDefault();
+                var group = db.AccessGroups.Read().FirstOrDefault();
+                var user = db.Users.Read().First();
+                var result = command.Executor.Execute(user, "TestGroup");
+                Assert.IsTrue(result.Processed);
+                Assert.AreEqual(2, result.Responses.Count());
+                Assert.IsTrue(result.Responses.All(x => x.Contains("TestGroup")));
+                var restrictions = db.Restrictions.Read(x => x.GroupId == group.Id);
+                var enrollments = db.Enrollments.Read(x => x.GroupId == group.Id);
+                foreach (var commandString in restrictions)
+                {
+                    Assert.IsTrue(result.Responses.Any(x => x.Contains(commandString.Command)));
+                }
+                foreach (var enrollment in enrollments)
+                {
+                    var username = db.Users.Read(x => x.TwitchId.Equals(enrollment.UserId)).First().Username;
+                    Assert.IsTrue(result.Responses.Any(x => x.Contains(username, StringComparison.OrdinalIgnoreCase)));
+                }
             }
         }
 
         [TestMethod]
         public void DescribeGroupErrorsOnGroupNotFound()
         {
-            var command = Module.Commands.Where(x => x.Name.Equals("DescribeGroup")).FirstOrDefault();
-            var user = CommandManager.RepositoryManager.Users.Read().First();
-            var result = command.Executor.Execute(user, "NotTestGroup");
-            Assert.IsTrue(result.Processed);
-            Assert.AreEqual(1, result.Responses.Count());
-            Assert.IsTrue(result.Responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var command = Module.Commands.Where(x => x.Name.Equals("DescribeGroup")).FirstOrDefault();
+                var user = db.Users.Read().First();
+                var result = command.Executor.Execute(user, "NotTestGroup");
+                Assert.IsTrue(result.Processed);
+                Assert.AreEqual(1, result.Responses.Count());
+                Assert.IsTrue(result.Responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
+            }
         }
 
         [TestMethod]
         public void DeletesAGroup()
         {
-            var initialCount = CommandManager.RepositoryManager.AccessGroups.Read().Count();
-            var user = CommandManager.RepositoryManager.Users.Read().First();
-            var add = Module.Commands.Where(x => x.Name.Equals("CreateGroup")).FirstOrDefault();
-            add.Executor.Execute(user, "NewTestGroup");
-            Assert.AreEqual(initialCount + 1, CommandManager.RepositoryManager.AccessGroups.Read().Count());
-            var command = Module.Commands.Where(x => x.Name.Equals("DeleteGroup")).FirstOrDefault();
-            var result = command.Executor.Execute(user, "NewTestGroup");
-            Assert.IsTrue(result.Processed);
-            Assert.AreEqual(1, result.Responses.Count());
-            Assert.AreEqual(initialCount, CommandManager.RepositoryManager.AccessGroups.Read().Count());
-            Assert.IsTrue(result.Responses.Any(x => x.Contains("success", StringComparison.OrdinalIgnoreCase)));
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var initialCount = db.AccessGroups.Read().Count();
+                var user = db.Users.Read().First();
+                var add = Module.Commands.Where(x => x.Name.Equals("CreateGroup")).FirstOrDefault();
+                add.Executor.Execute(user, "NewTestGroup");
+                Assert.AreEqual(initialCount + 1, db.AccessGroups.Read().Count());
+                var command = Module.Commands.Where(x => x.Name.Equals("DeleteGroup")).FirstOrDefault();
+                var result = command.Executor.Execute(user, "NewTestGroup");
+                Assert.IsTrue(result.Processed);
+                Assert.AreEqual(1, result.Responses.Count());
+                Assert.AreEqual(initialCount, db.AccessGroups.Read().Count());
+                Assert.IsTrue(result.Responses.Any(x => x.Contains("success", StringComparison.OrdinalIgnoreCase)));
+            }
         }
 
         [TestMethod]
         public void DeleteGroupErrorsOnDeleteNonEmptyGroup()
         {
-            var command = Module.Commands.Where(x => x.Name.Equals("DeleteGroup")).FirstOrDefault();
-            var user = CommandManager.RepositoryManager.Users.Read().First();
-            var result = command.Executor.Execute(user, "TestGroup");
-            Assert.IsTrue(result.Processed);
-            Assert.AreEqual(1, result.Responses.Count());
-            Assert.IsTrue(result.Responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var command = Module.Commands.Where(x => x.Name.Equals("DeleteGroup")).FirstOrDefault();
+                var user = db.Users.Read().First();
+                var result = command.Executor.Execute(user, "TestGroup");
+                Assert.IsTrue(result.Processed);
+                Assert.AreEqual(1, result.Responses.Count());
+                Assert.IsTrue(result.Responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
+            }
         }
 
         [TestMethod]
         public void DeleteGroupErrorsOnGroupNotFound()
         {
-            var command = Module.Commands.Where(x => x.Name.Equals("DeleteGroup")).FirstOrDefault();
-            var user = CommandManager.RepositoryManager.Users.Read().First();
-            var result = command.Executor.Execute(user, "NotTestGroup");
-            Assert.IsTrue(result.Processed);
-            Assert.AreEqual(1, result.Responses.Count());
-            Assert.IsTrue(result.Responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var command = Module.Commands.Where(x => x.Name.Equals("DeleteGroup")).FirstOrDefault();
+                var user = db.Users.Read().First();
+                var result = command.Executor.Execute(user, "NotTestGroup");
+                Assert.IsTrue(result.Processed);
+                Assert.AreEqual(1, result.Responses.Count());
+                Assert.IsTrue(result.Responses.Any(x => x.StartsWith("Error:", StringComparison.OrdinalIgnoreCase)));
+            }
         }
     }
 }

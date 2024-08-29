@@ -9,11 +9,10 @@ namespace LobotJR.Test.Mocks
     /// <summary>
     /// Mock Command Module used for testing command manager functionality.
     /// </summary>
-    public class MockCommandModule : ICommandView
+    public class MockCommandView : ICommandView
     {
         public string Name => "CommandMock";
         public IEnumerable<CommandHandler> Commands { get; private set; }
-        public event PushNotificationHandler PushNotification;
 
         public int FooCount { get; private set; } = 0;
         public int FooCountCompact { get; private set; } = 0;
@@ -30,9 +29,10 @@ namespace LobotJR.Test.Mocks
         public int UserAndOptionalParamCount { get; private set; } = 0;
         public int UserParamCount { get; private set; } = 0;
         public int UserAndStringParamCount { get; private set; } = 0;
-        public int TotalCount { get { return FooCount + FooCountCompact + PublicCount + ModFooCount + SubFooCount + VipFooCount + AdminFooCount + SingleParamCount + MultiParamCount + IntParamCount + BoolParamCount + OptionalParamCount + UserAndOptionalParamCount + UserParamCount + UserAndStringParamCount; } }
+        public int NoParseCount { get; private set; } = 0;
+        public int TotalCount { get { return FooCount + FooCountCompact + PublicCount + ModFooCount + SubFooCount + VipFooCount + AdminFooCount + SingleParamCount + MultiParamCount + IntParamCount + BoolParamCount + OptionalParamCount + UserAndOptionalParamCount + UserParamCount + UserAndStringParamCount + NoParseCount; } }
 
-        public MockCommandModule()
+        public MockCommandView()
         {
             Commands = new CommandHandler[]
             {
@@ -51,6 +51,7 @@ namespace LobotJR.Test.Mocks
                 new CommandHandler("UserAndOptionalParam", this, CommandMethod.GetInfo<string>(UserAndOptionalParam), "UserAndOptionalParam"),
                 new CommandHandler("UserParam", this, CommandMethod.GetInfo(UserParam), "UserParam"),
                 new CommandHandler("UserAndStringParam", this, CommandMethod.GetInfo<string>(UserAndStringParam), "UserAndStringParam"),
+                new CommandHandler("NoParse", new CommandExecutor(this, CommandMethod.GetInfo<string>(NoParse), true), "NoParse")
             };
         }
 
@@ -143,16 +144,21 @@ namespace LobotJR.Test.Mocks
             FooCountCompact++;
             return new CompactCollection<string>(new string[] { data }, x => $"Foo|{x};");
         }
+
+        public CommandResult NoParse(string p1)
+        {
+            NoParseCount++;
+            return new CommandResult($"Received parameter {p1}");
+        }
     }
 
-    public class MockCommandSubModule : ICommandView
+    public class MockCommandSubView : ICommandView
     {
         public string Name => "CommandMock.SubMock";
         public IEnumerable<CommandHandler> Commands { get; private set; }
-        public event PushNotificationHandler PushNotification;
 
         public int FoobarCount { get; private set; } = 0;
-        public MockCommandSubModule()
+        public MockCommandSubView()
         {
             Commands = new CommandHandler[]
             {

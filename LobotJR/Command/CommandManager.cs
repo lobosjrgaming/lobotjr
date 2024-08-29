@@ -1,5 +1,4 @@
 ﻿using Autofac;
-using LobotJR.Command.Controller.Twitch;
 using LobotJR.Command.View;
 using LobotJR.Data;
 using LobotJR.Twitch;
@@ -29,6 +28,7 @@ namespace LobotJR.Command
         private readonly Dictionary<string, CompactExecutor> compactIdToExecutorMap = new Dictionary<string, CompactExecutor>();
         private readonly List<string> whisperOnlyCommands = new List<string>();
         private readonly Dictionary<string, Regex> commandStringRegexMap = new Dictionary<string, Regex>();
+        private readonly IConnectionManager ConnectionManager;
 
         /// <summary>
         /// Event raised when a view sends a push notification.
@@ -39,14 +39,6 @@ namespace LobotJR.Command
         /// Command views to be loaded.
         /// </summary>
         public IEnumerable<ICommandView> CommandViews { get; private set; }
-        /// <summary>
-        /// Repository manager for access to stored data types.
-        /// </summary>
-        public IRepositoryManager RepositoryManager { get; set; }
-        /// <summary>
-        /// User lookup service used to translate between usernames and user ids.
-        /// </summary>
-        public UserController UserController { get; private set; }
         /// <summary>
         /// List of ids for registered commands.
         /// </summary>
@@ -126,11 +118,11 @@ namespace LobotJR.Command
 
         private bool CanUserExecute(string commandId, User user)
         {
-            var restrictions = RepositoryManager.Restrictions.Read().Where(x => Restriction.CoversCommand(x.Command, commandId));
+            var restrictions = ConnectionManager.CurrentConnection.Restrictions.Read().Where(x => Restriction.CoversCommand(x.Command, commandId));
             if (restrictions.Any())
             {
                 var groupIds = restrictions.Select(x => x.GroupId).ToList();
-                var groups = RepositoryManager.AccessGroups.Read().Where(x => groupIds.Contains(x.Id));
+                var groups = ConnectionManager.CurrentConnection.AccessGroups.Read().Where(x => groupIds.Contains(x.Id));
 
                 if ((user.IsMod && groups.Any(x => x.IncludeMods))
                     || (user.IsVip && groups.Any(x => x.IncludeVips))
@@ -140,7 +132,7 @@ namespace LobotJR.Command
                     return true;
                 }
 
-                var enrollments = RepositoryManager.Enrollments.Read().Where(x => x.UserId.Equals(user.TwitchId, StringComparison.OrdinalIgnoreCase));
+                var enrollments = ConnectionManager.CurrentConnection.Enrollments.Read().Where(x => x.UserId.Equals(user.TwitchId, StringComparison.OrdinalIgnoreCase));
                 return enrollments.Any(x => groupIds.Contains(x.GroupId));
             }
             return true;
@@ -151,11 +143,10 @@ namespace LobotJR.Command
             return !whisperOnlyCommands.Contains(commandId);
         }
 
-        public CommandManager(IEnumerable<ICommandView> views, IEnumerable<IMetaController> metaControllers, IRepositoryManager repositoryManager, UserController userController)
+        public CommandManager(IEnumerable<ICommandView> views, IEnumerable<IMetaController> metaControllers, IConnectionManager connectionManager)
         {
             CommandViews = views;
-            RepositoryManager = repositoryManager;
-            UserController = userController;
+            ConnectionManager = connectionManager;
             foreach (var meta in metaControllers)
             {
                 meta.CommandManager = this;

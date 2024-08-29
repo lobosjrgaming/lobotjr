@@ -1,7 +1,8 @@
-﻿using LobotJR.Command;
+﻿using Autofac;
+using LobotJR.Command;
+using LobotJR.Command.Controller.Fishing;
 using LobotJR.Command.View;
 using LobotJR.Command.View.Fishing;
-using LobotJR.Command.Controller.Fishing;
 using LobotJR.Data;
 using LobotJR.Test.Mocks;
 using LobotJR.Twitch.Model;
@@ -18,21 +19,22 @@ namespace LobotJR.Test.Modules.Fishing
     [TestClass]
     public class FishingModuleTests
     {
-        private SqliteRepositoryManager Manager;
-        private FishingController FishingSystem;
-        private TournamentController TournamentSystem;
-        private LeaderboardController LeaderboardSystem;
-        private FishingView FishingModule;
+        private IConnectionManager ConnectionManager;
+        private SettingsManager SettingsManager;
+        private FishingController FishingController;
+        private TournamentController TournamentController;
+        private LeaderboardController LeaderboardController;
+        private FishingView FishingView;
 
         [TestInitialize]
         public void Initialize()
         {
-            Manager = new SqliteRepositoryManager(MockContext.Create());
-
-            FishingSystem = new FishingSystem(Manager, Manager);
-            LeaderboardSystem = new LeaderboardSystem(Manager);
-            TournamentSystem = new TournamentSystem(FishingSystem, LeaderboardSystem, Manager);
-            FishingModule = new FishingView(FishingSystem, TournamentSystem, LeaderboardSystem);
+            ConnectionManager = AutofacMockSetup.Container.Resolve<IConnectionManager>();
+            SettingsManager = AutofacMockSetup.Container.Resolve<SettingsManager>();
+            FishingController = AutofacMockSetup.Container.Resolve<FishingController>();
+            LeaderboardController = AutofacMockSetup.Container.Resolve<LeaderboardController>();
+            TournamentController = AutofacMockSetup.Container.Resolve<TournamentController>();
+            FishingView = AutofacMockSetup.Container.Resolve<FishingView>();
         }
 
         [TestMethod]
@@ -44,167 +46,197 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void PushesNotificationOnFishHooked()
         {
-            var handlerMock = new Mock<PushNotificationHandler>();
-            FishingModule.PushNotification += handlerMock.Object;
-            var user = Manager.Users.Read().First();
-            var fisher = FishingSystem.GetFisherByUser(user);
-            fisher.IsFishing = true;
-            fisher.HookedTime = DateTime.Now;
-            FishingSystem.Process(true);
-            handlerMock.Verify(x => x(It.IsAny<User>(), It.IsAny<CommandResult>()), Times.Once);
-            var result = handlerMock.Invocations[0].Arguments[1] as CommandResult;
-            Assert.IsTrue(result.Responses.Any(x => x.Contains("!catch")));
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var handlerMock = new Mock<PushNotificationHandler>();
+                FishingView.PushNotification += handlerMock.Object;
+                var user = db.Users.Read().First();
+                var fisher = FishingController.GetFisherByUser(user);
+                fisher.IsFishing = true;
+                fisher.HookedTime = DateTime.Now;
+                FishingController.Process();
+                handlerMock.Verify(x => x(It.IsAny<User>(), It.IsAny<CommandResult>()), Times.Once);
+                var result = handlerMock.Invocations[0].Arguments[1] as CommandResult;
+                Assert.IsTrue(result.Responses.Any(x => x.Contains("!catch")));
+            }
         }
 
         [TestMethod]
         public void PushesNotificationOnFishGotAway()
         {
-            var handlerMock = new Mock<PushNotificationHandler>();
-            var appSettings = Manager.AppSettings.Read().First();
-            FishingModule.PushNotification += handlerMock.Object;
-            var user = Manager.Users.Read().First();
-            var fisher = FishingSystem.GetFisherByUser(user);
-            fisher.IsFishing = true;
-            fisher.Hooked = Manager.FishData.Read().First();
-            fisher.HookedTime = DateTime.Now.AddSeconds(-appSettings.FishingHookLength);
-            FishingSystem.Process(true);
-            handlerMock.Verify(x => x(It.IsAny<User>(), It.IsAny<CommandResult>()), Times.Once);
-            var result = handlerMock.Invocations[0].Arguments[1] as CommandResult;
-            Assert.IsFalse(result.Responses.Any(x => x.Contains("!catch")));
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var handlerMock = new Mock<PushNotificationHandler>();
+                var settings = SettingsManager.GetGameSettings();
+                FishingView.PushNotification += handlerMock.Object;
+                var user = db.Users.Read().First();
+                var fisher = FishingController.GetFisherByUser(user);
+                fisher.IsFishing = true;
+                fisher.Hooked = db.FishData.Read().First();
+                fisher.HookedTime = DateTime.Now.AddSeconds(-settings.FishingHookLength);
+                FishingController.Process();
+                handlerMock.Verify(x => x(It.IsAny<User>(), It.IsAny<CommandResult>()), Times.Once);
+                var result = handlerMock.Invocations[0].Arguments[1] as CommandResult;
+                Assert.IsFalse(result.Responses.Any(x => x.Contains("!catch")));
+            }
         }
 
         [TestMethod]
         public void CancelsCast()
         {
-            var user = Manager.Users.Read().First();
-            var fisher = FishingSystem.GetFisherByUser(user);
-            fisher.IsFishing = true;
-            var response = FishingModule.CancelCast(user);
-            var responses = response.Responses;
-            Assert.IsTrue(response.Processed);
-            Assert.AreEqual(0, response.Errors.Count);
-            Assert.AreEqual(1, responses.Count);
-            Assert.IsFalse(fisher.IsFishing);
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var user = db.Users.Read().First();
+                var fisher = FishingController.GetFisherByUser(user);
+                fisher.IsFishing = true;
+                var response = FishingView.CancelCast(user);
+                var responses = response.Responses;
+                Assert.IsTrue(response.Processed);
+                Assert.AreEqual(0, response.Errors.Count);
+                Assert.AreEqual(1, responses.Count);
+                Assert.IsFalse(fisher.IsFishing);
+            }
         }
 
         [TestMethod]
         public void CancelCastFailsIfLineNotCast()
         {
-            var user = Manager.Users.Read().First();
-            var fisher = FishingSystem.GetFisherByUser(user);
-            fisher.IsFishing = false;
-            var response = FishingModule.CancelCast(user);
-            var responses = response.Responses;
-            Assert.IsTrue(response.Processed);
-            Assert.AreEqual(0, response.Errors.Count);
-            Assert.AreEqual(1, responses.Count);
-            Assert.IsFalse(fisher.IsFishing);
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var user = db.Users.Read().First();
+                var fisher = FishingController.GetFisherByUser(user);
+                fisher.IsFishing = false;
+                var response = FishingView.CancelCast(user);
+                var responses = response.Responses;
+                Assert.IsTrue(response.Processed);
+                Assert.AreEqual(0, response.Errors.Count);
+                Assert.AreEqual(1, responses.Count);
+                Assert.IsFalse(fisher.IsFishing);
+            }
         }
 
         [TestMethod]
         public void CatchesFish()
         {
-            var user = Manager.Users.Read().First();
-            var fisher = FishingSystem.GetFisherByUser(user);
-            TournamentSystem.StartTournament();
-            DataUtils.ClearFisherRecords(Manager, user);
-            fisher.IsFishing = true;
-            fisher.HookedTime = DateTime.Now;
-            fisher.Hooked = Manager.FishData.Read().First();
-            var response = FishingModule.CatchFish(user);
-            var responses = response.Responses;
-            var newRecords = LeaderboardSystem.GetPersonalLeaderboard(user);
-            Assert.IsTrue(response.Processed);
-            Assert.AreEqual(0, response.Errors.Count);
-            Assert.AreEqual(2, responses.Count);
-            Assert.IsTrue(responses.Any(x => x.Contains("biggest")));
-            Assert.IsTrue(responses.All(x => x.Contains(newRecords.First().Fish.Name)));
-            Assert.IsFalse(fisher.IsFishing);
-            Assert.AreEqual(1, newRecords.Count());
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var user = db.Users.Read().First();
+                var fisher = FishingController.GetFisherByUser(user);
+                TournamentController.StartTournament();
+                DataUtils.ClearFisherRecords(db, user);
+                fisher.IsFishing = true;
+                fisher.HookedTime = DateTime.Now;
+                fisher.Hooked = db.FishData.Read().First();
+                var response = FishingView.CatchFish(user);
+                var responses = response.Responses;
+                var newRecords = LeaderboardController.GetPersonalLeaderboard(user);
+                Assert.IsTrue(response.Processed);
+                Assert.AreEqual(0, response.Errors.Count);
+                Assert.AreEqual(2, responses.Count);
+                Assert.IsTrue(responses.Any(x => x.Contains("biggest")));
+                Assert.IsTrue(responses.All(x => x.Contains(newRecords.First().Fish.Name)));
+                Assert.IsFalse(fisher.IsFishing);
+                Assert.AreEqual(1, newRecords.Count());
+            }
         }
 
         [TestMethod]
         public void CatchFishFailsIfLineNotCast()
         {
-            var user = Manager.Users.Read().First();
-            var fisher = FishingSystem.GetFisherByUser(user);
-            TournamentSystem.StartTournament();
-            DataUtils.ClearFisherRecords(Manager, user);
-            fisher.IsFishing = false;
-            fisher.Hooked = null;
-            var response = FishingModule.CatchFish(user);
-            var responses = response.Responses;
-            Assert.IsTrue(response.Processed);
-            Assert.AreEqual(0, response.Errors.Count);
-            Assert.AreEqual(1, responses.Count);
-            Assert.IsTrue(responses[0].Contains("!cast"));
-            Assert.IsFalse(fisher.IsFishing);
-            Assert.AreEqual(0, LeaderboardSystem.GetPersonalLeaderboard(user).Count());
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var user = db.Users.Read().First();
+                var fisher = FishingController.GetFisherByUser(user);
+                TournamentController.StartTournament();
+                DataUtils.ClearFisherRecords(db, user);
+                fisher.IsFishing = false;
+                fisher.Hooked = null;
+                var response = FishingView.CatchFish(user);
+                var responses = response.Responses;
+                Assert.IsTrue(response.Processed);
+                Assert.AreEqual(0, response.Errors.Count);
+                Assert.AreEqual(1, responses.Count);
+                Assert.IsTrue(responses[0].Contains("!cast"));
+                Assert.IsFalse(fisher.IsFishing);
+                Assert.AreEqual(0, LeaderboardController.GetPersonalLeaderboard(user).Count());
+            }
         }
 
         [TestMethod]
         public void CatchFishFailsIfNoFishBiting()
         {
-            var user = Manager.Users.Read().First();
-            var fisher = FishingSystem.GetFisherByUser(user);
-            TournamentSystem.StartTournament();
-            DataUtils.ClearFisherRecords(Manager, user);
-            fisher.IsFishing = true;
-            fisher.HookedTime = DateTime.Now;
-            fisher.Hooked = null;
-            var response = FishingModule.CatchFish(user);
-            var responses = response.Responses;
-            Assert.IsTrue(response.Processed);
-            Assert.AreEqual(0, response.Errors.Count);
-            Assert.AreEqual(1, responses.Count);
-            Assert.IsTrue(responses[0].Contains("!cancelcast"));
-            Assert.IsFalse(fisher.IsFishing);
-            Assert.AreEqual(0, LeaderboardSystem.GetPersonalLeaderboard(user).Count());
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var user = db.Users.Read().First();
+                var fisher = FishingController.GetFisherByUser(user);
+                TournamentController.StartTournament();
+                DataUtils.ClearFisherRecords(db, user);
+                fisher.IsFishing = true;
+                fisher.HookedTime = DateTime.Now;
+                fisher.Hooked = null;
+                var response = FishingView.CatchFish(user);
+                var responses = response.Responses;
+                Assert.IsTrue(response.Processed);
+                Assert.AreEqual(0, response.Errors.Count);
+                Assert.AreEqual(1, responses.Count);
+                Assert.IsTrue(responses[0].Contains("!cancelcast"));
+                Assert.IsFalse(fisher.IsFishing);
+                Assert.AreEqual(0, LeaderboardController.GetPersonalLeaderboard(user).Count());
+            }
         }
 
         [TestMethod]
         public void CastsLine()
         {
-            var user = Manager.Users.Read().First();
-            var fisher = FishingSystem.GetFisherByUser(user);
-            fisher.IsFishing = false;
-            var response = FishingModule.Cast(user);
-            var responses = response.Responses;
-            Assert.IsTrue(response.Processed);
-            Assert.AreEqual(0, response.Errors.Count);
-            Assert.AreEqual(1, responses.Count);
-            Assert.IsTrue(fisher.IsFishing);
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var user = db.Users.Read().First();
+                var fisher = FishingController.GetFisherByUser(user);
+                fisher.IsFishing = false;
+                var response = FishingView.Cast(user);
+                var responses = response.Responses;
+                Assert.IsTrue(response.Processed);
+                Assert.AreEqual(0, response.Errors.Count);
+                Assert.AreEqual(1, responses.Count);
+                Assert.IsTrue(fisher.IsFishing);
+            }
         }
 
         [TestMethod]
         public void CastLineFailsFailsIfLineAlreadyCast()
         {
-            var user = Manager.Users.Read().First();
-            var fisher = FishingSystem.GetFisherByUser(user);
-            fisher.IsFishing = true;
-            var response = FishingModule.Cast(user);
-            var responses = response.Responses;
-            Assert.IsTrue(response.Processed);
-            Assert.AreEqual(0, response.Errors.Count);
-            Assert.AreEqual(1, responses.Count);
-            Assert.IsTrue(responses[0].Contains("already"));
-            Assert.IsFalse(responses[0].Contains("!catch"));
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var user = db.Users.Read().First();
+                var fisher = FishingController.GetFisherByUser(user);
+                fisher.IsFishing = true;
+                var response = FishingView.Cast(user);
+                var responses = response.Responses;
+                Assert.IsTrue(response.Processed);
+                Assert.AreEqual(0, response.Errors.Count);
+                Assert.AreEqual(1, responses.Count);
+                Assert.IsTrue(responses[0].Contains("already"));
+                Assert.IsFalse(responses[0].Contains("!catch"));
+            }
         }
 
         [TestMethod]
         public void CastLineFailsIfFishIsBiting()
         {
-            var user = Manager.Users.Read().First();
-            var fisher = FishingSystem.GetFisherByUser(user);
-            fisher.IsFishing = true;
-            fisher.Hooked = Manager.FishData.Read().First();
-            var response = FishingModule.Cast(user);
-            var responses = response.Responses;
-            Assert.IsTrue(response.Processed);
-            Assert.AreEqual(0, response.Errors.Count);
-            Assert.AreEqual(1, responses.Count);
-            Assert.IsTrue(responses[0].Contains("already"));
-            Assert.IsTrue(responses[0].Contains("!catch"));
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var user = db.Users.Read().First();
+                var fisher = FishingController.GetFisherByUser(user);
+                fisher.IsFishing = true;
+                fisher.Hooked = db.FishData.Read().First();
+                var response = FishingView.Cast(user);
+                var responses = response.Responses;
+                Assert.IsTrue(response.Processed);
+                Assert.AreEqual(0, response.Errors.Count);
+                Assert.AreEqual(1, responses.Count);
+                Assert.IsTrue(responses[0].Contains("already"));
+                Assert.IsTrue(responses[0].Contains("!catch"));
+            }
         }
     }
 }

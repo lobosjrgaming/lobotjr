@@ -119,9 +119,7 @@ namespace LobotJR
         {
             using (connectionManager.OpenConnection())
             {
-                connectionManager.SeedMetadata();
-                connectionManager.SeedAppSettings();
-                connectionManager.SeedGameSettings();
+                connectionManager.SeedData();
                 userController.LastUpdate = DateTime.MinValue;
                 userController.SetBotUsers(userController.GetOrCreateUser(tokenData.BroadcastId, tokenData.BroadcastUser), userController.GetOrCreateUser(tokenData.ChatId, tokenData.ChatUser));
             }

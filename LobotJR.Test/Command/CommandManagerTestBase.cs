@@ -1,6 +1,6 @@
 ﻿using LobotJR.Command;
+using LobotJR.Command.Model.AccessControl;
 using LobotJR.Command.View;
-using LobotJR.Command.Controller.Twitch;
 using LobotJR.Data;
 using LobotJR.Test.Mocks;
 using LobotJR.Twitch.Model;
@@ -8,7 +8,6 @@ using Moq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using LobotJR.Command.Model.AccessControl;
 
 namespace LobotJR.Test.Command
 {
@@ -21,17 +20,17 @@ namespace LobotJR.Test.Command
     /// an abstract class to be extended. This removes the need to re-establish
     /// these variables in each test class.
     /// </summary>
-    public abstract class CommandManagerTestBase : ICommandView
+    public abstract class CommandManagerTestBase : ICommandView, IPushNotifier
     {
         protected List<AccessGroup> AccessGroups;
         protected List<Enrollment> Enrollments;
         protected List<Restriction> Restrictions;
         protected List<User> IdCache;
         protected CommandManager CommandManager;
-        protected IRepositoryManager Manager;
+        protected IConnectionManager ConnectionManager;
 
-        protected MockCommandModule CommandModuleMock;
-        protected MockCommandSubModule SubCommandModuleMock;
+        protected MockCommandView CommandModuleMock;
+        protected MockCommandSubView SubCommandModuleMock;
         protected Mock<IRepositoryManager> RepositoryManagerMock;
         protected Mock<IRepository<User>> UserMock;
         protected Mock<IRepository<AccessGroup>> AccessGroupMock;
@@ -68,8 +67,8 @@ namespace LobotJR.Test.Command
         /// </summary>
         public void InitializeCommandManager()
         {
-            SubCommandModuleMock = new MockCommandSubModule();
-            CommandModuleMock = new MockCommandModule();
+            SubCommandModuleMock = new MockCommandSubView();
+            CommandModuleMock = new MockCommandView();
 
             AccessGroups = new List<AccessGroup>(new AccessGroup[] { new AccessGroup(1, "TestGroup"),
                 new AccessGroup(2, "ModGroup") { IncludeMods = true },
@@ -107,12 +106,12 @@ namespace LobotJR.Test.Command
             RepositoryManagerMock.Setup(x => x.Enrollments).Returns(EnrollmentMock.Object);
             RepositoryManagerMock.Setup(x => x.Restrictions).Returns(RestrictionMock.Object);
             RepositoryManagerMock.Setup(x => x.AppSettings).Returns(AppSettingsMock.Object);
-            Manager = RepositoryManagerMock.Object;
+            //Manager = RepositoryManagerMock.Object;
 
 
-            var userLookup = new UserSystem(RepositoryManagerMock.Object, null);
-            CommandManager = new CommandManager(new ICommandView[] { CommandModuleMock, SubCommandModuleMock }, RepositoryManagerMock.Object, userLookup);
-            CommandManager.InitializeViews();
+            //var userLookup = new UserSystem(RepositoryManagerMock.Object, null);
+            //CommandManager = new CommandManager(new ICommandView[] { CommandModuleMock, SubCommandModuleMock }, Array.Empty<IMetaController>(), RepositoryManagerMock.Object, userLookup);
+            //CommandManager.InitializeViews();
         }
     }
 }

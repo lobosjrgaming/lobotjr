@@ -1,15 +1,14 @@
 ﻿using LobotJR.Command;
+using LobotJR.Command.Model.AccessControl;
 using LobotJR.Command.Model.Fishing;
 using LobotJR.Data;
 using LobotJR.Twitch;
 using LobotJR.Twitch.Model;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Linq;
 
 namespace LobotJR.Test.Mocks
 {
-    [TestClass]
     public static class TestInitializers
     {
         private static readonly Random random = new Random();
@@ -131,23 +130,27 @@ namespace LobotJR.Test.Mocks
 
         public static void InitializeSettings(MockContext context)
         {
-            var appSettings = new AppSettings();
-            appSettings.UserDatabaseUpdateTime = 2;
-            appSettings.MaxWhisperRecipients = 10;
-            appSettings.UserLookupBatchTime = 0;
+            var appSettings = new AppSettings
+            {
+                UserDatabaseUpdateTime = 2,
+                MaxWhisperRecipients = 10,
+                UserLookupBatchTime = 0
+            };
             context.AppSettings.Add(appSettings);
 
-            var gameSettings = new GameSettings();
-            gameSettings.FishingCastMaximum = 20;
-            gameSettings.FishingCastMinimum = 10;
-            gameSettings.FishingGloatCost = 10;
-            gameSettings.FishingHookLength = 10;
-            gameSettings.FishingTournamentCastMaximum = 2;
-            gameSettings.FishingTournamentCastMinimum = 1;
-            gameSettings.FishingTournamentDuration = 5;
-            gameSettings.FishingTournamentInterval = 10;
-            gameSettings.FishingUseNormalRarity = false;
-            gameSettings.FishingUseNormalSizes = false;
+            var gameSettings = new GameSettings
+            {
+                FishingCastMaximum = 20,
+                FishingCastMinimum = 10,
+                FishingGloatCost = 10,
+                FishingHookLength = 10,
+                FishingTournamentCastMaximum = 2,
+                FishingTournamentCastMinimum = 1,
+                FishingTournamentDuration = 5,
+                FishingTournamentInterval = 10,
+                FishingUseNormalRarity = false,
+                FishingUseNormalSizes = false
+            };
             context.GameSettings.Add(gameSettings);
         }
 
@@ -156,8 +159,7 @@ namespace LobotJR.Test.Mocks
             context.DataTimers.Add(new DataTimer() { Name = "WhisperQueue", Timestamp = DateTime.Now });
         }
 
-        [AssemblyInitialize]
-        public static void SetupDatabase(TestContext context)
+        public static void SetupDatabase()
         {
             var dbContext = MockContext.CreateAndSeed(
                 InitializeSettings,

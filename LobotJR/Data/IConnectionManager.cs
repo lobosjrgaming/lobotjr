@@ -18,16 +18,9 @@
         /// </summary>
         IDatabase CurrentConnection { get; }
         /// <summary>
-        /// Creates a new metadata record if none exists in the database.
+        /// Creates default data entries in the database needed for the app to
+        /// run. Only creates new entries if none already exist.
         /// </summary>
-        Metadata SeedMetadata();
-        /// <summary>
-        /// Creates a new app settings record if none exists in the database.
-        /// </summary>
-        AppSettings SeedAppSettings();
-        /// <summary>
-        /// Creates a new game settings record if none exists in the database.
-        /// </summary>
-        GameSettings SeedGameSettings();
+        void SeedData();
     }
 }

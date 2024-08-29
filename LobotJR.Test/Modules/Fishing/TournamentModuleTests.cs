@@ -1,9 +1,11 @@
-﻿using LobotJR.Command;
+﻿using Autofac;
+using LobotJR.Command;
+using LobotJR.Command.Controller.Fishing;
+using LobotJR.Command.Controller.Player;
+using LobotJR.Command.Controller.Twitch;
 using LobotJR.Command.Model.Fishing;
 using LobotJR.Command.View;
 using LobotJR.Command.View.Fishing;
-using LobotJR.Command.Controller.Fishing;
-using LobotJR.Command.Controller.Twitch;
 using LobotJR.Data;
 using LobotJR.Test.Mocks;
 using LobotJR.Utils;
@@ -43,7 +45,7 @@ namespace LobotJR.Test.Modules.Fishing
             };
         }
 
-        private void ClearTournaments()
+        private void ClearTournaments(IDatabase Manager)
         {
             var tournamentResults = Manager.TournamentResults.Read();
             foreach (var entry in tournamentResults)
@@ -53,225 +55,286 @@ namespace LobotJR.Test.Modules.Fishing
             Manager.TournamentResults.Commit();
         }
 
-        private SqliteRepositoryManager Manager;
+        private IConnectionManager ConnectionManager;
         private UserController UserLookup;
         private TournamentController TournamentSystem;
         private TournamentView TournamentModule;
+        private PlayerController PlayerController;
 
         [TestInitialize]
         public void Initialize()
         {
-            Manager = new SqliteRepositoryManager(MockContext.Create());
-            UserLookup = new UserSystem(Manager, null);
-
-            var fishingSystem = new FishingSystem(Manager, Manager);
-            var leaderboardSystem = new LeaderboardSystem(Manager);
-            TournamentSystem = new TournamentSystem(fishingSystem, leaderboardSystem, Manager);
-            TournamentModule = new TournamentView(TournamentSystem, UserLookup);
+            ConnectionManager = AutofacMockSetup.Container.Resolve<IConnectionManager>();
+            PlayerController = AutofacMockSetup.Container.Resolve<PlayerController>();
+            UserLookup = AutofacMockSetup.Container.Resolve<UserController>();
+            TournamentSystem = AutofacMockSetup.Container.Resolve<TournamentController>();
+            TournamentModule = AutofacMockSetup.Container.Resolve<TournamentView>();
         }
 
         [TestMethod]
         public void PushesNotificationOnTournamentStart()
         {
-            var handlerMock = new Mock<PushNotificationHandler>();
-            TournamentModule.PushNotification += handlerMock.Object;
-            TournamentSystem.StartTournament();
-            handlerMock.Verify(x => x(null, It.IsAny<CommandResult>()), Times.Once);
-            var result = handlerMock.Invocations[0].Arguments[1] as CommandResult;
-            Assert.IsTrue(result.Messages.Any(x => x.Contains("!cast")));
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var handlerMock = new Mock<PushNotificationHandler>();
+                TournamentModule.PushNotification += handlerMock.Object;
+                TournamentSystem.StartTournament();
+                handlerMock.Verify(x => x(null, It.IsAny<CommandResult>()), Times.Once);
+                var result = handlerMock.Invocations[0].Arguments[1] as CommandResult;
+                Assert.IsTrue(result.Messages.Any(x => x.Contains("!cast")));
+            }
         }
 
         [TestMethod]
         public void CalculatesResultsOnTournamentEnd()
         {
-            var firstFisher = Manager.Users.Read().First();
-            var secondFisher = Manager.Users.Read(x => !x.TwitchId.Equals(firstFisher.TwitchId)).First();
-            TournamentSystem.StartTournament();
-            TournamentSystem.CurrentTournament.Entries.Add(new TournamentEntry(firstFisher.TwitchId, 100));
-            TournamentSystem.CurrentTournament.Entries.Add(new TournamentEntry(secondFisher.TwitchId, 200));
-            TournamentSystem.EndTournament(true);
-            var results = Manager.TournamentResults.Read().OrderByDescending(x => x.Date).First();
-            Assert.AreEqual(secondFisher.TwitchId, results.Winner.UserId);
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                PlayerController.AwardsEnabled = true;
+                var firstFisher = db.Users.Read().First();
+                var secondFisher = UserLookup.GetUserById(firstFisher.TwitchId);
+                TournamentSystem.StartTournament();
+                TournamentSystem.CurrentTournament.Entries.Add(new TournamentEntry(firstFisher.TwitchId, 100));
+                TournamentSystem.CurrentTournament.Entries.Add(new TournamentEntry(secondFisher.TwitchId, 200));
+                TournamentSystem.EndTournament();
+                var results = db.TournamentResults.Read().OrderByDescending(x => x.Date).First();
+                Assert.AreEqual(secondFisher.TwitchId, results.Winner.UserId);
+                PlayerController.AwardsEnabled = false;
+            }
         }
 
         [TestMethod]
         public void PushesNotificationOnTournamentEnd()
         {
-            var user = Manager.Users.Read().First();
-            var handlerMock = new Mock<PushNotificationHandler>();
-            TournamentSystem.StartTournament();
-            TournamentModule.PushNotification += handlerMock.Object;
-            TournamentSystem.CurrentTournament.Entries.Add(new TournamentEntry(user.TwitchId, 100));
-            TournamentSystem.EndTournament(true);
-            handlerMock.Verify(x => x(null, It.IsAny<CommandResult>()), Times.Once);
-            var result = handlerMock.Invocations[0].Arguments[1] as CommandResult;
-            Assert.IsTrue(result.Messages.Any(x => x.Contains("end")));
-            Assert.IsTrue(result.Messages.Any(x => x.Contains(user.Username)));
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                PlayerController.AwardsEnabled = true;
+                var user = db.Users.Read().First();
+                var handlerMock = new Mock<PushNotificationHandler>();
+                TournamentSystem.StartTournament();
+                TournamentModule.PushNotification += handlerMock.Object;
+                TournamentSystem.CurrentTournament.Entries.Add(new TournamentEntry(user.TwitchId, 100));
+                TournamentSystem.EndTournament();
+                handlerMock.Verify(x => x(null, It.IsAny<CommandResult>()), Times.Once);
+                var result = handlerMock.Invocations[0].Arguments[1] as CommandResult;
+                Assert.IsTrue(result.Messages.Any(x => x.Contains("end")));
+                Assert.IsTrue(result.Messages.Any(x => x.Contains(user.Username)));
+                PlayerController.AwardsEnabled = false;
+            }
         }
 
         [TestMethod]
         public void PushesNotificationOnTournamentEndWithNoParticipants()
         {
-            var handlerMock = new Mock<PushNotificationHandler>();
-            TournamentSystem.StartTournament();
-            TournamentModule.PushNotification += handlerMock.Object;
-            TournamentSystem.EndTournament(true);
-            handlerMock.Verify(x => x(null, It.IsAny<CommandResult>()), Times.Once);
-            var result = handlerMock.Invocations[0].Arguments[1] as CommandResult;
-            Assert.IsTrue(result.Messages.Any(x => x.Contains("end")));
-            Assert.IsFalse(result.Messages.Any(x => x.Contains("participants", StringComparison.OrdinalIgnoreCase)));
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                PlayerController.AwardsEnabled = true;
+                var handlerMock = new Mock<PushNotificationHandler>();
+                TournamentSystem.StartTournament();
+                TournamentModule.PushNotification += handlerMock.Object;
+                TournamentSystem.EndTournament();
+                handlerMock.Verify(x => x(null, It.IsAny<CommandResult>()), Times.Once);
+                var result = handlerMock.Invocations[0].Arguments[1] as CommandResult;
+                Assert.IsTrue(result.Messages.Any(x => x.Contains("end")));
+                Assert.IsFalse(result.Messages.Any(x => x.Contains("participants", StringComparison.OrdinalIgnoreCase)));
+                PlayerController.AwardsEnabled = false;
+            }
         }
 
         [TestMethod]
         public void PushesNotificationOnTournamentEndByStreamStopping()
         {
-            var user = Manager.Users.Read().First();
-            var handlerMock = new Mock<PushNotificationHandler>();
-            TournamentSystem.StartTournament();
-            TournamentModule.PushNotification += handlerMock.Object;
-            TournamentSystem.CurrentTournament.Entries.Add(new TournamentEntry(user.TwitchId, 100));
-            TournamentSystem.EndTournament(false);
-            handlerMock.Verify(x => x(null, It.IsAny<CommandResult>()), Times.Once);
-            var result = handlerMock.Invocations[0].Arguments[1] as CommandResult;
-            Assert.IsTrue(result.Messages.Any(x => x.Contains("offline")));
-            Assert.IsTrue(result.Messages.Any(x => x.Contains(user.Username, StringComparison.OrdinalIgnoreCase)));
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                PlayerController.AwardsEnabled = true;
+                var user = db.Users.Read().First();
+                var handlerMock = new Mock<PushNotificationHandler>();
+
+                TournamentSystem.StartTournament();
+                TournamentModule.PushNotification += handlerMock.Object;
+                TournamentSystem.CurrentTournament.Entries.Add(new TournamentEntry(user.TwitchId, 100));
+                PlayerController.AwardsEnabled = false;
+                TournamentSystem.EndTournament();
+                handlerMock.Verify(x => x(null, It.IsAny<CommandResult>()), Times.Once);
+                var result = handlerMock.Invocations[0].Arguments[1] as CommandResult;
+                Assert.IsTrue(result.Messages.Any(x => x.Contains("offline")));
+                Assert.IsTrue(result.Messages.Any(x => x.Contains(user.Username, StringComparison.OrdinalIgnoreCase)));
+            }
         }
 
         [TestMethod]
         public void PushesNotificationOnTournamentEndByStreamStoppingWithNoParticipants()
         {
-            var handlerMock = new Mock<PushNotificationHandler>();
-            TournamentSystem.StartTournament();
-            TournamentModule.PushNotification += handlerMock.Object;
-            TournamentSystem.EndTournament(false);
-            handlerMock.Verify(x => x(null, It.IsAny<CommandResult>()), Times.Once);
-            var result = handlerMock.Invocations[0].Arguments[1] as CommandResult;
-            Assert.IsTrue(result.Messages.Any(x => x.Contains("offline")));
-            Assert.IsFalse(result.Messages.Any(x => x.Contains("winner", StringComparison.OrdinalIgnoreCase)));
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                PlayerController.AwardsEnabled = true;
+                var handlerMock = new Mock<PushNotificationHandler>();
+                TournamentSystem.StartTournament();
+                TournamentModule.PushNotification += handlerMock.Object;
+                PlayerController.AwardsEnabled = false;
+                TournamentSystem.EndTournament();
+                handlerMock.Verify(x => x(null, It.IsAny<CommandResult>()), Times.Once);
+                var result = handlerMock.Invocations[0].Arguments[1] as CommandResult;
+                Assert.IsTrue(result.Messages.Any(x => x.Contains("offline")));
+                Assert.IsFalse(result.Messages.Any(x => x.Contains("winner", StringComparison.OrdinalIgnoreCase)));
+            }
         }
 
         [TestMethod]
         public void TournamentResultsGetsLatestTournamentWithParticipation()
         {
-            var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentResults")).FirstOrDefault();
-            var results = command.Executor.Execute(UserLookup.GetUserByName("Foo"), "");
-            Assert.IsNotNull(results.Responses);
-            Assert.AreEqual(3, results.Responses.Count);
-            Assert.IsTrue(results.Responses.Any(x => x.Contains("30 seconds")));
-            Assert.IsTrue(results.Responses.Any(x => x.Contains("Fizz") && x.Contains("30")));
-            Assert.IsTrue(results.Responses.Any(x => x.Contains("3rd") && x.Contains("10")));
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentResults")).FirstOrDefault();
+                var results = command.Executor.Execute(UserLookup.GetUserByName("Foo"), "");
+                Assert.IsNotNull(results.Responses);
+                Assert.AreEqual(3, results.Responses.Count);
+                Assert.IsTrue(results.Responses.Any(x => x.Contains("30 seconds")));
+                Assert.IsTrue(results.Responses.Any(x => x.Contains("Fizz") && x.Contains("30")));
+                Assert.IsTrue(results.Responses.Any(x => x.Contains("3rd") && x.Contains("10")));
+            }
         }
 
         [TestMethod]
         public void TournamentResultsGetsLatestTournamentWithoutParticipation()
         {
-            var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentResults")).FirstOrDefault();
-            var results = command.Executor.Execute(UserLookup.GetUserByName("Buzz"), "");
-            Assert.IsNotNull(results.Responses);
-            Assert.AreEqual(2, results.Responses.Count);
-            Assert.IsTrue(results.Responses.Any(x => x.Contains("30 seconds")));
-            Assert.IsTrue(results.Responses.Any(x => x.Contains("Fizz") && x.Contains("30")));
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentResults")).FirstOrDefault();
+                var results = command.Executor.Execute(UserLookup.GetUserByName("Buzz"), "");
+                Assert.IsNotNull(results.Responses);
+                Assert.AreEqual(2, results.Responses.Count);
+                Assert.IsTrue(results.Responses.Any(x => x.Contains("30 seconds")));
+                Assert.IsTrue(results.Responses.Any(x => x.Contains("Fizz") && x.Contains("30")));
+            }
         }
 
         [TestMethod]
         public void TournamentResultsGetsLatestTournamentForWinner()
         {
-            var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentResults")).FirstOrDefault();
-            var results = command.Executor.Execute(UserLookup.GetUserByName("Fizz"), "");
-            Assert.IsNotNull(results.Responses);
-            Assert.AreEqual(2, results.Responses.Count);
-            Assert.IsTrue(results.Responses.Any(x => x.Contains("30 seconds")));
-            Assert.IsFalse(results.Responses.Any(x => x.Contains("Fizz")));
-            Assert.IsTrue(results.Responses.Any(x => x.Contains("You") && x.Contains("30")));
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentResults")).FirstOrDefault();
+                var results = command.Executor.Execute(UserLookup.GetUserByName("Fizz"), "");
+                Assert.IsNotNull(results.Responses);
+                Assert.AreEqual(2, results.Responses.Count);
+                Assert.IsTrue(results.Responses.Any(x => x.Contains("30 seconds")));
+                Assert.IsFalse(results.Responses.Any(x => x.Contains("Fizz")));
+                Assert.IsTrue(results.Responses.Any(x => x.Contains("You") && x.Contains("30")));
+            }
         }
 
         [TestMethod]
         public void TournamentResultsGetsErrorMessageWhenNoTournamentHasCompleted()
         {
-            ClearTournaments();
-            var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentResults")).FirstOrDefault();
-            var results = command.Executor.Execute(UserLookup.GetUserByName("Foo"), "");
-            Assert.IsNotNull(results.Responses);
-            Assert.AreEqual(1, results.Responses.Count);
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                ClearTournaments(db);
+                var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentResults")).FirstOrDefault();
+                var results = command.Executor.Execute(UserLookup.GetUserByName("Foo"), "");
+                Assert.IsNotNull(results.Responses);
+                Assert.AreEqual(1, results.Responses.Count);
+            }
         }
 
         [TestMethod]
         public void TournamentResultsCompactGetsLatestTournament()
         {
-            var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentResults")).FirstOrDefault();
-            var results = command.CompactExecutor.Execute(UserLookup.GetUserByName("Buzz"), "");
-            var resultObject = ResultsFromCompact(results.ToCompact().First());
-            Assert.IsNotNull(resultObject);
-            Assert.AreEqual("Fizz", resultObject.Winner);
-            Assert.AreEqual(3, resultObject.Participants);
-            Assert.AreEqual(30, resultObject.WinnerPoints);
-            Assert.AreEqual(0, resultObject.Rank);
-            Assert.AreEqual(0, resultObject.UserPoints);
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentResults")).FirstOrDefault();
+                var results = command.CompactExecutor.Execute(UserLookup.GetUserByName("Buzz"), "");
+                var resultObject = ResultsFromCompact(results.ToCompact().First());
+                Assert.IsNotNull(resultObject);
+                Assert.AreEqual("Fizz", resultObject.Winner);
+                Assert.AreEqual(3, resultObject.Participants);
+                Assert.AreEqual(30, resultObject.WinnerPoints);
+                Assert.AreEqual(0, resultObject.Rank);
+                Assert.AreEqual(0, resultObject.UserPoints);
+            }
         }
 
         [TestMethod]
         public void TournamentResultsCompactIncludesUserData()
         {
-            var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentResults")).FirstOrDefault();
-            var results = command.CompactExecutor.Execute(UserLookup.GetUserByName("Foo"), "");
-            var resultObject = ResultsFromCompact(results.ToCompact().First());
-            Assert.IsNotNull(resultObject);
-            Assert.AreEqual("Fizz", resultObject.Winner);
-            Assert.AreEqual(3, resultObject.Participants);
-            Assert.AreEqual(30, resultObject.WinnerPoints);
-            Assert.AreEqual(3, resultObject.Rank);
-            Assert.AreEqual(10, resultObject.UserPoints);
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentResults")).FirstOrDefault();
+                var results = command.CompactExecutor.Execute(UserLookup.GetUserByName("Foo"), "");
+                var resultObject = ResultsFromCompact(results.ToCompact().First());
+                Assert.IsNotNull(resultObject);
+                Assert.AreEqual("Fizz", resultObject.Winner);
+                Assert.AreEqual(3, resultObject.Participants);
+                Assert.AreEqual(30, resultObject.WinnerPoints);
+                Assert.AreEqual(3, resultObject.Rank);
+                Assert.AreEqual(10, resultObject.UserPoints);
+            }
         }
 
         [TestMethod]
         public void TournamentResultsCompactReturnsNullIfNoTournamentsHaveTakenPlace()
         {
-            ClearTournaments();
-            var leftovers = Manager.TournamentResults.Read().ToArray();
-            var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentResults")).FirstOrDefault();
-            var results = command.CompactExecutor.Execute(UserLookup.GetUserByName("Buzz"), "");
-            Assert.IsNull(results);
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                ClearTournaments(db);
+                var leftovers = db.TournamentResults.Read().ToArray();
+                var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentResults")).FirstOrDefault();
+                var results = command.CompactExecutor.Execute(UserLookup.GetUserByName("Buzz"), "");
+                Assert.IsNull(results);
+            }
         }
 
         [TestMethod]
         public void TournamentRecordsGetsUsersRecords()
         {
-            var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentRecords")).FirstOrDefault();
-            var results = command.Executor.Execute(UserLookup.GetUserByName("Foo"), "");
-            Assert.IsNotNull(results.Responses);
-            Assert.AreEqual(2, results.Responses.Count);
-            Assert.IsTrue(results.Responses.Any(x => x.Contains("1st") && x.Contains("35 points")));
-            Assert.IsTrue(results.Responses.Any(x => x.Contains("2nd") && x.Contains("40 points")));
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentRecords")).FirstOrDefault();
+                var results = command.Executor.Execute(UserLookup.GetUserByName("Foo"), "");
+                Assert.IsNotNull(results.Responses);
+                Assert.AreEqual(2, results.Responses.Count);
+                Assert.IsTrue(results.Responses.Any(x => x.Contains("1st") && x.Contains("35 points")));
+                Assert.IsTrue(results.Responses.Any(x => x.Contains("2nd") && x.Contains("40 points")));
+            }
         }
 
         [TestMethod]
         public void TournamentRecordsGetsErrorWhenUserHasNotCompetedInAnyTournaments()
         {
-            var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentRecords")).FirstOrDefault();
-            var results = command.Executor.Execute(UserLookup.GetUserByName("Buzz"), "");
-            Assert.IsNotNull(results.Responses);
-            Assert.AreEqual(1, results.Responses.Count);
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentRecords")).FirstOrDefault();
+                var results = command.Executor.Execute(UserLookup.GetUserByName("Buzz"), "");
+                Assert.IsNotNull(results.Responses);
+                Assert.AreEqual(1, results.Responses.Count);
+            }
         }
 
         [TestMethod]
         public void TournamentRecordsCompactGetsUserRecords()
         {
-            var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentRecords")).FirstOrDefault();
-            var results = command.CompactExecutor.Execute(UserLookup.GetUserByName("Foo"), "");
-            var resultObject = RecordsFromCompact(results.ToCompact().First());
-            Assert.IsNotNull(resultObject);
-            Assert.AreEqual(1, resultObject.TopRank);
-            Assert.AreEqual(35, resultObject.TopRankScore);
-            Assert.AreEqual(40, resultObject.TopScore);
-            Assert.AreEqual(2, resultObject.TopScoreRank);
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentRecords")).FirstOrDefault();
+                var results = command.CompactExecutor.Execute(UserLookup.GetUserByName("Foo"), "");
+                var resultObject = RecordsFromCompact(results.ToCompact().First());
+                Assert.IsNotNull(resultObject);
+                Assert.AreEqual(1, resultObject.TopRank);
+                Assert.AreEqual(35, resultObject.TopRankScore);
+                Assert.AreEqual(40, resultObject.TopScore);
+                Assert.AreEqual(2, resultObject.TopScoreRank);
+            }
         }
 
         [TestMethod]
         public void TournamentRecordsCompactGetsNullIfUserHasNeverEntered()
         {
-            var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentRecords")).FirstOrDefault();
-            var results = command.CompactExecutor.Execute(UserLookup.GetUserByName("Buzz"), "");
-            Assert.IsNull(results);
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var command = TournamentModule.Commands.Where(x => x.Name.Equals("TournamentRecords")).FirstOrDefault();
+                var results = command.CompactExecutor.Execute(UserLookup.GetUserByName("Buzz"), "");
+                Assert.IsNull(results);
+            }
         }
     }
 }

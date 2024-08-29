@@ -1,5 +1,6 @@
-﻿using LobotJR.Command.Model.Fishing;
+﻿using Autofac;
 using LobotJR.Command.Controller.Fishing;
+using LobotJR.Command.Model.Fishing;
 using LobotJR.Data;
 using LobotJR.Test.Mocks;
 using LobotJR.Twitch.Model;
@@ -13,7 +14,7 @@ namespace LobotJR.Test.Systems.Fishing
     [TestClass]
     public class LeaderboardSystemTests
     {
-        private SqliteRepositoryManager Manager;
+        private IConnectionManager ConnectionManager;
         private FishingController FishingSystem;
         private TournamentController TournamentSystem;
         private LeaderboardController LeaderboardSystem;
@@ -21,227 +22,274 @@ namespace LobotJR.Test.Systems.Fishing
         [TestInitialize]
         public void Initialize()
         {
-            Manager = new SqliteRepositoryManager(MockContext.Create());
-
-            FishingSystem = new FishingSystem(Manager, Manager);
-            LeaderboardSystem = new LeaderboardSystem(Manager);
-            TournamentSystem = new TournamentSystem(FishingSystem, LeaderboardSystem, Manager);
+            ConnectionManager = AutofacMockSetup.Container.Resolve<IConnectionManager>();
+            FishingSystem = AutofacMockSetup.Container.Resolve<FishingController>();
+            TournamentSystem = AutofacMockSetup.Container.Resolve<TournamentController>();
+            LeaderboardSystem = AutofacMockSetup.Container.Resolve<LeaderboardController>();
         }
 
         [TestMethod]
         public void GetsLeaderboard()
         {
-            var leaderboard = Manager.FishingLeaderboard.Read();
-            var retrieved = LeaderboardSystem.GetLeaderboard();
-            Assert.IsNotNull(retrieved);
-            Assert.AreEqual(leaderboard.Count(), retrieved.Count());
-            for (var i = 0; i < leaderboard.Count(); i++)
+            using (var db = ConnectionManager.OpenConnection())
             {
-                var lEntry = leaderboard.ElementAt(i);
-                var rEntry = retrieved.ElementAt(i);
-                Assert.IsTrue(lEntry.DeeplyEquals(rEntry));
+                var leaderboard = db.FishingLeaderboard.Read();
+                var retrieved = LeaderboardSystem.GetLeaderboard();
+                Assert.IsNotNull(retrieved);
+                Assert.AreEqual(leaderboard.Count(), retrieved.Count());
+                for (var i = 0; i < leaderboard.Count(); i++)
+                {
+                    var lEntry = leaderboard.ElementAt(i);
+                    var rEntry = retrieved.ElementAt(i);
+                    Assert.IsTrue(lEntry.DeeplyEquals(rEntry));
+                }
             }
         }
 
         [TestMethod]
         public void DeletesFish()
         {
-            var user = Manager.Users.Read().First();
-            var records = LeaderboardSystem.GetPersonalLeaderboard(user);
-            var fish = records.First().FishId;
-            LeaderboardSystem.DeleteFish(user, 0);
-            Assert.IsFalse(records.Any(x => x.Fish.Id.Equals(fish)));
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var user = db.Users.Read().First();
+                var records = LeaderboardSystem.GetPersonalLeaderboard(user);
+                var fish = records.First().FishId;
+                LeaderboardSystem.DeleteFish(user, 0);
+                Assert.IsFalse(records.Any(x => x.Fish.Id.Equals(fish)));
+            }
         }
 
         [TestMethod]
         public void DeleteFishDoesNothingOnNegativeIndex()
         {
-            var user = Manager.Users.Read().First();
-            var records = LeaderboardSystem.GetPersonalLeaderboard(user);
-            var recordCount = records.Count();
-            LeaderboardSystem.DeleteFish(user, -1);
-            Assert.AreEqual(recordCount, records.Count());
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var user = db.Users.Read().First();
+                var records = LeaderboardSystem.GetPersonalLeaderboard(user);
+                var recordCount = records.Count();
+                LeaderboardSystem.DeleteFish(user, -1);
+                Assert.AreEqual(recordCount, records.Count());
+            }
         }
 
         [TestMethod]
         public void DeleteFishDoesNothingOnIndexAboveCount()
         {
-            var user = Manager.Users.Read().First();
-            var records = LeaderboardSystem.GetPersonalLeaderboard(user);
-            var recordCount = records.Count();
-            LeaderboardSystem.DeleteFish(user, recordCount);
-            Assert.AreEqual(recordCount, records.Count());
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var user = db.Users.Read().First();
+                var records = LeaderboardSystem.GetPersonalLeaderboard(user);
+                var recordCount = records.Count();
+                LeaderboardSystem.DeleteFish(user, recordCount);
+                Assert.AreEqual(recordCount, records.Count());
+            }
         }
 
         [TestMethod]
         public void DeleteFishDoesNothingOnMissingFisher()
         {
-            var recordCount = Manager.Catches.Read().Count();
-            LeaderboardSystem.DeleteFish(new User("Invalid Id", "-1"), 0);
-            Assert.AreEqual(recordCount, Manager.Catches.Read().Count());
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var recordCount = db.Catches.Read().Count();
+                LeaderboardSystem.DeleteFish(new User("Invalid Id", "-1"), 0);
+                Assert.AreEqual(recordCount, db.Catches.Read().Count());
+            }
         }
 
         [TestMethod]
         public void DeleteFishDoesNothingOnNullFisher()
         {
-            var recordCount = Manager.Catches.Read().Count();
-            LeaderboardSystem.DeleteFish(null, 0);
-            Assert.AreEqual(recordCount, Manager.Catches.Read().Count());
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var recordCount = db.Catches.Read().Count();
+                LeaderboardSystem.DeleteFish(null, 0);
+                Assert.AreEqual(recordCount, db.Catches.Read().Count());
+            }
         }
 
         [TestMethod]
         public void UpdatesPersonalLeaderboardWithNewFishType()
         {
-            var user = Manager.Users.Read().First();
-            var records = Manager.Catches.Read(x => x.UserId.Equals(user));
-            DataUtils.ClearFisherRecords(Manager, user);
-            var catchData = new Catch()
+            using (var db = ConnectionManager.OpenConnection())
             {
-                Fish = Manager.FishData.Read().First(),
-                UserId = user.TwitchId,
-                Weight = 100
-            };
-            var result = LeaderboardSystem.UpdatePersonalLeaderboard(user, catchData);
-            var updatedRecords = Manager.Catches.Read(x => x.UserId.Equals(user.TwitchId));
-            Assert.IsTrue(result);
-            Assert.AreEqual(1, updatedRecords.Count());
-            Assert.AreEqual(catchData.Fish.Id, updatedRecords.ElementAt(0).Fish.Id);
+                var user = db.Users.Read().First();
+                var records = db.Catches.Read(x => x.UserId.Equals(user));
+                DataUtils.ClearFisherRecords(db, user);
+                var catchData = new Catch()
+                {
+                    Fish = db.FishData.Read().First(),
+                    UserId = user.TwitchId,
+                    Weight = 100
+                };
+                var result = LeaderboardSystem.UpdatePersonalLeaderboard(user, catchData);
+                var updatedRecords = db.Catches.Read(x => x.UserId.Equals(user.TwitchId));
+                Assert.IsTrue(result);
+                Assert.AreEqual(1, updatedRecords.Count());
+                Assert.AreEqual(catchData.Fish.Id, updatedRecords.ElementAt(0).Fish.Id);
+            }
         }
 
         [TestMethod]
         public void UpdatesPersonalLeaderboardWithExistingFishType()
         {
-            var user = Manager.Users.Read().First();
-            var fish = Manager.FishData.Read().First();
-            var existing = LeaderboardSystem.GetUserRecordForFish(user, fish);
-            var catchData = new Catch()
+            using (var db = ConnectionManager.OpenConnection())
             {
-                Fish = fish,
-                UserId = user.TwitchId,
-                Weight = existing.Weight + 1
-            };
-            var result = LeaderboardSystem.UpdatePersonalLeaderboard(user, catchData);
-            Assert.IsTrue(result);
-            Assert.AreEqual(catchData.Weight, LeaderboardSystem.GetUserRecordForFish(user, fish).Weight);
+                var user = db.Users.Read().First();
+                var fish = db.FishData.Read().First();
+                var existing = LeaderboardSystem.GetUserRecordForFish(user, fish);
+                var catchData = new Catch()
+                {
+                    Fish = fish,
+                    UserId = user.TwitchId,
+                    Weight = existing.Weight + 1
+                };
+                var result = LeaderboardSystem.UpdatePersonalLeaderboard(user, catchData);
+                Assert.IsTrue(result);
+                Assert.AreEqual(catchData.Weight, LeaderboardSystem.GetUserRecordForFish(user, fish).Weight);
+            }
         }
 
         [TestMethod]
         public void UpdatePersonalLeaderboardReturnsFalseWithNullFisher()
         {
-            var result = LeaderboardSystem.UpdatePersonalLeaderboard(null, new Catch());
-            Assert.IsFalse(result);
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var result = LeaderboardSystem.UpdatePersonalLeaderboard(null, new Catch());
+                Assert.IsFalse(result);
+            }
         }
 
         [TestMethod]
         public void UpdatePersonalLeaderboardReturnsFalseWithNullCatchData()
         {
-            var user = Manager.Users.Read().First();
-            var result = LeaderboardSystem.UpdatePersonalLeaderboard(user, null);
-            Assert.IsFalse(result);
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var user = db.Users.Read().First();
+                var result = LeaderboardSystem.UpdatePersonalLeaderboard(user, null);
+                Assert.IsFalse(result);
+            }
         }
 
         [TestMethod]
         public void UpdatePersonalLeaderboardReturnsFalseWhenCatchIsNotNewRecord()
         {
-            var user = Manager.Users.Read().First();
-            var records = LeaderboardSystem.GetPersonalLeaderboard(user);
-            var recordCount = records.Count();
-            var record = records.FirstOrDefault();
-            var catchData = new Catch()
+            using (var db = ConnectionManager.OpenConnection())
             {
-                UserId = user.TwitchId,
-                Fish = record.Fish,
-                Weight = record.Weight - 0.01f
-            };
-            var result = LeaderboardSystem.UpdatePersonalLeaderboard(user, catchData);
-            Assert.IsFalse(result);
-            Assert.AreEqual(recordCount, LeaderboardSystem.GetPersonalLeaderboard(user).Count());
-            Assert.AreNotEqual(catchData.Weight, LeaderboardSystem.GetUserRecordForFish(user, record.Fish).Weight);
+                var user = db.Users.Read().First();
+                var records = LeaderboardSystem.GetPersonalLeaderboard(user);
+                var recordCount = records.Count();
+                var record = records.FirstOrDefault();
+                var catchData = new Catch()
+                {
+                    UserId = user.TwitchId,
+                    Fish = record.Fish,
+                    Weight = record.Weight - 0.01f
+                };
+                var result = LeaderboardSystem.UpdatePersonalLeaderboard(user, catchData);
+                Assert.IsFalse(result);
+                Assert.AreEqual(recordCount, LeaderboardSystem.GetPersonalLeaderboard(user).Count());
+                Assert.AreNotEqual(catchData.Weight, LeaderboardSystem.GetUserRecordForFish(user, record.Fish).Weight);
+            }
         }
 
         [TestMethod]
         public void UpdatesGlobalLeaderboardWithNewFishType()
         {
-            var userId = Manager.Users.Read().First().TwitchId;
-            var fish = Manager.FishData.Read().First();
-            var entry = Manager.FishingLeaderboard.Read(x => x.Fish.Id == fish.Id).First();
-            Manager.FishingLeaderboard.Delete(entry);
-            Manager.FishingLeaderboard.Commit();
-            var initialCount = Manager.FishingLeaderboard.Read().Count();
-            var catchData = new Catch()
+            using (var db = ConnectionManager.OpenConnection())
             {
-                Fish = Manager.FishData.Read().First(),
-                UserId = userId,
-                Weight = 100
-            };
-            var result = LeaderboardSystem.UpdateGlobalLeaderboard(catchData);
-            var leaderboard = LeaderboardSystem.GetLeaderboard();
-            Assert.IsTrue(result);
-            Assert.AreEqual(initialCount + 1, leaderboard.Count());
-            Assert.AreEqual(catchData.Weight, leaderboard.First(x => x.Fish.Id == fish.Id).Weight);
+                var userId = db.Users.Read().First().TwitchId;
+                var fish = db.FishData.Read().First();
+                var entry = db.FishingLeaderboard.Read(x => x.Fish.Id == fish.Id).First();
+                db.FishingLeaderboard.Delete(entry);
+                db.FishingLeaderboard.Commit();
+                var initialCount = db.FishingLeaderboard.Read().Count();
+                var catchData = new Catch()
+                {
+                    Fish = db.FishData.Read().First(),
+                    UserId = userId,
+                    Weight = 100
+                };
+                var result = LeaderboardSystem.UpdateGlobalLeaderboard(catchData);
+                var leaderboard = LeaderboardSystem.GetLeaderboard();
+                Assert.IsTrue(result);
+                Assert.AreEqual(initialCount + 1, leaderboard.Count());
+                Assert.AreEqual(catchData.Weight, leaderboard.First(x => x.Fish.Id == fish.Id).Weight);
+            }
         }
 
         [TestMethod]
         public void UpdatesGlobalLeaderboardWithExistingFishType()
         {
-            var fish = Manager.FishData.Read().First();
-            var entry = Manager.FishingLeaderboard.Read(x => x.Fish.Id == fish.Id).First();
-            var newUser = Manager.Users.Read(x => !x.TwitchId.Equals(entry.UserId)).First();
-            var catchData = new Catch()
+            using (var db = ConnectionManager.OpenConnection())
             {
-                Fish = fish,
-                UserId = newUser.TwitchId,
-                Weight = entry.Weight + 1
-            };
-            var result = LeaderboardSystem.UpdateGlobalLeaderboard(catchData);
-            var leaderboard = LeaderboardSystem.GetLeaderboard();
-            Assert.IsTrue(result);
-            Assert.AreEqual(catchData.Weight, leaderboard.First().Weight);
-            Assert.AreEqual(newUser.TwitchId, leaderboard.First().UserId);
+                var fish = db.FishData.Read().First();
+                var entry = db.FishingLeaderboard.Read(x => x.Fish.Id == fish.Id).First();
+                var newUser = db.Users.Read(x => !x.TwitchId.Equals(entry.UserId)).First();
+                var catchData = new Catch()
+                {
+                    Fish = fish,
+                    UserId = newUser.TwitchId,
+                    Weight = entry.Weight + 1
+                };
+                var result = LeaderboardSystem.UpdateGlobalLeaderboard(catchData);
+                var leaderboard = LeaderboardSystem.GetLeaderboard();
+                Assert.IsTrue(result);
+                Assert.AreEqual(catchData.Weight, leaderboard.First().Weight);
+                Assert.AreEqual(newUser.TwitchId, leaderboard.First().UserId);
+            }
         }
 
         [TestMethod]
         public void UpdateGlobalLeaderboardReturnsFalseWithNullCatchData()
         {
-            var result = LeaderboardSystem.UpdateGlobalLeaderboard(null);
-            Assert.IsFalse(result);
+            using (var db = ConnectionManager.OpenConnection())
+            {
+                var result = LeaderboardSystem.UpdateGlobalLeaderboard(null);
+                Assert.IsFalse(result);
+            }
         }
 
         [TestMethod]
         public void UpdateGlobalLeaderboardReturnsFalseWhenCatchIsNotNewRecord()
         {
-            var fish = Manager.FishData.Read().First();
-            var entry = Manager.FishingLeaderboard.Read(x => x.Fish.Id == fish.Id).First();
-            var catchData = new Catch()
+            using (var db = ConnectionManager.OpenConnection())
             {
-                Fish = fish,
-                Weight = entry.Weight - 1
-            };
-            var result = LeaderboardSystem.UpdateGlobalLeaderboard(catchData);
-            var leaderboard = LeaderboardSystem.GetLeaderboard();
-            Assert.IsFalse(result);
-            Assert.AreNotEqual(catchData.Weight, leaderboard.First().Weight);
+                var fish = db.FishData.Read().First();
+                var entry = db.FishingLeaderboard.Read(x => x.Fish.Id == fish.Id).First();
+                var catchData = new Catch()
+                {
+                    Fish = fish,
+                    Weight = entry.Weight - 1
+                };
+                var result = LeaderboardSystem.UpdateGlobalLeaderboard(catchData);
+                var leaderboard = LeaderboardSystem.GetLeaderboard();
+                Assert.IsFalse(result);
+                Assert.AreNotEqual(catchData.Weight, leaderboard.First().Weight);
+            }
         }
 
         [TestMethod]
         public void CatchFishUpdatesLeaderboardWhileTournamentActive()
         {
-            var user = Manager.Users.Read().First();
-            var fisher = FishingSystem.GetFisherByUser(user);
-            var callbackMock = new Mock<LeaderboardEventHandler>();
-            LeaderboardSystem.NewGlobalRecord += callbackMock.Object;
-            var leaderboard = Manager.FishingLeaderboard.Read();
-            foreach (var entry in leaderboard)
+            using (var db = ConnectionManager.OpenConnection())
             {
-                Manager.FishingLeaderboard.Delete(entry);
+                var user = db.Users.Read().First();
+                var fisher = FishingSystem.GetFisherByUser(user);
+                var callbackMock = new Mock<LeaderboardEventHandler>();
+                LeaderboardSystem.NewGlobalRecord += callbackMock.Object;
+                var leaderboard = db.FishingLeaderboard.Read();
+                foreach (var entry in leaderboard)
+                {
+                    db.FishingLeaderboard.Delete(entry);
+                }
+                db.FishingLeaderboard.Commit();
+                TournamentSystem.StartTournament();
+                fisher.Hooked = db.FishData.Read().First();
+                var catchData = FishingSystem.CatchFish(fisher);
+                Assert.IsNotNull(catchData);
+                Assert.AreEqual(1, db.FishingLeaderboard.Read().Count());
+                callbackMock.Verify(x => x(It.IsAny<LeaderboardEntry>()), Times.Once);
             }
-            Manager.FishingLeaderboard.Commit();
-            TournamentSystem.StartTournament();
-            fisher.Hooked = Manager.FishData.Read().First();
-            var catchData = FishingSystem.CatchFish(fisher);
-            Assert.IsNotNull(catchData);
-            Assert.AreEqual(1, Manager.FishingLeaderboard.Read().Count());
-            callbackMock.Verify(x => x(It.IsAny<LeaderboardEntry>()), Times.Once);
         }
     }
 }

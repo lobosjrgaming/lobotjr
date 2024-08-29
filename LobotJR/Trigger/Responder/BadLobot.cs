@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 
 namespace LobotJR.Trigger.Responder
 {
-    internal class BadLobot : ITriggerResponder
+    public class BadLobot : ITriggerResponder
     {
         public Regex Pattern { get; private set; } = new Regex("^.*(?:[Bb]ad|[Dd]amn it|[Ss]tupid) lobot.*$", RegexOptions.IgnoreCase);
 
