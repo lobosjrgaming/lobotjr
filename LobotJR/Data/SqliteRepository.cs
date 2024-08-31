@@ -40,6 +40,11 @@ namespace LobotJR.Data
             return dbSet.Add(entry);
         }
 
+        public IEnumerable<TEntity> Delete()
+        {
+            return dbSet.RemoveRange(dbSet);
+        }
+
         public TEntity Delete(TEntity entry)
         {
             return dbSet.Remove(entry);

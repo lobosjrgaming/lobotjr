@@ -102,6 +102,11 @@ namespace LobotJR.Data
             EquippableData = new SqliteRepository<Equippables>(context);
         }
 
+        public void Commit()
+        {
+            context.SaveChanges();
+        }
+
         public void Dispose()
         {
             context.SaveChanges();

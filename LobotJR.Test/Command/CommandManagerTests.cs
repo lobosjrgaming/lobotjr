@@ -14,318 +14,263 @@ namespace LobotJR.Test.Command
     {
         private IConnectionManager ConnectionManager;
         private ICommandManager CommandManager;
-        private MockCommandView CommandModuleMock;
-        private MockCommandSubView SubCommandModuleMock;
+        private MockCommandView CommandViewMock;
+        private MockCommandSubView SubCommandViewMock;
         private UserController UserController;
-
 
         [TestInitialize]
         public void Initialize()
         {
             ConnectionManager = AutofacMockSetup.Container.Resolve<IConnectionManager>();
             CommandManager = AutofacMockSetup.Container.Resolve<ICommandManager>();
-            CommandModuleMock = AutofacMockSetup.Container.Resolve<MockCommandView>();
-            SubCommandModuleMock = AutofacMockSetup.Container.Resolve<MockCommandSubView>();
+            CommandViewMock = AutofacMockSetup.Container.Resolve<MockCommandView>();
+            SubCommandViewMock = AutofacMockSetup.Container.Resolve<MockCommandSubView>();
             UserController = AutofacMockSetup.Container.Resolve<UserController>();
+        }
+
+        [TestCleanup]
+        public void Cleanup()
+        {
+            AutofacMockSetup.ResetAccessGroups();
+            CommandViewMock.ResetCounts();
+            SubCommandViewMock.ResetCounts();
         }
 
         [TestMethod]
         public void LoadModulesLoadsModules()
         {
-            using (var db = ConnectionManager.OpenConnection())
-            {
-                var commands = CommandManager.Commands;
-                var module = CommandModuleMock;
-                var firstCommand = module.Commands.First().Name;
-                Assert.IsTrue(commands.Count() >= module.Commands.Count());
-                Assert.IsFalse(commands.Any(x => x.Equals(firstCommand)));
-                Assert.IsTrue(commands.Any(x => x.Equals($"{module.Name}.{firstCommand}")));
-            }
+            var db = ConnectionManager.CurrentConnection;
+            var commands = CommandManager.Commands;
+            var module = CommandViewMock;
+            var firstCommand = module.Commands.First().Name;
+            Assert.IsTrue(commands.Count() >= module.Commands.Count());
+            Assert.IsFalse(commands.Any(x => x.Equals(firstCommand)));
+            Assert.IsTrue(commands.Any(x => x.Equals($"{module.Name}.{firstCommand}")));
         }
 
         [TestMethod]
         public void IsValidCommandMatchesFullId()
         {
-            using (var db = ConnectionManager.OpenConnection())
-            {
-                var module = CommandModuleMock;
-                var firstCommand = module.Commands.First();
-                Assert.IsTrue(CommandManager.IsValidCommand($"{module.Name}.{firstCommand.Name}"));
-            }
+            var module = CommandViewMock;
+            var firstCommand = module.Commands.First();
+            Assert.IsTrue(CommandManager.IsValidCommand($"{module.Name}.{firstCommand.Name}"));
         }
 
         [TestMethod]
         public void IsValidCommandMatchesWildcardAtEnd()
         {
-            using (var db = ConnectionManager.OpenConnection())
-            {
-                var module = CommandModuleMock;
-                Assert.IsTrue(CommandManager.IsValidCommand($"{module.Name}.*"));
-            }
+            var module = CommandViewMock;
+            Assert.IsTrue(CommandManager.IsValidCommand($"{module.Name}.*"));
         }
 
         [TestMethod]
         public void IsValidCommandMatchesWildcardAtStart()
         {
-            using (var db = ConnectionManager.OpenConnection())
-            {
-                var module = SubCommandModuleMock;
-                var part = module.Name.Substring(module.Name.IndexOf('.') + 1);
-                Assert.IsTrue(CommandManager.IsValidCommand($"*.{part}.*"));
-            }
+            var module = SubCommandViewMock;
+            var part = module.Name.Substring(module.Name.IndexOf('.') + 1);
+            Assert.IsTrue(CommandManager.IsValidCommand($"*.{part}.*"));
         }
 
         [TestMethod]
         public void ProcessMessageExecutesCommands()
         {
-            using (var db = ConnectionManager.OpenConnection())
+            var module = CommandViewMock;
+            var command = module.Commands.First();
+            var commandStrings = command.CommandStrings;
+            var user = UserController.GetUserByName("Auth");
+            foreach (var commandString in commandStrings)
             {
-                var module = CommandModuleMock;
-                var command = module.Commands.First();
-                var commandStrings = command.CommandStrings;
-                var user = UserController.GetUserByName("Auth");
-                foreach (var commandString in commandStrings)
-                {
-                    CommandManager.ProcessMessage(commandString, user, true);
-                }
-                Assert.AreEqual(commandStrings.Count(), module.TotalCount);
+                CommandManager.ProcessMessage(commandString, user, true);
             }
+            Assert.AreEqual(commandStrings.Count(), module.TotalCount);
         }
 
         [TestMethod]
         public void ProcessMessageWildcardAllowsAccessToSubModules()
         {
-            using (var db = ConnectionManager.OpenConnection())
-            {
-                var module = CommandModuleMock;
-                var group = db.AccessGroups.Read(x => x.Name.Equals("TestGroup")).First();
-                var restriction = db.Restrictions.Read(x => x.GroupId.Equals(group.Id)).First();
-                var old = restriction.Command;
-                restriction.Command = "CommandMock.*";
-                var user = UserController.GetUserByName("Auth");
-                var result = CommandManager.ProcessMessage("Foobar", user, true);
-                Assert.IsTrue(result.Processed);
-                Assert.IsFalse(result.Errors.Any());
-                Assert.AreEqual(1, SubCommandModuleMock.FoobarCount);
-                restriction.Command = old;
-            }
+            var db = ConnectionManager.CurrentConnection;
+            var module = CommandViewMock;
+            var group = db.AccessGroups.Read(x => x.Name.Equals("TestGroup")).First();
+            var restriction = db.Restrictions.Read(x => x.GroupId.Equals(group.Id)).First();
+            var old = restriction.Command;
+            restriction.Command = "CommandMock.*";
+            var user = UserController.GetUserByName("Auth");
+            var result = CommandManager.ProcessMessage("Foobar", user, true);
+            Assert.IsTrue(result.Processed);
+            Assert.IsFalse(result.Errors.Any());
+            Assert.AreEqual(1, SubCommandViewMock.FoobarCount);
         }
 
         [TestMethod]
         public void ProcessMessageSubModuleAccessDoesNotAllowParentAccess()
         {
-            using (var db = ConnectionManager.OpenConnection())
-            {
-                var user = UserController.GetUserByName("NotAuth");
-                var module = CommandModuleMock;
-                var group = new AccessGroup() { Name = "NewGroup" };
-                db.AccessGroups.Create(group);
-                var restriction = new Restriction() { Group = group, Command = "CommandMock.SubMock.*" };
-                db.Restrictions.Create(restriction);
-                var enrollment = new Enrollment() { Group = group, UserId = user.TwitchId };
-                db.Enrollments.Create(enrollment);
-                var result = CommandManager.ProcessMessage("Foo", user, true);
-                Assert.IsTrue(result.Processed);
-                Assert.IsTrue(result.Errors.Any());
-                Assert.AreEqual(0, module.FooCount);
-                db.Enrollments.Delete(enrollment);
-                db.Restrictions.Delete(restriction);
-                db.AccessGroups.Delete(group);
-            }
+            var db = ConnectionManager.CurrentConnection;
+            var user = UserController.GetUserByName("NotAuth");
+            var module = CommandViewMock;
+            var group = new AccessGroup() { Name = "NewGroup" };
+            db.AccessGroups.Create(group);
+            var restriction = new Restriction() { Group = group, Command = "CommandMock.SubMock.*" };
+            db.Restrictions.Create(restriction);
+            var enrollment = new Enrollment() { Group = group, UserId = user.TwitchId };
+            db.Enrollments.Create(enrollment);
+            db.Commit();
+            var result = CommandManager.ProcessMessage("Foo", user, true);
+            Assert.IsTrue(result.Processed);
+            Assert.IsTrue(result.Errors.Any());
+            Assert.AreEqual(0, module.FooCount);
         }
 
         [TestMethod]
         public void ProcessMessageAllowsAuthorizedUserWhenWildcardIsRestricted()
         {
-            using (var db = ConnectionManager.OpenConnection())
-            {
-                var user = UserController.GetUserByName("NotAuth");
-                var module = CommandModuleMock;
-                var group = new AccessGroup() { Name = "NewGroup" };
-                db.AccessGroups.Create(group);
-                var restriction = new Restriction() { Group = group, Command = "CommandMock.SubMock.*" };
-                db.Restrictions.Create(restriction);
-                var enrollment = new Enrollment() { Group = group, UserId = user.TwitchId };
-                db.Enrollments.Create(enrollment);
+            var db = ConnectionManager.CurrentConnection;
+            var user = UserController.GetUserByName("NotAuth");
+            var module = CommandViewMock;
+            var group = new AccessGroup() { Name = "NewGroup" };
+            db.AccessGroups.Create(group);
+            var restriction = new Restriction() { Group = group, Command = "CommandMock.SubMock.*" };
+            db.Restrictions.Create(restriction);
+            var enrollment = new Enrollment() { Group = group, UserId = user.TwitchId };
+            db.Enrollments.Create(enrollment);
+            db.Commit();
 
-                var otherGroup = db.AccessGroups.Read(x => x.Name.Equals("TestGroup")).First();
-                var otherRestriction = db.Restrictions.Read(x => x.Group.Equals(otherGroup)).First();
-                var old = otherRestriction.Command;
-                otherRestriction.Command = "CommandMock.*";
+            var otherGroup = db.AccessGroups.Read(x => x.Name.Equals("TestGroup")).First();
+            var otherRestriction = db.Restrictions.Read(x => x.Group.Equals(otherGroup)).First();
+            var old = otherRestriction.Command;
+            otherRestriction.Command = "CommandMock.*";
 
-                var result = CommandManager.ProcessMessage("Foobar", user, true);
-                Assert.IsTrue(result.Processed);
-                Assert.IsFalse(result.Errors.Any());
-                Assert.AreEqual(1, SubCommandModuleMock.FoobarCount);
-                otherRestriction.Command = old;
-                db.Enrollments.Delete(enrollment);
-                db.Restrictions.Delete(restriction);
-                db.AccessGroups.Delete(group);
-            }
+            var result = CommandManager.ProcessMessage("Foobar", user, true);
+            Assert.IsTrue(result.Processed);
+            Assert.IsFalse(result.Errors.Any());
+            Assert.AreEqual(1, SubCommandViewMock.FoobarCount);
         }
 
         [TestMethod]
         public void ProcessMessageRestrictsAccessToUnauthorizedUsers()
         {
-            using (var db = ConnectionManager.OpenConnection())
-            {
-                var user = UserController.GetUserByName("NotAuth");
-                var result = CommandManager.ProcessMessage("Foo", user, true);
-                Assert.IsTrue(result.Processed);
-                Assert.IsTrue(result.Errors.Any());
-                Assert.AreEqual(0, CommandModuleMock.FooCount);
-            }
+            var user = UserController.GetUserByName("NotAuth");
+            var result = CommandManager.ProcessMessage("Foo", user, true);
+            Assert.IsTrue(result.Processed);
+            Assert.IsTrue(result.Errors.Any());
+            Assert.AreEqual(0, CommandViewMock.FooCount);
         }
 
         [TestMethod]
         public void ProcessMessageRestrictsAccessToUnauthorizedUsersByFlag()
         {
-            using (var db = ConnectionManager.OpenConnection())
-            {
-                var user = UserController.GetUserByName("NotAuth");
-                var result = CommandManager.ProcessMessage("ModFoo", user, true);
-                Assert.IsTrue(result.Processed);
-                Assert.IsTrue(result.Errors.Any());
-                Assert.AreEqual(0, CommandModuleMock.ModFooCount);
-            }
+            var user = UserController.GetUserByName("NotAuth");
+            var result = CommandManager.ProcessMessage("ModFoo", user, true);
+            Assert.IsTrue(result.Processed);
+            Assert.IsTrue(result.Errors.Any());
+            Assert.AreEqual(0, CommandViewMock.ModFooCount);
         }
 
         [TestMethod]
         public void ProcessMessageAllowsAccessToModUsersByFlag()
         {
-            using (var db = ConnectionManager.OpenConnection())
-            {
-                var user = UserController.GetUserByName("Mod");
-                var result = CommandManager.ProcessMessage("ModFoo", user, true);
-                Assert.IsTrue(result.Processed);
-                Assert.IsFalse(result.Errors.Any());
-                Assert.AreEqual(1, CommandModuleMock.ModFooCount);
-            }
+            var user = UserController.GetUserByName("Mod");
+            var result = CommandManager.ProcessMessage("ModFoo", user, true);
+            Assert.IsTrue(result.Processed);
+            Assert.IsFalse(result.Errors.Any());
+            Assert.AreEqual(1, CommandViewMock.ModFooCount);
         }
 
         [TestMethod]
         public void ProcessMessageAllowsAccessToVipUsersByFlag()
         {
-            using (var db = ConnectionManager.OpenConnection())
-            {
-                var user = UserController.GetUserByName("Vip");
-                var result = CommandManager.ProcessMessage("VipFoo", user, true);
-                Assert.IsTrue(result.Processed);
-                Assert.IsFalse(result.Errors.Any());
-                Assert.AreEqual(1, CommandModuleMock.VipFooCount);
-            }
+            var user = UserController.GetUserByName("Vip");
+            var result = CommandManager.ProcessMessage("VipFoo", user, true);
+            Assert.IsTrue(result.Processed);
+            Assert.IsFalse(result.Errors.Any());
+            Assert.AreEqual(1, CommandViewMock.VipFooCount);
         }
 
         [TestMethod]
         public void ProcessMessageAllowsAccessToSubUsersByFlag()
         {
-            using (var db = ConnectionManager.OpenConnection())
-            {
-                var user = UserController.GetUserByName("Sub");
-                var result = CommandManager.ProcessMessage("SubFoo", user, true);
-                Assert.IsTrue(result.Processed);
-                Assert.IsFalse(result.Errors.Any());
-                Assert.AreEqual(1, CommandModuleMock.SubFooCount);
-            }
+            var user = UserController.GetUserByName("Sub");
+            var result = CommandManager.ProcessMessage("SubFoo", user, true);
+            Assert.IsTrue(result.Processed);
+            Assert.IsFalse(result.Errors.Any());
+            Assert.AreEqual(1, CommandViewMock.SubFooCount);
         }
 
         [TestMethod]
         public void ProcessMessageAllowsAccessToAdminUsersByFlag()
         {
-            using (var db = ConnectionManager.OpenConnection())
-            {
-                var user = UserController.GetUserByName("Admin");
-                var result = CommandManager.ProcessMessage("AdminFoo", user, true);
-                Assert.IsTrue(result.Processed);
-                Assert.IsFalse(result.Errors.Any());
-                Assert.AreEqual(1, CommandModuleMock.AdminFooCount);
-            }
+            var user = UserController.GetUserByName("Streamer");
+            var result = CommandManager.ProcessMessage("AdminFoo", user, true);
+            Assert.IsTrue(result.Processed);
+            Assert.IsFalse(result.Errors.Any());
+            Assert.AreEqual(1, CommandViewMock.AdminFooCount);
         }
 
         [TestMethod]
         public void ProcessMessageAllowsAccessToAuthorizedUsers()
         {
-            using (var db = ConnectionManager.OpenConnection())
-            {
-                var user = UserController.GetUserByName("Auth");
-                var result = CommandManager.ProcessMessage("Foo", user, true);
-                Assert.IsTrue(result.Processed);
-                Assert.IsFalse(result.Errors.Any());
-                Assert.AreEqual(1, CommandModuleMock.FooCount);
-            }
+            var user = UserController.GetUserByName("Auth");
+            var result = CommandManager.ProcessMessage("Foo", user, true);
+            Assert.IsTrue(result.Processed);
+            Assert.IsFalse(result.Errors.Any());
+            Assert.AreEqual(1, CommandViewMock.FooCount);
         }
 
         [TestMethod]
         public void ProcessMessageRestrictsCommandsWithWildcards()
         {
-            using (var db = ConnectionManager.OpenConnection())
-            {
-                var group = db.AccessGroups.Read(x => x.Name.Equals("TestGroup")).First();
-                var restriction = db.Restrictions.Read(x => x.GroupId.Equals(group.Id)).First();
-                var old = restriction.Command;
-                restriction.Command = "CommandMock.*";
-                var user = UserController.GetUserByName("NotAuth");
-                var result = CommandManager.ProcessMessage("Foo", user, true);
-                Assert.IsTrue(result.Processed);
-                Assert.IsTrue(result.Errors.Any());
-                Assert.AreEqual(0, CommandModuleMock.FooCount);
-                restriction.Command = old;
-            }
+            var db = ConnectionManager.CurrentConnection;
+            var group = db.AccessGroups.Read(x => x.Name.Equals("TestGroup")).First();
+            var restriction = db.Restrictions.Read(x => x.GroupId.Equals(group.Id)).First();
+            var old = restriction.Command;
+            restriction.Command = "CommandMock.*";
+            var user = UserController.GetUserByName("NotAuth");
+            var result = CommandManager.ProcessMessage("Foo", user, true);
+            Assert.IsTrue(result.Processed);
+            Assert.IsTrue(result.Errors.Any());
+            Assert.AreEqual(0, CommandViewMock.FooCount);
         }
 
         [TestMethod]
         public void ProcessMessageProcessesCompactCommands()
         {
-            using (var db = ConnectionManager.OpenConnection())
-            {
-                var user = UserController.GetUserByName("Auth");
-                var result = CommandManager.ProcessMessage("Foo -c", user, true);
-                Assert.IsTrue(result.Processed);
-                Assert.AreEqual(@"Foo: Foo|Bar;", result.Responses.First());
-                Assert.IsFalse(result.Errors.Any());
-                Assert.AreEqual(1, CommandModuleMock.FooCountCompact);
-            }
+            var user = UserController.GetUserByName("Auth");
+            var result = CommandManager.ProcessMessage("Foo -c", user, true);
+            Assert.IsTrue(result.Processed);
+            Assert.AreEqual(@"Foo: Foo|Bar;", result.Responses.First());
+            Assert.IsFalse(result.Errors.Any());
+            Assert.AreEqual(1, CommandViewMock.FooCountCompact);
         }
 
         [TestMethod]
         public void ProcessMessageCompactCommandsPassParameters()
         {
-            using (var db = ConnectionManager.OpenConnection())
-            {
-                var user = UserController.GetUserByName("Auth");
-                var result = CommandManager.ProcessMessage("Foo -c value", user, true);
-                Assert.IsTrue(result.Processed);
-                Assert.AreEqual(@"Foo: Foo|value;", result.Responses.First());
-                Assert.IsFalse(result.Errors.Any());
-                Assert.AreEqual(1, CommandModuleMock.FooCountCompact);
-            }
+            var user = UserController.GetUserByName("Auth");
+            var result = CommandManager.ProcessMessage("Foo -c value", user, true);
+            Assert.IsTrue(result.Processed);
+            Assert.AreEqual(@"Foo: Foo|value;", result.Responses.First());
+            Assert.IsFalse(result.Errors.Any());
+            Assert.AreEqual(1, CommandViewMock.FooCountCompact);
         }
 
         [TestMethod]
         public void ProcessMessageDoesNotAllowWhisperOnlyMessageInPublicChat()
         {
-            using (var db = ConnectionManager.OpenConnection())
-            {
-                var user = UserController.GetUserByName("Auth");
-                var result = CommandManager.ProcessMessage("Foo", user, false);
-                Assert.IsTrue(result.TimeoutSender);
-                Assert.IsTrue(result.Processed);
-                Assert.IsFalse(result.Errors.Any());
-                Assert.AreEqual(0, CommandModuleMock.FooCount);
-            }
+            var user = UserController.GetUserByName("Auth");
+            var result = CommandManager.ProcessMessage("Foo", user, false);
+            Assert.IsTrue(result.TimeoutSender);
+            Assert.IsTrue(result.Processed);
+            Assert.IsFalse(result.Errors.Any());
+            Assert.AreEqual(0, CommandViewMock.FooCount);
         }
 
         [TestMethod]
         public void ProcessMessageDoesAllowNonWhisperOnlyMessageInPublicChat()
         {
-            using (var db = ConnectionManager.OpenConnection())
-            {
-                var user = UserController.GetUserByName("Auth");
-                var result = CommandManager.ProcessMessage("Public", user, false);
-                Assert.IsTrue(result.Processed);
-                Assert.IsFalse(result.Errors.Any());
-                Assert.AreEqual(1, CommandModuleMock.PublicCount);
-            }
+            var user = UserController.GetUserByName("Auth");
+            var result = CommandManager.ProcessMessage("Public", user, false);
+            Assert.IsTrue(result.Processed);
+            Assert.IsFalse(result.Errors.Any());
+            Assert.AreEqual(1, CommandViewMock.PublicCount);
         }
     }
 }

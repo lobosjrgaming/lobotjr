@@ -21,6 +21,7 @@ namespace LobotJR.Test.Modules.Fishing
         [TestInitialize]
         public void Initialize()
         {
+            AutofacMockSetup.ResetDatabase();
             ConnectionManager = AutofacMockSetup.Container.Resolve<IConnectionManager>();
             TournamentController = AutofacMockSetup.Container.Resolve<TournamentController>();
             AdminView = AutofacMockSetup.Container.Resolve<FishingAdmin>();
@@ -29,24 +30,19 @@ namespace LobotJR.Test.Modules.Fishing
         [TestMethod]
         public void DebugTournamentStartsTournament()
         {
-            using (var db = ConnectionManager.OpenConnection())
-            {
-                var response = AdminView.DebugTournament();
-                Assert.IsTrue(response.Processed);
-                Assert.IsTrue(TournamentController.IsRunning);
-            }
+            var response = AdminView.DebugTournament();
+            Assert.IsTrue(response.Processed);
+            Assert.IsTrue(TournamentController.IsRunning);
         }
 
         [TestMethod]
         public void DebugCatchCatchesManyFish()
         {
-            using (var db = ConnectionManager.OpenConnection())
-            {
-                var response = AdminView.DebugCatch();
-                Assert.IsTrue(response.Processed);
-                Assert.AreEqual(50, response.Debug.Count);
-                Assert.IsTrue(response.Debug.Any(x => db.FishData.Read().Any(y => x.Contains(y.Name))));
-            }
+            var db = ConnectionManager.CurrentConnection;
+            var response = AdminView.DebugCatch();
+            Assert.IsTrue(response.Processed);
+            Assert.AreEqual(50, response.Debug.Count);
+            Assert.IsTrue(response.Debug.Any(x => db.FishData.Read().Any(y => x.Contains(y.Name))));
         }
     }
 }

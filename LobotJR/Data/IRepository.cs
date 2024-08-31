@@ -23,6 +23,7 @@ namespace LobotJR.Data
         /// <param name="entry">The object to update.</param>
         /// <returns>The updated object.</returns>
         TEntity Update(TEntity entry);
+        IEnumerable<TEntity> Delete();
         TEntity Delete(TEntity entry);
         TEntity DeleteById(int id);
         IEnumerable<TEntity> DeleteRange(IEnumerable<TEntity> entries);

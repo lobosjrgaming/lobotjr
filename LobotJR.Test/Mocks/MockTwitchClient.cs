@@ -21,11 +21,13 @@ namespace LobotJR.Test.Mocks
             ConnectionManager = connectionManager;
             Mock = new Mock<ITwitchClient>();
             Mock.Setup(x => x.GetChatterListAsync())
-                .Returns(() => { return Task.FromResult(TwitchDataFromUser(GetUsers(x => true))); });
+                .Returns(() => Task.FromResult(TwitchDataFromUser(GetUsers(x => true))));
             Mock.Setup(x => x.GetModeratorListAsync())
-                .Returns(() => { return Task.FromResult(TwitchDataFromUser(GetUsers(x => x.Username.Equals("Mod")))); });
+                .Returns(() => Task.FromResult(TwitchDataFromUser(GetUsers(x => x.Username.Equals("Mod")))));
+            Mock.Setup(x => x.GetVipListAsync())
+                .Returns(() => Task.FromResult(TwitchDataFromUser(GetUsers(x => x.Username.Equals("Vip")))));
             Mock.Setup(x => x.GetSubscriberListAsync())
-                .Returns(() => { return Task.FromResult(SubscriberDataFromUser(GetUsers(x => x.Username.Equals("Vip")))); });
+                .Returns(() => Task.FromResult(SubscriberDataFromUser(GetUsers(x => x.Username.Equals("Sub")))));
             Mock.Setup(x => x.GetTwitchUsers(It.IsAny<IEnumerable<string>>()))
                 .Returns((IEnumerable<string> users) =>
                 {
@@ -78,7 +80,7 @@ namespace LobotJR.Test.Mocks
 
         public Task<IEnumerable<TwitchUserData>> GetVipListAsync()
         {
-            throw new System.NotImplementedException();
+            return Mock.Object.GetVipListAsync();
         }
 
         public void Initialize()

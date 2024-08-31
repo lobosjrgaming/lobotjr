@@ -53,7 +53,7 @@ namespace LobotJR.Trigger.Responder
                     Messages = new string[] { Random.RandomElement(ModResponses) }
                 };
             }
-            return null;
+            return new TriggerResult() { Processed = false };
         }
     }
 }

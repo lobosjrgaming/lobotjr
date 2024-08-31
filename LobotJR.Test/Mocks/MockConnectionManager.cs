@@ -1,10 +1,12 @@
 ﻿using LobotJR.Command;
 using LobotJR.Command.Model.AccessControl;
 using LobotJR.Command.Model.Fishing;
+using LobotJR.Command.Model.Player;
 using LobotJR.Data;
 using LobotJR.Twitch;
 using LobotJR.Twitch.Model;
 using System;
+using System.Data.Entity;
 using System.Linq;
 
 namespace LobotJR.Test.Mocks
@@ -13,6 +15,7 @@ namespace LobotJR.Test.Mocks
     {
         private readonly Random random = new Random();
         private MockContext Context;
+        private DbContextTransaction Transaction;
         public IDatabase CurrentConnection { get; private set; }
 
         public IDatabase OpenConnection()
@@ -194,16 +197,67 @@ namespace LobotJR.Test.Mocks
             context.DataTimers.Create(new DataTimer() { Name = "WhisperQueue", Timestamp = DateTime.Now });
         }
 
+        private void InitializeClasses(IDatabase context)
+        {
+            context.CharacterClassData.Create(new CharacterClass() { CanPlay = false, Name = "NonPlayable" });
+            context.CharacterClassData.Create(new CharacterClass() { CanPlay = true, Name = "Playable" });
+        }
+
+        private void InitializePlayers(IDatabase context)
+        {
+        }
+
         public void SeedData()
         {
             InitializeSettings(CurrentConnection);
             InitializeUsers(CurrentConnection);
+            CurrentConnection.Commit();
             InitializeUserRoles(CurrentConnection);
             InitializeFish(CurrentConnection);
+            CurrentConnection.Commit();
             InitializePersonalLeaderboards(CurrentConnection);
+            CurrentConnection.Commit();
             InitializeGlobalLeaderboard(CurrentConnection);
             InitializeTournaments(CurrentConnection);
             InitializeTimers(CurrentConnection);
+            InitializeClasses(CurrentConnection);
+            CurrentConnection.Commit();
+        }
+
+        public void ResetUsers()
+        {
+            CurrentConnection.Commit();
+            CurrentConnection.Users.Delete();
+            CurrentConnection.Commit();
+            var all = CurrentConnection.Users.Read().ToList();
+            InitializeUsers(CurrentConnection);
+            CurrentConnection.Commit();
+        }
+
+        public void ResetAccessGroups()
+        {
+            CurrentConnection.Commit();
+            CurrentConnection.Enrollments.Delete();
+            CurrentConnection.Restrictions.Delete();
+            CurrentConnection.AccessGroups.Delete();
+            CurrentConnection.Commit();
+            InitializeUserRoles(CurrentConnection);
+            CurrentConnection.Commit();
+        }
+
+        public void ResetFishingData()
+        {
+            CurrentConnection.Commit();
+            CurrentConnection.Catches.Delete();
+            CurrentConnection.TournamentEntries.Delete();
+            CurrentConnection.TournamentResults.Delete();
+            CurrentConnection.FishingLeaderboard.Delete();
+            CurrentConnection.Commit();
+            InitializePersonalLeaderboards(CurrentConnection);
+            CurrentConnection.Commit();
+            InitializeGlobalLeaderboard(CurrentConnection);
+            InitializeTournaments(CurrentConnection);
+            CurrentConnection.Commit();
         }
     }
 }

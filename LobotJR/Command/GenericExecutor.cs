@@ -49,13 +49,13 @@ namespace LobotJR.Command
 
     public class GenericExecutor<T> where T : class
     {
-        private object Target;
-        private MethodInfo MethodInfo;
-        private ParameterInfo[] Parameters;
-        private int MinParams;
-        private int MaxParams;
-        private bool HasUserParam;
-        private bool SkipParse;
+        private readonly object Target;
+        private readonly MethodInfo MethodInfo;
+        private readonly ParameterInfo[] Parameters;
+        private readonly int MinParams;
+        private readonly int MaxParams;
+        private readonly bool HasUserParam;
+        private readonly bool SkipParse;
 
         public GenericExecutor(object target, MethodInfo methodInfo, bool skipParse)
         {

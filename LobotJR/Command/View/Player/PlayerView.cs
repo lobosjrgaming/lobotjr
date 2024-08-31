@@ -1,4 +1,5 @@
-﻿using LobotJR.Command.Controller.Dungeons;
+﻿using LobotJR.Command.Controller;
+using LobotJR.Command.Controller.Dungeons;
 using LobotJR.Command.Controller.General;
 using LobotJR.Command.Controller.Player;
 using LobotJR.Command.Model.Player;
@@ -14,7 +15,7 @@ namespace LobotJR.Command.View.Player
     /// View containing commands for player class selection and retrieving
     /// information about experience and currency.
     /// </summary>
-    public class PlayerView : ICommandView, IPushNotifier
+    public class PlayerView : ICommandView, IPushNotifier, IDatabaseInitialize
     {
         private readonly PlayerController PlayerController;
         private readonly PartyController PartyController;
@@ -51,6 +52,12 @@ namespace LobotJR.Command.View.Player
                 new CommandHandler("ClassHelp", this, CommandMethod.GetInfo(ClassHelp), "classhelp"),
                 new CommandHandler("Respec", this, CommandMethod.GetInfo(Respec), "respec"),
             };
+            Commands = commands;
+        }
+
+        public void Initialize()
+        {
+            var commands = Commands.ToList();
             //This adds aliases for each class in the database to allow for class selection in the form of "!c1", instead of "!c 1"
             var classes = PlayerController.GetPlayableClasses();
             foreach (var playerClass in classes)

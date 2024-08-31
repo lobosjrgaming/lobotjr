@@ -121,6 +121,7 @@ namespace LobotJR.Command.Controller.AccessControl
             {
                 var enrollment = new Enrollment(accessGroup, user.TwitchId);
                 ConnectionManager.CurrentConnection.Enrollments.Create(enrollment);
+                return true;
             }
             return false;
         }
@@ -138,6 +139,7 @@ namespace LobotJR.Command.Controller.AccessControl
             if (enrollment != null)
             {
                 ConnectionManager.CurrentConnection.Enrollments.Delete(enrollment);
+                return true;
             }
             return false;
         }
@@ -158,6 +160,7 @@ namespace LobotJR.Command.Controller.AccessControl
                 {
                     var enrollment = new Restriction(accessGroup, command);
                     ConnectionManager.CurrentConnection.Restrictions.Create(enrollment);
+                    return true;
                 }
             }
             return false;
@@ -176,6 +179,7 @@ namespace LobotJR.Command.Controller.AccessControl
             if (restriction != null)
             {
                 ConnectionManager.CurrentConnection.Restrictions.Delete(restriction);
+                return true;
             }
             return false;
         }

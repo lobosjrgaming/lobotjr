@@ -253,6 +253,12 @@ namespace LobotJR
                 CrashAlert();
             }
 
+            using (connectionManager.OpenConnection())
+            {
+                controllerManager.Initialize();
+                twitchClient.Initialize();
+            }
+
             commandManager.InitializeViews();
             commandManager.PushNotifications +=
                 (User user, CommandResult commandResult) =>
@@ -260,12 +266,6 @@ namespace LobotJR
                     string message = "Push Notification";
                     commandManager.HandleResult(message, commandResult, ircClient, twitchClient);
                 };
-
-            using (connectionManager.OpenConnection())
-            {
-                controllerManager.Initialize();
-                twitchClient.Initialize();
-            }
 
             await ircClient.Connect();
 

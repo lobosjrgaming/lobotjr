@@ -33,6 +33,7 @@ namespace LobotJR.Test.Mocks
     public static class AutofacMockSetup
     {
         public static IContainer Container { get; private set; }
+        public static MockConnectionManager ConnectionManager { get; private set; }
 
         private static void RegisterDatabase(ContainerBuilder builder)
         {
@@ -110,14 +111,37 @@ namespace LobotJR.Test.Mocks
         private static void RegisterManagers(ContainerBuilder builder)
         {
             builder.RegisterType<MockTwitchClient>().AsSelf().As<ITwitchClient>().InstancePerLifetimeScope();
-            builder.RegisterInstance(new Mock<ITwitchIrcClient>().Object).InstancePerLifetimeScope();
+            builder.RegisterInstance(new Mock<ITwitchIrcClient>().Object).SingleInstance();
             builder.RegisterType<ControllerManager>().AsSelf().As<IControllerManager>().InstancePerLifetimeScope();
             builder.RegisterType<CommandManager>().AsSelf().As<ICommandManager>().InstancePerLifetimeScope();
             builder.RegisterType<TriggerManager>().AsSelf().InstancePerLifetimeScope();
         }
 
+        public static void ResetDatabase()
+        {
+            var connectionManager = Container.Resolve<MockConnectionManager>();
+            //connectionManager.ResetAccessGroups();
+            //connectionManager.OpenConnection();
+            //connectionManager.SeedData();
+        }
+
+        public static void ResetAccessGroups()
+        {
+            ConnectionManager.ResetAccessGroups();
+        }
+
+        public static void ResetFishingRecords()
+        {
+            ConnectionManager.ResetFishingData();
+        }
+
+        public static void ResetUsers()
+        {
+            ConnectionManager.ResetUsers();
+        }
+
         [AssemblyInitialize]
-        public static void Setup()
+        public static void Setup(TestContext _)
         {
             var builder = new ContainerBuilder();
 
@@ -128,16 +152,16 @@ namespace LobotJR.Test.Mocks
             RegisterManagers(builder);
 
             var container = builder.Build();
-            var connectionManager = container.Resolve<MockConnectionManager>();
-            using (connectionManager.OpenConnection())
-            {
-                connectionManager.SeedData();
-            }
-
-            var commandManager = container.Resolve<ICommandManager>();
-            commandManager.InitializeViews();
-
             Container = container;
+            ConnectionManager = container.Resolve<MockConnectionManager>();
+            var commandManager = container.Resolve<ICommandManager>();
+            var controllerManager = container.Resolve<IControllerManager>();
+            ConnectionManager.OpenConnection();
+            ConnectionManager.SeedData();
+            controllerManager.Initialize();
+
+            commandManager.InitializeViews();
+            ConnectionManager.CurrentConnection.Commit();
         }
     }
 }

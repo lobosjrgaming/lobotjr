@@ -53,5 +53,7 @@ namespace LobotJR.Data
         IRepository<DungeonTimer> DungeonTimerData { get; }
         IRepository<CharacterClass> CharacterClassData { get; }
         IRepository<Equippables> EquippableData { get; }
+
+        void Commit();
     }
 }

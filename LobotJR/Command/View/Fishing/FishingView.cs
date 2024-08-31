@@ -82,7 +82,7 @@ namespace LobotJR.Command.View.Fishing
                 {
                     var record = LeaderboardController.GetUserRecordForFish(user, catchData.Fish);
                     var responses = new List<string>();
-                    if (record.Weight == catchData.Weight)
+                    if (record == null || record.Weight < catchData.Weight)
                     {
                         responses.Add($"This is the biggest {catchData.Fish.Name} you've ever caught!");
                     }

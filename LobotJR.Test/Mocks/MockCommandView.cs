@@ -55,6 +55,13 @@ namespace LobotJR.Test.Mocks
             };
         }
 
+        public void ResetCounts()
+        {
+            FooCount = FooCountCompact = PublicCount = ModFooCount = SubFooCount = VipFooCount = AdminFooCount = SingleParamCount
+                = MultiParamCount = IntParamCount = BoolParamCount = OptionalParamCount = UserAndStringParamCount = UserParamCount
+                = UserAndStringParamCount = NoParseCount = 0;
+        }
+
         public CommandResult Foo()
         {
             FooCount++;
@@ -164,6 +171,11 @@ namespace LobotJR.Test.Mocks
             {
                 new CommandHandler("Foobar", this, CommandMethod.GetInfo(Foo), "Foobar"),
             };
+        }
+
+        public void ResetCounts()
+        {
+            FoobarCount = 0;
         }
 
         public CommandResult Foo()
