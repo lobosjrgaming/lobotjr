@@ -90,7 +90,6 @@ namespace LobotJR.Test.TournamentSystems.Fishing
         [TestMethod]
         public void StartTournamentDoesNothingIfTournamentAlreadyRunning()
         {
-            var db = ConnectionManager.CurrentConnection;
             var tournament = new TournamentResult() { Id = 123 };
             TournamentSystem.CurrentTournament = tournament;
             TournamentSystem.StartTournament();
@@ -195,7 +194,6 @@ namespace LobotJR.Test.TournamentSystems.Fishing
         [TestMethod]
         public void ProcessStartsTournamentOnTimer()
         {
-            var db = ConnectionManager.CurrentConnection;
             TournamentSystem.NextTournament = DateTime.Now;
             TournamentSystem.Process();
             Assert.IsNotNull(TournamentSystem.CurrentTournament);
@@ -205,7 +203,6 @@ namespace LobotJR.Test.TournamentSystems.Fishing
         [TestMethod]
         public void ProcessEndsTournamentOnTimer()
         {
-            var db = ConnectionManager.CurrentConnection;
             TournamentSystem.CurrentTournament = new TournamentResult()
             {
                 Date = DateTime.Now
@@ -219,7 +216,6 @@ namespace LobotJR.Test.TournamentSystems.Fishing
         [TestMethod]
         public void ProcessCancelsTournamentWhenBroadcastingEnds()
         {
-            var db = ConnectionManager.CurrentConnection;
             PlayerController.AwardsEnabled = false;
             TournamentSystem.CurrentTournament = new TournamentResult();
             TournamentSystem.Process();

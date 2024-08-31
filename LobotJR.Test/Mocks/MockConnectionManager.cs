@@ -6,7 +6,6 @@ using LobotJR.Data;
 using LobotJR.Twitch;
 using LobotJR.Twitch.Model;
 using System;
-using System.Data.Entity;
 using System.Linq;
 
 namespace LobotJR.Test.Mocks
@@ -15,7 +14,6 @@ namespace LobotJR.Test.Mocks
     {
         private readonly Random random = new Random();
         private MockContext Context;
-        private DbContextTransaction Transaction;
         public IDatabase CurrentConnection { get; private set; }
 
         public IDatabase OpenConnection()
@@ -229,7 +227,6 @@ namespace LobotJR.Test.Mocks
             CurrentConnection.Commit();
             CurrentConnection.Users.Delete();
             CurrentConnection.Commit();
-            var all = CurrentConnection.Users.Read().ToList();
             InitializeUsers(CurrentConnection);
             CurrentConnection.Commit();
         }

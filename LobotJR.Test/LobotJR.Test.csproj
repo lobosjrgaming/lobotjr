@@ -108,7 +108,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Command\CommandManagerTestBase.cs" />
     <Compile Include="Command\CommandParseTests.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="Mocks\AutofacMockSetup.cs" />
@@ -118,7 +117,6 @@
     <Compile Include="Mocks\MockInitializer.cs" />
     <Compile Include="Mocks\MockContext.cs" />
     <Compile Include="Mocks\MockTwitchClient.cs" />
-    <Compile Include="Mocks\TestInitializers.cs" />
     <Compile Include="Modules\AccessControl\AccessControlTests.cs" />
     <Compile Include="Modules\AccessControl\AccessControlAdminGroupTests.cs" />
     <Compile Include="Modules\AccessControl\AccessControlAdminUserTests.cs" />

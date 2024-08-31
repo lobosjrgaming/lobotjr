@@ -21,7 +21,6 @@ namespace LobotJR.Test.Modules.Fishing
         [TestInitialize]
         public void Initialize()
         {
-            AutofacMockSetup.ResetDatabase();
             ConnectionManager = AutofacMockSetup.Container.Resolve<IConnectionManager>();
             TournamentController = AutofacMockSetup.Container.Resolve<TournamentController>();
             AdminView = AutofacMockSetup.Container.Resolve<FishingAdmin>();

@@ -96,8 +96,7 @@ namespace LobotJR.Shared.Channel
 
         public override bool Equals(object obj)
         {
-            var other = obj as SubscriptionResponseData;
-            return other != null && (
+            return obj is SubscriptionResponseData other && (
                 (string.IsNullOrWhiteSpace(other.UserId) && string.IsNullOrWhiteSpace(UserId))
                 || other.UserId.Equals(UserId));
         }

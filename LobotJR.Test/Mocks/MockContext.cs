@@ -18,7 +18,6 @@ namespace LobotJR.Test.Mocks
     public class MockContext : SqliteContext
     {
         private readonly List<ContextInitializer> initializers = new List<ContextInitializer>();
-        private SQLiteConnection connection;
 
         public static MockContext CreateAndSeed(params ContextInitializer[] initializers)
         {

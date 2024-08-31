@@ -47,7 +47,6 @@ namespace LobotJR.Test.Systems.Fishing
         [TestMethod]
         public void CreatesFisherWhenNoneExist()
         {
-            var db = ConnectionManager.CurrentConnection;
             var invalidUser = new User() { TwitchId = "InvalidId", Username = "Invalid User" };
             var retrieved = FishingSystem.GetFisherByUser(invalidUser);
             Assert.IsNotNull(retrieved);
@@ -56,7 +55,6 @@ namespace LobotJR.Test.Systems.Fishing
         [TestMethod]
         public void CalculatesFishSizes()
         {
-            var db = ConnectionManager.CurrentConnection;
             var fisher = new Fisher
             {
                 User = new User("", ""),
@@ -171,7 +169,6 @@ namespace LobotJR.Test.Systems.Fishing
         [TestMethod]
         public void CastCreatesNewFisherIfNoneExistsWithMatchingUserId()
         {
-            var db = ConnectionManager.CurrentConnection;
             var newUser = new User() { TwitchId = "NewId", Username = "NewUser" };
             FishingSystem.Cast(newUser);
             var newFisher = FishingSystem.GetFisherByUser(newUser);
@@ -269,7 +266,6 @@ namespace LobotJR.Test.Systems.Fishing
         [TestMethod]
         public void CatchFishDoesNothingWhenFisherIsNull()
         {
-            var db = ConnectionManager.CurrentConnection;
             var catchData = FishingSystem.CatchFish(null);
             Assert.IsNull(catchData);
         }

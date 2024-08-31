@@ -21,7 +21,6 @@ namespace LobotJR.Test.Command
         [TestInitialize]
         public void Initialize()
         {
-            AutofacMockSetup.ResetDatabase();
             ConnectionManager = AutofacMockSetup.Container.Resolve<IConnectionManager>();
             CommandManager = AutofacMockSetup.Container.Resolve<ICommandManager>();
             CommandViewMock = AutofacMockSetup.Container.Resolve<MockCommandView>();

@@ -117,14 +117,6 @@ namespace LobotJR.Test.Mocks
             builder.RegisterType<TriggerManager>().AsSelf().InstancePerLifetimeScope();
         }
 
-        public static void ResetDatabase()
-        {
-            var connectionManager = Container.Resolve<MockConnectionManager>();
-            //connectionManager.ResetAccessGroups();
-            //connectionManager.OpenConnection();
-            //connectionManager.SeedData();
-        }
-
         public static void ResetAccessGroups()
         {
             ConnectionManager.ResetAccessGroups();

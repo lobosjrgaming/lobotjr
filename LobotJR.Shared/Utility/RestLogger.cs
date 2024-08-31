@@ -14,7 +14,7 @@ namespace LobotJR.Shared.Utility
     /// </summary>
     public class RestLogger
     {
-        private static HashSet<string> ReplacementKeys = new HashSet<string>() { "Authorization", "Client-ID" };
+        private static readonly HashSet<string> ReplacementKeys = new HashSet<string>() { "Authorization", "Client-ID" };
 
         private static ClientData ClientData;
         private static TokenData TokenData;

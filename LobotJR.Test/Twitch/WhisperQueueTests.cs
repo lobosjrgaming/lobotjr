@@ -48,7 +48,6 @@ namespace LobotJR.Test.Twitch
         [TestMethod]
         public void GetMessagesRespectsPerSecondLimit()
         {
-            var db = ConnectionManager.CurrentConnection;
             var queue = new WhisperQueue(ConnectionManager, SettingsManager, 1, 10);
             queue.UpdateMaxRecipients();
             queue.Enqueue(new User("Test", "0"), "test", DateTime.Now);
@@ -65,7 +64,6 @@ namespace LobotJR.Test.Twitch
         [TestMethod]
         public void GetMessagesRespectsPerMinuteLimit()
         {
-            var db = ConnectionManager.CurrentConnection;
             var queue = new WhisperQueue(ConnectionManager, SettingsManager, 10, 1);
             queue.UpdateMaxRecipients();
             queue.Enqueue(new User("Test", "0"), "test", DateTime.Now);
@@ -82,7 +80,6 @@ namespace LobotJR.Test.Twitch
         [TestMethod]
         public void GetMessagesRespectsMaxRecipientLimit()
         {
-            var db = ConnectionManager.CurrentConnection;
             SettingsManager.GetAppSettings().MaxWhisperRecipients = 1;
             var queue = new WhisperQueue(ConnectionManager, SettingsManager, 10, 10);
             queue.UpdateMaxRecipients();
@@ -100,7 +97,6 @@ namespace LobotJR.Test.Twitch
         [TestMethod]
         public void GetMessagesAllowsExistUsersWhenAtLimit()
         {
-            var db = ConnectionManager.CurrentConnection;
             SettingsManager.GetAppSettings().MaxWhisperRecipients = 1;
             var queue = new WhisperQueue(ConnectionManager, SettingsManager, 10, 10);
             queue.UpdateMaxRecipients();
@@ -165,11 +161,10 @@ namespace LobotJR.Test.Twitch
         [TestMethod]
         public void ReportSuccessAddsToRecipients()
         {
-            var db = ConnectionManager.CurrentConnection;
             var queue = new WhisperQueue(ConnectionManager, SettingsManager, 1, 1);
             queue.UpdateMaxRecipients();
             queue.Enqueue(new User("Test", "0"), "test", DateTime.Now);
-            var canSend = queue.TryGetMessage(out var toSend);
+            queue.TryGetMessage(out var toSend);
             queue.ReportSuccess(toSend);
             Assert.IsTrue(queue.WhisperRecipients.Contains("0"));
             Assert.AreEqual(1, queue.WhisperRecipients.Count);
@@ -178,7 +173,6 @@ namespace LobotJR.Test.Twitch
         [TestMethod]
         public void ReportSuccessDoesNotAddDuplicateRecipients()
         {
-            var db = ConnectionManager.CurrentConnection;
             var queue = new WhisperQueue(ConnectionManager, SettingsManager, 10, 10);
             queue.UpdateMaxRecipients();
             queue.Enqueue(new User("Test", "0"), "test", DateTime.Now);
@@ -194,7 +188,6 @@ namespace LobotJR.Test.Twitch
         [TestMethod]
         public void ReportSuccessAddsToRollingTimers()
         {
-            var db = ConnectionManager.CurrentConnection;
             var queue = new WhisperQueue(ConnectionManager, SettingsManager, 2, 2);
             queue.UpdateMaxRecipients();
             queue.Enqueue(new User("Test", "0"), "test", DateTime.Now);
@@ -233,7 +226,6 @@ namespace LobotJR.Test.Twitch
         [TestMethod]
         public void FreezeQueuePreventsNewMessages()
         {
-            var db = ConnectionManager.CurrentConnection;
             var queue = new WhisperQueue(ConnectionManager, SettingsManager, 100, 100);
             queue.UpdateMaxRecipients();
             queue.FreezeQueue();
@@ -246,7 +238,6 @@ namespace LobotJR.Test.Twitch
         [TestMethod]
         public void FreezeQueueUpdatesMaxRecipients()
         {
-            var db = ConnectionManager.CurrentConnection;
             var queue = new WhisperQueue(ConnectionManager, SettingsManager, 100, 100);
             queue.UpdateMaxRecipients();
             queue.Enqueue(new User("Test", "01"), "test", DateTime.Now);

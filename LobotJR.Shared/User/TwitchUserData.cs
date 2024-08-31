@@ -21,8 +21,7 @@
 
         public override bool Equals(object obj)
         {
-            var other = obj as TwitchUserData;
-            return other != null && (
+            return obj is TwitchUserData other && (
                 (string.IsNullOrWhiteSpace(other.UserId) && string.IsNullOrWhiteSpace(UserId))
                 || other.UserId.Equals(UserId));
         }

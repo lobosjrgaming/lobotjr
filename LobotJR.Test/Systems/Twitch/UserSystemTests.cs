@@ -171,7 +171,6 @@ namespace LobotJR.Test.Systems.Twitch
         [TestMethod]
         public void GetOrCreateUserCreatesNewUser()
         {
-            var db = ConnectionManager.CurrentConnection;
             var user = Controller.GetOrCreateUser("500", "NewUser");
             Assert.IsNotNull(user);
             Assert.AreEqual("500", user.TwitchId);
