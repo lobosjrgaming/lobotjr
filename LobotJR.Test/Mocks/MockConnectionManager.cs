@@ -205,6 +205,7 @@ namespace LobotJR.Test.Mocks
         {
             context.CharacterClassData.Create(new CharacterClass() { CanPlay = false, Name = "NonPlayable" });
             context.CharacterClassData.Create(new CharacterClass() { CanPlay = true, Name = "Playable" });
+            context.CharacterClassData.Create(new CharacterClass() { CanPlay = true, Name = "PlayableAlternate" });
         }
 
         private void InitializePlayers(IDatabase context)

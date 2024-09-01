@@ -94,6 +94,14 @@ namespace LobotJR.Command.Controller.Player
         }
 
         /// <summary>
+        /// Clears all pending respecs.
+        /// </summary>
+        public void ClearRespecs()
+        {
+            PendingRespec.Clear();
+        }
+
+        /// <summary>
         /// Gives experience to a player. Raises the LevelUp event if the
         /// player levels up or prestiges as a result of this experience gain.
         /// </summary>

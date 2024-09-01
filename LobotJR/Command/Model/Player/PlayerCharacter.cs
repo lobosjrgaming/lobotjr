@@ -30,7 +30,7 @@ namespace LobotJR.Command.Model.Player
         /// <summary>
         /// The player's current level.
         /// </summary>
-        public int Level { get; set; }
+        public int Level { get; set; } = 1;
         /// <summary>
         /// The number of times the player has prestiged.
         /// </summary>
