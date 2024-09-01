@@ -226,5 +226,31 @@ namespace LobotJR.Test.Command
             Assert.AreEqual(0, result.Errors.Count());
             Assert.AreEqual(0, CommandViewMock.IntParamCount);
         }
+
+        [TestMethod]
+        public void ProcessMessagePassesEmptyStringOnIgnoreParseWithNoParams()
+        {
+            var db = ConnectionManager.CurrentConnection;
+            var command = CommandViewMock.Commands.Where(x => x.Name.Equals("NoParse")).FirstOrDefault();
+            var user = db.Users.Read().First();
+            var result = CommandManager.ProcessMessage($"{command.Name}", user, true);
+            Assert.IsNotNull(result);
+            Assert.IsTrue(result.Responses.Any(x => x.Contains("\"\"")));
+            Assert.AreEqual(0, result.Errors.Count());
+            Assert.AreEqual(1, CommandViewMock.NoParseCount);
+        }
+
+        [TestMethod]
+        public void ProcessMessagePassesAllOnIgnoreParse()
+        {
+            var db = ConnectionManager.CurrentConnection;
+            var command = CommandViewMock.Commands.Where(x => x.Name.Equals("NoParse")).FirstOrDefault();
+            var user = db.Users.Read().First();
+            var result = CommandManager.ProcessMessage($"{command.Name} params with spaces", user, true);
+            Assert.IsNotNull(result);
+            Assert.IsTrue(result.Responses.Any(x => x.Contains("\"params with spaces\"")));
+            Assert.AreEqual(0, result.Errors.Count());
+            Assert.AreEqual(1, CommandViewMock.NoParseCount);
+        }
     }
 }

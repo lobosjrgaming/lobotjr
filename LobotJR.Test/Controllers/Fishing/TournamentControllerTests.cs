@@ -13,7 +13,7 @@ using static LobotJR.Command.Controller.Fishing.TournamentController;
 namespace LobotJR.Test.TournamentSystems.Fishing
 {
     [TestClass]
-    public class TournamentSystemTests
+    public class TournamentControllerTests
     {
         private IConnectionManager ConnectionManager;
         private FishingController FishingSystem;

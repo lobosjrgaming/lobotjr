@@ -36,6 +36,8 @@ namespace LobotJR.Data
         public IRepository<Inventory> Inventories { get; private set; }
         public IRepository<Stable> Stables { get; private set; }
         public IRepository<DungeonLockout> DungeonLockouts { get; private set; }
+        public IRepository<DungeonHistory> DungeonHistories { get; private set; }
+        public IRepository<DungeonParticipant> DungeonParticipants { get; private set; }
 
         public IRepository<Fish> FishData { get; private set; }
         public IRepository<Item> ItemData { get; private set; }
@@ -83,6 +85,8 @@ namespace LobotJR.Data
             Inventories = new SqliteRepository<Inventory>(context);
             Stables = new SqliteRepository<Stable>(context);
             DungeonLockouts = new SqliteRepository<DungeonLockout>(context);
+            DungeonHistories = new SqliteRepository<DungeonHistory>(context);
+            DungeonParticipants = new SqliteRepository<DungeonParticipant>(context);
 
             FishData = new SqliteRepository<Fish>(context);
             ItemData = new SqliteRepository<Item>(context);

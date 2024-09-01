@@ -150,6 +150,8 @@
     <Compile Include="Command\ICompactResponse.cs" />
     <Compile Include="Command\IMetaController.cs" />
     <Compile Include="Command\Model\AccessControl\GroupFlags.cs" />
+    <Compile Include="Command\Model\Dungeons\DungeonHistory.cs" />
+    <Compile Include="Command\Model\Dungeons\DungeonParticipant.cs" />
     <Compile Include="Command\Model\Dungeons\QueueEntry.cs" />
     <Compile Include="Command\Model\Dungeons\DungeonRun.cs" />
     <Compile Include="Command\Model\Dungeons\Dungeon.cs" />
@@ -240,7 +242,6 @@
     <Compile Include="Data\Migration\SqliteUpdateContext.cs" />
     <Compile Include="Data\SettingsManager.cs" />
     <Compile Include="Data\TableObject.cs" />
-    <Compile Include="Data\IRepositoryManager.cs" />
     <Compile Include="Data\SqliteRepositoryManager.cs" />
     <Compile Include="Data\SqliteInitializer.cs" />
     <Compile Include="Data\SqliteRepository.cs" />

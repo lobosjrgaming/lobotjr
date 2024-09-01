@@ -9,10 +9,10 @@ using Moq;
 using System.Linq;
 using static LobotJR.Command.Controller.Fishing.LeaderboardController;
 
-namespace LobotJR.Test.Systems.Fishing
+namespace LobotJR.Test.Controllers.Fishing
 {
     [TestClass]
-    public class LeaderboardSystemTests
+    public class LeaderboardControllerTests
     {
         private IConnectionManager ConnectionManager;
         private FishingController FishingController;

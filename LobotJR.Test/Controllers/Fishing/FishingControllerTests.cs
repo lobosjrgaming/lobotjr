@@ -11,10 +11,10 @@ using System.Collections.Generic;
 using System.Linq;
 using static LobotJR.Command.Controller.Fishing.FishingController;
 
-namespace LobotJR.Test.Systems.Fishing
+namespace LobotJR.Test.Controllers.Fishing
 {
     [TestClass]
-    public class FishingSystemTests
+    public class FishingControllerTests
     {
         private IConnectionManager ConnectionManager;
         private FishingController FishingSystem;

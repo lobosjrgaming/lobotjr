@@ -1,5 +1,7 @@
 ﻿using LobotJR.Command.Controller.Fishing;
 using LobotJR.Command.Controller.Gloat;
+using LobotJR.Command.Controller.Pets;
+using LobotJR.Command.Model.Pets;
 using LobotJR.Command.View.Pets;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
@@ -40,6 +42,7 @@ namespace LobotJR.Command.View.Gloat
 
         private readonly GloatController GloatController;
         private readonly LeaderboardController LeaderboardController;
+        private readonly PetController PetController;
 
         /// <summary>
         /// Prefix applied to names of commands within this view.
@@ -50,14 +53,15 @@ namespace LobotJR.Command.View.Gloat
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public GloatView(GloatController gloatController, LeaderboardController leaderboardController)
+        public GloatView(GloatController gloatController, LeaderboardController leaderboardController, PetController petController)
         {
             GloatController = gloatController;
             LeaderboardController = leaderboardController;
+            PetController = petController;
             Commands = new CommandHandler[]
             {
                 new CommandHandler("GloatLevel", this, CommandMethod.GetInfo(GloatLevel), "gloat", "gloatlevel", "levelgloat"),
-                new CommandHandler("GloatPet", this, CommandMethod.GetInfo(GloatPet), "gloatpet", "petgloat"),
+                new CommandHandler("GloatPet", this, CommandMethod.GetInfo<int>(GloatPet), "gloatpet", "petgloat"),
                 new CommandHandler("GloatFish", this, CommandMethod.GetInfo<int>(GloatFish), "gloatfish", "fishgloat", "gloat-fish")
             };
         }
@@ -79,20 +83,44 @@ namespace LobotJR.Command.View.Gloat
             return new CommandResult($"You don't have enough coins to gloat (Cost: {cost} Wolfcoins)");
         }
 
-        public CommandResult GloatPet(User user)
+        public CommandResult GloatPet(User user, int index = 0)
         {
             if (GloatController.CanGloatPet(user))
             {
-                var cost = GloatController.GetPetCost();
-                var pet = GloatController.PetGloat(user);
-                if (pet != null)
+                if (PetController.GetStableForUser(user).Any())
                 {
-                    return new CommandResult(true, $"{user.Username} watches proudly as their level {pet.Level} {PetView.GetPetName(pet)} named {pet.Name} struts around!")
+                    Stable gloatRecord;
+                    if (index == 0)
                     {
-                        Responses = new List<string>() { $"You spent {cost} Wolfcoins to brag about {pet.Name}." }
-                    };
+                        gloatRecord = PetController.GetActivePet(user);
+                    }
+                    else
+                    {
+                        var records = PetController.GetStableForUser(user).OrderBy(x => x.PetId).ToList();
+                        if (index <= records.Count)
+                        {
+                            gloatRecord = records.ElementAt(index - 1);
+                        }
+                        else
+                        {
+                            return new CommandResult($"Invalid index, please use a number between 1 and {records.Count}.");
+                        }
+                    }
+                    if (gloatRecord != null)
+                    {
+                        var cost = GloatController.GetPetCost();
+                        var success = GloatController.PetGloat(user, gloatRecord);
+                        if (success)
+                        {
+                            return new CommandResult(true, $"{user.Username} watches proudly as their level {gloatRecord.Level} {PetView.GetPetName(gloatRecord)} named {gloatRecord.Name} struts around!")
+                            {
+                                Responses = new List<string>() { $"You spent {cost} Wolfcoins to brag about {gloatRecord.Name}." }
+                            };
+                        }
+                    }
+                    return new CommandResult("You don't have an active pet to show off! Activate one with !summon {id}, or use !gloatpet {id} to gloat about a specific pet.");
                 }
-                return new CommandResult("You don't have an active pet to show off! Activate one with !summon {id}");
+                return new CommandResult("You don't have any pets! Run dungeons to find a pet. If you don't have a group, you can use !queue to find one.");
             }
             return new CommandResult("You don't have enough coins to gloat!");
         }

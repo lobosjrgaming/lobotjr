@@ -34,6 +34,8 @@ namespace LobotJR.Data
         IRepository<Inventory> Inventories { get; }
         IRepository<Stable> Stables { get; }
         IRepository<DungeonLockout> DungeonLockouts { get; }
+        IRepository<DungeonHistory> DungeonHistories { get; }
+        IRepository<DungeonParticipant> DungeonParticipants { get; }
 
         // Game Content Data
         IRepository<GameSettings> GameSettings { get; }

@@ -76,9 +76,7 @@ namespace LobotJR.Command.Controller.Pets
         }
 
         /// <summary>
-        /// Gets all active pets for a given user. Only one pet is allowed to
-        /// be active at a time, but this method returns a collection in case
-        /// that rule is somehow violated.
+        /// Gets the active pet for a given user.
         /// </summary>
         /// <param name="user">The user to get pets for.</param>
         /// <returns>The active pet for the user.</returns>
@@ -88,9 +86,7 @@ namespace LobotJR.Command.Controller.Pets
         }
 
         /// <summary>
-        /// Gets all active pets for a given player. Only one pet is allowed to
-        /// be active at a time, but this method returns a collection in case
-        /// that rule is somehow violated.
+        /// Gets the active pet for a given player.
         /// </summary>
         /// <param name="player">The player to get pets for.</param>
         /// <returns>The active pet for the player.</returns>
@@ -298,6 +294,7 @@ namespace LobotJR.Command.Controller.Pets
                 var toGrant = unownedPets.ElementAt(Random.Next(0, unownedPets.Count()));
                 var toAdd = new Stable()
                 {
+                    Name = toGrant.Name,
                     UserId = user.TwitchId,
                     Pet = toGrant,
                     IsSparkly = Random.NextDouble() < 0.01f

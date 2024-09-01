@@ -9,10 +9,10 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace LobotJR.Test.Systems.Twitch
+namespace LobotJR.Test.Controllers.Twitch
 {
     [TestClass]
-    public class UserSystemTests
+    public class UserControllerTests
     {
         private IConnectionManager ConnectionManager;
         private SettingsManager SettingsManager;

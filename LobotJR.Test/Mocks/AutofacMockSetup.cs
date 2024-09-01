@@ -132,6 +132,11 @@ namespace LobotJR.Test.Mocks
             ConnectionManager.ResetUsers();
         }
 
+        public static void ResetPlayers()
+        {
+            ConnectionManager.ResetPlayers();
+        }
+
         [AssemblyInitialize]
         public static void Setup(TestContext _)
         {

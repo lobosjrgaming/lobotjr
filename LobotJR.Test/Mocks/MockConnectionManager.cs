@@ -1,11 +1,15 @@
 ﻿using LobotJR.Command;
 using LobotJR.Command.Model.AccessControl;
+using LobotJR.Command.Model.Dungeons;
+using LobotJR.Command.Model.Equipment;
 using LobotJR.Command.Model.Fishing;
+using LobotJR.Command.Model.Pets;
 using LobotJR.Command.Model.Player;
 using LobotJR.Data;
 using LobotJR.Twitch;
 using LobotJR.Twitch.Model;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace LobotJR.Test.Mocks
@@ -185,7 +189,9 @@ namespace LobotJR.Test.Mocks
                 FishingTournamentDuration = 5,
                 FishingTournamentInterval = 10,
                 FishingUseNormalRarity = false,
-                FishingUseNormalSizes = false
+                FishingUseNormalSizes = false,
+                LevelGloatCost = 20,
+                PetGloatCost = 30,
             };
             context.GameSettings.Create(gameSettings);
         }
@@ -203,6 +209,188 @@ namespace LobotJR.Test.Mocks
 
         private void InitializePlayers(IDatabase context)
         {
+            var canPlay = context.CharacterClassData.Read(x => x.CanPlay);
+            var noPlay = context.CharacterClassData.Read(x => !x.CanPlay);
+            foreach (var user in context.Users.Read())
+            {
+                context.PlayerCharacters.Create(new PlayerCharacter() { UserId = user.TwitchId, CharacterClass = user.IsSub ? canPlay.First() : noPlay.First() });
+            }
+        }
+
+        private void InitializeItems(IDatabase context)
+        {
+            var qualities = new List<ItemQuality>()
+            {
+                new ItemQuality() { Name = "Normal", DropRatePenalty = 0 },
+                new ItemQuality() { Name = "Rare", DropRatePenalty = 10 }
+            };
+            var types = new List<ItemType>()
+            {
+                new ItemType() { Name = "Wood" },
+                new ItemType() { Name = "Metal" }
+            };
+            var slots = new List<ItemSlot>()
+            {
+                new ItemSlot() { Name = "Weapon" },
+                new ItemSlot() { Name = "Armor" }
+            };
+            var index = 0;
+            foreach (var quality in qualities)
+            {
+                context.ItemQualityData.Create(quality);
+                foreach (var type in types)
+                {
+                    context.ItemTypeData.Create(type);
+                    foreach (var slot in slots)
+                    {
+                        context.ItemSlotData.Create(slot);
+                        context.ItemData.Create(new Item()
+                        {
+                            Name = $"{quality.Name} {type.Name} {slot.Name}",
+                            Max = 1,
+                            Description = $"A {slot.Name} made of {quality.Name} {type.Name}",
+                            Quality = quality,
+                            Type = type,
+                            Slot = slot,
+                            CoinBonus = index++,
+                            ItemFind = index++,
+                            SuccessChance = index++,
+                            XpBonus = index++,
+                            PreventDeathBonus = index++
+                        });
+                    }
+                }
+            }
+            context.EquippableData.Create(new Equippables()
+            {
+                CharacterClass = context.CharacterClassData.Read(x => x.CanPlay).First(),
+                ItemType = types.First(),
+            });
+        }
+
+        private void InitializePets(IDatabase context)
+        {
+            var basic = new PetRarity()
+            {
+                Name = "Common",
+                DropRate = 1
+            };
+            var rare = new PetRarity()
+            {
+                Name = "Rare",
+                DropRate = 0.25f
+            };
+            context.PetRarityData.Create(basic);
+            context.PetRarityData.Create(rare);
+            context.PetData.Create(new Pet()
+            {
+                Name = "Snake",
+                Description = "A common garter snake",
+                Rarity = basic
+            });
+            context.PetData.Create(new Pet()
+            {
+                Name = "Dragon",
+                Description = "A mighty dragon",
+                Rarity = rare
+            });
+        }
+
+        private void InitializeDungeons(IDatabase context)
+        {
+            var modes = new List<DungeonMode>()
+            {
+                new DungeonMode()
+                {
+                    Name = "Normal",
+                    Flag = "N",
+                    IsDefault = true
+                },
+                new DungeonMode()
+                {
+                    Name = "Heroic",
+                    Flag = "H",
+                }
+            };
+
+            context.DungeonData.Create(new Dungeon()
+            {
+                Description = "A dungeon",
+                Name = "Dungeon",
+                FailureText = "You died!",
+                Introduction = "Welcome to the dungeon, we've got mobs and loot",
+                Encounters = new List<Encounter>()
+                {
+                    new Encounter()
+                    {
+                        Levels = new List<EncounterLevel>()
+                        {
+                            new EncounterLevel()
+                            {
+                                Difficulty = 0,
+                                Mode = modes.First()
+                            },
+                            new EncounterLevel()
+                            {
+                                Difficulty = 10,
+                                Mode = modes.Last()
+                            }
+                        },
+                        Enemy = "Mob",
+                        SetupText = "You encounter a basic mob",
+                        CompleteText = "You easily defeated it!"
+                    },
+                    new Encounter()
+                    {
+                        Levels = new List<EncounterLevel>()
+                        {
+                            new EncounterLevel()
+                            {
+                                Difficulty = 1,
+                                Mode = modes.First()
+                            },
+                            new EncounterLevel()
+                            {
+                                Difficulty = .5f,
+                                Mode = modes.Last()
+                            }
+                        },
+                        Enemy = "Boss",
+                        SetupText = "You encounter the dungeon boss",
+                        CompleteText = "You barely managed to eke out a victory!"
+                    }
+                },
+                LevelRanges = new List<LevelRange>()
+                {
+                    new LevelRange()
+                    {
+                        Minimum = 3,
+                        Maximum = 10,
+                        Mode = modes.First()
+                    },
+                    new LevelRange()
+                    {
+                        Minimum = 10,
+                        Maximum = 20,
+                        Mode = modes.Last()
+                    }
+                },
+                Loot = new List<Loot>()
+                {
+                    new Loot()
+                    {
+                        Mode = modes.First(),
+                        Item = context.ItemData.Read().Last(),
+                        DropChance = 1
+                    },
+                    new Loot()
+                    {
+                        Mode = modes.Last(),
+                        Item = context.ItemData.Read().Last(),
+                        DropChance = 1
+                    }
+                },
+            });
         }
 
         public void SeedData()
@@ -220,6 +408,11 @@ namespace LobotJR.Test.Mocks
             InitializeTimers(CurrentConnection);
             InitializeClasses(CurrentConnection);
             CurrentConnection.Commit();
+            InitializePlayers(CurrentConnection);
+            InitializeItems(CurrentConnection);
+            InitializePets(CurrentConnection);
+            CurrentConnection.Commit();
+            InitializeDungeons(CurrentConnection);
         }
 
         public void ResetUsers()
@@ -254,6 +447,18 @@ namespace LobotJR.Test.Mocks
             CurrentConnection.Commit();
             InitializeGlobalLeaderboard(CurrentConnection);
             InitializeTournaments(CurrentConnection);
+            CurrentConnection.Commit();
+        }
+
+        public void ResetPlayers()
+        {
+            CurrentConnection.PlayerCharacters.Delete();
+            CurrentConnection.Inventories.Delete();
+            CurrentConnection.Stables.Delete();
+            CurrentConnection.DungeonHistories.Delete();
+            CurrentConnection.DungeonLockouts.Delete();
+            CurrentConnection.Commit();
+            InitializePlayers(CurrentConnection);
             CurrentConnection.Commit();
         }
     }

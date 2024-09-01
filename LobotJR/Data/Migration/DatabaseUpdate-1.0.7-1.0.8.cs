@@ -41,6 +41,8 @@ namespace LobotJR.Data.Migration
                 "CREATE TABLE \"Stables\" ([Id] INTEGER PRIMARY KEY, [UserId] nvarchar NOT NULL, [PetId] int NOT NULL, [Name] nvarchar NOT NULL, [Level] int NOT NULL, [Experience] int NOT NULL, [Affection] int NOT NULL, [Hunger] int NOT NULL, [IsSparkly] bit NOT NULL, [IsActive] bit NOT NULL, FOREIGN KEY (PetId) REFERENCES \"Pets\"(Id))",
                 "CREATE TABLE \"DungeonLockouts\" ([Id] INTEGER PRIMARY KEY, [UserId] nvarchar NOT NULL, [TimerId] int NOT NULL, [Time] datetime NOT NULL, FOREIGN KEY (TimerId) REFERENCES \"DungeonTimers\"(Id))",
                 "CREATE TABLE \"BugReports\" ([Id] INTEGER PRIMARY KEY, [UserId] nvarchar NOT NULL, [Message] nvarchar NOT NULL, [ReportTime] datetime NOT NULL, [ResolutionMessage] nvarchar, [ResolveTime] datetime)",
+                "CREATE TABLE \"DungeonHistories\" ([Id] INTEGER PRIMARY KEY, [Date] datetime NOT NULL, [IsQueueGroup] bit, [DungeonId] int NOT NULL, [ModeId] int NOT NULL, [StepsComplete] int NOT NULL, [Success] bit, FOREIGN KEY (DungeonId) REFERENCES \"Dungeons\"(Id), FOREIGN KEY (ModeId) REFERENCES \"DungeonModes\"(Id))",
+                "CREATE TABLE \"DungeonParticipants\" ([Id] INTEGER PRIMARY KEY, [HistoryId] int NOT NULL, [UserId] string NOT NULL, [WaitTime] int, [ExperienceEarned] int, [CurrencyEarned] int, [ItemDropId] int, [PetDropId] int, FOREIGN KEY (HistoryId) REFERENCES \"DungeonHistories\"(Id), FOREIGN KEY (ItemDropId) REFERENCES \"Items\"(Id), FOREIGN KEY (PetDropId) REFERENCES \"Pets\"(Id))",
                 //Move game settings to new table
                 "INSERT INTO \"GameSettings\" ([ExperiencFrequency], [ExperienceValue], [CoinValue], [SubRewardMultiplier], [RespecCost], [PryCost], [LevelGloatCost], [PetGloatCost], [PetExperienceToLevel], [PetLevelMax], [PetFeedingAffection], [PetFeedingCost], [PetHungerMax], [DungeonPartySize], [DungeonBaseCost], [DungeonLevelCost], [DungeonStepTime], [DungeonDeathChance], [DungeonCritChance], [DungeonLevelRestrictions], [FishingCastMinimum], [FishingCastMaximum], [FishingHookLength], [FishingUseNormalRarity], [FishingUseNormalSizes], [FishingGloatCost], [FishingTournamentDuration], [FishingTournamentInterval], [FishingTournamentCastMinimum], [FishingTournamentCastMaximum]) "
                     + "SELECT 15, 1, 3, 2, 250, 1, 25, 25, 150, 10, 5, 5, 100, 3, 25, 10, 9000, 0.25, 0.25, 1.0, 0, [FishingCastMinimum], [FishingCastMaximum], [FishingHookLength], [FishingUseNormalRarity], [FishingUseNormalSizes], [FishingGloatCost], [FishingTournamentDuration], [FishingTournamentInterval], [FishingTournamentCastMinimum], [FishingTournamentCastMaximum] FROM \"AppSettings\"",
@@ -81,6 +83,11 @@ namespace LobotJR.Data.Migration
                 "CREATE INDEX \"IX_DungeonLockout_Timer_Id\" ON \"DungeonLockout\" (\"TimerId\")",
                 "CREATE INDEX \"IX_Equippables_CharacterClass_Id\" ON \"Equippables\" (\"CharacterClassId\")",
                 "CREATE INDEX \"IX_Equippables_ItemType_Id\" ON \"Equippables\" (\"ItemTypeId\")",
+                "CREATE INDEX \"IX_DungeonHistories_Dungeon_Id\" ON \"DungeonHistories\" (\"DungeonId\")",
+                "CREATE INDEX \"IX_DungeonHistories_DungeonMode_Id\" ON \"DungeonHistories\" (\"ModeId\")",
+                "CREATE INDEX \"IX_DungeonParticipants_History_Id\" ON \"DungeonParticipants\" (\"HistoryId\")",
+                "CREATE INDEX \"IX_DungeonParticipants_ItemDrop_Id\" ON \"DungeonParticipants\" (\"ItemDropId\")",
+                "CREATE INDEX \"IX_DungeonParticipants_PetDrop_Id\" ON \"DungeonParticipants\" (\"PetDropId\")",
                 //Add performance indices for new tables
                 "CREATE INDEX \"IX_Loot_IsHeroic\" ON \"Loot\" (\"IsHeroic\")",
                 "CREATE INDEX \"IX_Inventories_IsEquipped\" ON \"Inventories\" (\"IsEquipped\")",
@@ -89,6 +96,7 @@ namespace LobotJR.Data.Migration
                 "CREATE INDEX \"IX_Inventories_User_Id\" ON \"Inventories\" (\"UserId\")",
                 "CREATE INDEX \"IX_Stables_User_Id\" ON \"Stables\" (\"UserId\")",
                 "CREATE INDEX \"IX_DungeonLockouts_User_Id\" ON \"DungeonLockouts\" (\"UserId\")",
+                "CREATE INDEX \"IX_DungeonHistories_User_Id\" ON \"DungeonHistories\" (\"UserId\")",
                 //Add foreign key indices for existing tables
                 "CREATE INDEX \"IX_Enrollments_Group_Id\" ON \"Enrollments\" (\"GroupId\")",
                 "CREATE INDEX \"IX_LeaderboardEntries_Fish_Id\" ON \"LeaderboardEntries\" (\"FishId\")",

@@ -13,13 +13,13 @@ using Moq;
 using System;
 using System.Linq;
 
-namespace LobotJR.Test.Modules.Fishing
+namespace LobotJR.Test.Views.Fishing
 {
     /// <summary>
     /// Summary description for FishingTests
     /// </summary>
     [TestClass]
-    public class LeaderboardModuleTests
+    public class LeaderboardViewTests
     {
         private IConnectionManager ConnectionManager;
         private UserController UserController;

@@ -8,7 +8,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Linq;
 
-namespace LobotJR.Test.Modules.AccessControl
+namespace LobotJR.Test.Views.AccessControl
 {
     [TestClass]
     public class AccessControlAdminCommandTests

@@ -155,7 +155,7 @@ namespace LobotJR.Test.Mocks
         public CommandResult NoParse(string p1)
         {
             NoParseCount++;
-            return new CommandResult($"Received parameter {p1}");
+            return new CommandResult($"Received parameter \"{p1}\"");
         }
     }
 

@@ -72,6 +72,7 @@ namespace LobotJR.Command.Controller.Dungeons
                         if (dungeons.Any())
                         {
                             var newParty = PartyController.CreateParty(true, group.Select(x => x.Player).ToArray());
+                            newParty.SetQueueTimes(group.ToDictionary(x => x.Player, x => (int)Math.Floor((DateTime.Now - x.QueueTime).TotalSeconds)));
                             newParty.Run = random.RandomElement(dungeons);
                             party = newParty;
                             var leader = group.OrderByDescending(x => x.QueueTime).First();

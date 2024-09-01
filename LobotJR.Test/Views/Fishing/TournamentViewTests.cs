@@ -14,10 +14,10 @@ using Moq;
 using System;
 using System.Linq;
 
-namespace LobotJR.Test.Modules.Fishing
+namespace LobotJR.Test.Views.Fishing
 {
     [TestClass]
-    public class TournamentModuleTests
+    public class TournamentViewTests
     {
         private TournamentResultsResponse ResultsFromCompact(string compact)
         {

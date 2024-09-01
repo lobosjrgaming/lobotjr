@@ -3,6 +3,7 @@ using LobotJR.Command.Controller.Pets;
 using LobotJR.Command.Controller.Player;
 using LobotJR.Command.Model.Dungeons;
 using LobotJR.Command.Model.Equipment;
+using LobotJR.Command.Model.Pets;
 using LobotJR.Command.Model.Player;
 using LobotJR.Data;
 using System;
@@ -380,8 +381,36 @@ namespace LobotJR.Command.Controller.Dungeons
             DungeonProgress?.Invoke(party, message);
         }
 
+        private DungeonHistory CreateDungeonHistory(Party party, bool success)
+        {
+            return new DungeonHistory()
+            {
+                Date = DateTime.Now,
+                Dungeon = party.Run.Dungeon,
+                Mode = party.Run.Mode,
+                IsQueueGroup = party.IsQueueGroup,
+                StepsComplete = party.CurrentEncounter - 1,
+                Success = success
+            };
+        }
+
+        private void AddParticipant(DungeonHistory history, Party party, PlayerCharacter player, int xp, int coins, Item itemDrop, Pet petDrop)
+        {
+            party.QueueTimes.TryGetValue(player, out var waitTime);
+            history.Participants.Add(new DungeonParticipant()
+            {
+                UserId = player.UserId,
+                ExperienceEarned = xp,
+                CurrencyEarned = coins,
+                ItemDrop = itemDrop,
+                PetDrop = petDrop,
+                WaitTime = waitTime
+            });
+        }
+
         private void HandleCompletion(Party party)
         {
+            var history = CreateDungeonHistory(party, true);
             foreach (var member in party.Members)
             {
                 var user = PlayerController.GetUserByPlayer(member);
@@ -416,10 +445,13 @@ namespace LobotJR.Command.Controller.Dungeons
                     PetController.AddHunger(member, activePet);
                 }
                 var rarity = PetController.RollForRarity();
+                Stable earnedPet = null;
                 if (rarity != null)
                 {
                     PetController.GrantPet(user, rarity);
                 }
+
+                AddParticipant(history, party, member, xp, coins, earnedDrop, earnedPet?.Pet);
 
                 party.Reset();
                 if (party.IsQueueGroup)
@@ -427,10 +459,12 @@ namespace LobotJR.Command.Controller.Dungeons
                     PartyController.DisbandParty(party);
                 }
             }
+            ConnectionManager.CurrentConnection.DungeonHistories.Create(history);
         }
 
         private void HandleFailure(Party party, GameSettings settings)
         {
+            var history = CreateDungeonHistory(party, false);
             var deathChance = settings.DungeonDeathChance - PartyDeathChance(party);
             var dead = party.Members.Where(x => CalculateCheck(deathChance - PlayerDeathChance(x))).ToList();
             foreach (var member in dead)
@@ -440,8 +474,14 @@ namespace LobotJR.Command.Controller.Dungeons
                 member.Experience -= xp;
                 member.Currency -= coins;
                 PlayerDeath?.Invoke(member, xp, coins);
+                AddParticipant(history, party, member, -xp, -coins, null, null);
+            }
+            foreach (var member in party.Members.Except(dead))
+            {
+                AddParticipant(history, party, member, 0, 0, null, null);
             }
             DungeonFailure?.Invoke(party, dead);
+            ConnectionManager.CurrentConnection.DungeonHistories.Create(history);
         }
 
         public Task Process()

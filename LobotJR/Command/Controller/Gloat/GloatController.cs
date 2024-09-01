@@ -93,18 +93,18 @@ namespace LobotJR.Command.Controller.Gloat
         /// deducted.
         /// </summary>
         /// <param name="user">The user that owns the pet to gloat about.</param>
-        /// <returns>The stable object for the user's active pet, or null if
-        /// no pet is active.</returns>
-        public Stable PetGloat(User user)
+        /// <param name="pet">The stable record the user is gloating about.</param>
+        /// <returns>True if the stable record is valid..</returns>
+        public bool PetGloat(User user, Stable pet)
         {
             var cost = GetPetCost();
             var player = PlayerController.GetPlayerByUser(user);
-            var pet = PetController.GetActivePet(user);
-            if (pet != null)
+            if (pet != null && pet.UserId.Equals(user.TwitchId))
             {
                 player.Currency -= cost;
+                return true;
             }
-            return pet;
+            return false;
         }
 
         /// <summary>

@@ -6,13 +6,13 @@ using LobotJR.Test.Mocks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Linq;
 
-namespace LobotJR.Test.Modules.Fishing
+namespace LobotJR.Test.Views.Fishing
 {
     /// <summary>
     /// Summary description for FishingTests
     /// </summary>
     [TestClass]
-    public class FishingAdminModuleTests
+    public class FishingAdminViewTests
     {
         private IConnectionManager ConnectionManager;
         private TournamentController TournamentController;

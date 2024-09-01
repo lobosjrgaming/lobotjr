@@ -82,6 +82,11 @@ namespace LobotJR.Command.Model.Dungeons
         /// </summary>
         public bool IsQueueGroup { get; set; }
         /// <summary>
+        /// Amount of time each player spent in queue for this party. Only
+        /// applicable for queue groups.
+        /// </summary>
+        public Dictionary<PlayerCharacter, int> QueueTimes { get; private set; } = new Dictionary<PlayerCharacter, int>();
+        /// <summary>
         /// The timestamp the most recent encounter of the dungeon was
         /// completed.
         /// </summary>
@@ -107,6 +112,17 @@ namespace LobotJR.Command.Model.Dungeons
             get
             {
                 return Members.FirstOrDefault();
+            }
+        }
+
+        public void SetQueueTimes(Dictionary<PlayerCharacter, int> queueTimes)
+        {
+            if (queueTimes != null && queueTimes.Any())
+            {
+                foreach (var item in queueTimes)
+                {
+                    QueueTimes.Add(item.Key, item.Value);
+                }
             }
         }
 

@@ -35,6 +35,8 @@ namespace LobotJR.Data
         public DbSet<Inventory> Inventories { get; set; }
         public DbSet<Stable> Stables { get; set; }
         public DbSet<DungeonLockout> DungeonLockouts { get; set; }
+        public DbSet<DungeonHistory> DungeonHistories { get; set; }
+        public DbSet<DungeonParticipant> DungeonParticipants { get; set; }
 
 
         /** Fishing user data */
