@@ -61,6 +61,14 @@ namespace LobotJR.Command.Controller.Pets
         }
 
         /// <summary>
+        /// Clears all pending releases.
+        /// </summary>
+        public void ClearPendingReleases()
+        {
+            PendingRelease.Clear();
+        }
+
+        /// <summary>
         /// Gets all stable entries for a given user.
         /// </summary>
         /// <param name="user">The user to get stables for.</param>
@@ -156,7 +164,7 @@ namespace LobotJR.Command.Controller.Pets
             {
                 player.Currency -= settings.PetFeedingCost;
                 stable.Experience += (settings.PetHungerMax - stable.Hunger);
-                if (stable.Experience > settings.PetExperienceToLevel && stable.Level < settings.PetLevelMax)
+                if (stable.Experience >= settings.PetExperienceToLevel && stable.Level < settings.PetLevelMax)
                 {
                     stable.Level++;
                     stable.Experience -= settings.PetExperienceToLevel;
@@ -180,13 +188,14 @@ namespace LobotJR.Command.Controller.Pets
             int hungerToLose = Random.Next(5, 5 + 6);
             stable.Hunger -= hungerToLose;
             stable.Affection = Math.Max(0, stable.Affection - 1);
+            var settings = SettingsManager.GetGameSettings();
 
             if (stable.Hunger <= 0)
             {
                 DeletePet(stable);
                 PetDeath?.Invoke(PlayerController.GetUserByPlayer(player), stable);
             }
-            else if (stable.Hunger <= 25)
+            else if (stable.Hunger <= settings.PetHungerMax * 0.25f)
             {
                 PetWarning?.Invoke(PlayerController.GetUserByPlayer(player), stable);
             }
@@ -263,17 +272,8 @@ namespace LobotJR.Command.Controller.Pets
         /// given.</returns>
         public PetRarity RollForRarity()
         {
-            PetRarity output = null;
             var petRarities = ConnectionManager.CurrentConnection.PetRarityData.Read().OrderBy(x => x.DropRate);
             var roll = Random.NextDouble();
-            foreach (var petRarity in petRarities)
-            {
-                if (roll < petRarity.DropRate)
-                {
-                    output = petRarity;
-                    break;
-                }
-            }
             return petRarities.FirstOrDefault(x => roll < x.DropRate);
         }
 

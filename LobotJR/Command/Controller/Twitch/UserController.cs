@@ -355,6 +355,21 @@ namespace LobotJR.Command.Controller.Twitch
             LookupRequests.Clear();
         }
 
+        /// <summary>
+        /// Forces an update of just the viewer list. This does not sync mod,
+        /// sub, or vip status.
+        /// </summary>
+        public async Task UpdateViewerList()
+        {
+            var chatters = await TwitchClient.GetChatterListAsync();
+            if (chatters.Any())
+            {
+                var dbUsers = ConnectionManager.CurrentConnection.Users.Read().ToList();
+                var chatterIds = chatters.Where(x => x != null).Select(x => x.UserId);
+                Viewers = chatterIds.Select(x => dbUsers.FirstOrDefault(y => y.TwitchId.Equals(x))).Where(x => x != null).ToList();
+            }
+        }
+
         public async Task Process()
         {
             var elapsed = DateTime.Now - LastUpdate;

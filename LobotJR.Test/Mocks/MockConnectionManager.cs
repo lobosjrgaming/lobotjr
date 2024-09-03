@@ -216,6 +216,18 @@ namespace LobotJR.Test.Mocks
             {
                 context.PlayerCharacters.Create(new PlayerCharacter() { UserId = user.TwitchId, CharacterClass = user.IsSub ? canPlay.First() : noPlay.First() });
             }
+            context.Stables.Create(new Stable()
+            {
+                Pet = context.PetData.Read().First(),
+                UserId = context.Users.Read().First().TwitchId,
+                Name = "FirstPet"
+            });
+            context.Stables.Create(new Stable()
+            {
+                Pet = context.PetData.Read().Last(),
+                UserId = context.Users.Read().First().TwitchId,
+                Name = "LastPet"
+            });
         }
 
         private void InitializeItems(IDatabase context)
@@ -283,18 +295,20 @@ namespace LobotJR.Test.Mocks
             };
             context.PetRarityData.Create(basic);
             context.PetRarityData.Create(rare);
-            context.PetData.Create(new Pet()
+            var petSnake = new Pet()
             {
                 Name = "Snake",
                 Description = "A common garter snake",
                 Rarity = basic
-            });
-            context.PetData.Create(new Pet()
+            };
+            context.PetData.Create(petSnake);
+            var petDragon = new Pet()
             {
                 Name = "Dragon",
                 Description = "A mighty dragon",
                 Rarity = rare
-            });
+            };
+            context.PetData.Create(petDragon);
         }
 
         private void InitializeDungeons(IDatabase context)
@@ -408,10 +422,10 @@ namespace LobotJR.Test.Mocks
             InitializeTournaments(CurrentConnection);
             InitializeTimers(CurrentConnection);
             InitializeClasses(CurrentConnection);
+            InitializePets(CurrentConnection);
             CurrentConnection.Commit();
             InitializePlayers(CurrentConnection);
             InitializeItems(CurrentConnection);
-            InitializePets(CurrentConnection);
             CurrentConnection.Commit();
             InitializeDungeons(CurrentConnection);
         }

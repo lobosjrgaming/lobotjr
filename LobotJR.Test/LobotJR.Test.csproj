@@ -109,6 +109,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Command\CommandParseTests.cs" />
+    <Compile Include="Controllers\Pets\PetControllerTests.cs" />
     <Compile Include="Controllers\Player\PlayerControllerTests.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="Mocks\AutofacMockSetup.cs" />
@@ -156,7 +157,6 @@
     <Folder Include="Controllers\Dungeons\" />
     <Folder Include="Controllers\Equipment\" />
     <Folder Include="Controllers\General\" />
-    <Folder Include="Controllers\Pets\" />
   </ItemGroup>
   <Import Project="$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets" Condition="Exists('$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets')" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -3,8 +3,11 @@ using LobotJR.Command.Controller.Player;
 using LobotJR.Data;
 using LobotJR.Test.Mocks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace LobotJR.Test.Controllers.Player
 {
@@ -379,6 +382,96 @@ namespace LobotJR.Test.Controllers.Player
             PlayerController.DisableAwards();
             Assert.IsFalse(PlayerController.AwardsEnabled);
             Assert.IsNull(PlayerController.AwardSetter);
+        }
+
+        [TestMethod]
+        public async Task ProcessAwardsExperienceAndCurrency()
+        {
+            var db = ConnectionManager.CurrentConnection;
+            var settings = SettingsManager.GetGameSettings();
+            var listener = new Mock<PlayerController.ExperienceAwardHandler>();
+            PlayerController.ExperienceAwarded += listener.Object;
+            PlayerController.CurrentMultiplier = 1;
+            var user = db.Users.Read(x => !x.IsSub).First();
+            var sub = db.Users.Read(x => x.IsSub).First();
+            var player = PlayerController.GetPlayerByUser(user);
+            var subPlayer = PlayerController.GetPlayerByUser(sub);
+            var playerXp = player.Experience;
+            var playerCoins = player.Currency;
+            var subXp = subPlayer.Experience;
+            var subCoins = subPlayer.Currency;
+            PlayerController.AwardsEnabled = true;
+            PlayerController.LastAward = DateTime.Now - TimeSpan.FromMinutes(settings.ExperienceFrequency);
+            await PlayerController.Process();
+            Assert.AreEqual(playerXp + settings.ExperienceValue, player.Experience);
+            Assert.AreEqual(playerCoins + settings.CoinValue, player.Currency);
+            Assert.AreEqual(subXp + settings.ExperienceValue * settings.SubRewardMultiplier, subPlayer.Experience);
+            Assert.AreEqual(subCoins + settings.CoinValue * settings.SubRewardMultiplier, subPlayer.Currency);
+            listener.Verify(x => x(settings.ExperienceValue, settings.CoinValue, settings.SubRewardMultiplier), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task ProcessAwardsAppliesMultiplier()
+        {
+            var db = ConnectionManager.CurrentConnection;
+            var settings = SettingsManager.GetGameSettings();
+            var listener = new Mock<PlayerController.ExperienceAwardHandler>();
+            PlayerController.ExperienceAwarded += listener.Object;
+            PlayerController.CurrentMultiplier = 2;
+            var user = db.Users.Read(x => !x.IsSub).First();
+            var sub = db.Users.Read(x => x.IsSub).First();
+            var player = PlayerController.GetPlayerByUser(user);
+            var subPlayer = PlayerController.GetPlayerByUser(sub);
+            var playerXp = player.Experience;
+            var playerCoins = player.Currency;
+            var subXp = subPlayer.Experience;
+            var subCoins = subPlayer.Currency;
+            PlayerController.AwardsEnabled = true;
+            PlayerController.LastAward = DateTime.Now - TimeSpan.FromMinutes(settings.ExperienceFrequency);
+            await PlayerController.Process();
+            Assert.AreEqual(playerXp + settings.ExperienceValue * 2, player.Experience);
+            Assert.AreEqual(playerCoins + settings.CoinValue * 2, player.Currency);
+            Assert.AreEqual(subXp + settings.ExperienceValue * settings.SubRewardMultiplier * 2, subPlayer.Experience);
+            Assert.AreEqual(subCoins + settings.CoinValue * settings.SubRewardMultiplier * 2, subPlayer.Currency);
+            listener.Verify(x => x(settings.ExperienceValue * 2, settings.CoinValue * 2, settings.SubRewardMultiplier), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task ProcessDoesNotAwardExperienceIfAwardsAreDisabled()
+        {
+            var db = ConnectionManager.CurrentConnection;
+            var settings = SettingsManager.GetGameSettings();
+            var listener = new Mock<PlayerController.ExperienceAwardHandler>();
+            PlayerController.ExperienceAwarded += listener.Object;
+            var user = db.Users.Read(x => !x.IsMod).First();
+            var player = PlayerController.GetPlayerByUser(user);
+            var playerXp = player.Experience;
+            var playerCoins = player.Currency;
+            PlayerController.AwardsEnabled = false;
+            PlayerController.LastAward = DateTime.Now - TimeSpan.FromMinutes(settings.ExperienceFrequency);
+            await PlayerController.Process();
+            Assert.AreEqual(playerXp, player.Experience);
+            Assert.AreEqual(playerCoins, player.Currency);
+            listener.Verify(x => x(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+        }
+
+        [TestMethod]
+        public async Task ProcessDoesNotAwardExperienceIfFrequencyNotElapsed()
+        {
+            var db = ConnectionManager.CurrentConnection;
+            var settings = SettingsManager.GetGameSettings();
+            var listener = new Mock<PlayerController.ExperienceAwardHandler>();
+            PlayerController.ExperienceAwarded += listener.Object;
+            var user = db.Users.Read(x => !x.IsMod).First();
+            var player = PlayerController.GetPlayerByUser(user);
+            var playerXp = player.Experience;
+            var playerCoins = player.Currency;
+            PlayerController.AwardsEnabled = true;
+            PlayerController.LastAward = DateTime.Now;
+            await PlayerController.Process();
+            Assert.AreEqual(playerXp, player.Experience);
+            Assert.AreEqual(playerCoins, player.Currency);
+            listener.Verify(x => x(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>()), Times.Never);
         }
     }
 }

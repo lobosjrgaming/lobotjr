@@ -132,6 +132,20 @@ namespace LobotJR.Test.Controllers.Twitch
         }
 
         [TestMethod]
+        public async Task UpdateViewerListGetsChatterList()
+        {
+            var db = ConnectionManager.CurrentConnection;
+            var allUsers = db.Users.Read().ToList();
+            var settings = SettingsManager.GetAppSettings();
+            Controller.LastUpdate = DateTime.Now - TimeSpan.FromMinutes(settings.UserDatabaseUpdateTime + 1);
+            await Controller.UpdateViewerList();
+            db.Commit();
+            Assert.AreEqual(allUsers.Count, Controller.Viewers.Count());
+            var missing = allUsers.Select(x => x.Username).Except(Controller.Viewers.Select(x => x.Username)).ToList();
+            Assert.AreEqual(0, missing.Count);
+        }
+
+        [TestMethod]
         public async Task ProcessDoesNotUpdateUntilSetTime()
         {
             var db = ConnectionManager.CurrentConnection;

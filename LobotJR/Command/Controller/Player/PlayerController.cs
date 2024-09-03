@@ -370,33 +370,36 @@ namespace LobotJR.Command.Controller.Player
             ExperienceToggled?.Invoke(false);
         }
 
-        public Task Process()
+        public async Task Process()
         {
             var settings = SettingsManager.GetGameSettings();
             if (AwardsEnabled)
             {
                 if (LastAward + TimeSpan.FromMinutes(settings.ExperienceFrequency) <= DateTime.Now)
                 {
-                    var chatters = UserController.Viewers.ToList();
+                    await UserController.UpdateViewerList();
+                    var chatters = UserController.Viewers;
                     var xpToAward = settings.ExperienceValue * CurrentMultiplier;
                     var coinsToAward = settings.CoinValue * CurrentMultiplier;
                     var subMultiplier = settings.SubRewardMultiplier;
-                    Logger.Info("{coins} wolfcoins and {xp} experience awarded to {count} viewers.", coinsToAward, xpToAward, chatters.Count);
+                    Logger.Info("{coins} wolfcoins and {xp} experience awarded to {count} viewers.", coinsToAward, xpToAward, chatters.Count());
                     foreach (var chatter in chatters)
                     {
+                        var player = GetPlayerByUser(chatter);
                         if (chatter.IsSub)
                         {
-                            xpToAward *= subMultiplier;
-                            coinsToAward *= subMultiplier;
+                            GainExperience(chatter, player, xpToAward * subMultiplier);
+                            player.Currency += coinsToAward * subMultiplier;
                         }
-                        var player = GetPlayerByUser(chatter);
-                        GainExperience(chatter, player, xpToAward);
-                        player.Currency += coinsToAward;
+                        else
+                        {
+                            GainExperience(chatter, player, xpToAward);
+                            player.Currency += coinsToAward;
+                        }
                     }
                     ExperienceAwarded?.Invoke(xpToAward, coinsToAward, subMultiplier);
                 }
             }
-            return Task.CompletedTask;
         }
     }
 }
