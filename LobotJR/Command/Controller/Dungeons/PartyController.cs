@@ -93,7 +93,7 @@ namespace LobotJR.Command.Controller.Dungeons
         /// <returns>True if the player was able to be set as the leader.</returns>
         public bool SetLeader(Party party, PlayerCharacter player)
         {
-            if (party.Members.Any(x => x.Equals(player)))
+            if (party.Members.Any(x => x.Equals(player)) && !IsLeader(party, player))
             {
                 party.Members.Remove(player);
                 party.Members.Insert(0, player);
@@ -134,8 +134,7 @@ namespace LobotJR.Command.Controller.Dungeons
                 && party.Members.Count + party.PendingInvites.Count < settings.DungeonPartySize)
             {
                 party.PendingInvites.Remove(player);
-                AddPlayer(party, player);
-                return true;
+                return AddPlayer(party, player);
             }
             return false;
         }
@@ -190,7 +189,7 @@ namespace LobotJR.Command.Controller.Dungeons
         {
             if (party.Members.Contains(player))
             {
-                if (party.State != PartyState.Started && party.State != PartyState.Complete)
+                if (party.State == PartyState.Full || party.State == PartyState.Forming)
                 {
                     party.Members.Remove(player);
                     if (party.Members.Count <= 0)

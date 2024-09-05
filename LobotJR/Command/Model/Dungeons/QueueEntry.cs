@@ -17,7 +17,7 @@ namespace LobotJR.Command.Model.Dungeons
         /// <summary>
         /// The time this player entered the queue.
         /// </summary>
-        public DateTime QueueTime { get; set; }
+        public DateTime QueueTime { get; set; } = DateTime.Now;
         /// <summary>
         /// The collection of dungeons the player is queued for.
         /// </summary>

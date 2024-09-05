@@ -62,10 +62,11 @@ namespace LobotJR.Command.Controller.Dungeons
             var settings = SettingsManager.GetGameSettings();
             if (GroupFinderQueue.Count() >= settings.DungeonPartySize)
             {
-                for (var skip = 0; skip < GroupFinderQueue.Count - settings.DungeonPartySize; skip++)
+                for (var skip = 0; skip <= GroupFinderQueue.Count - settings.DungeonPartySize; skip++)
                 {
                     var group = GroupFinderQueue.Take(settings.DungeonPartySize - 1);
-                    group.Concat(GroupFinderQueue.Skip(group.Count() + skip).Take(1));
+                    var next = GroupFinderQueue.Skip(group.Count() + skip).Take(1);
+                    group = group.Concat(next);
                     if (IsViableParty(group))
                     {
                         var dungeons = GetGroupDungeons(group);
@@ -83,6 +84,14 @@ namespace LobotJR.Command.Controller.Dungeons
                 }
             }
             return false;
+        }
+
+        /// <summary>
+        /// Resets the group finder queue, removing all queue entries.
+        /// </summary>
+        public void ResetQueue()
+        {
+            GroupFinderQueue.Clear();
         }
 
         /// <summary>

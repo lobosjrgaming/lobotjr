@@ -26,8 +26,6 @@ namespace LobotJR.Command.Controller.Dungeons
         private readonly EquipmentController EquipmentController;
         private readonly PetController PetController;
 
-        private readonly List<Party> PartiesToRemove = new List<Party>();
-
         private readonly Random Random = new Random();
 
         /// <summary>
@@ -412,7 +410,7 @@ namespace LobotJR.Command.Controller.Dungeons
             party.Reset();
             if (party.IsQueueGroup)
             {
-                PartiesToRemove.Add(party);
+                party.State = PartyState.Disbanded;
             }
         }
 
@@ -514,11 +512,11 @@ namespace LobotJR.Command.Controller.Dungeons
             {
                 HandleFailure(party, settings);
             }
-            foreach (var party in PartiesToRemove)
+            var toRemove = groups.Where(x => x.State == PartyState.Disbanded).ToList();
+            foreach (var party in toRemove)
             {
                 PartyController.DisbandParty(party);
             }
-            PartiesToRemove.Clear();
             return Task.CompletedTask;
         }
     }

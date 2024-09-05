@@ -597,7 +597,7 @@ namespace LobotJR.Test.Controllers.Dungeons
                 listener.Verify(x => x(member, xp, coins, null, true), Times.Once);
                 Assert.IsTrue(db.DungeonLockouts.Read(x => x.UserId.Equals(member.UserId)).Any());
             }
-            Assert.AreEqual(PartyState.Full, party.State);
+            Assert.AreEqual(PartyState.Disbanded, party.State);
             Assert.AreEqual(0, party.CurrentEncounter);
             Assert.AreEqual(StepState.Setup, party.StepState);
         }
@@ -630,7 +630,7 @@ namespace LobotJR.Test.Controllers.Dungeons
                 var coins = (int)Math.Round(50 * (1 + 0.05f * member.Level));
                 listener.Verify(x => x(member, xp, coins, null, false), Times.Once);
             }
-            Assert.AreEqual(PartyState.Full, party.State);
+            Assert.AreEqual(PartyState.Disbanded, party.State);
             Assert.AreEqual(0, party.CurrentEncounter);
             Assert.AreEqual(StepState.Setup, party.StepState);
         }
