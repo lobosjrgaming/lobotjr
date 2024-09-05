@@ -12,14 +12,12 @@ namespace LobotJR.Test.Controllers.Dungeons
     public class PartyControllerTests
     {
         private IConnectionManager ConnectionManager;
-        private SettingsManager SettingsManager;
         private PartyController Controller;
 
         [TestInitialize]
         public void Initialize()
         {
             ConnectionManager = AutofacMockSetup.Container.Resolve<IConnectionManager>();
-            SettingsManager = AutofacMockSetup.Container.Resolve<SettingsManager>();
             Controller = AutofacMockSetup.Container.Resolve<PartyController>();
             AutofacMockSetup.ResetPlayers();
             Controller.ResetGroups();

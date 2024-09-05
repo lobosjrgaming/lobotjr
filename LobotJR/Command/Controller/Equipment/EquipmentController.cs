@@ -59,17 +59,6 @@ namespace LobotJR.Command.Controller.Equipment
         }
 
         /// <summary>
-        /// Checks whether a user already has an item.
-        /// </summary>
-        /// <param name="user">The user of the inventory to check.</param>
-        /// <param name="item">The item to check for.</param>
-        /// <returns>True if the user has the item in their inventory.</returns>
-        public bool HasItem(User user, Item item)
-        {
-            return ConnectionManager.CurrentConnection.Inventories.Any(x => x.UserId.Equals(user.TwitchId) && x.Item.Equals(item));
-        }
-
-        /// <summary>
         /// Gets the inventory record for a given user and item.
         /// </summary>
         /// <param name="user">The user to check.</param>
@@ -136,7 +125,7 @@ namespace LobotJR.Command.Controller.Equipment
             var dupes = ConnectionManager.CurrentConnection.Inventories.Read()
                 .GroupBy(x => $"{x.UserId}|{x.ItemId}")
                 .Where(x => x.Count() > 1);
-            var toDelete = dupes.SelectMany(x => x.Skip(1));
+            var toDelete = dupes.SelectMany(x => x.Skip(1)).ToList();
             ConnectionManager.CurrentConnection.Inventories.DeleteRange(toDelete);
             return toDelete;
         }
@@ -151,7 +140,7 @@ namespace LobotJR.Command.Controller.Equipment
                 .Where(x => x.IsEquipped)
                 .GroupBy(x => $"{x.UserId}|{x.Item.SlotId}")
                 .Where(x => x.Count() > x.First().Item.Slot.MaxEquipped);
-            var toUnequip = dupes.SelectMany(x => x.Skip(x.First().Item.Slot.MaxEquipped));
+            var toUnequip = dupes.SelectMany(x => x.Skip(x.First().Item.Slot.MaxEquipped)).ToList();
             foreach (var record in toUnequip)
             {
                 record.IsEquipped = false;
@@ -166,7 +155,7 @@ namespace LobotJR.Command.Controller.Equipment
         /// <returns>The records that were updated.</returns>
         public IEnumerable<Inventory> FixCountErrors()
         {
-            var errors = ConnectionManager.CurrentConnection.Inventories.Read(x => x.Count > x.Item.Max);
+            var errors = ConnectionManager.CurrentConnection.Inventories.Read(x => x.Count > x.Item.Max).ToList();
             foreach (var error in errors)
             {
                 error.Count = error.Item.Max;

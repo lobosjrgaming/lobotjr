@@ -26,7 +26,7 @@ namespace LobotJR.Command.Model.Equipment
         /// <summary>
         /// The quantity of this item the user has.
         /// </summary>
-        public int Count { get; set; }
+        public int Count { get; set; } = 1;
         /// <summary>
         /// Whether or not this item is currently equipped.
         /// </summary>

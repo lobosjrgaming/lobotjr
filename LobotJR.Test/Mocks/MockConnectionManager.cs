@@ -280,6 +280,18 @@ namespace LobotJR.Test.Mocks
                 CharacterClass = context.CharacterClassData.Read(x => x.CanPlay).First(),
                 ItemType = types.First(),
             });
+            var consumableType = new ItemType() { Name = "Consumable" };
+            var nonSlot = new ItemSlot() { Name = "Unequippable" };
+            context.ItemTypeData.Create(consumableType);
+            context.ItemSlotData.Create(nonSlot);
+            context.ItemData.Create(new Item()
+            {
+                Name = "Potion",
+                Max = 5,
+                Quality = qualities.First(),
+                Type = consumableType,
+                Slot = nonSlot
+            });
         }
 
         private void InitializePets(IDatabase context)
