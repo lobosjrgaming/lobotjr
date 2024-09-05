@@ -12,7 +12,6 @@ namespace LobotJR.Command.Controller.Dungeons
     public class PartyController
     {
         private readonly SettingsManager SettingsManager;
-
         private readonly List<Party> DungeonGroups = new List<Party>();
 
         /// <summary>
@@ -23,6 +22,23 @@ namespace LobotJR.Command.Controller.Dungeons
         public PartyController(SettingsManager settingsManager)
         {
             SettingsManager = settingsManager;
+        }
+
+        /// <summary>
+        /// Clears all registered groups.
+        /// </summary>
+        public void ResetGroups()
+        {
+            DungeonGroups.Clear();
+        }
+
+        /// <summary>
+        /// Gets the collection of current registered groups.
+        /// </summary>
+        /// <returns>A collection of Party objects.</returns>
+        public IEnumerable<Party> GetAllGroups()
+        {
+            return DungeonGroups;
         }
 
         /// <summary>

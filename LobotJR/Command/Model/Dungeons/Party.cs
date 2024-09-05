@@ -132,5 +132,15 @@ namespace LobotJR.Command.Model.Dungeons
             CurrentEncounter = 0;
             StepState = StepState.Setup;
         }
+
+        public bool HasMember(PlayerCharacter player)
+        {
+            return Members.Any(x => x.Equals(player));
+        }
+
+        public bool HasMembers(IEnumerable<PlayerCharacter> players)
+        {
+            return players.Intersect(Members).Any();
+        }
     }
 }

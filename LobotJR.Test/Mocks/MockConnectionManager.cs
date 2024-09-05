@@ -1,4 +1,5 @@
 ﻿using LobotJR.Command;
+using LobotJR.Command.Controller.Dungeons;
 using LobotJR.Command.Model.AccessControl;
 using LobotJR.Command.Model.Dungeons;
 using LobotJR.Command.Model.Equipment;
@@ -328,6 +329,12 @@ namespace LobotJR.Test.Mocks
                 }
             };
 
+            context.DungeonTimerData.Create(new DungeonTimer()
+            {
+                Name = GroupFinderController.DailyTimerName,
+                Length = 5
+            });
+
             context.DungeonData.Create(new Dungeon()
             {
                 Description = "A dungeon",
@@ -342,12 +349,12 @@ namespace LobotJR.Test.Mocks
                         {
                             new EncounterLevel()
                             {
-                                Difficulty = 0,
+                                Difficulty = 1,
                                 Mode = modes.First()
                             },
                             new EncounterLevel()
                             {
-                                Difficulty = 10,
+                                Difficulty = 1,
                                 Mode = modes.Last()
                             }
                         },
@@ -395,14 +402,14 @@ namespace LobotJR.Test.Mocks
                     new Loot()
                     {
                         Mode = modes.First(),
-                        Item = context.ItemData.Read().Last(),
-                        DropChance = 1
+                        Item = context.ItemData.Read().First(),
+                        DropChance = 0
                     },
                     new Loot()
                     {
                         Mode = modes.Last(),
-                        Item = context.ItemData.Read().Last(),
-                        DropChance = 1
+                        Item = context.ItemData.Read().ElementAt(2),
+                        DropChance = 0
                     }
                 },
             });

@@ -26,13 +26,9 @@ namespace LobotJR.Command.Controller.Dungeons
         private readonly EquipmentController EquipmentController;
         private readonly PetController PetController;
 
-        private readonly Random Random = new Random();
-        private readonly List<Party> DungeonGroups = new List<Party>();
+        private readonly List<Party> PartiesToRemove = new List<Party>();
 
-        /// <summary>
-        /// Gets the number of dungeon groups.
-        /// </summary>
-        public int PartyCount { get { return DungeonGroups.Count; } }
+        private readonly Random Random = new Random();
 
         /// <summary>
         /// Event handler for events related to progressing through a dungeon.
@@ -191,8 +187,10 @@ namespace LobotJR.Command.Controller.Dungeons
             {
                 var dungeonLists = party.Members.Select(x => GetEligibleDungeons(x, settings)).ToList();
                 var dungeons = dungeonLists.FirstOrDefault();
+                var a = dungeons.ToList();
                 foreach (var list in dungeonLists.Skip(1))
                 {
+                    var b = list.ToList();
                     dungeons = dungeons.Intersect(list);
                 }
                 return dungeons;
@@ -244,13 +242,14 @@ namespace LobotJR.Command.Controller.Dungeons
         /// <returns>True if the party was able to start the dungeon.</returns>
         public bool TryStartDungeon(Party party, DungeonRun run, out IEnumerable<PlayerCharacter> playersWithoutCoins)
         {
+            playersWithoutCoins = Array.Empty<PlayerCharacter>();
             if (run != null)
             {
                 if (CanStartDungeon(party))
                 {
                     var settings = SettingsManager.GetGameSettings();
                     var costs = party.Members.ToDictionary(x => x, x => GetDungeonCost(x, settings));
-                    playersWithoutCoins = costs.Where(x => x.Key.Currency < x.Value).Select(x => x.Key);
+                    playersWithoutCoins = costs.Where(x => x.Key.Currency < x.Value).Select(x => x.Key).ToList();
                     if (!playersWithoutCoins.Any())
                     {
                         foreach (var pair in costs)
@@ -263,7 +262,6 @@ namespace LobotJR.Command.Controller.Dungeons
                     }
                 }
             }
-            playersWithoutCoins = Array.Empty<PlayerCharacter>();
             return false;
         }
 
@@ -272,9 +270,9 @@ namespace LobotJR.Command.Controller.Dungeons
             return party.LastUpdate == null || party.LastUpdate + stepTime <= DateTime.Now;
         }
 
-        private Dictionary<CharacterClass, int> GetClassModifiers(Party party)
+        private Dictionary<CharacterClass, float> GetClassModifiers(Party party)
         {
-            return party.Members.GroupBy(x => x.CharacterClass).ToDictionary(x => x.Key, x => 1 / x.Count());
+            return party.Members.GroupBy(x => x.CharacterClass).ToDictionary(x => x.Key, x => 1f / x.Count());
         }
 
         private float PlayerSuccessChance(PlayerCharacter player)
@@ -372,6 +370,7 @@ namespace LobotJR.Command.Controller.Dungeons
             {
                 message = party.Run.Dungeon.Encounters.ElementAt(party.CurrentEncounter - 1).CompleteText;
                 party.CurrentEncounter++;
+                party.StepState = StepState.Setup;
                 if (party.CurrentEncounter > party.Run.Dungeon.Encounters.Count)
                 {
                     party.State = PartyState.Complete;
@@ -406,6 +405,15 @@ namespace LobotJR.Command.Controller.Dungeons
                 PetDrop = petDrop,
                 WaitTime = waitTime
             });
+        }
+
+        private void ResetParty(Party party)
+        {
+            party.Reset();
+            if (party.IsQueueGroup)
+            {
+                PartiesToRemove.Add(party);
+            }
         }
 
         private void HandleCompletion(Party party)
@@ -453,13 +461,9 @@ namespace LobotJR.Command.Controller.Dungeons
 
                 AddParticipant(history, party, member, xp, coins, earnedDrop, earnedPet?.Pet);
 
-                party.Reset();
-                if (party.IsQueueGroup)
-                {
-                    PartyController.DisbandParty(party);
-                }
             }
             ConnectionManager.CurrentConnection.DungeonHistories.Create(history);
+            ResetParty(party);
         }
 
         private void HandleFailure(Party party, GameSettings settings)
@@ -471,6 +475,11 @@ namespace LobotJR.Command.Controller.Dungeons
             {
                 var xp = CalculateExperienceReward(member, false);
                 var coins = CalculateCoinReward(member, false);
+                var toNewLevel = PlayerController.GetExperienceToNextLevel(member.Experience - xp);
+                if (toNewLevel <= xp)
+                {
+                    xp -= toNewLevel;
+                }
                 member.Experience -= xp;
                 member.Currency -= coins;
                 PlayerDeath?.Invoke(member, xp, coins);
@@ -482,27 +491,34 @@ namespace LobotJR.Command.Controller.Dungeons
             }
             DungeonFailure?.Invoke(party, dead);
             ConnectionManager.CurrentConnection.DungeonHistories.Create(history);
+            ResetParty(party);
         }
 
         public Task Process()
         {
             var settings = SettingsManager.GetGameSettings();
             var stepTime = TimeSpan.FromMilliseconds(settings.DungeonStepTime);
-            var toUpdate = DungeonGroups.Where(x => x.State == PartyState.Started && CanProcessUpdate(x, stepTime));
+            var groups = PartyController.GetAllGroups();
+            var toUpdate = groups.Where(x => x.State == PartyState.Started && CanProcessUpdate(x, stepTime));
             foreach (var party in toUpdate)
             {
                 ProgressDungeon(party);
             }
-            var toComplete = DungeonGroups.Where(x => x.State == PartyState.Complete && CanProcessUpdate(x, stepTime));
+            var toComplete = groups.Where(x => x.State == PartyState.Complete && CanProcessUpdate(x, stepTime));
             foreach (var party in toComplete)
             {
                 HandleCompletion(party);
             }
-            var toFail = DungeonGroups.Where(x => x.State == PartyState.Failed && CanProcessUpdate(x, stepTime));
+            var toFail = groups.Where(x => x.State == PartyState.Failed && CanProcessUpdate(x, stepTime));
             foreach (var party in toFail)
             {
                 HandleFailure(party, settings);
             }
+            foreach (var party in PartiesToRemove)
+            {
+                PartyController.DisbandParty(party);
+            }
+            PartiesToRemove.Clear();
             return Task.CompletedTask;
         }
     }

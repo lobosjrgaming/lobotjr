@@ -13,7 +13,7 @@ namespace LobotJR.Command.Controller.Dungeons
     /// </summary>
     public class GroupFinderController
     {
-        private readonly string DailyTimerName = "Daily Dungeon";
+        public static string DailyTimerName { get; private set; } = "Daily Dungeon";
         private readonly Random random = new Random();
         private readonly IConnectionManager ConnectionManager;
         private readonly SettingsManager SettingsManager;
