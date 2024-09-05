@@ -72,6 +72,7 @@ namespace LobotJR.Data
             Metadata = new SqliteRepository<Metadata>(context);
             AppSettings = new SqliteRepository<AppSettings>(context);
             GameSettings = new SqliteRepository<GameSettings>(context);
+            BugReports = new SqliteRepository<BugReport>(context);
             DataTimers = new SqliteRepository<DataTimer>(context);
             Users = new SqliteRepository<User>(context);
             AccessGroups = new SqliteRepository<AccessGroup>(context);

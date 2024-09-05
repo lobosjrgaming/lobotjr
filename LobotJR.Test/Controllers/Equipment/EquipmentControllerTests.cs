@@ -12,14 +12,12 @@ namespace LobotJR.Test.Controllers.Equipment
     public class EquipmentControllerTests
     {
         private IConnectionManager ConnectionManager;
-        private SettingsManager SettingsManager;
         private EquipmentController Controller;
 
         [TestInitialize]
         public void Initialize()
         {
             ConnectionManager = AutofacMockSetup.Container.Resolve<IConnectionManager>();
-            SettingsManager = AutofacMockSetup.Container.Resolve<SettingsManager>();
             Controller = AutofacMockSetup.Container.Resolve<EquipmentController>();
             AutofacMockSetup.ResetPlayers();
         }

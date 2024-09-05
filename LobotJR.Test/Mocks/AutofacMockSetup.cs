@@ -37,9 +37,6 @@ namespace LobotJR.Test.Mocks
 
         private static void RegisterDatabase(ContainerBuilder builder)
         {
-            // builder.RegisterType<SqliteContext>().AsSelf().As<DbContext>().InstancePerLifetimeScope();
-            // builder.RegisterType<SqliteRepositoryManager>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
-            // These are created by the connection manager now, I think
             builder.RegisterType<MockConnectionManager>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
             builder.RegisterType<SettingsManager>().AsSelf().InstancePerLifetimeScope();
         }
