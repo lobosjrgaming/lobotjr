@@ -64,14 +64,14 @@ namespace LobotJR.Command.View.Pets
             var rarities = PetController.GetRarities();
             if (rarity == -1)
             {
-                rarity = Random.Next(0, rarities.Count());
+                rarity = Random.Next(0, rarities.Count()) + 1;
             }
-            rarityToGrant = rarities.ElementAtOrDefault(rarity);
+            rarityToGrant = rarities.ElementAtOrDefault(rarity - 1);
             if (rarityToGrant != null)
             {
                 PetController.GrantPet(user, rarityToGrant);
             }
-            return new CommandResult(true);
+            return new CommandResult($"Invalid rarity index, please specify a value between 1 and {rarities.Count()}.");
         }
 
         public CommandResult ClearPets(User user)

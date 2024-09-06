@@ -148,7 +148,7 @@ namespace LobotJR.Command.View.Equipment
                             {
                                 return new CommandResult($"{toEquip.Item.Name} is already equipped.");
                             }
-                            return new CommandResult($"You already have {equipped.Count()} {toEquip.Item.Slot.Name}s equipped. You must unequip one before you can equip {toEquip.Item.Name}");
+                            return new CommandResult($"You already have {equipped.Count()} {toEquip.Item.Slot.Name}s equipped. You must unequip one before you can equip {toEquip.Item.Name}.");
                         }
                     }
                 }
