@@ -134,7 +134,7 @@ namespace LobotJR.Command.View.Pets
             if (toRelease != null)
             {
                 PetController.UnflagForDelete(user);
-                PushNotification?.Invoke(user, new CommandResult($"You decided to keep {toRelease}."));
+                PushNotification?.Invoke(user, new CommandResult($"You decided to keep {toRelease.Name}."));
             }
         }
 
@@ -231,7 +231,7 @@ namespace LobotJR.Command.View.Pets
                         if (PetController.Feed(player, pet))
                         {
                             var output = new List<string>() { $"You were charged {settings.PetFeedingCost} wolfcoins to feed {pet.Name}. They feel refreshed!" };
-                            if (petLevel > pet.Level)
+                            if (pet.Level > petLevel)
                             {
                                 output.Add($"{pet.Name} leveled up! They are now level {pet.Level}.");
                             }

@@ -33,7 +33,7 @@ namespace LobotJR.Command.View.Equipment
             {
                 new CommandHandler("ClearItems", this, CommandMethod.GetInfo<string>(ClearItems), "clearitems"),
                 new CommandHandler("GiveItem", this, CommandMethod.GetInfo<string, string>(GiveItem), "giveitem"),
-                new CommandHandler("FixInventory", this, CommandMethod.GetInfo<string>(FixInventory), "fixinventory")
+                new CommandHandler("FixInventory", this, CommandMethod.GetInfo(FixInventory), "fixinventory")
             };
         }
 
@@ -90,7 +90,7 @@ namespace LobotJR.Command.View.Equipment
             return CreateDefaultResult(target);
         }
 
-        public CommandResult FixInventory(string target)
+        public CommandResult FixInventory()
         {
             var dupes = EquipmentController.RemoveDuplicates();
             var overages = EquipmentController.FixCountErrors();
@@ -99,7 +99,7 @@ namespace LobotJR.Command.View.Equipment
             {
                 return new CommandResult($"Removed {dupes.Count()} duplicate entries, reduced count to max for {overages.Count()}, and unequipped {equipDupes.Count()} invalid equipped items.");
             }
-            return CreateDefaultResult(target);
+            return new CommandResult("No duplicates, overages, or extra equipped items to fix!");
         }
     }
 }

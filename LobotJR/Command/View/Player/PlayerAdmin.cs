@@ -108,7 +108,7 @@ namespace LobotJR.Command.View.Player
             {
                 var targetPlayer = PlayerController.GetPlayerByUser(targetUser);
                 targetPlayer.Prestige = value;
-                return new CommandResult($"Set prestige to {targetPlayer.Prestige} for {targetPlayer.Prestige}.");
+                return new CommandResult($"Set prestige to {targetPlayer.Prestige} for {targetUser.Username}.");
             }
             return CreateDefaultResult(username);
         }
@@ -143,7 +143,7 @@ namespace LobotJR.Command.View.Player
             if (targetUser != null)
             {
                 var targetPlayer = PlayerController.GetPlayerByUser(targetUser);
-                targetPlayer.Currency = Math.Max(0, amount);
+                targetPlayer.Currency = Math.Max(0, targetPlayer.Currency - amount);
                 return new CommandResult($"Removed {amount} Wolfcoins from {targetUser.Username}.");
             }
             return CreateDefaultResult(username);
@@ -213,10 +213,10 @@ namespace LobotJR.Command.View.Player
         {
             if (!PlayerController.AwardsEnabled)
             {
-                return new CommandResult(true, "Wolfcoins & XP will no longer be awarded.");
+                return new CommandResult(true, "XP isn't on.");
             }
             PlayerController.DisableAwards();
-            return new CommandResult(true, "XP isn't on.");
+            return new CommandResult(true, "Wolfcoins & XP will no longer be awarded.");
         }
 
         public CommandResult PrintNextAward()

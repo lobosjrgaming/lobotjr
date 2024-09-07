@@ -248,7 +248,7 @@ namespace LobotJR.Test.Mocks
                 new ItemSlot() { Name = "Weapon" },
                 new ItemSlot() { Name = "Armor" }
             };
-            var index = 0;
+            var index = 1;
             foreach (var quality in qualities)
             {
                 context.ItemQualityData.Create(quality);
@@ -266,11 +266,11 @@ namespace LobotJR.Test.Mocks
                             Quality = quality,
                             Type = type,
                             Slot = slot,
-                            CoinBonus = index++,
-                            ItemFind = index++,
-                            SuccessChance = index++,
-                            XpBonus = index++,
-                            PreventDeathBonus = index++
+                            CoinBonus = index++ / 100f,
+                            ItemFind = index++ / 100f,
+                            SuccessChance = index++ / 100f,
+                            XpBonus = index++ / 100f,
+                            PreventDeathBonus = index++ / 100f
                         });
                     }
                 }

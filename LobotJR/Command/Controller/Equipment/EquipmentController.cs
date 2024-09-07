@@ -127,6 +127,7 @@ namespace LobotJR.Command.Controller.Equipment
                 .Where(x => x.Count() > 1);
             var toDelete = dupes.SelectMany(x => x.Skip(1)).ToList();
             ConnectionManager.CurrentConnection.Inventories.DeleteRange(toDelete);
+            ConnectionManager.CurrentConnection.Commit();
             return toDelete;
         }
 

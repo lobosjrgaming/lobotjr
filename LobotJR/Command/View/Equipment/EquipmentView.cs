@@ -48,23 +48,23 @@ namespace LobotJR.Command.View.Equipment
             var output = new List<string>() { $"{index}: {item.Name} ({item.Quality.Name + item.Slot.Name}) ({equipString})" };
             if (item.SuccessChance > 0)
             {
-                output.Add($"+{PrintPercent(item.SuccessChance)}% Success Chance");
+                output.Add($"+{PrintPercent(item.SuccessChance)} Success Chance");
             }
             if (item.XpBonus > 0)
             {
-                output.Add($"+{PrintPercent(item.XpBonus)}% XP Bonus");
+                output.Add($"+{PrintPercent(item.XpBonus)} XP Bonus");
             }
             if (item.CoinBonus > 0)
             {
-                output.Add($"+{PrintPercent(item.CoinBonus)}% Wolfcoin Bonus");
+                output.Add($"+{PrintPercent(item.CoinBonus)} Wolfcoin Bonus");
             }
             if (item.ItemFind > 0)
             {
-                output.Add($"+{PrintPercent(item.ItemFind)}% Item Find");
+                output.Add($"+{PrintPercent(item.ItemFind)} Item Find");
             }
             if (item.PreventDeathBonus > 0)
             {
-                output.Add($"+{PrintPercent(item.PreventDeathBonus)}% to Prevent Death");
+                output.Add($"+{PrintPercent(item.PreventDeathBonus)} to Prevent Death");
             }
             return output;
         }
@@ -136,7 +136,7 @@ namespace LobotJR.Command.View.Equipment
                     }
                     else
                     {
-                        var equipped = inventory.Where(x => x.IsEquipped && x.Item.Slot.Equals(toEquip.Item.SlotId));
+                        var equipped = inventory.Where(x => x.IsEquipped && x.Item.Slot.Equals(toEquip.Item.Slot));
                         if (equipped.Count() < toEquip.Item.Slot.MaxEquipped)
                         {
                             toEquip.IsEquipped = true;

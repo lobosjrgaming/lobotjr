@@ -70,6 +70,7 @@ namespace LobotJR.Command.View.Pets
             if (rarityToGrant != null)
             {
                 PetController.GrantPet(user, rarityToGrant);
+                return new CommandResult($"Pet granted to {user.Username} of rarity {rarityToGrant.Name}.");
             }
             return new CommandResult($"Invalid rarity index, please specify a value between 1 and {rarities.Count()}.");
         }
@@ -97,7 +98,7 @@ namespace LobotJR.Command.View.Pets
                 }
                 return new CommandResult($"Invalid index, please specify a number between 1 and {stable.Count()}.");
             }
-            return CreateDefaultResult(user.Username);
+            return new CommandResult("You don't have any pets.");
         }
     }
 }

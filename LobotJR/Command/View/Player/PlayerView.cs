@@ -257,9 +257,13 @@ namespace LobotJR.Command.View.Player
             var player = PlayerController.GetPlayerByUser(user);
             if (player.Level >= PlayerController.MinLevel)
             {
-                var classes = PlayerController.GetPlayableClasses().Select(x => $"!C{x.Id} ({x.Name})");
-                return new CommandResult("It looks like you are elligible to choose a class but haven't yet done so. Choose by whispering me one of the following:",
-                    string.Join(", ", classes));
+                if (!player.CharacterClass.CanPlay)
+                {
+                    var classes = PlayerController.GetPlayableClasses().Select(x => $"!C{x.Id} ({x.Name})");
+                    return new CommandResult("It looks like you are elligible to choose a class but haven't yet done so. Choose by whispering me one of the following:",
+                        string.Join(", ", classes));
+                }
+                return new CommandResult($"You are a {player.CharacterClass.Name}. If you would like to change your class, whisper me !respec");
             }
             return new CommandResult("You are not high enough level to choose a class. Continue watching the stream to gain experience.");
         }
@@ -267,27 +271,33 @@ namespace LobotJR.Command.View.Player
         public CommandResult Respec(User user)
         {
             var player = PlayerController.GetPlayerByUser(user);
-            if (player.CharacterClass.CanPlay)
+            if (player.Level >= PlayerController.MinLevel)
             {
-                var party = PartyController.GetCurrentGroup(player);
-                if (party == null)
+                if (player.CharacterClass.CanPlay)
                 {
-                    if (GroupFinderController.IsPlayerQueued(player))
+                    var party = PartyController.GetCurrentGroup(player);
+                    if (party == null)
                     {
-                        var cost = PlayerController.GetRespecCost(player.Level);
-                        if (player.Currency >= cost)
+                        if (!GroupFinderController.IsPlayerQueued(player))
                         {
-                            PlayerController.FlagForRespec(player);
-                            var classes = PlayerController.GetPlayableClasses();
-                            return new CommandResult(
-                                $"You've chosen to respec your class! It will cost you {cost} coins to respec and you will lose all your items. Reply 'Nevermind' to cancel or one of the following codes to select your new class: ",
-                                string.Join(", ", classes.Select(x => $"!C{x.Id} ({x.Name})")));
+                            var cost = PlayerController.GetRespecCost(player.Level);
+                            if (player.Currency >= cost)
+                            {
+                                PlayerController.FlagForRespec(player);
+                                var classes = PlayerController.GetPlayableClasses();
+                                return new CommandResult(
+                                    $"You've chosen to respec your class! It will cost you {cost} coins to respec and you will lose all your items. Reply 'Nevermind' to cancel or one of the following codes to select your new class: ",
+                                    string.Join(", ", classes.Select(x => $"!C{x.Id} ({x.Name})")));
+                            }
+                            return new CommandResult($"It costs {cost} Wolfcoins to respec at your level. You have {player.Currency} coins.");
                         }
-                        return new CommandResult($"It costs {cost} Wolfcoins to respec at your level. You have {player.Currency} coins.");
+                        return new CommandResult("You can't respec while in the dungeon queue!");
                     }
-                    return new CommandResult("You can't respec while in the dungeon queue!");
+                    return new CommandResult("You can't respec while in a party!");
                 }
-                return new CommandResult("You can't respec while in a party!");
+                var classList = PlayerController.GetPlayableClasses().Select(x => $"!C{x.Id} ({x.Name})");
+                return new CommandResult("It looks like you are elligible to choose a class but haven't yet done so. Choose by whispering me one of the following:",
+                    string.Join(", ", classList));
             }
             return new CommandResult("You are not high enough level to choose a class. Continue watching the stream to gain experience.");
         }
