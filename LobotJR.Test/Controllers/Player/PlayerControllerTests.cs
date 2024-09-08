@@ -56,7 +56,7 @@ namespace LobotJR.Test.Controllers.Player
         }
 
         [TestMethod]
-        public void GainExperienceDecreasesLevel()
+        public void GainExperienceDoesNotDecreaseLevel()
         {
             var db = ConnectionManager.CurrentConnection;
             var user = db.Users.Read().First();
@@ -64,8 +64,9 @@ namespace LobotJR.Test.Controllers.Player
             player.Experience = 200;
             player.Level = 3;
             PlayerController.GainExperience(user, player, -100);
-            Assert.AreEqual(2, player.Level);
-            Assert.AreEqual(100, player.Experience);
+            var toNext = PlayerController.GetExperienceToNextLevel(player.Experience - 1);
+            Assert.AreEqual(3, player.Level);
+            Assert.AreEqual(toNext, 1);
         }
 
         [TestMethod]

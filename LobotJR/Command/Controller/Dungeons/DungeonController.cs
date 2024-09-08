@@ -183,12 +183,10 @@ namespace LobotJR.Command.Controller.Dungeons
             var settings = SettingsManager.GetGameSettings();
             if (settings.DungeonLevelRestrictions)
             {
-                var dungeonLists = party.Members.Select(x => GetEligibleDungeons(x, settings)).ToList();
+                var dungeonLists = party.Members.Select(x => GetEligibleDungeons(x, settings));
                 var dungeons = dungeonLists.FirstOrDefault();
-                var a = dungeons.ToList();
                 foreach (var list in dungeonLists.Skip(1))
                 {
-                    var b = list.ToList();
                     dungeons = dungeons.Intersect(list);
                 }
                 return dungeons;
@@ -247,7 +245,7 @@ namespace LobotJR.Command.Controller.Dungeons
                 {
                     var settings = SettingsManager.GetGameSettings();
                     var costs = party.Members.ToDictionary(x => x, x => GetDungeonCost(x, settings));
-                    playersWithoutCoins = costs.Where(x => x.Key.Currency < x.Value).Select(x => x.Key).ToList();
+                    playersWithoutCoins = costs.Where(x => x.Key.Currency < x.Value).Select(x => x.Key);
                     if (!playersWithoutCoins.Any())
                     {
                         foreach (var pair in costs)
@@ -468,7 +466,7 @@ namespace LobotJR.Command.Controller.Dungeons
         {
             var history = CreateDungeonHistory(party, false);
             var deathChance = settings.DungeonDeathChance - PartyDeathChance(party);
-            var dead = party.Members.Where(x => CalculateCheck(deathChance - PlayerDeathChance(x))).ToList();
+            var dead = party.Members.Where(x => CalculateCheck(deathChance - PlayerDeathChance(x)));
             foreach (var member in dead)
             {
                 var xp = CalculateExperienceReward(member, false);

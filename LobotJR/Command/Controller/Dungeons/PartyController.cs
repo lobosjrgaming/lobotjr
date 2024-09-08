@@ -131,7 +131,7 @@ namespace LobotJR.Command.Controller.Dungeons
         {
             var settings = SettingsManager.GetGameSettings();
             if (party.PendingInvites.Contains(player)
-                && party.Members.Count + party.PendingInvites.Count < settings.DungeonPartySize)
+                && party.Members.Count + party.PendingInvites.Count <= settings.DungeonPartySize)
             {
                 party.PendingInvites.Remove(player);
                 return AddPlayer(party, player);

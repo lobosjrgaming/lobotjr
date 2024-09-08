@@ -224,9 +224,9 @@ namespace LobotJR.Test.Views.Player
         {
             SettingsManager.GetGameSettings().ExperienceFrequency = 10;
             PlayerController.AwardsEnabled = true;
-            PlayerController.LastAward = DateTime.Now;
+            PlayerController.LastAward = DateTime.Now - TimeSpan.FromSeconds(1);
             var result = View.PrintNextAward();
-            Assert.IsTrue(result.Messages.Any(x => x.Contains($"{SettingsManager.GetGameSettings().ExperienceFrequency} minutes")));
+            Assert.IsTrue(result.Messages.Any(x => x.Contains($"{SettingsManager.GetGameSettings().ExperienceFrequency - 1} minutes")));
         }
 
         [TestMethod]

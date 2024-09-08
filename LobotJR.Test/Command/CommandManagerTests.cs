@@ -5,6 +5,7 @@ using LobotJR.Command.Model.AccessControl;
 using LobotJR.Data;
 using LobotJR.Test.Mocks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.Linq;
 
 namespace LobotJR.Test.Command
@@ -34,6 +35,7 @@ namespace LobotJR.Test.Command
             AutofacMockSetup.ResetAccessGroups();
             CommandViewMock.ResetCounts();
             SubCommandViewMock.ResetCounts();
+            AutofacMockSetup.ResetUsers();
         }
 
         [TestMethod]
@@ -83,6 +85,15 @@ namespace LobotJR.Test.Command
                 CommandManager.ProcessMessage(commandString, user, true);
             }
             Assert.AreEqual(commandStrings.Count(), module.TotalCount);
+        }
+
+        [TestMethod]
+        public void ProcessMessageIgnoresMessagesFromBannedUsers()
+        {
+            var user = UserController.GetUserByName("Auth");
+            user.BanTime = DateTime.Now;
+            var response = CommandManager.ProcessMessage("Foo", user, true);
+            Assert.AreEqual(0, response.Responses.Count());
         }
 
         [TestMethod]

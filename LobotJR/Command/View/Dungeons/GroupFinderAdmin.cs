@@ -1,5 +1,4 @@
 ﻿using LobotJR.Command.Controller.Dungeons;
-using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using System.Collections.Generic;
 using System.Linq;
@@ -33,7 +32,7 @@ namespace LobotJR.Command.View.Dungeons
             };
         }
 
-        public CommandResult QueueStatus(User user)
+        public CommandResult QueueStatus()
         {
             var entries = GroupFinderController.GetQueueEntries();
             var responses = new List<string>

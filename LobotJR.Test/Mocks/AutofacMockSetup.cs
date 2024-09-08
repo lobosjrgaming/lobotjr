@@ -129,6 +129,11 @@ namespace LobotJR.Test.Mocks
             ConnectionManager.ResetUsers();
         }
 
+        public static void ResetDungeons()
+        {
+            ConnectionManager.ResetDungeons();
+        }
+
         public static void ResetPlayers()
         {
             ConnectionManager.ResetPlayers();

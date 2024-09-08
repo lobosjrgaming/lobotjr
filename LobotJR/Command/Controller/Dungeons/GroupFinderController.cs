@@ -183,7 +183,7 @@ namespace LobotJR.Command.Controller.Dungeons
         {
             if (!IsPlayerQueued(player))
             {
-                GroupFinderQueue.Add(new QueueEntry(player, dungeons));
+                GroupFinderQueue.Add(new QueueEntry(player, dungeons.ToList()));
                 if (TryCreateParty(out var party))
                 {
                     PartyFound?.Invoke(party);

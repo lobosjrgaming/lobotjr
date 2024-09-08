@@ -112,6 +112,11 @@ namespace LobotJR.Command.Controller.Player
         {
             var oldLevel = LevelFromExperience(player.Experience);
             var newLevel = LevelFromExperience(player.Experience + experience);
+            if (newLevel < oldLevel)
+            {
+                experience += GetExperienceToNextLevel(player.Experience + experience);
+                newLevel = LevelFromExperience(player.Experience + experience);
+            }
             player.Experience += experience;
             if (newLevel != oldLevel)
             {

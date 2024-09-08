@@ -57,6 +57,8 @@ namespace LobotJR.Data.Migration
                 "ALTER TABLE \"AppSettings\" DROP COLUMN [FishingTournamentCastMinimum]",
                 "ALTER TABLE \"AppSettings\" DROP COLUMN [FishingTournamentCastMaximum]",
                 "ALTER TABLE \"AppSettings\" ADD COLUMN [TwitchPlays] NOT NULL DEFAULT 0",
+                "ALTER TABLE \"Users\" ADD COLUMN [BanTime] datetime",
+                "ALTER TABLE \"Users\" ADD COLUMN [BanMessage] nvarchar",
                 //Cleanup database errors from previous versions
                 "DROP INDEX \"IX_Catch_Fisher_Id\"",
                 "ALTER TABLE \"Catches\" DROP COLUMN [Fisher_Id]",

@@ -7,7 +7,6 @@ using LobotJR.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace LobotJR.Command.View.Dungeons
 {
@@ -69,12 +68,12 @@ namespace LobotJR.Command.View.Dungeons
             var remaining = GroupFinderController.GetLockoutTime(player);
             if (remaining.TotalMilliseconds > 0)
             {
-                return new CommandResult($"Your daily Group Finder reward resets in {TimeSpan.FromSeconds(remaining.TotalSeconds):c}.");
+                return new CommandResult($"Your daily Group Finder reward resets in {(TimeSpan.FromSeconds(remaining.TotalSeconds)).ToReadableTime()}.");
             }
             return new CommandResult("You are eligible for daily Group Finder rewards! Go queue up!");
         }
 
-        public CommandResult QueueForDungeonFinder(User user, string dungeonIds)
+        public CommandResult QueueForDungeonFinder(User user, string dungeonIds = "")
         {
             var player = PlayerController.GetPlayerByUser(user);
             if (!PlayerController.IsFlaggedForRespec(player))
@@ -89,7 +88,7 @@ namespace LobotJR.Command.View.Dungeons
                             var cost = DungeonController.GetDungeonCost(player);
                             if (player.Currency >= cost)
                             {
-                                var dungeons = dungeonIds.Split(',').Select(x => DungeonController.ParseDungeonId(x.Trim()));
+                                var dungeons = dungeonIds.Split(',').Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => DungeonController.ParseDungeonId(x.Trim()));
                                 if (!dungeons.Any())
                                 {
                                     dungeons = DungeonController.GetEligibleDungeons(player);
@@ -100,7 +99,7 @@ namespace LobotJR.Command.View.Dungeons
                                 }
                                 return new CommandResult("You are already queued in the Group Finder! Type !queuetime for more information.");
                             }
-                            return new CommandResult($"You don't have enough money!");
+                            return new CommandResult($"You don't have enough money! It will cost you {DungeonController.GetDungeonCost(player)} Wolfcoins to run a dungeon.");
                         }
                         if (party.PendingInvites.Any(x => x.Equals(player)))
                         {
@@ -125,25 +124,6 @@ namespace LobotJR.Command.View.Dungeons
             return new CommandResult("You are not queued in the Group Finder.");
         }
 
-        private string ReadableTime(TimeSpan time)
-        {
-            if (time.TotalSeconds > 1)
-            {
-                var sb = new StringBuilder();
-                if (time.TotalMinutes > 1)
-                {
-                    if (time.TotalHours > 1)
-                    {
-                        sb.Append($"{(int)Math.Floor(time.TotalHours)} hours, ");
-                    }
-                    sb.Append($"{(int)Math.Floor(time.TotalMinutes)} minutes, and ");
-                }
-                sb.Append($"{(int)Math.Floor(time.TotalSeconds)} seconds");
-                return sb.ToString();
-            }
-            return "less than 1 second";
-        }
-
         public CommandResult GetQueueTime(User user)
         {
             var player = PlayerController.GetPlayerByUser(user);
@@ -151,8 +131,8 @@ namespace LobotJR.Command.View.Dungeons
             if (entry != null)
             {
                 return new CommandResult(
-                    $"You are queued for {entry.Dungeons.Count()} dungeons and have been waiting {ReadableTime(DateTime.Now - entry.QueueTime)}.",
-                    $"The last group was formed {ReadableTime(DateTime.Now - GroupFinderController.LastGroupFormed)} ago.");
+                    $"You are queued for {entry.Dungeons.Count()} dungeons and have been waiting {(DateTime.Now - entry.QueueTime).ToReadableTime()}.",
+                    $"The last group was formed {(DateTime.Now - GroupFinderController.LastGroupFormed).ToReadableTime()} ago.");
             }
             return new CommandResult("You are not queued in the Group Finder.");
         }

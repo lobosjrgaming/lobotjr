@@ -88,19 +88,6 @@ namespace LobotJR.Test.Mocks
 
         private void InitializeUserRoles(IDatabase context)
         {
-            // OG access groups, no idea why these exist
-            /*
-            var streamer = context.Users.First(x => x.Username.Equals("Streamer"));
-            var bot = context.Users.First(x => x.Username.Equals("Bot"));
-            var dev = context.Users.First(x => x.Username.Equals("Dev"));
-            var group1 = new AccessGroup(1, "Streamer") { IncludeAdmins = true };
-            context.AccessGroups.Create(group1);
-            context.Restrictions.Create(new Restriction(group1, "*.Admin.*"));
-            var group2 = new AccessGroup(2, "UIDev");
-            context.AccessGroups.Create(group2);
-            context.Restrictions.Create(new Restriction(group2, dev.TwitchId));
-            //*/
-
             CreateAccessGroup(context, "TestGroup", "Auth", "CommandMock.Foo");
             CreateAccessGroup(context, "ModGroup", null, "CommandMock.ModFoo", includeMods: true);
             CreateAccessGroup(context, "VipGroup", null, "CommandMock.VipFoo", includeVips: true);
@@ -347,9 +334,9 @@ namespace LobotJR.Test.Mocks
                 Length = 5
             });
 
-            context.DungeonData.Create(new Dungeon()
+            var dungeon = new Dungeon()
             {
-                Description = "A dungeon",
+                Description = "A dungeon.",
                 Name = "Dungeon",
                 FailureText = "You died!",
                 Introduction = "Welcome to the dungeon, we've got mobs and loot",
@@ -424,7 +411,17 @@ namespace LobotJR.Test.Mocks
                         DropChance = 0
                     }
                 },
-            });
+            };
+            context.DungeonData.Create(dungeon);
+            var dungeon2 = new Dungeon()
+            {
+                Name = "Dungeon 2",
+                Description = "A different dungeon.",
+                FailureText = "You died!",
+                Introduction = "Welcome to the second dungeon.",
+                LevelRanges = new List<LevelRange>() { new LevelRange() { Mode = modes.First() }, new LevelRange() { Mode = modes.Last() } }
+            };
+            context.DungeonData.Create(dungeon2);
         }
 
         public void SeedData()
@@ -481,6 +478,18 @@ namespace LobotJR.Test.Mocks
             CurrentConnection.Commit();
             InitializeGlobalLeaderboard(CurrentConnection);
             InitializeTournaments(CurrentConnection);
+            CurrentConnection.Commit();
+        }
+
+        public void ResetDungeons()
+        {
+            CurrentConnection.DungeonData.Delete();
+            CurrentConnection.EncounterData.Delete();
+            CurrentConnection.LevelRangeData.Delete();
+            CurrentConnection.LootData.Delete();
+            CurrentConnection.DungeonModeData.Delete();
+            CurrentConnection.Commit();
+            InitializeDungeons(CurrentConnection);
             CurrentConnection.Commit();
         }
 

@@ -87,10 +87,11 @@ namespace LobotJR.Command.View.Dungeons
         private void DungeonController_DungeonComplete(PlayerCharacter player, int experience, int currency, Item loot, bool groupFinderBonus)
         {
             var user = PlayerController.GetUserByPlayer(player);
-            var messages = new List<string>()
+            var messages = new List<string>();
+            if (!groupFinderBonus)
             {
-                "Dungeon complete. Your party remains intact."
-            };
+                messages.Add("Dungeon complete. Your party remains intact.");
+            }
             if (groupFinderBonus)
             {
                 messages.Add("You earned double rewards for completing a daily Group Finder dungeon! Queue up again in 24 hours to receive the 2x bonus again! (You can whisper me '!daily' for a status.)");
@@ -295,7 +296,7 @@ namespace LobotJR.Command.View.Dungeons
 
                 if (!playerName.Equals(user.Username, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (party.State != PartyState.Started)
+                    if (party.State == PartyState.Forming || party.State == PartyState.Full)
                     {
                         var targetUser = UserController.GetUserByName(playerName);
                         if (targetUser != null)
@@ -354,7 +355,7 @@ namespace LobotJR.Command.View.Dungeons
             var canExecute = CanExecuteCommand(user, false, out var player, out var party, out var errorMessage);
             if (canExecute)
             {
-                if (party.State != PartyState.Started)
+                if (party.State == PartyState.Forming || party.State == PartyState.Full)
                 {
                     var wasLeader = party.Leader.Equals(player);
                     PartyController.RemovePlayer(party, player);
@@ -459,7 +460,7 @@ namespace LobotJR.Command.View.Dungeons
                     if (success)
                     {
                         PushToParty(party, $"Successfully initiated {DungeonController.GetDungeonName(party.Run)}! Wolfcoins deducted.");
-                        var members = party.Members.Select(x => $"{PlayerController.GetUserByPlayer(x)} (Level {x.Level} {x.CharacterClass.Name})");
+                        var members = party.Members.Select(x => $"{PlayerController.GetUserByPlayer(x).Username} (Level {x.Level} {x.CharacterClass.Name})");
                         PushToParty(party, $"Your party consists of: {string.Join(", ", members)}");
                         return new CommandResult();
                     }

@@ -297,6 +297,15 @@ namespace LobotJR.Command
                         }
                     };
                 }
+                if (user.BanTime != null)
+                {
+                    Logger.Debug("Ignoring banned user's command.");
+                    return new CommandResult()
+                    {
+                        Processed = true,
+                        Sender = user,
+                    };
+                }
                 request.CommandId = commandId;
                 request.User = user;
 

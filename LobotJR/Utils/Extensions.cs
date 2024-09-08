@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace LobotJR.Utils
 {
@@ -227,6 +228,35 @@ namespace LobotJR.Utils
         public static T RandomElement<T>(this Random current, IEnumerable<T> elements)
         {
             return elements.ElementAt(current.Next(elements.Count()));
+        }
+
+        /// <summary>
+        /// Returns a string representation of this timespan as a countdown in
+        /// human readable format.
+        /// </summary>
+        /// <param name="time"></param>
+        /// <returns>A string for display.</returns>
+        public static string ToReadableTime(this TimeSpan time)
+        {
+            if (time.TotalSeconds > 1)
+            {
+                var sb = new StringBuilder();
+                if (time.TotalMinutes > 1)
+                {
+                    if (time.TotalHours > 1)
+                    {
+                        if (time.TotalDays > 1)
+                        {
+                            sb.Append($"{(int)Math.Floor(time.TotalDays)} days, ");
+                        }
+                        sb.Append($"{(int)Math.Floor((float)time.Hours)} hours, ");
+                    }
+                    sb.Append($"{(int)Math.Floor((float)time.Minutes)} minutes, and ");
+                }
+                sb.Append($"{(int)Math.Floor((float)time.Seconds)} seconds");
+                return sb.ToString();
+            }
+            return "less than 1 second";
         }
     }
 }

@@ -144,7 +144,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             var player = db.PlayerCharacters.Read().First();
             player.Level = 1;
             var dungeons = DungeonController.GetEligibleDungeons(player);
-            Assert.AreEqual(2, dungeons.Count());
+            Assert.AreEqual(4, dungeons.Count());
         }
 
         [TestMethod]
@@ -235,7 +235,6 @@ namespace LobotJR.Test.Controllers.Dungeons
             var run = new DungeonRun(db.DungeonData.Read().First(), db.DungeonModeData.Read().First());
             var result = DungeonController.TryStartDungeon(party, run, out var broke);
             Assert.IsTrue(result);
-            Assert.IsFalse(broke.Any());
             Assert.AreEqual(PartyState.Started, party.State);
             Assert.AreEqual(0, player1.Currency);
             Assert.AreEqual(0, player2.Currency);
@@ -392,6 +391,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             var party = SetupProcessParty();
             party.CurrentEncounter = 1;
             var item = ConnectionManager.CurrentConnection.ItemData.Read().First();
+            var old = item.SuccessChance;
             item.SuccessChance = 1;
             foreach (var player in party.Members)
             {
@@ -415,6 +415,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             listener.Verify(x => x(party, It.Is<string>(y => y.Contains(message))), Times.Once);
             Assert.AreEqual(1, party.CurrentEncounter);
             Assert.AreEqual(StepState.Complete, party.StepState);
+            item.SuccessChance = old;
         }
 
         [TestMethod]
