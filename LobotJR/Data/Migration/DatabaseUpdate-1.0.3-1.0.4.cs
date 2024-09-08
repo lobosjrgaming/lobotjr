@@ -31,6 +31,7 @@ namespace LobotJR.Data.Migration
                 }
                 catch (Exception e)
                 {
+                    result.Success = false;
                     result.DebugOutput.Add($"Exception: {e}");
                 }
             }

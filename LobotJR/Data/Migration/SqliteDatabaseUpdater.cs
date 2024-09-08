@@ -55,7 +55,10 @@ namespace LobotJR.Data.Migration
                     CurrentVersion = SemanticVersion.Parse(appSettings.DatabaseVersion);
                     Context = tempContext;
                 }
-                catch { }
+                catch
+                {
+                    Context = new SqliteDeprecatedContext();
+                }
             }
         }
 
@@ -76,7 +79,10 @@ namespace LobotJR.Data.Migration
         {
             try
             {
+                Context.Database.Connection.Close();
+                Context.Database.Connection.Dispose();
                 Context.Dispose();
+                GC.Collect();
                 File.Delete(databaseFile);
                 File.Move(backupFile, databaseFile);
             }
@@ -145,14 +151,11 @@ namespace LobotJR.Data.Migration
             var metadata = metadataRepo.Read().FirstOrDefault();
             if (metadata == null)
             {
-                metadataRepo.Create(new Metadata());
+                metadata = new Metadata();
+                metadataRepo.Create(metadata);
             }
-            else
-            {
-                metadata.DatabaseVersion = LatestVersion.ToString();
-                metadata.LastSchemaUpdate = DateTime.Now;
-                metadataRepo.Update(metadata);
-            }
+            metadata.DatabaseVersion = LatestVersion.ToString();
+            metadata.LastSchemaUpdate = DateTime.Now;
             metadataRepo.Commit();
             updateContext.Dispose();
         }

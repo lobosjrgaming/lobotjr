@@ -40,11 +40,15 @@ namespace LobotJR
                 builder.ForLogger().FilterMinLevel(LogLevel.Info).WriteToConsole(layout: "${time}|${level:uppercase=true}|${message:withexception=true}");
             });
             Logger.Info("Launching Lobot version {version}", Assembly.GetExecutingAssembly().GetName().Version);
+            var clientData = FileUtils.ReadClientData();
+            var tokenData = FileUtils.ReadTokenData();
+            //This is outside of the try loop because if it fails, it will never succeed until the database state is corrected
+            await ConfigureDatabase(clientData, tokenData);
             while (true)
             {
                 try
                 {
-                    await Initialize();
+                    await Initialize(clientData, tokenData);
                 }
                 catch (Exception ex)
                 {
@@ -155,9 +159,9 @@ namespace LobotJR
             }
         }
 
-        private static async Task ImportLegacyData(UserController userController)
+        private static async Task ImportLegacyData(IConnectionManager connectionManager, UserController userController)
         {
-            using (var database = new SqliteRepositoryManager())
+            using (var database = connectionManager.OpenConnection())
             {
                 await DataImporter.ImportLegacyData(database, userController);
             }
@@ -245,7 +249,7 @@ namespace LobotJR
             var userController = scope.Resolve<UserController>();
             var playerController = scope.Resolve<PlayerController>();
 
-            await ImportLegacyData(userController);
+            await ImportLegacyData(connectionManager, userController);
             playerController.ExperienceToggled += (bool enabled) => { isLive = enabled; };
             if (isLive)
             {
@@ -288,22 +292,17 @@ namespace LobotJR
             }
         }
 
-        private static async Task Initialize()
+        private static async Task Initialize(ClientData clientData, TokenData tokenData)
         {
             bool twitchPlays = false;
-            var clientData = FileUtils.ReadClientData();
-            var tokenData = FileUtils.ReadTokenData();
-
-            RestLogger.SetSensitiveData(clientData, tokenData);
-            await UpdateDatabase(clientData, tokenData);
             using (var scope = CreateApplicationScope(clientData, tokenData))
             {
                 var connectionManager = scope.Resolve<IConnectionManager>();
                 var userController = scope.Resolve<UserController>();
+                SeedDatabase(connectionManager, userController, tokenData);
+                ConfigureLogging(connectionManager);
                 using (connectionManager.OpenConnection())
                 {
-                    SeedDatabase(connectionManager, userController, tokenData);
-                    ConfigureLogging(connectionManager);
                     var appSettings = connectionManager.CurrentConnection.AppSettings.Read().First();
                     twitchPlays = appSettings.TwitchPlays;
                 }
@@ -320,6 +319,12 @@ namespace LobotJR
                     await RunBot(scope);
                 }
             }
+        }
+
+        private static async Task ConfigureDatabase(ClientData clientData, TokenData tokenData)
+        {
+            RestLogger.SetSensitiveData(clientData, tokenData);
+            await UpdateDatabase(clientData, tokenData);
         }
     }
 }

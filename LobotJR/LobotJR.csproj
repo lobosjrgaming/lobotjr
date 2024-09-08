@@ -225,7 +225,7 @@
     <Compile Include="Data\Import\PetDataImport.cs" />
     <Compile Include="Data\Import\PlayerDataImport.cs" />
     <Compile Include="Data\Metadata.cs" />
-    <Compile Include="Data\Migration\DatabaseUpdate-1.0.7-1.0.8.cs" />
+    <Compile Include="Data\Migration\DatabaseUpdate-1.0.7-1.1.0.cs" />
     <Compile Include="Data\Migration\DatabaseUpdate-1.0.6-1.0.7.cs" />
     <Compile Include="Data\Migration\DatabaseUpdate-1.0.5-1.0.6.cs" />
     <Compile Include="Data\Migration\DatabaseUpdate-1.0.4-1.0.5.cs" />

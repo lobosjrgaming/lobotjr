@@ -55,6 +55,7 @@ namespace LobotJR.Data.Migration
                 }
                 catch (Exception e)
                 {
+                    result.Success = false;
                     result.DebugOutput.Add($"Exception: {e}");
                 }
             }
@@ -92,7 +93,7 @@ namespace LobotJR.Data.Migration
                     context.Database.ExecuteSqlCommand($"DELETE FROM \"TournamentEntries\" WHERE [UserId] = '{tournamentName}'");
                 }
             }
-            context.Database.ExecuteSqlCommand($"DELETE R FROM \"TournamentResults\" R LEFT JOIN \"TournamentEntries\" E ON R.[Id] = E.[ResultId] WHERE E.[Id] IS NULL");
+            context.Database.ExecuteSqlCommand($"DELETE FROM \"TournamentResults\" AS R WHERE R.[Id] in (SELECT [ResultId] FROM \"TournamentEntries\" WHERE [Id] IS NULL)");
 
             foreach (var roleNameList in roleNameLists)
             {

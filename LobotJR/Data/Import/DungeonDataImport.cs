@@ -99,13 +99,13 @@ namespace LobotJR.Data.Import
                     {
                         new EncounterLevel()
                         {
-                            Difficulty = successRate - float.Parse(difficulty),
-                            ModeId = modeMap["N"].Id
+                            Difficulty = successRate - float.Parse(difficulty) / 100f,
+                            Mode = modeMap["N"]
                         },
                         new EncounterLevel()
                         {
-                            Difficulty = heroicSuccessRate - float.Parse(heroicDifficulty),
-                            ModeId = modeMap["H"].Id
+                            Difficulty = heroicSuccessRate - float.Parse(heroicDifficulty) / 100f,
+                            Mode = modeMap["H"]
                         },
                     },
                     SetupText = lines.ElementAt(i * 2),
@@ -118,9 +118,9 @@ namespace LobotJR.Data.Import
                 var item = itemMap[lootEntry];
                 lootTable.Add(new Loot()
                 {
-                    ItemId = item.Id,
+                    Item = item,
                     DropChance = item.Quality.DropRatePenalty,
-                    ModeId = modeMap["N"].Id
+                    Mode = modeMap["N"]
                 });
             }
             foreach (var lootEntry in heroicLoot)
@@ -128,9 +128,9 @@ namespace LobotJR.Data.Import
                 var item = itemMap[lootEntry];
                 lootTable.Add(new Loot()
                 {
-                    ItemId = item.Id,
+                    Item = item,
                     DropChance = item.Quality.DropRatePenalty,
-                    ModeId = modeMap["H"].Id
+                    Mode = modeMap["H"]
                 });
             }
 
@@ -146,13 +146,13 @@ namespace LobotJR.Data.Import
                     {
                         Minimum = int.Parse(metadata[3]),
                         Maximum = int.Parse(metadata[4]),
-                        ModeId = modeMap["N"].Id
+                        Mode = modeMap["N"]
                     },
                     new LevelRange()
                     {
                         Minimum = int.Parse(heroicMetadata[3]),
                         Maximum = int.Parse(heroicMetadata[4]),
-                        ModeId = modeMap["H"].Id
+                        Mode = modeMap["H"]
                     }
                 },
                 Encounters = encounters,
