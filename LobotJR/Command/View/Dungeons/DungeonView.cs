@@ -111,7 +111,10 @@ namespace LobotJR.Command.View.Dungeons
         private void DungeonController_DungeonFailure(Party party, IEnumerable<PlayerCharacter> deceased)
         {
             var deadUsers = deceased.Select(x => PlayerController.GetUserByPlayer(x));
-            PushToParty(party, $"In the chaos, {string.Join(", and ", deadUsers.Select(x => x.Username))} lost their life. Seek vengeance in their honor!", deceased.ToArray());
+            if (deceased.Any())
+            {
+                PushToParty(party, $"In the chaos, {string.Join(", and ", deadUsers.Select(x => x.Username))} lost their life. Seek vengeance in their honor!", deceased.ToArray());
+            }
             PushToParty(party, "It's a sad thing your adventure has ended here. No XP or Coins have been awarded.");
         }
 

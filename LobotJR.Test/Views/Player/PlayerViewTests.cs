@@ -201,7 +201,7 @@ namespace LobotJR.Test.Views.Player
             player.Level = 3;
             player.CharacterClass = Classes.First(x => !x.CanPlay);
             var newClass = Classes.First(x => x.CanPlay);
-            var result = View.SelectClass(User, newClass.Id.ToString());
+            var result = View.SelectClass(User, (newClass.Id - 1).ToString());
             Assert.IsTrue(result.Responses.Any(x => x.Contains(newClass.Name)));
             Assert.AreEqual(newClass, player.CharacterClass);
         }
@@ -215,7 +215,7 @@ namespace LobotJR.Test.Views.Player
             player.Level = 3;
             PlayerController.FlagForRespec(player);
             var newClass = Classes.First(x => x.CanPlay && !x.Equals(player.CharacterClass));
-            var result = View.SelectClass(User, newClass.Id.ToString());
+            var result = View.SelectClass(User, (newClass.Id - 1).ToString());
             Assert.IsTrue(result.Responses.Any(x => x.Contains(newClass.Name)));
             Assert.IsTrue(result.Responses.Any(x => x.Contains(cost.ToString())));
             Assert.AreEqual(newClass, player.CharacterClass);
@@ -294,7 +294,7 @@ namespace LobotJR.Test.Views.Player
             player.CharacterClass = Classes.First(x => !x.CanPlay);
             player.Level = 3;
             var result = View.ClassHelp(User);
-            var choices = Classes.Where(x => x.CanPlay).Select(x => $"!C{x.Id}");
+            var choices = Classes.Where(x => x.CanPlay).Select(x => $"!C{x.Id - 1}");
             foreach (var choice in choices)
             {
                 Assert.IsTrue(result.Responses.Any(x => x.Contains(choice)));
@@ -311,7 +311,7 @@ namespace LobotJR.Test.Views.Player
             player.Level = 3;
             var result = View.Respec(User);
             Assert.IsTrue(PlayerController.IsFlaggedForRespec(player));
-            var choices = Classes.Where(x => x.CanPlay).Select(x => $"!C{x.Id}");
+            var choices = Classes.Where(x => x.CanPlay).Select(x => $"!C{x.Id - 1}");
             foreach (var choice in choices)
             {
                 Assert.IsTrue(result.Responses.Any(x => x.Contains(choice)));
@@ -369,7 +369,7 @@ namespace LobotJR.Test.Views.Player
             player.Level = 3;
             var result = View.Respec(User);
             Assert.IsFalse(PlayerController.IsFlaggedForRespec(player));
-            var choices = Classes.Where(x => x.CanPlay).Select(x => $"!C{x.Id}");
+            var choices = Classes.Where(x => x.CanPlay).Select(x => $"!C{x.Id - 1}");
             foreach (var choice in choices)
             {
                 Assert.IsTrue(result.Responses.Any(x => x.Contains(choice)));

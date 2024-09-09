@@ -93,8 +93,12 @@ namespace LobotJR.Command.View.Dungeons
                                 {
                                     dungeons = DungeonController.GetEligibleDungeons(player);
                                 }
-                                if (GroupFinderController.QueuePlayer(player, dungeons))
+                                if (!GroupFinderController.IsPlayerQueued(player))
                                 {
+                                    if (GroupFinderController.QueuePlayer(player, dungeons))
+                                    {
+                                        return new CommandResult(true);
+                                    }
                                     return new CommandResult("You have been placed in the Group Finder queue.");
                                 }
                                 return new CommandResult("You are already queued in the Group Finder! Type !queuetime for more information.");

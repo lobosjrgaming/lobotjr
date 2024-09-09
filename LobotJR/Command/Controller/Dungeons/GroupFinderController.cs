@@ -76,8 +76,13 @@ namespace LobotJR.Command.Controller.Dungeons
                             newParty.SetQueueTimes(group.ToDictionary(x => x.Player, x => (int)Math.Floor((DateTime.Now - x.QueueTime).TotalSeconds)));
                             newParty.Run = random.RandomElement(dungeons);
                             party = newParty;
+                            party.State = PartyState.Full;
                             var leader = group.OrderByDescending(x => x.QueueTime).First();
                             PartyController.SetLeader(party, leader.Player);
+                            foreach (var entry in group.ToList())
+                            {
+                                GroupFinderQueue.Remove(entry);
+                            }
                             return true;
                         }
                     }
@@ -177,17 +182,14 @@ namespace LobotJR.Command.Controller.Dungeons
         /// </summary>
         /// <param name="player">The player to add.</param>
         /// <param name="dungeons">A collection of dungeons to queue the player for.</param>
-        /// <returns>True if the player was added to the queue. False if they
-        /// could not be added due to already being in the queue.</returns>
+        /// <returns>True if the player was placed into a party with other
+        /// queued players.</returns>
         public bool QueuePlayer(PlayerCharacter player, IEnumerable<DungeonRun> dungeons)
         {
-            if (!IsPlayerQueued(player))
+            GroupFinderQueue.Add(new QueueEntry(player, dungeons.ToList()));
+            if (TryCreateParty(out var party))
             {
-                GroupFinderQueue.Add(new QueueEntry(player, dungeons.ToList()));
-                if (TryCreateParty(out var party))
-                {
-                    PartyFound?.Invoke(party);
-                }
+                PartyFound?.Invoke(party);
                 return true;
             }
             return false;

@@ -16,12 +16,14 @@ namespace LobotJR.Test.Controllers.Dungeons
     public class GroupFinderControllerTests
     {
         private IConnectionManager ConnectionManager;
+        private PartyController PartyController;
         private GroupFinderController Controller;
 
         [TestInitialize]
         public void Initialize()
         {
             ConnectionManager = AutofacMockSetup.Container.Resolve<IConnectionManager>();
+            PartyController = AutofacMockSetup.Container.Resolve<PartyController>();
             Controller = AutofacMockSetup.Container.Resolve<GroupFinderController>();
             AutofacMockSetup.ResetPlayers();
             Controller.ResetQueue();
@@ -191,6 +193,15 @@ namespace LobotJR.Test.Controllers.Dungeons
             listener.Verify(x => x(It.Is<Party>(
                 y => y.Members.Contains(player) && y.Members.Contains(player2) && y.Members.Contains(player3)
             )), Times.Once());
+            Assert.IsFalse(Controller.IsPlayerQueued(player));
+            Assert.IsFalse(Controller.IsPlayerQueued(player2));
+            Assert.IsFalse(Controller.IsPlayerQueued(player3));
+            var party1 = PartyController.GetCurrentGroup(player);
+            var party2 = PartyController.GetCurrentGroup(player2);
+            var party3 = PartyController.GetCurrentGroup(player3);
+            Assert.AreEqual(party1, party2);
+            Assert.AreEqual(party2, party3);
+            Assert.AreEqual(PartyState.Full, party1.State);
         }
 
         [TestMethod]

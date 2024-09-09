@@ -268,9 +268,11 @@ namespace LobotJR
                 (User user, CommandResult commandResult) =>
                 {
                     string message = "Push Notification";
+                    commandResult.Sender = user;
                     commandManager.HandleResult(message, commandResult, ircClient, twitchClient);
                 };
 
+            var lastTime = DateTime.Now;
             await ircClient.Connect();
 
             while (true)
@@ -287,6 +289,23 @@ namespace LobotJR
                         await HandleTriggersAndCommands(ircMessages.Where(x => x.IsChat || x.IsWhisper), userController, commandManager, triggerManager, ircClient, twitchClient);
                     }
                 }
+                var now = DateTime.Now;
+                if (lastTime.Day != now.Day)
+                {
+                    // db contexts don't get freed until garbage collection runs, so we need this to not get file lock errors
+                    GC.Collect();
+                    var existing = Directory.GetFiles(".", "data.sqlite.*.archive").OrderBy(x => x);
+                    var toDelete = existing.Take(existing.Count() - 4);
+                    if (toDelete.Any())
+                    {
+                        foreach (var file in toDelete)
+                        {
+                            File.Delete(file);
+                        }
+                    }
+                    File.Copy(".\\data.sqlite", $".\\data.sqlite.{now:yyyyMMdd}.archive");
+                }
+                lastTime = now;
                 // Nominal delay so it doesn't chew up the CPU
                 await Task.Delay(10);
             }

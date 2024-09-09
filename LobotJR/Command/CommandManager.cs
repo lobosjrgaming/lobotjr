@@ -52,6 +52,16 @@ namespace LobotJR.Command
             }
         }
 
+        public CommandManager(IEnumerable<ICommandView> views, IEnumerable<IMetaController> metaControllers, IConnectionManager connectionManager)
+        {
+            CommandViews = views;
+            ConnectionManager = connectionManager;
+            foreach (var meta in metaControllers)
+            {
+                meta.CommandManager = this;
+            }
+        }
+
         private void AddCommand(CommandHandler command, string prefix)
         {
             var commandId = $"{prefix}.{command.Name}";
@@ -141,17 +151,6 @@ namespace LobotJR.Command
         private bool CanExecuteInChat(string commandId)
         {
             return !whisperOnlyCommands.Contains(commandId);
-        }
-
-        public CommandManager(IEnumerable<ICommandView> views, IEnumerable<IMetaController> metaControllers, IConnectionManager connectionManager)
-        {
-            CommandViews = views;
-            ConnectionManager = connectionManager;
-            foreach (var meta in metaControllers)
-            {
-                meta.CommandManager = this;
-            }
-
         }
 
         /// <summary>

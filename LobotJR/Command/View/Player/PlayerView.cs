@@ -1,5 +1,4 @@
-﻿using LobotJR.Command.Controller;
-using LobotJR.Command.Controller.Dungeons;
+﻿using LobotJR.Command.Controller.Dungeons;
 using LobotJR.Command.Controller.General;
 using LobotJR.Command.Controller.Player;
 using LobotJR.Command.Model.Player;
@@ -15,7 +14,7 @@ namespace LobotJR.Command.View.Player
     /// View containing commands for player class selection and retrieving
     /// information about experience and currency.
     /// </summary>
-    public class PlayerView : ICommandView, IPushNotifier, IDatabaseInitialize
+    public class PlayerView : ICommandView, IPushNotifier
     {
         private readonly PlayerController PlayerController;
         private readonly PartyController PartyController;
@@ -49,12 +48,19 @@ namespace LobotJR.Command.View.Player
                 new CommandHandler("Stats", this, CommandMethod.GetInfo<string>(GetStats), CommandMethod.GetInfo(GetStatsCompact), "stats"),
                 new CommandHandler("ClassDistribution", this, CommandMethod.GetInfo(GetClassStats), "classes"),
                 new CommandHandler("ClassSelect", this, CommandMethod.GetInfo<string>(SelectClass), "c", "class"),
+                new CommandHandler("ClassSelectWarrior", this, CommandMethod.GetInfo(SelectClassWarrior), "c1"),
+                new CommandHandler("ClassSelectMage", this, CommandMethod.GetInfo(SelectClassMage), "c2"),
+                new CommandHandler("ClassSelectRogue", this, CommandMethod.GetInfo(SelectClassRogue), "c3"),
+                new CommandHandler("ClassSelectRanger", this, CommandMethod.GetInfo(SelectClassRanger), "c4"),
+                new CommandHandler("ClassSelectCleric", this, CommandMethod.GetInfo(SelectClassCleric), "c5"),
                 new CommandHandler("ClassHelp", this, CommandMethod.GetInfo(ClassHelp), "classhelp"),
                 new CommandHandler("Respec", this, CommandMethod.GetInfo(Respec), "respec"),
             };
             Commands = commands;
         }
 
+        /*
+         * This doesn't seem to work for some reason, it throws a reflection error when using a delegate as the method. No idea why, couldn't fix it in a reasonable amount of time.
         public void Initialize()
         {
             var commands = Commands.ToList();
@@ -66,6 +72,7 @@ namespace LobotJR.Command.View.Player
             }
             Commands = commands;
         }
+        */
 
         private void ConfirmationController_Canceled(User user)
         {
@@ -106,7 +113,7 @@ namespace LobotJR.Command.View.Player
                 {
                     messages.Add("It looks like you are elligible to choose a class but haven't yet done so. Choose by whispering me one of the following:");
                 }
-                var classes = PlayerController.GetPlayableClasses().Select(x => $"!C{x.Id} ({x.Name})");
+                var classes = PlayerController.GetPlayableClasses().Select(x => $"!C{x.Id - 1} ({x.Name})");
                 messages.Add(string.Join(", ", classes));
             }
             PushNotification?.Invoke(user, new CommandResult(user, messages.ToArray()));
@@ -220,16 +227,41 @@ namespace LobotJR.Command.View.Player
             return new CommandResult($"You successfully selected the {characterClass.Name} class!");
         }
 
+        public CommandResult SelectClassWarrior(User user)
+        {
+            return SelectClass(user, "1");
+        }
+
+        public CommandResult SelectClassMage(User user)
+        {
+            return SelectClass(user, "2");
+        }
+
+        public CommandResult SelectClassRogue(User user)
+        {
+            return SelectClass(user, "3");
+        }
+
+        public CommandResult SelectClassRanger(User user)
+        {
+            return SelectClass(user, "4");
+        }
+
+        public CommandResult SelectClassCleric(User user)
+        {
+            return SelectClass(user, "5");
+        }
+
         public CommandResult SelectClass(User user, string choice)
         {
             var player = PlayerController.GetPlayerByUser(user);
             if (PlayerController.CanSelectClass(player))
             {
                 var classes = PlayerController.GetPlayableClasses();
-                var output = new CommandResult($"Invalid selection. Please whisper me one of the following: ", string.Join(", ", classes.Select(x => $"!C{x.Id} ({x.Name})")));
+                var output = new CommandResult($"Invalid selection. Please whisper me one of the following: ", string.Join(", ", classes.Select(x => $"!C{x.Id - 1} ({x.Name})")));
                 if (int.TryParse(choice, out var choiceInt))
                 {
-                    var classChoice = classes.FirstOrDefault(x => x.Id == choiceInt);
+                    var classChoice = classes.FirstOrDefault(x => x.Id == choiceInt + 1);
                     if (classChoice != null)
                     {
                         output = SetClass(player, classChoice);
@@ -259,7 +291,7 @@ namespace LobotJR.Command.View.Player
             {
                 if (!player.CharacterClass.CanPlay)
                 {
-                    var classes = PlayerController.GetPlayableClasses().Select(x => $"!C{x.Id} ({x.Name})");
+                    var classes = PlayerController.GetPlayableClasses().Select(x => $"!C{x.Id - 1} ({x.Name})");
                     return new CommandResult("It looks like you are elligible to choose a class but haven't yet done so. Choose by whispering me one of the following:",
                         string.Join(", ", classes));
                 }
@@ -287,7 +319,7 @@ namespace LobotJR.Command.View.Player
                                 var classes = PlayerController.GetPlayableClasses();
                                 return new CommandResult(
                                     $"You've chosen to respec your class! It will cost you {cost} coins to respec and you will lose all your items. Reply 'Nevermind' to cancel or one of the following codes to select your new class: ",
-                                    string.Join(", ", classes.Select(x => $"!C{x.Id} ({x.Name})")));
+                                    string.Join(", ", classes.Select(x => $"!C{x.Id - 1} ({x.Name})")));
                             }
                             return new CommandResult($"It costs {cost} Wolfcoins to respec at your level. You have {player.Currency} coins.");
                         }
@@ -295,7 +327,7 @@ namespace LobotJR.Command.View.Player
                     }
                     return new CommandResult("You can't respec while in a party!");
                 }
-                var classList = PlayerController.GetPlayableClasses().Select(x => $"!C{x.Id} ({x.Name})");
+                var classList = PlayerController.GetPlayableClasses().Select(x => $"!C{x.Id - 1} ({x.Name})");
                 return new CommandResult("It looks like you are elligible to choose a class but haven't yet done so. Choose by whispering me one of the following:",
                     string.Join(", ", classList));
             }

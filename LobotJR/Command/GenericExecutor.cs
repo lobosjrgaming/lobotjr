@@ -164,12 +164,28 @@ namespace LobotJR.Command
 
         private string SimplifyType(Type type)
         {
-            return type.Name.Substring(type.Name.LastIndexOf('.') + 1);
+            if (type == typeof(int) || type == typeof(long))
+            {
+                return "int ";
+            }
+            if (type == typeof(float) || type == typeof(double))
+            {
+                return "float ";
+            }
+            if (type == typeof(bool))
+            {
+                return "bool ";
+            }
+            if (type == typeof(string))
+            {
+                return string.Empty;
+            }
+            return $"{type.Name.Substring(type.Name.LastIndexOf('.') + 1)} ";
         }
 
         public string DescribeParameters()
         {
-            return string.Join(", ", MethodInfo.GetParameters().Where(x => x.ParameterType != typeof(User)).Select(x => $"{(x.HasDefaultValue ? "[optional]" : "")}{x.ParameterType.Name} {x.Name}"));
+            return string.Join(", ", MethodInfo.GetParameters().Where(x => x.ParameterType != typeof(User)).Select(x => $"{{{(x.HasDefaultValue ? "[optional]" : "")}{SimplifyType(x.ParameterType)}{x.Name}}}"));
         }
 
         public T Execute(User user, string parameterString)

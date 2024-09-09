@@ -108,8 +108,8 @@ namespace LobotJR.Data.Import
                             Mode = modeMap["H"]
                         },
                     },
-                    SetupText = lines.ElementAt(i * 2),
-                    CompleteText = lines.ElementAt(i * 2 + 1)
+                    SetupText = lines.ElementAt(i * 2 + 1),
+                    CompleteText = lines.ElementAt(i * 2 + 2)
                 });
             }
             var lootTable = new List<Loot>();
@@ -119,7 +119,7 @@ namespace LobotJR.Data.Import
                 lootTable.Add(new Loot()
                 {
                     Item = item,
-                    DropChance = item.Quality.DropRatePenalty,
+                    DropChance = item.Quality.DropRatePenalty / 100f,
                     Mode = modeMap["N"]
                 });
             }
@@ -129,7 +129,7 @@ namespace LobotJR.Data.Import
                 lootTable.Add(new Loot()
                 {
                     Item = item,
-                    DropChance = item.Quality.DropRatePenalty,
+                    DropChance = item.Quality.DropRatePenalty / 100f,
                     Mode = modeMap["H"]
                 });
             }

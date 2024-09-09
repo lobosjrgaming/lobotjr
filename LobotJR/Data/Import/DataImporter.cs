@@ -287,19 +287,18 @@ namespace LobotJR.Data.Import
                         if (playerImport)
                         {
                             FinalizePlayerData();
-                            //TODO: classData.json file is persisting after this operation. Best guess is that the legacy wolfcoin code is importing the data file and then writing it back out to memory after this happens. Should resolve once the legacy code is removed.
                             FinalizeDungeonData();
                             FinalizeItemData();
                             FinalizePetData();
                             return true;
+                            //RollbackPlayerData(database.PlayerCharacters, database.CharacterClassData, database.Inventories, database.Stables);
                         }
-                        RollbackPlayerData(database.PlayerCharacters, database.CharacterClassData, database.Inventories, database.Stables);
+                        RollbackDungeonData(database.DungeonData, database.DungeonTimerData);
                     }
-                    RollbackDungeonData(database.DungeonData, database.DungeonTimerData);
+                    RollbackItemData(database.ItemData, database.ItemTypeData, database.ItemSlotData, database.ItemQualityData);
                 }
-                RollbackItemData(database.ItemData, database.ItemTypeData, database.ItemSlotData, database.ItemQualityData);
+                RollbackPetData(database.PetData, database.PetRarityData);
             }
-            RollbackPetData(database.PetData, database.PetRarityData);
             return false;
         }
 
@@ -308,9 +307,9 @@ namespace LobotJR.Data.Import
             ImportFishData(database.FishData);
             await ImportFisherData(database.FishData, database.Catches, database.FishingLeaderboard, userController);
             var playerImport = await ImportPlayerData(database, userController);
-            if (!playerImport)
+            if (playerImport)
             {
-                Logger.Warn("Player data import failed, please verify your player, dungeon, item, and pet files and try again.");
+                Logger.Info("All legacy data imported into database.");
             }
         }
     }

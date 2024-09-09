@@ -11,7 +11,6 @@ using LobotJR.Command.Controller.Gloat;
 using LobotJR.Command.Controller.Pets;
 using LobotJR.Command.Controller.Player;
 using LobotJR.Command.Controller.Twitch;
-using LobotJR.Command.View;
 using LobotJR.Command.View.AccessControl;
 using LobotJR.Command.View.Dungeons;
 using LobotJR.Command.View.Equipment;
@@ -88,32 +87,32 @@ namespace LobotJR.Utils
 
         private static void RegisterViews(ContainerBuilder builder)
         {
-            builder.RegisterType<UserAdmin>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
-            builder.RegisterType<AccessControlView>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
-            builder.RegisterType<AccessControlAdmin>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
+            builder.RegisterType<UserAdmin>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
+            builder.RegisterType<AccessControlView>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
+            builder.RegisterType<AccessControlAdmin>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
 
-            builder.RegisterType<InfoView>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
-            builder.RegisterType<ConfirmationView>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
+            builder.RegisterType<InfoView>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
+            builder.RegisterType<ConfirmationView>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
             // builder.RegisterType<BettingView>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
 
-            builder.RegisterType<EquipmentView>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
-            builder.RegisterType<EquipmentAdmin>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
-            builder.RegisterType<PetView>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
-            builder.RegisterType<PetAdmin>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
+            builder.RegisterType<EquipmentView>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
+            builder.RegisterType<EquipmentAdmin>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
+            builder.RegisterType<PetView>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
+            builder.RegisterType<PetAdmin>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
 
-            builder.RegisterType<PlayerView>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
-            builder.RegisterType<PlayerAdmin>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
+            builder.RegisterType<PlayerView>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
+            builder.RegisterType<PlayerAdmin>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
 
-            builder.RegisterType<FishingAdmin>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
-            builder.RegisterType<FishingView>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
-            builder.RegisterType<LeaderboardView>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
-            builder.RegisterType<TournamentView>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
+            builder.RegisterType<FishingAdmin>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
+            builder.RegisterType<FishingView>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
+            builder.RegisterType<LeaderboardView>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
+            builder.RegisterType<TournamentView>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
 
-            builder.RegisterType<DungeonView>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
-            builder.RegisterType<GroupFinderView>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
-            builder.RegisterType<GroupFinderAdmin>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
+            builder.RegisterType<DungeonView>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
+            builder.RegisterType<GroupFinderView>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
+            builder.RegisterType<GroupFinderAdmin>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
 
-            builder.RegisterType<GloatView>().AsSelf().As<ICommandView>().InstancePerLifetimeScope();
+            builder.RegisterType<GloatView>().AsSelf().AsImplementedInterfaces().InstancePerLifetimeScope();
         }
 
         private static void RegisterTriggers(ContainerBuilder builder)

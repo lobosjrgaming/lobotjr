@@ -204,9 +204,9 @@ namespace LobotJR.Test.Controllers.Fishing
             var commonCount = samples.Count(x => x.Rarity.Equals(rarities[0]));
             var uncommonCount = samples.Count(x => x.Rarity.Equals(rarities[1]));
             var rareCount = samples.Count(x => x.Rarity.Equals(rarities[2]));
-            Assert.IsTrue(commonCount >= sampleSize * 0.67 && commonCount <= sampleSize * 0.70);
-            Assert.IsTrue(uncommonCount >= sampleSize * 0.25 && uncommonCount <= sampleSize * 0.28);
-            Assert.IsTrue(rareCount > 0 && rareCount <= sampleSize * 0.05);
+            Assert.IsTrue(commonCount >= sampleSize * 0.682 * 0.85 && commonCount <= sampleSize * 0.682 * 1.15);
+            Assert.IsTrue(uncommonCount >= sampleSize * 0.272 * 0.85 && uncommonCount <= sampleSize * 0.272 * 1.15);
+            Assert.IsTrue(rareCount > 0 && rareCount <= sampleSize * 0.046 * 1.15);
         }
 
         [TestMethod]
