@@ -367,7 +367,6 @@ namespace LobotJR.Command.Controller.Dungeons
                 else
                 {
                     message = party.Run.Dungeon.FailureText;
-                    party.CurrentEncounter = 0;
                     party.StepState = StepState.Setup;
                     party.State = PartyState.Failed;
                 }
