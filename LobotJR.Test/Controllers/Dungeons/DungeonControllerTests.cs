@@ -433,7 +433,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             await DungeonController.Process();
             levels.Difficulty = 1;
             listener.Verify(x => x(party, message), Times.Once);
-            Assert.AreEqual(0, party.CurrentEncounter);
+            Assert.AreEqual(1, party.CurrentEncounter);
             Assert.AreEqual(StepState.Setup, party.StepState);
             Assert.AreEqual(PartyState.Failed, party.State);
         }
