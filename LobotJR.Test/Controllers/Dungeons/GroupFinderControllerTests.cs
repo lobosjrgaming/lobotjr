@@ -131,7 +131,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             var now = DateTime.Now;
             Controller.QueuePlayer(player, Array.Empty<DungeonRun>());
             var entry = Controller.GetPlayerQueueEntry(player);
-            Assert.AreEqual(player, entry.Player);
+            Assert.AreEqual(player.UserId, entry.UserId);
             Assert.AreEqual(0, entry.Dungeons.Count());
             Assert.IsTrue(Math.Abs((entry.QueueTime - now).TotalMilliseconds) < 16);
         }
@@ -191,7 +191,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             Controller.QueuePlayer(player2, new List<DungeonRun>() { run });
             Controller.QueuePlayer(player3, new List<DungeonRun>() { run });
             listener.Verify(x => x(It.Is<Party>(
-                y => y.Members.Contains(player) && y.Members.Contains(player2) && y.Members.Contains(player3)
+                y => y.Members.Contains(player.UserId) && y.Members.Contains(player2.UserId) && y.Members.Contains(player3.UserId)
             )), Times.Once());
             Assert.IsFalse(Controller.IsPlayerQueued(player));
             Assert.IsFalse(Controller.IsPlayerQueued(player2));
@@ -219,7 +219,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             Controller.QueuePlayer(player2, new List<DungeonRun>() { run });
             Thread.Sleep(1);
             Controller.QueuePlayer(player3, new List<DungeonRun>() { run });
-            listener.Verify(x => x(It.Is<Party>(y => y.Leader.Equals(player3))), Times.Once());
+            listener.Verify(x => x(It.Is<Party>(y => y.Leader.Equals(player3.UserId))), Times.Once());
         }
 
         [TestMethod]
@@ -239,7 +239,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             Controller.QueuePlayer(player3, new List<DungeonRun>() { run });
             Thread.Sleep(1);
             Controller.QueuePlayer(player4, new List<DungeonRun>() { run });
-            listener.Verify(x => x(It.Is<Party>(y => !y.Members.Contains(player3))), Times.Once());
+            listener.Verify(x => x(It.Is<Party>(y => !y.Members.Contains(player3.UserId))), Times.Once());
         }
 
         [TestMethod]
@@ -300,9 +300,9 @@ namespace LobotJR.Test.Controllers.Dungeons
             Controller.QueuePlayer(player3, new List<DungeonRun>());
             var entries = Controller.GetQueueEntries();
             Assert.AreEqual(3, entries.Count());
-            Assert.IsTrue(entries.Any(x => x.Player.Equals(player)));
-            Assert.IsTrue(entries.Any(x => x.Player.Equals(player2)));
-            Assert.IsTrue(entries.Any(x => x.Player.Equals(player3)));
+            Assert.IsTrue(entries.Any(x => x.UserId.Equals(player.UserId)));
+            Assert.IsTrue(entries.Any(x => x.UserId.Equals(player2.UserId)));
+            Assert.IsTrue(entries.Any(x => x.UserId.Equals(player3.UserId)));
         }
     }
 }

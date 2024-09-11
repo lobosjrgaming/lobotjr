@@ -68,6 +68,7 @@ namespace LobotJR.Test.Views.Dungeons
         [TestMethod]
         public void QueueAddsUserToGroupFinderQueue()
         {
+            SettingsManager.GetGameSettings().DungeonLevelRestrictions = true;
             var response = View.QueueForDungeonFinder(User);
             Assert.IsTrue(response.Responses.First().Contains("have been placed"));
             var entry = Controller.GetPlayerQueueEntry(Player);
@@ -83,9 +84,9 @@ namespace LobotJR.Test.Views.Dungeons
             var entry = Controller.GetPlayerQueueEntry(Player);
             Assert.IsTrue(Controller.IsPlayerQueued(Player));
             Assert.AreEqual(2, entry.Dungeons.Count());
-            Assert.IsTrue(entry.Dungeons.All(x => x.Dungeon.Id.Equals(1)));
-            Assert.IsTrue(entry.Dungeons.Any(x => x.Mode.IsDefault));
-            Assert.IsTrue(entry.Dungeons.Any(x => !x.Mode.IsDefault));
+            Assert.IsTrue(entry.Dungeons.All(x => x.DungeonId.Equals(1)));
+            Assert.IsTrue(entry.Dungeons.Any(x => x.ModeId == 1));
+            Assert.IsTrue(entry.Dungeons.Any(x => x.ModeId == 2));
         }
 
         [TestMethod]
@@ -111,7 +112,7 @@ namespace LobotJR.Test.Views.Dungeons
         [TestMethod]
         public void QueueReturnsErrorIfUserHasPendingInvite()
         {
-            var party = PartyController.CreateParty(false);
+            var party = PartyController.CreateParty(false, Array.Empty<string>());
             PartyController.InvitePlayer(party, Player);
             var response = View.QueueForDungeonFinder(User);
             Assert.IsTrue(response.Responses.First().Contains("outstanding invite"));

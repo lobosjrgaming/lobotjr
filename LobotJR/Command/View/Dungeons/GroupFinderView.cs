@@ -54,12 +54,12 @@ namespace LobotJR.Command.View.Dungeons
 
         private void GroupFinderController_PartyFound(Party party)
         {
-            var users = party.Members.Select(x => UserController.GetUserById(x.UserId));
+            var users = party.Members.Select(x => UserController.GetUserById(x));
             foreach (var member in users)
             {
-                PushNotification?.Invoke(member, new CommandResult($"You've been matched for {DungeonController.GetDungeonName(party.Run)} with: {string.Join(", ", users.Where(x => !x.TwitchId.Equals(member.TwitchId)).Select(x => x.Username))}."));
+                PushNotification?.Invoke(member, new CommandResult($"You've been matched for {DungeonController.GetDungeonName(party.DungeonId, party.ModeId)} with: {string.Join(", ", users.Where(x => !x.TwitchId.Equals(member.TwitchId)).Select(x => x.Username))}."));
             }
-            PushNotification?.Invoke(UserController.GetUserById(party.Leader.UserId), new CommandResult("You are the party leader. Whisper me '!start' to begin!"));
+            PushNotification?.Invoke(UserController.GetUserById(party.Leader), new CommandResult("You are the party leader. Whisper me '!start' to begin!"));
         }
 
         public CommandResult DailyStatus(User user)
@@ -105,7 +105,7 @@ namespace LobotJR.Command.View.Dungeons
                             }
                             return new CommandResult($"You don't have enough money! It will cost you {DungeonController.GetDungeonCost(player)} Wolfcoins to run a dungeon.");
                         }
-                        if (party.PendingInvites.Any(x => x.Equals(player)))
+                        if (party.PendingInvites.Any(x => x.Equals(player.UserId)))
                         {
                             return new CommandResult("You currently have an outstanding invite to another party. Couldn't create new party!");
                         }

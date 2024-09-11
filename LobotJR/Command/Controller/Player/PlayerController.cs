@@ -149,22 +149,32 @@ namespace LobotJR.Command.Controller.Player
         /// <summary>
         /// Gets a player character object for a given user.
         /// </summary>
-        /// <param name="user">The user to get the player character for.</param>
+        /// <param name="userId">The user id of the player character.</param>
         /// <returns>A player character object tied to the user.</returns>
-        public PlayerCharacter GetPlayerByUser(User user)
+        public PlayerCharacter GetPlayerByUserId(string userId)
         {
-            var player = ConnectionManager.CurrentConnection.PlayerCharacters.FirstOrDefault(x => x.UserId.Equals(user.TwitchId));
+            var player = ConnectionManager.CurrentConnection.PlayerCharacters.FirstOrDefault(x => x.UserId.Equals(userId));
             if (player == null)
             {
                 player = new PlayerCharacter()
                 {
-                    UserId = user.TwitchId,
+                    UserId = userId,
                     CharacterClassId = ConnectionManager.CurrentConnection.CharacterClassData.First(x => !x.CanPlay).Id,
                 };
                 ConnectionManager.CurrentConnection.PlayerCharacters.Create(player);
                 ConnectionManager.CurrentConnection.PlayerCharacters.Commit();
             }
             return player;
+        }
+
+        /// <summary>
+        /// Gets a player character object for a given user.
+        /// </summary>
+        /// <param name="user">The user to get the player character for.</param>
+        /// <returns>A player character object tied to the user.</returns>
+        public PlayerCharacter GetPlayerByUser(User user)
+        {
+            return GetPlayerByUserId(user.TwitchId);
         }
 
         /// <summary>

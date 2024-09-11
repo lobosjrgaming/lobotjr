@@ -286,8 +286,8 @@ namespace LobotJR.Command.Controller.Pets
         /// <returns>The stable record of the newly granted pet.</returns>
         public Stable GrantPet(User user, PetRarity rarity)
         {
-            var availablePets = ConnectionManager.CurrentConnection.PetData.Read(x => x.Rarity.Equals(rarity));
-            var stable = GetStableForUser(user).Select(x => x.Pet);
+            var availablePets = ConnectionManager.CurrentConnection.PetData.Read(x => x.Rarity.Equals(rarity)).ToList();
+            var stable = GetStableForUser(user).Select(x => x.Pet).ToList();
             var unownedPets = availablePets.Except(stable);
             if (unownedPets.Any())
             {

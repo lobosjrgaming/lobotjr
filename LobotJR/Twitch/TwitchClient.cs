@@ -250,8 +250,11 @@ namespace LobotJR.Twitch
             var results = await Users.Get(TokenData.BroadcastToken, ClientData, usernames);
             if (results.Any(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized))
             {
-                var failure = results.FirstOrDefault(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized);
-                Logger.Warn("Encountered an unexpected response looking up userids: {statusCode}: {content}", failure.StatusCode, failure.Content);
+                var failures = results.Where(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized);
+                foreach (var failure in failures)
+                {
+                    Logger.Warn("Encountered an unexpected response looking up userids: {statusCode}: {content}. From: {request}", failure.StatusCode, failure.Content, failure.ResponseUri);
+                }
                 return new List<UserResponseData>();
             }
             return results.Where(x => x.Data != null && x.Data.Data != null).SelectMany(x => x.Data.Data);

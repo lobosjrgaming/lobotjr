@@ -39,7 +39,7 @@ namespace LobotJR.Command.View.Dungeons
             {
                 $"There are {entries.Count()} players in queue."
             };
-            var runs = entries.SelectMany(x => x.Dungeons).GroupBy(x => DungeonController.GetDungeonName(x));
+            var runs = entries.SelectMany(x => x.Dungeons).GroupBy(x => DungeonController.GetDungeonName(x.DungeonId, x.ModeId));
             responses.AddRange(runs.Select(x => $"{x.Key}: {x.Count()}"));
             return new CommandResult(responses.ToArray());
         }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NLog;
+using System;
 using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
@@ -38,6 +39,41 @@ namespace LobotJR.Data
         public TEntity Create(TEntity entry)
         {
             return dbSet.Add(entry);
+        }
+
+        public IEnumerable<TEntity> Create(IEnumerable<TEntity> entries)
+        {
+            return dbSet.AddRange(entries);
+        }
+
+        public IEnumerable<TEntity> BatchCreate(IEnumerable<TEntity> entries, int batchSize, Logger logger, string name)
+        {
+            var entryList = entries.ToList();
+            var total = entryList.Count;
+            logger.Info("Writing {count} {name} records to database.", total, name);
+            var startTime = DateTime.Now;
+            var logTime = DateTime.Now;
+            var processed = 0;
+            var cursor = 0;
+            BeginTransaction();
+            do
+            {
+                if (DateTime.Now - logTime > TimeSpan.FromSeconds(5))
+                {
+                    Commit();
+                    BeginTransaction();
+                    var elapsed = DateTime.Now - startTime;
+                    var estimate = TimeSpan.FromMilliseconds(elapsed.TotalMilliseconds / processed * total) - elapsed;
+                    logger.Info("{count} total {name} records written. {elapsed} time elapsed, {estimate} estimated remaining.", processed, name, elapsed.ToString("hh\\:mm\\:ss"), estimate.ToString("hh\\:mm\\:ss"));
+                    logTime = DateTime.Now;
+                }
+                Create(entryList.Skip(cursor).Take(batchSize));
+                cursor += batchSize;
+                processed += batchSize;
+
+            } while (cursor < entryList.Count);
+            Commit();
+            return entryList;
         }
 
         public IEnumerable<TEntity> Delete()

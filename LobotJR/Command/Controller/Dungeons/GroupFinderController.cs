@@ -1,4 +1,5 @@
-﻿using LobotJR.Command.Model.Dungeons;
+﻿using LobotJR.Command.Controller.Player;
+using LobotJR.Command.Model.Dungeons;
 using LobotJR.Command.Model.Player;
 using LobotJR.Data;
 using LobotJR.Utils;
@@ -17,6 +18,7 @@ namespace LobotJR.Command.Controller.Dungeons
         private readonly Random random = new Random();
         private readonly IConnectionManager ConnectionManager;
         private readonly SettingsManager SettingsManager;
+        private readonly PlayerController PlayerController;
         private readonly PartyController PartyController;
         private readonly List<QueueEntry> GroupFinderQueue = new List<QueueEntry>();
 
@@ -33,16 +35,17 @@ namespace LobotJR.Command.Controller.Dungeons
         /// </summary>
         public event DungeonQueueHandler PartyFound;
 
-        public GroupFinderController(IConnectionManager connectionManager, SettingsManager settingsManager, PartyController partyController)
+        public GroupFinderController(IConnectionManager connectionManager, SettingsManager settingsManager, PlayerController playerController, PartyController partyController)
         {
             ConnectionManager = connectionManager;
             SettingsManager = settingsManager;
+            PlayerController = playerController;
             PartyController = partyController;
         }
 
         private bool IsViableParty(IEnumerable<QueueEntry> players)
         {
-            var distribution = players.Select(x => x.Player).GroupBy(x => x.CharacterClass);
+            var distribution = players.Select(x => x.UserId).GroupBy(x => PlayerController.GetPlayerByUserId(x).CharacterClass);
             return !distribution.Any(x => x.Count() > 2);
         }
 
@@ -72,13 +75,15 @@ namespace LobotJR.Command.Controller.Dungeons
                         var dungeons = GetGroupDungeons(group);
                         if (dungeons.Any())
                         {
-                            var newParty = PartyController.CreateParty(true, group.Select(x => x.Player).ToArray());
-                            newParty.SetQueueTimes(group.ToDictionary(x => x.Player, x => (int)Math.Floor((DateTime.Now - x.QueueTime).TotalSeconds)));
-                            newParty.Run = random.RandomElement(dungeons);
+                            var newParty = PartyController.CreateParty(true, group.Select(x => x.UserId).ToArray());
+                            newParty.SetQueueTimes(group.ToDictionary(x => x.UserId, x => (int)Math.Floor((DateTime.Now - x.QueueTime).TotalSeconds)));
+                            var toRun = random.RandomElement(dungeons);
+                            newParty.DungeonId = toRun.DungeonId;
+                            newParty.ModeId = toRun.ModeId;
                             party = newParty;
                             party.State = PartyState.Full;
                             var leader = group.OrderByDescending(x => x.QueueTime).First();
-                            PartyController.SetLeader(party, leader.Player);
+                            PartyController.SetLeader(party, leader.UserId);
                             foreach (var entry in group.ToList())
                             {
                                 GroupFinderQueue.Remove(entry);
@@ -140,7 +145,7 @@ namespace LobotJR.Command.Controller.Dungeons
         /// <summary>
         /// Sets the lockout time for a player to the current time.
         /// </summary>
-        /// <param name="player">The player to update.</param>
+        /// <param name="player">The user id of the player to update.</param>
         public void SetLockout(PlayerCharacter player)
         {
             var dailyTimer = ConnectionManager.CurrentConnection.DungeonTimerData.FirstOrDefault(x => x.Name.Equals(DailyTimerName));
@@ -164,7 +169,7 @@ namespace LobotJR.Command.Controller.Dungeons
         /// <returns>A queue entry object for that player.</returns>
         public QueueEntry GetPlayerQueueEntry(PlayerCharacter player)
         {
-            return GroupFinderQueue.FirstOrDefault(x => x.Player.Equals(player));
+            return GroupFinderQueue.FirstOrDefault(x => x.UserId.Equals(player.UserId));
         }
 
         /// <summary>

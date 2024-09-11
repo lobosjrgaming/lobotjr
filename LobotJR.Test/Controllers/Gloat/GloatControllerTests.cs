@@ -134,7 +134,6 @@ namespace LobotJR.Test.Controllers.Gloat
         {
             var db = ConnectionManager.CurrentConnection;
             var user = db.Users.Read().First();
-            var userId = user.TwitchId;
             DataUtils.ClearFisherRecords(db, user);
             var cost = SettingsManager.GetGameSettings().FishingGloatCost;
             var player = PlayerController.GetPlayerByUser(user);

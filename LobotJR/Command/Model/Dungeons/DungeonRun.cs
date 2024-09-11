@@ -8,23 +8,23 @@
         /// <summary>
         /// The data for the dungeon to run through.
         /// </summary>
-        public Dungeon Dungeon { get; private set; }
+        public int DungeonId { get; private set; } = -1;
         /// <summary>
         /// The mode to run through the dungeon in.
         /// </summary>
-        public DungeonMode Mode { get; private set; }
+        public int ModeId { get; private set; } = -1;
 
         public DungeonRun(Dungeon dungeon, DungeonMode mode)
         {
-            Dungeon = dungeon;
-            Mode = mode;
+            DungeonId = dungeon.Id;
+            ModeId = mode.Id;
         }
 
         public override bool Equals(object obj)
         {
             if (obj is DungeonRun other)
             {
-                return other.Dungeon.Equals(Dungeon) && other.Mode.Equals(Mode);
+                return other.DungeonId.Equals(DungeonId) && other.ModeId.Equals(ModeId);
             }
             return false;
         }
@@ -34,8 +34,8 @@
             var prime1 = 108301;
             var prime2 = 150151;
             var hash = prime1;
-            hash = (hash * prime2) ^ Dungeon.GetHashCode();
-            hash = (hash * prime2) ^ Mode.GetHashCode();
+            hash = (hash * prime2) ^ DungeonId.GetHashCode();
+            hash = (hash * prime2) ^ ModeId.GetHashCode();
             return hash;
         }
     }

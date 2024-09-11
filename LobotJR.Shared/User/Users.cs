@@ -66,7 +66,7 @@ namespace LobotJR.Shared.User
                 {
                     var elapsed = DateTime.Now - start;
                     var estimate = elapsed - TimeSpan.FromMilliseconds(elapsed.TotalMilliseconds / cursor * total);
-                    Logger.Info("{count} total users processed. {elapsed} time elapsed, {estimate} estimated remaining.", cursor, elapsed.ToString("mm\\:ss"), estimate.ToString("mm\\:ss"));
+                    Logger.Info("{count} total users processed. {elapsed} time elapsed, {estimate} estimated remaining.", cursor, elapsed.ToString("mm\\:ss"), estimate.ToString("d\\.hh\\:mm\\:ss"));
                     logTime = DateTime.Now;
                 }
                 var client = RestUtils.CreateStandardClient();
@@ -78,7 +78,7 @@ namespace LobotJR.Shared.User
                     if (uriLengthLeft > user.Length + 7)
                     {
                         uriLengthLeft -= user.Length + 7;
-                        request.AddParameter("login", user, ParameterType.QueryString);
+                        request.AddParameter("login", user.Trim(), ParameterType.QueryString, false);
                         actualUserCount++;
                     }
                     else
@@ -92,7 +92,7 @@ namespace LobotJR.Shared.User
                 userBatch = users.Skip(cursor).Take(100);
             }
             while (userBatch.Any());
-            Logger.Info("Data for {count} users retrieved!", requestCount);
+            Logger.Info("Data for {count} users retrieved!", cursor);
             return data;
         }
     }

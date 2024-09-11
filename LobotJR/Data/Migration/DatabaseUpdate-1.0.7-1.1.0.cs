@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace LobotJR.Data.Migration
 {
-    public class DatabaseUpdate_1_0_7_1_0_8 : IDatabaseUpdate
+    public class DatabaseUpdate_1_0_7_1_1_0 : IDatabaseUpdate
     {
         public SemanticVersion FromVersion => new SemanticVersion(1, 0, 7);
         public SemanticVersion ToVersion => new SemanticVersion(1, 1, 0);
@@ -44,8 +44,8 @@ namespace LobotJR.Data.Migration
                 "CREATE TABLE \"DungeonHistories\" ([Id] INTEGER PRIMARY KEY, [Date] datetime NOT NULL, [IsQueueGroup] bit, [DungeonId] int NOT NULL, [ModeId] int NOT NULL, [StepsComplete] int NOT NULL, [Success] bit, FOREIGN KEY (DungeonId) REFERENCES \"Dungeons\"(Id), FOREIGN KEY (ModeId) REFERENCES \"DungeonModes\"(Id))",
                 "CREATE TABLE \"DungeonParticipants\" ([Id] INTEGER PRIMARY KEY, [HistoryId] int NOT NULL, [UserId] string NOT NULL, [WaitTime] int, [ExperienceEarned] int, [CurrencyEarned] int, [ItemDropId] int, [PetDropId] int, FOREIGN KEY (HistoryId) REFERENCES \"DungeonHistories\"(Id), FOREIGN KEY (ItemDropId) REFERENCES \"Items\"(Id), FOREIGN KEY (PetDropId) REFERENCES \"Pets\"(Id))",
                 //Move game settings to new table
-                "INSERT INTO \"GameSettings\" ([ExperienceFrequency], [ExperienceValue], [CoinValue], [SubRewardMultiplier], [RespecCost], [PryCost], [LevelGloatCost], [PetGloatCost], [PetExperienceToLevel], [PetLevelMax], [PetFeedingAffection], [PetFeedingCost], [PetHungerMax], [DungeonPartySize], [DungeonBaseCost], [DungeonLevelCost], [DungeonStepTime], [DungeonDeathChance], [DungeonCritChance], [DungeonLevelRestrictions], [FishingCastMinimum], [FishingCastMaximum], [FishingHookLength], [FishingUseNormalRarity], [FishingUseNormalSizes], [FishingGloatCost], [FishingTournamentDuration], [FishingTournamentInterval], [FishingTournamentCastMinimum], [FishingTournamentCastMaximum]) "
-                    + "SELECT 15, 1, 3, 2, 250, 1, 25, 25, 150, 10, 5, 5, 100, 3, 25, 10, 9000, 0.25, 0.25, 0, [FishingCastMinimum], [FishingCastMaximum], [FishingHookLength], [FishingUseNormalRarity], [FishingUseNormalSizes], [FishingGloatCost], [FishingTournamentDuration], [FishingTournamentInterval], [FishingTournamentCastMinimum], [FishingTournamentCastMaximum] FROM \"AppSettings\"",
+                "INSERT INTO \"GameSettings\" ([ExperienceFrequency], [ExperienceValue], [CoinValue], [SubRewardMultiplier], [RespecCost], [PryCost], [LevelGloatCost], [PetGloatCost], [PetExperienceToLevel], [PetLevelMax], [PetFeedingAffection], [PetFeedingCost], [PetHungerMax], [DungeonPartySize], [DungeonBaseCost], [DungeonLevelCost], [DungeonStepTime], [DungeonDeathChance], [DungeonCritChance], [DungeonCritBonus], [DungeonLevelRestrictions], [FishingCastMinimum], [FishingCastMaximum], [FishingHookLength], [FishingUseNormalRarity], [FishingUseNormalSizes], [FishingGloatCost], [FishingTournamentDuration], [FishingTournamentInterval], [FishingTournamentCastMinimum], [FishingTournamentCastMaximum]) "
+                    + "SELECT 15, 1, 3, 2, 250, 1, 25, 25, 150, 10, 5, 5, 100, 3, 25, 10, 9000, 0.25, 0.25, 1, 0, [FishingCastMinimum], [FishingCastMaximum], [FishingHookLength], [FishingUseNormalRarity], [FishingUseNormalSizes], [FishingGloatCost], [FishingTournamentDuration], [FishingTournamentInterval], [FishingTournamentCastMinimum], [FishingTournamentCastMaximum] FROM \"AppSettings\"",
                 "ALTER TABLE \"AppSettings\" DROP COLUMN [FishingCastMinimum]",
                 "ALTER TABLE \"AppSettings\" DROP COLUMN [FishingCastMaximum]",
                 "ALTER TABLE \"AppSettings\" DROP COLUMN [FishingHookLength]",
@@ -62,8 +62,8 @@ namespace LobotJR.Data.Migration
                 //Cleanup database errors from previous versions
                 "PRAGMA foreign_keys=OFF",
                 // "BEGIN TRANSACTION",
-                "CREATE TABLE \"Catches_New\" ([Id] INTEGER PRIMARY KEY, [UserId] nvarchar, [Length] real NOT NULL, [Weight] real NOT NULL, [Points] int NOT NULL, [Fish_Id] int, [Fisher_Id] int, FOREIGN KEY (Fish_Id) REFERENCES \"Fish\"(Id))",
-                "INSERT INTO \"Catches_New\" SELECT * FROM \"Catches\"",
+                "CREATE TABLE \"Catches_New\" ([Id] INTEGER PRIMARY KEY, [UserId] nvarchar, [Length] real NOT NULL, [Weight] real NOT NULL, [Points] int NOT NULL, [FishId] int, FOREIGN KEY (FishId) REFERENCES \"Fish\"(Id))",
+                "INSERT INTO \"Catches_New\" ([UserId], [Length], [Weight], [Points], [FishId]) SELECT [UserId], [Length], [Weight], [Points], [FishId] FROM \"Catches\"",
                 "DROP TABLE \"Catches\"",
                 "ALTER TABLE \"Catches_New\" RENAME TO \"Catches\"",
                 // "COMMIT",

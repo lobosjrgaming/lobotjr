@@ -13,7 +13,7 @@ namespace LobotJR.Command.Model.Dungeons
         /// <summary>
         /// The player that this queue entry is for.
         /// </summary>
-        public PlayerCharacter Player { get; set; }
+        public string UserId { get; set; }
         /// <summary>
         /// The time this player entered the queue.
         /// </summary>
@@ -25,7 +25,7 @@ namespace LobotJR.Command.Model.Dungeons
 
         public QueueEntry(PlayerCharacter player, IEnumerable<DungeonRun> dungeons)
         {
-            Player = player;
+            UserId = player.UserId;
             Dungeons = dungeons;
         }
     }

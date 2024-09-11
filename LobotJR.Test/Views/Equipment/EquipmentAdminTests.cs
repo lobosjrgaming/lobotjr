@@ -118,7 +118,6 @@ namespace LobotJR.Test.Views.Equipment
                 record.IsEquipped = true;
             }
             AutofacMockSetup.ConnectionManager.CurrentConnection.Commit();
-            inventory = Controller.GetInventoryByUser(User).ToList();
             var response = View.FixInventory().Responses.First();
             Assert.IsTrue(response.Contains("1 duplicate"));
             Assert.IsTrue(response.Contains("0"));

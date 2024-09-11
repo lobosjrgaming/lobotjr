@@ -32,6 +32,7 @@ namespace LobotJR
         private static string logFile = "output.log";
         private static bool isLive = false;
         private static bool hasCrashed = false;
+        private static bool doRecover = true;
 
         static async Task Main()
         {
@@ -44,7 +45,7 @@ namespace LobotJR
             var tokenData = FileUtils.ReadTokenData();
             //This is outside of the try loop because if it fails, it will never succeed until the database state is corrected
             await ConfigureDatabase(clientData, tokenData);
-            while (true)
+            while (doRecover)
             {
                 try
                 {
@@ -66,6 +67,7 @@ namespace LobotJR
                     CrashAlert();
                 }
             }
+            Console.ReadKey();
         }
 
         private static void CrashAlert()
@@ -249,7 +251,9 @@ namespace LobotJR
             var userController = scope.Resolve<UserController>();
             var playerController = scope.Resolve<PlayerController>();
 
+            doRecover = false;
             await ImportLegacyData(connectionManager, userController);
+            doRecover = true;
             playerController.ExperienceToggled += (bool enabled) => { isLive = enabled; };
             if (isLive)
             {

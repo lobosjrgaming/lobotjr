@@ -73,11 +73,19 @@ namespace LobotJR.Command.Controller.Twitch
         /// <returns>The user object for each user provided.</returns>
         public async Task<IEnumerable<User>> GetUsersByNames(params string[] names)
         {
-            var known = ConnectionManager.CurrentConnection.Users.Read(x => names.Contains(x.Username, StringComparer.OrdinalIgnoreCase)).ToList();
-            var missing = names.Except(known.Select(x => x.Username), StringComparer.OrdinalIgnoreCase);
-            if (missing.Any())
+            var allUsers = ConnectionManager.CurrentConnection.Users.Read().ToList();
+            var allNames = allUsers.Select(x => x.Username).ToList();
+            var knownNames = allNames.Intersect(names, StringComparer.OrdinalIgnoreCase).ToList();
+            var missingNames = names.Except(allNames, StringComparer.OrdinalIgnoreCase).ToList();
+            var known = new List<User>();
+            if (knownNames.Any())
             {
-                var lookup = await TwitchClient.GetTwitchUsers(missing);
+                var knownUsers = allUsers.Join(knownNames, user => user.Username.ToLower(), name => name.ToLower(), (user, name) => user);
+                known.AddRange(knownUsers);
+            }
+            if (missingNames.Any())
+            {
+                var lookup = await TwitchClient.GetTwitchUsers(missingNames);
                 var users = CreateUsers(lookup);
                 known.AddRange(users);
             }
@@ -199,7 +207,7 @@ namespace LobotJR.Command.Controller.Twitch
 
         private void SyncLists(IEnumerable<User> allUsers, IEnumerable<string> target, Func<User, bool> checkLambda, Action<User, bool> updateLambda)
         {
-            var targetUsers = target.Select(x => allUsers.FirstOrDefault(y => y.TwitchId.Equals(x))).ToList();
+            var targetUsers = target.Join(allUsers, t => t, u => u.TwitchId, (t, u) => u).ToList();
             var existingFlagged = allUsers.Where(x => checkLambda(x)).ToList();
             var notFlagged = allUsers.Except(existingFlagged).ToList();
             var toRemove = existingFlagged.Except(targetUsers).ToList();
@@ -235,7 +243,8 @@ namespace LobotJR.Command.Controller.Twitch
             }
 
             var allUsers = userPairs.ToDictionary(x => x.Key, x => x.Value);
-            var existingUsers = ConnectionManager.CurrentConnection.Users.Read(x => allUsers.Keys.Contains(x.TwitchId)).ToDictionary(x => x.TwitchId, x => x.Username);
+            var existingUsers = ConnectionManager.CurrentConnection.Users.Read().Join(userPairs, user => user.TwitchId, pair => pair.Key, (user, pair) => new KeyValuePair<string, string>(user.TwitchId, user.Username));
+            // var existingUsers = ConnectionManager.CurrentConnection.Users.Read(x => allUsers.Keys.Contains(x.TwitchId)).ToDictionary(x => x.TwitchId, x => x.Username);
             var newUsers = allUsers.Except(existingUsers, new KeyComparer<string, string>());
 
             foreach (var user in newUsers)
@@ -293,40 +302,41 @@ namespace LobotJR.Command.Controller.Twitch
 
         private IEnumerable<User> CreateUsers(IEnumerable<UserResponseData> users)
         {
+            var db = ConnectionManager.CurrentConnection;
+            db.Commit();
+            db.Users.BeginTransaction();
             Logger.Info("Writing {count} user records to database.", users.Count());
             var total = users.Count();
             var output = new List<User>();
             var startTime = DateTime.Now;
             var logTime = DateTime.Now;
             var processed = 0;
-            foreach (var user in users)
+
+            var tempUsers = users.ToDictionary(x => x.Id, x => x.DisplayName);
+            var all = db.Users.Read().ToDictionary(x => x.TwitchId, x => x);
+            var idsToAdd = tempUsers.Keys.Except(all.Keys);
+            var idsToUpdate = tempUsers.Keys.Intersect(all.Keys);
+            foreach (var id in idsToUpdate)
             {
                 if (DateTime.Now - logTime > TimeSpan.FromSeconds(5))
                 {
                     var elapsed = DateTime.Now - startTime;
                     var estimate = TimeSpan.FromMilliseconds(elapsed.TotalMilliseconds / processed * total) - elapsed;
-                    Logger.Info("{count} total user records written. {elapsed} time elapsed, {estimate} estimated remaining.", processed, elapsed.ToString("mm\\:ss"), estimate.ToString("mm\\:ss"));
+                    Logger.Info("{count} total user records written. {elapsed} time elapsed, {estimate} estimated remaining.", processed, elapsed.ToString("mm\\:ss"), estimate.ToString("d\\.hh\\:mm\\:ss"));
                     logTime = DateTime.Now;
                 }
-                var request = LookupRequests.FirstOrDefault(x => x.Username.Equals(user.DisplayName));
-                var existing = ConnectionManager.CurrentConnection.Users.Read(x => x.TwitchId.Equals(user.Id)).FirstOrDefault();
-                if (existing != null)
+                var existing = all[id];
+                var update = tempUsers[id];
+                if (!existing.Username.Equals(update))
                 {
-                    existing.Username = user.DisplayName;
-                    output.Add(existing);
-                }
-                else
-                {
-                    var newUser = new User()
-                    {
-                        TwitchId = user.Id,
-                        Username = user.DisplayName,
-                    };
-                    ConnectionManager.CurrentConnection.Users.Create(newUser);
-                    output.Add(newUser);
+                    existing.Username = update;
+                    db.Users.Update(existing);
                 }
                 processed++;
             }
+            db.Users.Commit();
+            var usersToAdd = idsToAdd.Select(x => new User(tempUsers[x], x)).ToList();
+            db.Users.BatchCreate(usersToAdd, 1000, Logger, "user");
             Logger.Info("Data for {count} users inserted into the database!", processed);
             return output;
         }

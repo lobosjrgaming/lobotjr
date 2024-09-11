@@ -62,30 +62,35 @@ namespace LobotJR.Command.Model.Dungeons
     public class Party
     {
         /// <summary>
-        /// The players that are currently in the group.
+        /// The user ids of players that are currently in the group.
         /// </summary>
-        public List<PlayerCharacter> Members { get; private set; } = new List<PlayerCharacter>();
+        public List<string> Members { get; private set; } = new List<string>();
         /// <summary>
-        /// The players that have been invited to the group but not yet joined.
+        /// The user ids of players that have been invited to the group but not
+        /// yet joined.
         /// </summary>
-        public List<PlayerCharacter> PendingInvites { get; private set; } = new List<PlayerCharacter>();
+        public List<string> PendingInvites { get; private set; } = new List<string>();
         /// <summary>
         /// The current state of the party.
         /// </summary>
         public PartyState State { get; set; }
         /// <summary>
-        /// The dungeon and mode the party is running through.
+        /// The dungeon the party is running through.
         /// </summary>
-        public DungeonRun Run { get; set; }
+        public int DungeonId { get; set; } = -1;
+        /// <summary>
+        /// The mode of the dungeon the party is running through.
+        /// </summary>
+        public int ModeId { get; set; } = -1;
         /// <summary>
         /// Whether this group was created automatically by the group finder.
         /// </summary>
         public bool IsQueueGroup { get; set; }
         /// <summary>
-        /// Amount of time each player spent in queue for this party. Only
-        /// applicable for queue groups.
+        /// Amount of time each player (by User Id) spent in queue for this
+        /// party. Only applicable for queue groups.
         /// </summary>
-        public Dictionary<PlayerCharacter, int> QueueTimes { get; private set; } = new Dictionary<PlayerCharacter, int>();
+        public Dictionary<string, int> QueueTimes { get; private set; } = new Dictionary<string, int>();
         /// <summary>
         /// The timestamp the most recent encounter of the dungeon was
         /// completed.
@@ -103,11 +108,12 @@ namespace LobotJR.Command.Model.Dungeons
         public Party(bool isQueueGroup, params PlayerCharacter[] players)
         {
             IsQueueGroup = isQueueGroup;
-            Members.AddRange(players);
+            Members.AddRange(players.Select(x => x.UserId));
+            var _ = players.Select(x => x.CharacterClass).ToList();
             State = PartyState.Forming;
         }
 
-        public PlayerCharacter Leader
+        public string Leader
         {
             get
             {
@@ -115,7 +121,7 @@ namespace LobotJR.Command.Model.Dungeons
             }
         }
 
-        public void SetQueueTimes(Dictionary<PlayerCharacter, int> queueTimes)
+        public void SetQueueTimes(Dictionary<string, int> queueTimes)
         {
             if (queueTimes != null && queueTimes.Any())
             {
@@ -140,7 +146,7 @@ namespace LobotJR.Command.Model.Dungeons
 
         public bool HasMembers(IEnumerable<PlayerCharacter> players)
         {
-            return players.Intersect(Members).Any();
+            return players.Select(x => x.UserId).Intersect(Members).Any();
         }
     }
 }

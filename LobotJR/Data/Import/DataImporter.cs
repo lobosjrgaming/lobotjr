@@ -229,38 +229,6 @@ namespace LobotJR.Data.Import
             return false;
         }
 
-        private static void RollbackPlayerData(
-            IRepository<PlayerCharacter> playerRepository,
-            IRepository<CharacterClass> classRepository,
-            IRepository<Inventory> inventoryRepository,
-            IRepository<Stable> stableRepository)
-        {
-            var stables = stableRepository.Read().ToList();
-            foreach (var stable in stables)
-            {
-                stableRepository.Delete(stable);
-            }
-            stableRepository.Commit();
-            var inventories = inventoryRepository.Read().ToList();
-            foreach (var inventory in inventories)
-            {
-                inventoryRepository.Delete(inventory);
-            }
-            inventoryRepository.Commit();
-            var classes = classRepository.Read().ToList();
-            foreach (var characterClass in classes)
-            {
-                classRepository.Delete(characterClass);
-            }
-            classRepository.Commit();
-            var players = playerRepository.Read().ToList();
-            foreach (var player in players)
-            {
-                playerRepository.Delete(player);
-            }
-            playerRepository.Commit();
-        }
-
         private static void FinalizePlayerData()
         {
             var coinPath = PlayerDataImport.CoinDataPath;

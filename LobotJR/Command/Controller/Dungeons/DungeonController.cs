@@ -109,10 +109,23 @@ namespace LobotJR.Command.Controller.Dungeons
         /// </summary>
         /// <param name="run">The dungeon run, or paired dungeon plus mode.</param>
         /// <returns>The formatted display name.</returns>
-        public string GetDungeonName(DungeonRun run)
+        public string GetDungeonName(Dungeon dungeon, DungeonMode mode)
         {
-            var modeName = run.Mode.IsDefault ? "" : $" [{run.Mode.Name}]";
-            return $"{run.Dungeon.Name}{modeName}";
+            var modeName = mode.IsDefault ? "" : $" [{mode.Name}]";
+            return $"{dungeon.Name}{modeName}";
+        }
+
+        /// <summary>
+        /// Gets the formatted display name of a dungeon and mode.
+        /// </summary>
+        /// <param name="run">The dungeon run, or paired dungeon plus mode.</param>
+        /// <returns>The formatted display name.</returns>
+        public string GetDungeonName(int dungeonId, int modeId)
+        {
+            var dungeon = ConnectionManager.CurrentConnection.DungeonData.ReadById(dungeonId);
+            var mode = ConnectionManager.CurrentConnection.DungeonModeData.ReadById(modeId);
+            var modeName = mode.IsDefault ? "" : $" [{mode.Name}]";
+            return $"{dungeon.Name}{modeName}";
         }
 
         /// <summary>
@@ -196,7 +209,7 @@ namespace LobotJR.Command.Controller.Dungeons
             var settings = SettingsManager.GetGameSettings();
             if (settings.DungeonLevelRestrictions)
             {
-                var dungeonLists = party.Members.Select(x => GetEligibleDungeons(x, settings));
+                var dungeonLists = party.Members.Select(x => GetEligibleDungeons(PlayerController.GetPlayerByUserId(x), settings));
                 var dungeons = dungeonLists.FirstOrDefault();
                 foreach (var list in dungeonLists.Skip(1))
                 {
@@ -245,19 +258,21 @@ namespace LobotJR.Command.Controller.Dungeons
         /// Attempts to start a dungeon for a party.
         /// </summary>
         /// <param name="party">The party to start in a dungeon.</param>
-        /// <param name="run">The dungeon run to start.</param>
+        /// <param name="dungeonId">The id of the dungeon to start.</param>
+        /// <param name="modeId">The id of the mode to start the dungeon in.</param>
         /// <param name="playersWithoutCoins">Provides the collection of
         /// players that don't have enough money to start a dungeon.</param>
         /// <returns>True if the party was able to start the dungeon.</returns>
-        public bool TryStartDungeon(Party party, DungeonRun run, out IEnumerable<PlayerCharacter> playersWithoutCoins)
+        public bool TryStartDungeon(Party party, int dungeonId, int modeId, out IEnumerable<PlayerCharacter> playersWithoutCoins)
         {
             playersWithoutCoins = Array.Empty<PlayerCharacter>();
-            if (run != null)
+            if (dungeonId > 0)
             {
                 if (CanStartDungeon(party))
                 {
                     var settings = SettingsManager.GetGameSettings();
-                    var costs = party.Members.ToDictionary(x => x, x => GetDungeonCost(x, settings));
+                    var members = party.Members.Select(x => PlayerController.GetPlayerByUserId(x));
+                    var costs = members.ToDictionary(x => x, x => GetDungeonCost(x, settings));
                     playersWithoutCoins = costs.Where(x => x.Key.Currency < x.Value).Select(x => x.Key);
                     if (!playersWithoutCoins.Any())
                     {
@@ -265,7 +280,8 @@ namespace LobotJR.Command.Controller.Dungeons
                         {
                             pair.Key.Currency -= pair.Value;
                         }
-                        party.Run = run;
+                        party.DungeonId = dungeonId;
+                        party.ModeId = modeId;
                         party.State = PartyState.Started;
                         return true;
                     }
@@ -279,9 +295,9 @@ namespace LobotJR.Command.Controller.Dungeons
             return party.LastUpdate == null || party.LastUpdate + stepTime <= DateTime.Now;
         }
 
-        private Dictionary<CharacterClass, float> GetClassModifiers(Party party)
+        private Dictionary<CharacterClass, float> GetClassModifiers(IEnumerable<PlayerCharacter> players)
         {
-            return party.Members.GroupBy(x => x.CharacterClass).ToDictionary(x => x.Key, x => 1f / x.Count());
+            return players.GroupBy(x => x.CharacterClass).ToDictionary(x => x.Key, x => 1f / x.Count());
         }
 
         private float PlayerSuccessChance(PlayerCharacter player)
@@ -290,10 +306,10 @@ namespace LobotJR.Command.Controller.Dungeons
             return (player.CharacterClass.SuccessChance + EquipmentController.GetEquippedGear(player).Sum(x => x.SuccessChance)) * multiplier;
         }
 
-        private float PartySuccessChance(Party party)
+        private float PartySuccessChance(IEnumerable<PlayerCharacter> players)
         {
-            var classMultipliers = GetClassModifiers(party);
-            return party.Members.Sum(x => PlayerSuccessChance(x) * classMultipliers[x.CharacterClass]);
+            var classMultipliers = GetClassModifiers(players);
+            return players.Sum(x => PlayerSuccessChance(x) * classMultipliers[x.CharacterClass]);
         }
 
         private float PlayerDeathChance(PlayerCharacter player)
@@ -301,10 +317,10 @@ namespace LobotJR.Command.Controller.Dungeons
             return EquipmentController.GetEquippedGear(player).Sum(x => x.PreventDeathBonus);
         }
 
-        private float PartyDeathChance(Party party)
+        private float PartyDeathChance(IEnumerable<PlayerCharacter> players)
         {
-            var classMultipliers = GetClassModifiers(party);
-            return party.Members.Sum(x => x.CharacterClass.PreventDeathBonus * classMultipliers[x.CharacterClass]);
+            var classMultipliers = GetClassModifiers(players);
+            return players.Sum(x => x.CharacterClass.PreventDeathBonus * classMultipliers[x.CharacterClass]);
         }
 
         private float PlayerLootChance(PlayerCharacter player)
@@ -315,7 +331,7 @@ namespace LobotJR.Command.Controller.Dungeons
         private bool CalculateCheck(float chance)
         {
             var value = Random.NextDouble();
-            Logger.Debug("    Is random {} below chance {}?", value, chance);
+            Logger.Info("    Is random {} below chance {}?", value, chance);
             return value < chance;
         }
 
@@ -348,51 +364,54 @@ namespace LobotJR.Command.Controller.Dungeons
 
         private void ProgressDungeon(Party party)
         {
-            Logger.Debug("Processing dungeon step for party {description} in state {state} for {dungeon} {mode} on step {step}", string.Join(", ", party.Members.Select(x => x.UserId)), party.State, party.Run.Dungeon.Name, party.Run.Mode.Name, party.CurrentEncounter);
+            var members = party.Members.Select(x => PlayerController.GetPlayerByUserId(x));
+            var dungeon = GetDungeonById(party.DungeonId);
+            var name = GetDungeonName(party.DungeonId, party.ModeId);
+            Logger.Info("Processing dungeon step for party {description} in state {state} for {dungeon} on step {step}", string.Join(", ", party.Members), party.State, name, party.CurrentEncounter);
             string message;
             if (party.CurrentEncounter == 0)
             {
-                Logger.Debug("  Sending intro text");
-                message = party.Run.Dungeon.Introduction;
+                Logger.Info("  Sending intro text");
+                message = dungeon.Introduction;
                 party.CurrentEncounter++;
                 party.StepState = StepState.Setup;
             }
             else if (party.StepState == StepState.Setup)
             {
-                Logger.Debug("  Sending encounter setup");
-                message = party.Run.Dungeon.Encounters.ElementAt(party.CurrentEncounter - 1).SetupText;
+                Logger.Info("  Sending encounter setup");
+                message = dungeon.Encounters.ElementAt(party.CurrentEncounter - 1).SetupText;
                 party.StepState = StepState.Resolving;
             }
             else if (party.StepState == StepState.Resolving)
             {
-                Logger.Debug("  Resolving encounter...");
-                var encounter = party.Run.Dungeon.Encounters.ElementAt(party.CurrentEncounter - 1);
-                var difficulty = encounter.Levels.FirstOrDefault(x => x.Mode.Equals(party.Run.Mode)).Difficulty;
-                var successChance = PartySuccessChance(party);
-                Logger.Debug("  Encounter difficulty: {difficulty}", difficulty);
-                Logger.Debug("  successChance: {chance}", successChance);
+                Logger.Info("  Resolving encounter...");
+                var encounter = dungeon.Encounters.ElementAt(party.CurrentEncounter - 1);
+                var difficulty = encounter.Levels.FirstOrDefault(x => x.Mode.Id.Equals(party.ModeId)).Difficulty;
+                var successChance = PartySuccessChance(members);
+                Logger.Info("  Encounter difficulty: {difficulty}", difficulty);
+                Logger.Info("  successChance: {chance}", successChance);
 
                 if (CalculateCheck(difficulty + successChance))
                 {
-                    Logger.Debug("  Success!");
+                    Logger.Info("  Success!");
                     party.StepState = StepState.Complete;
                     message = $"Your party successfully defeated the {encounter.Enemy}!";
                 }
                 else
                 {
-                    Logger.Debug("  Failure!");
-                    message = party.Run.Dungeon.FailureText;
+                    Logger.Info("  Failure!");
+                    message = dungeon.FailureText;
                     party.StepState = StepState.Setup;
                     party.State = PartyState.Failed;
                 }
             }
             else //party.StepState == StepState.Complete
             {
-                Logger.Debug("  Sending encounter success");
-                message = party.Run.Dungeon.Encounters.ElementAt(party.CurrentEncounter - 1).CompleteText;
+                Logger.Info("  Sending encounter success");
+                message = dungeon.Encounters.ElementAt(party.CurrentEncounter - 1).CompleteText;
                 party.CurrentEncounter++;
                 party.StepState = StepState.Setup;
-                if (party.CurrentEncounter > party.Run.Dungeon.Encounters.Count())
+                if (party.CurrentEncounter > dungeon.Encounters.Count())
                 {
                     party.State = PartyState.Complete;
                 }
@@ -406,20 +425,20 @@ namespace LobotJR.Command.Controller.Dungeons
             return new DungeonHistory()
             {
                 Date = DateTime.Now,
-                DungeonId = party.Run.Dungeon.Id,
-                ModeId = party.Run.Mode.Id,
+                DungeonId = party.DungeonId,
+                ModeId = party.ModeId,
                 IsQueueGroup = party.IsQueueGroup,
                 StepsComplete = party.CurrentEncounter - 1,
                 Success = success
             };
         }
 
-        private void AddParticipant(DungeonHistory history, Party party, PlayerCharacter player, int xp, int coins, Item itemDrop, Pet petDrop)
+        private void AddParticipant(DungeonHistory history, Party party, string userId, int xp, int coins, Item itemDrop, Pet petDrop)
         {
-            party.QueueTimes.TryGetValue(player, out var waitTime);
+            party.QueueTimes.TryGetValue(userId, out var waitTime);
             history.Participants.Add(new DungeonParticipant()
             {
-                UserId = player.UserId,
+                UserId = userId,
                 ExperienceEarned = xp,
                 CurrencyEarned = coins,
                 ItemDrop = itemDrop,
@@ -439,9 +458,12 @@ namespace LobotJR.Command.Controller.Dungeons
 
         private void HandleCompletion(Party party)
         {
-            Logger.Debug("Processing dungeon complete for party {description} in state {state} for {dungeon} {mode}", string.Join(", ", party.Members.Select(x => x.UserId)), party.State, party.Run.Dungeon.Name, party.Run.Mode.Name);
+            var members = party.Members.Select(x => PlayerController.GetPlayerByUserId(x));
+            var dungeon = GetDungeonById(party.DungeonId);
+            var name = GetDungeonName(party.DungeonId, party.ModeId);
+            Logger.Info("Processing dungeon complete for party {description} in state {state} for {dungeon}", string.Join(", ", party.Members), party.State, name);
             var history = CreateDungeonHistory(party, true);
-            foreach (var member in party.Members)
+            foreach (var member in members)
             {
                 var user = PlayerController.GetUserByPlayer(member);
                 var xp = CalculateExperienceReward(member, true);
@@ -456,7 +478,7 @@ namespace LobotJR.Command.Controller.Dungeons
                 PlayerController.GainExperience(member, xp);
                 member.Currency += coins;
 
-                var loot = ConnectionManager.CurrentConnection.LootData.Read(x => x.Dungeon.Equals(party.Run.Dungeon) && x.Mode.Equals(party.Run.Mode));
+                var loot = ConnectionManager.CurrentConnection.LootData.Read(x => x.Dungeon.Id == party.DungeonId && x.Mode.Id == party.ModeId);
                 var lootFilter = ConnectionManager.CurrentConnection.EquippableData.Read(x => x.CharacterClass.Equals(member.CharacterClass));
                 var currentLoot = EquipmentController.GetInventoryByPlayer(member);
                 var possibleDrops = loot.Where(x => !currentLoot.Any(y => y.Item.Equals(x)) && lootFilter.Any(y => y.ItemType.Equals(x.Item.Type)));
@@ -481,7 +503,7 @@ namespace LobotJR.Command.Controller.Dungeons
                     PetController.GrantPet(user, rarity);
                 }
 
-                AddParticipant(history, party, member, xp, coins, earnedDrop, earnedPet?.Pet);
+                AddParticipant(history, party, member.UserId, xp, coins, earnedDrop, earnedPet?.Pet);
 
             }
             ConnectionManager.CurrentConnection.DungeonHistories.Create(history);
@@ -490,10 +512,13 @@ namespace LobotJR.Command.Controller.Dungeons
 
         private void HandleFailure(Party party, GameSettings settings)
         {
-            Logger.Debug("Processing dungeon failure for party {description} in state {state} for {dungeon} {mode}", string.Join(", ", party.Members.Select(x => x.UserId)), party.State, party.Run.Dungeon.Name, party.Run.Mode.Name);
+            var members = party.Members.Select(x => PlayerController.GetPlayerByUserId(x));
+            var dungeon = GetDungeonById(party.DungeonId);
+            var name = GetDungeonName(party.DungeonId, party.ModeId);
+            Logger.Info("Processing dungeon failure for party {description} in state {state} for {dungeon}", string.Join(", ", party.Members), party.State, name);
             var history = CreateDungeonHistory(party, false);
-            var deathChance = settings.DungeonDeathChance - PartyDeathChance(party);
-            var dead = party.Members.Where(x => CalculateCheck(deathChance - PlayerDeathChance(x))).ToList();
+            var deathChance = settings.DungeonDeathChance - PartyDeathChance(members);
+            var dead = members.Where(x => CalculateCheck(deathChance - PlayerDeathChance(x))).ToList();
             foreach (var member in dead)
             {
                 var xp = CalculateExperienceReward(member, false);
@@ -506,11 +531,11 @@ namespace LobotJR.Command.Controller.Dungeons
                 member.Experience -= xp;
                 member.Currency -= coins;
                 PlayerDeath?.Invoke(member, xp, coins);
-                AddParticipant(history, party, member, -xp, -coins, null, null);
+                AddParticipant(history, party, member.UserId, -xp, -coins, null, null);
             }
-            foreach (var member in party.Members.Except(dead))
+            foreach (var member in members.Except(dead))
             {
-                AddParticipant(history, party, member, 0, 0, null, null);
+                AddParticipant(history, party, member.UserId, 0, 0, null, null);
             }
             DungeonFailure?.Invoke(party, dead);
             ConnectionManager.CurrentConnection.DungeonHistories.Create(history);

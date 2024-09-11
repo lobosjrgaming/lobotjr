@@ -140,7 +140,6 @@ namespace LobotJR.Twitch
             else if (DateTime.Now > dataTimer.Timestamp + UniqueWhisperTimer)
             {
                 dataTimer.Timestamp = DateTime.Now;
-                ConnectionManager.CurrentConnection.DataTimers.Update(dataTimer);
                 timerUpdated = true;
             }
             if (timerUpdated)

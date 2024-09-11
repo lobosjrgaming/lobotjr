@@ -1,4 +1,5 @@
-﻿using LobotJR.Command.Model.Dungeons;
+﻿using LobotJR.Command.Controller.Player;
+using LobotJR.Command.Model.Dungeons;
 using LobotJR.Command.Model.Player;
 using LobotJR.Data;
 using System.Collections.Generic;
@@ -12,6 +13,7 @@ namespace LobotJR.Command.Controller.Dungeons
     public class PartyController
     {
         private readonly SettingsManager SettingsManager;
+        private readonly PlayerController PlayerController;
         private readonly List<Party> DungeonGroups = new List<Party>();
 
         /// <summary>
@@ -19,9 +21,10 @@ namespace LobotJR.Command.Controller.Dungeons
         /// </summary>
         public int PartyCount { get { return DungeonGroups.Count; } }
 
-        public PartyController(SettingsManager settingsManager)
+        public PartyController(SettingsManager settingsManager, PlayerController playerController)
         {
             SettingsManager = settingsManager;
+            PlayerController = playerController;
         }
 
         /// <summary>
@@ -48,7 +51,17 @@ namespace LobotJR.Command.Controller.Dungeons
         /// <returns>The party, if any, that the player is in.</returns>
         public Party GetCurrentGroup(PlayerCharacter player)
         {
-            return DungeonGroups.FirstOrDefault(x => x.Members.Contains(player) || x.PendingInvites.Contains(player));
+            return DungeonGroups.FirstOrDefault(x => x.Members.Contains(player.UserId) || x.PendingInvites.Contains(player.UserId));
+        }
+
+        /// <summary>
+        /// Gets the player character objects for the members in a party.
+        /// </summary>
+        /// <param name="party">The party to get players for.</param>
+        /// <returns>A collection of players.</returns>
+        public IEnumerable<PlayerCharacter> GetPartyPlayers(Party party)
+        {
+            return party.Members.Select(x => PlayerController.GetPlayerByUserId(x));
         }
 
         /// <summary>
@@ -61,6 +74,20 @@ namespace LobotJR.Command.Controller.Dungeons
         public Party CreateParty(bool isQueueGroup, params PlayerCharacter[] players)
         {
             var party = new Party(isQueueGroup, players);
+            DungeonGroups.Add(party);
+            return party;
+        }
+
+        /// <summary>
+        /// Creates a new party.
+        /// </summary>
+        /// <param name="isQueueGroup">Whether this group was created by the
+        /// group finder.</param>
+        /// <param name="players">The players to place in the group.</param>
+        /// <returns>The party that was created.</returns>
+        public Party CreateParty(bool isQueueGroup, params string[] userIds)
+        {
+            var party = new Party(isQueueGroup, userIds.Select(x => PlayerController.GetPlayerByUserId(x)).ToArray());
             DungeonGroups.Add(party);
             return party;
         }
@@ -86,17 +113,29 @@ namespace LobotJR.Command.Controller.Dungeons
         }
 
         /// <summary>
+        /// Checkes if a player is the leader of a party.
+        /// </summary>
+        /// <param name="party">The party to check the leader of.</param>
+        /// <param name="userId">The user id of player to check.</param>
+        /// <returns>True if the player is the leader of that party.</returns>
+        public bool IsLeader(Party party, string userId)
+        {
+            return party.Leader.Equals(userId);
+        }
+
+        /// <summary>
         /// Sets the leader of a party to a specific player.
         /// </summary>
         /// <param name="party">The party to set the leader of.</param>
-        /// <param name="player">The player to set as leader.</param>
+        /// <param name="userId">The user id of the player to set as leader.</param>
         /// <returns>True if the player was able to be set as the leader.</returns>
-        public bool SetLeader(Party party, PlayerCharacter player)
+        public bool SetLeader(Party party, string userId)
         {
-            if (party.Members.Any(x => x.Equals(player)) && !IsLeader(party, player))
+            if (party.Members.Any(x => x.Equals(userId)) && !IsLeader(party, userId))
             {
-                party.Members.Remove(player);
-                party.Members.Insert(0, player);
+                var member = party.Members.First(x => x.Equals(userId));
+                party.Members.Remove(member);
+                party.Members.Insert(0, member);
                 return true;
             }
             return false;
@@ -111,11 +150,11 @@ namespace LobotJR.Command.Controller.Dungeons
         public bool InvitePlayer(Party party, PlayerCharacter player)
         {
             var settings = SettingsManager.GetGameSettings();
-            if (!party.Members.Contains(player)
-                && !party.PendingInvites.Contains(player)
+            if (!party.Members.Contains(player.UserId)
+                && !party.PendingInvites.Contains(player.UserId)
                 && party.Members.Count + party.PendingInvites.Count < settings.DungeonPartySize)
             {
-                party.PendingInvites.Add(player);
+                party.PendingInvites.Add(player.UserId);
                 return true;
             }
             return false;
@@ -130,10 +169,10 @@ namespace LobotJR.Command.Controller.Dungeons
         public bool AcceptInvite(Party party, PlayerCharacter player)
         {
             var settings = SettingsManager.GetGameSettings();
-            if (party.PendingInvites.Contains(player)
+            if (party.PendingInvites.Contains(player.UserId)
                 && party.Members.Count + party.PendingInvites.Count <= settings.DungeonPartySize)
             {
-                party.PendingInvites.Remove(player);
+                party.PendingInvites.Remove(player.UserId);
                 return AddPlayer(party, player);
             }
             return false;
@@ -147,9 +186,9 @@ namespace LobotJR.Command.Controller.Dungeons
         /// <returns>True if the invite was declined.</returns>
         public bool DeclineInvite(Party party, PlayerCharacter player)
         {
-            if (party.PendingInvites.Contains(player))
+            if (party.PendingInvites.Contains(player.UserId))
             {
-                party.PendingInvites.Remove(player);
+                party.PendingInvites.Remove(player.UserId);
                 return true;
             }
             return false;
@@ -168,7 +207,8 @@ namespace LobotJR.Command.Controller.Dungeons
                 var settings = SettingsManager.GetGameSettings();
                 if (party.Members.Count < settings.DungeonPartySize)
                 {
-                    party.Members.Add(player);
+                    party.Members.Add(player.UserId);
+                    var _ = player.CharacterClass;
                     if (party.Members.Count == settings.DungeonPartySize)
                     {
                         return SetReady(party);
@@ -187,11 +227,11 @@ namespace LobotJR.Command.Controller.Dungeons
         /// <returns>True if the player was removed.</returns>
         public bool RemovePlayer(Party party, PlayerCharacter player)
         {
-            if (party.Members.Contains(player))
+            if (party.Members.Contains(player.UserId))
             {
                 if (party.State == PartyState.Full || party.State == PartyState.Forming)
                 {
-                    party.Members.Remove(player);
+                    party.Members.Remove(player.UserId);
                     if (party.Members.Count <= 0)
                     {
                         party.State = PartyState.Disbanded;

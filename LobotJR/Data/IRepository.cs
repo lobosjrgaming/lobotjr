@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NLog;
+using System;
 using System.Collections.Generic;
 
 namespace LobotJR.Data
@@ -7,6 +8,8 @@ namespace LobotJR.Data
     {
         void BeginTransaction();
         TEntity Create(TEntity entry);
+        IEnumerable<TEntity> Create(IEnumerable<TEntity> entries);
+        IEnumerable<TEntity> BatchCreate(IEnumerable<TEntity> entries, int batchSize, Logger logger, string name);
         IEnumerable<TEntity> Read();
         IEnumerable<TEntity> Read(Func<TEntity, bool> filter);
         TEntity Read(TEntity entry);

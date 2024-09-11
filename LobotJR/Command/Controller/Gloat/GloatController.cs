@@ -1,5 +1,4 @@
 ﻿using LobotJR.Command.Controller.Fishing;
-using LobotJR.Command.Controller.Pets;
 using LobotJR.Command.Controller.Player;
 using LobotJR.Command.Model.Fishing;
 using LobotJR.Command.Model.Pets;
@@ -17,17 +16,14 @@ namespace LobotJR.Command.Controller.Gloat
     {
         private readonly SettingsManager SettingsManager;
         private readonly PlayerController PlayerController;
-        private readonly PetController PetController;
         private readonly LeaderboardController LeaderboardController;
 
         public GloatController(SettingsManager settingsManager,
             PlayerController playerController,
-            PetController petController,
             LeaderboardController leaderboardController)
         {
             SettingsManager = settingsManager;
             PlayerController = playerController;
-            PetController = petController;
             LeaderboardController = leaderboardController;
         }
 

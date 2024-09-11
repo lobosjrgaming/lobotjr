@@ -6,7 +6,9 @@ using Newtonsoft.Json;
 using NLog;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace LobotJR.Data.Import
@@ -23,7 +25,7 @@ namespace LobotJR.Data.Import
         {
             try
             {
-                return JsonConvert.DeserializeObject<Dictionary<string, int>>(FileSystem.ReadAllText(experienceDataPath));
+                return JsonConvert.DeserializeObject<Dictionary<string, int>>(FileSystem.ReadAllText(experienceDataPath)).ToDictionary(x => x.Key, x => x.Value);
             }
             catch
             {
@@ -35,7 +37,7 @@ namespace LobotJR.Data.Import
         {
             try
             {
-                return JsonConvert.DeserializeObject<Dictionary<string, int>>(FileSystem.ReadAllText(coinDataPath));
+                return JsonConvert.DeserializeObject<Dictionary<string, int>>(FileSystem.ReadAllText(coinDataPath)).ToDictionary(x => x.Key, x => x.Value);
             }
             catch
             {
@@ -47,7 +49,7 @@ namespace LobotJR.Data.Import
         {
             try
             {
-                return JsonConvert.DeserializeObject<Dictionary<string, LegacyCharacterClass>>(FileSystem.ReadAllText(classDataPath));
+                return JsonConvert.DeserializeObject<Dictionary<string, LegacyCharacterClass>>(FileSystem.ReadAllText(classDataPath)).ToDictionary(x => x.Key, x => x.Value);
             }
             catch
             {
@@ -106,6 +108,9 @@ namespace LobotJR.Data.Import
             var coinList = LoadLegacyCoinData(coinDataPath);
             var xpList = LoadLegacyExperienceData(xpDataPath);
             var classList = LoadLegacyClassData(classDataPath);
+            var regex = new Regex("[^0-9a-zA-Z_]");
+            var uniqueKeys = classList.Keys.Distinct(StringComparer.OrdinalIgnoreCase);
+            classList = uniqueKeys.ToDictionary(x => x, x => classList[x], StringComparer.OrdinalIgnoreCase);
 
             foreach (var coin in coinList)
             {
@@ -139,62 +144,50 @@ namespace LobotJR.Data.Import
                 }
             }
 
-            var keys = classList.Keys.ToArray();
-            Logger.Info("Fetching user data for {userCount} users, this could take several minutes", keys.Count());
+            var mangledUsernames = classList.Keys.Where(x => regex.IsMatch(x)).ToArray();
+            Logger.Warn("Found {count} entries with invalid user names. These records are being skipped, and their coin, xp, and class data values were saved in mangled.json", mangledUsernames.Count());
+            var mangledRecords = mangledUsernames.Select(x => classList[x]).Where(x => x != null).ToArray();
+            File.WriteAllText("mangled.json", JsonConvert.SerializeObject(mangledRecords));
+            var validUsernames = classList.Keys.Except(mangledUsernames).ToArray();
+            Logger.Info("Fetching user data for {userCount} users, this could take several minutes", validUsernames.Count());
             //TODO: For some reason after this process happens once, running it again on the same data files produces weird user counts, when it should be 0 since the process already ran once.
-            var userMap = await userController.GetUsersByNames(keys);
+            var userMap = (await userController.GetUsersByNames(validUsernames.ToArray())).ToDictionary(x => x.Username, x => x, StringComparer.OrdinalIgnoreCase);
             Logger.Info("Importing data into database.");
-            playerRepository.BeginTransaction();
             try
             {
-
-                foreach (var userClass in classList)
+                var total = classList.Count();
+                // For some reason this is throwing a duplicate key exception, I'm guessing it's because there are two user entries that differ only by case
+                var matchedPlayers = classList.Where(x => userMap.ContainsKey(x.Key)).ToDictionary(x => userMap[x.Key].TwitchId, x => x.Value);
+                var playersToAdd = matchedPlayers.Select(x => new PlayerCharacter()
                 {
-                    var user = userMap.FirstOrDefault(x => x.Username.Equals(userClass.Key, StringComparison.OrdinalIgnoreCase));
-                    if (user != null)
-                    {
-                        var player = new PlayerCharacter()
-                        {
-                            UserId = user.TwitchId,
-                            CharacterClassId = classMap[userClass.Value.classType].Id,
-                            Currency = userClass.Value.coins,
-                            Experience = userClass.Value.xp,
-                            Level = userClass.Value.level,
-                            Prestige = userClass.Value.prestige,
-                        };
-                        playerRepository.Create(player);
-                        foreach (var pet in userClass.Value.myPets)
-                        {
-                            var stable = new Stable()
-                            {
-                                UserId = user.TwitchId,
-                                PetId = petMap[pet.ID].Id,
-                                Name = pet.name,
-                                Level = pet.level,
-                                Experience = pet.xp,
-                                Affection = pet.affection,
-                                Hunger = pet.hunger,
-                                IsSparkly = pet.isSparkly,
-                                IsActive = pet.isActive,
-                            };
-                            stableRepository.Create(stable);
-                        }
-                        foreach (var item in userClass.Value.myItems)
-                        {
-                            var itemObject = itemMap[item.itemID];
-                            var inventory = new Inventory()
-                            {
-                                UserId = user.TwitchId,
-                                ItemId = itemObject.Id,
-                                IsEquipped = item.isActive
-                            };
-                            inventoryRepository.Create(inventory);
-                        }
-                    }
-                }
-                playerRepository.Commit();
-                stableRepository.Commit();
-                inventoryRepository.Commit();
+                    UserId = x.Key,
+                    CharacterClassId = classMap[x.Value.classType].Id,
+                    Currency = x.Value.coins,
+                    Experience = x.Value.xp,
+                    Level = x.Value.level,
+                    Prestige = x.Value.prestige,
+                }).ToList();
+                playerRepository.BatchCreate(playersToAdd, 1000, Logger, "player");
+                var stablesToAdd = matchedPlayers.SelectMany(x => x.Value.myPets.Select(y => new Stable()
+                {
+                    UserId = x.Key,
+                    PetId = petMap[y.ID].Id,
+                    Name = y.name,
+                    Level = y.level,
+                    Experience = y.xp,
+                    Affection = y.affection,
+                    Hunger = y.hunger,
+                    IsSparkly = y.isSparkly,
+                    IsActive = y.isActive,
+                })).ToList();
+                stableRepository.BatchCreate(stablesToAdd, 1000, Logger, "stable");
+                var itemsToCreate = matchedPlayers.SelectMany(x => x.Value.myItems.Select(y => new Inventory()
+                {
+                    UserId = x.Key,
+                    ItemId = itemMap[y.itemID].Id,
+                    IsEquipped = y.isActive
+                })).ToList();
+                inventoryRepository.BatchCreate(itemsToCreate, 1000, Logger, "inventory");
             }
             catch (Exception ex)
             {
@@ -214,8 +207,8 @@ namespace LobotJR.Data.Import
         public int prestige { get; set; }
         public int xp { get; set; }
         public int coins { get; set; }
-        public List<LegacyItem> myItems { get; set; }
-        public List<LegacyPet> myPets { get; set; }
+        public List<LegacyItem> myItems { get; set; } = new List<LegacyItem>();
+        public List<LegacyPet> myPets { get; set; } = new List<LegacyPet>();
     }
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Needed to load in legacy data for conversion to modern standards")]

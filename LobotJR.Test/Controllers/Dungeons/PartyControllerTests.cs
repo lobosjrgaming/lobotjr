@@ -63,9 +63,9 @@ namespace LobotJR.Test.Controllers.Dungeons
             var players = db.PlayerCharacters.Read();
             var party = Controller.CreateParty(false, players.First(), players.ElementAt(1), players.ElementAt(2));
             Assert.IsNotNull(party);
-            Assert.IsTrue(party.Members.Any(x => x.Equals(players.First())));
-            Assert.IsTrue(party.Members.Any(x => x.Equals(players.ElementAt(1))));
-            Assert.IsTrue(party.Members.Any(x => x.Equals(players.ElementAt(2))));
+            Assert.IsTrue(party.Members.Any(x => x.Equals(players.First().UserId)));
+            Assert.IsTrue(party.Members.Any(x => x.Equals(players.ElementAt(1).UserId)));
+            Assert.IsTrue(party.Members.Any(x => x.Equals(players.ElementAt(2).UserId)));
         }
 
         [TestMethod]
@@ -84,7 +84,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             var db = ConnectionManager.CurrentConnection;
             var players = db.PlayerCharacters.Read();
             var party = Controller.CreateParty(false, players.First(), players.ElementAt(1), players.ElementAt(2));
-            var result = Controller.IsLeader(party, players.First());
+            var result = Controller.IsLeader(party, players.First().UserId);
             Assert.IsTrue(result);
         }
 
@@ -106,9 +106,9 @@ namespace LobotJR.Test.Controllers.Dungeons
             var db = ConnectionManager.CurrentConnection;
             var players = db.PlayerCharacters.Read();
             var party = Controller.CreateParty(false, players.First(), players.ElementAt(1), players.ElementAt(2));
-            var result = Controller.SetLeader(party, players.ElementAt(2));
-            var oldLeader = Controller.IsLeader(party, players.First());
-            var newLeader = Controller.IsLeader(party, players.ElementAt(2));
+            var result = Controller.SetLeader(party, players.ElementAt(2).UserId);
+            var oldLeader = Controller.IsLeader(party, players.First().UserId);
+            var newLeader = Controller.IsLeader(party, players.ElementAt(2).UserId);
             Assert.IsTrue(result);
             Assert.IsFalse(oldLeader);
             Assert.IsTrue(newLeader);
@@ -120,9 +120,9 @@ namespace LobotJR.Test.Controllers.Dungeons
             var db = ConnectionManager.CurrentConnection;
             var players = db.PlayerCharacters.Read();
             var party = Controller.CreateParty(false, players.First(), players.ElementAt(1), players.ElementAt(2));
-            var oldLeader = Controller.IsLeader(party, players.First());
-            var result = Controller.SetLeader(party, players.First());
-            var newLeader = Controller.IsLeader(party, players.First());
+            var oldLeader = Controller.IsLeader(party, players.First().UserId);
+            var result = Controller.SetLeader(party, players.First().UserId);
+            var newLeader = Controller.IsLeader(party, players.First().UserId);
             Assert.IsFalse(result);
             Assert.IsTrue(oldLeader);
             Assert.IsTrue(newLeader);
@@ -136,7 +136,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             var party = Controller.CreateParty(false, players.First());
             var result = Controller.InvitePlayer(party, players.ElementAt(1));
             Assert.IsTrue(result);
-            Assert.IsTrue(party.PendingInvites.Contains(players.ElementAt(1)));
+            Assert.IsTrue(party.PendingInvites.Contains(players.ElementAt(1).UserId));
         }
 
         [TestMethod]
@@ -145,7 +145,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             var db = ConnectionManager.CurrentConnection;
             var players = db.PlayerCharacters.Read();
             var party = Controller.CreateParty(false, players.First());
-            party.PendingInvites.Add(players.ElementAt(1));
+            party.PendingInvites.Add(players.ElementAt(1).UserId);
             var result = Controller.InvitePlayer(party, players.ElementAt(1));
             Assert.IsFalse(result);
         }
@@ -176,8 +176,8 @@ namespace LobotJR.Test.Controllers.Dungeons
             var db = ConnectionManager.CurrentConnection;
             var players = db.PlayerCharacters.Read();
             var party = Controller.CreateParty(false, players.First());
-            party.PendingInvites.Add(players.ElementAt(1));
-            party.PendingInvites.Add(players.ElementAt(2));
+            party.PendingInvites.Add(players.ElementAt(1).UserId);
+            party.PendingInvites.Add(players.ElementAt(2).UserId);
             var result = Controller.InvitePlayer(party, players.ElementAt(3));
             Assert.IsFalse(result);
         }
@@ -189,12 +189,12 @@ namespace LobotJR.Test.Controllers.Dungeons
             var players = db.PlayerCharacters.Read();
             var party = Controller.CreateParty(false, players.First());
             party.State = PartyState.Forming;
-            party.PendingInvites.Add(players.ElementAt(1));
+            party.PendingInvites.Add(players.ElementAt(1).UserId);
             var result = Controller.AcceptInvite(party, players.ElementAt(1));
             Assert.IsTrue(result);
             Assert.AreEqual(0, party.PendingInvites.Count());
             Assert.AreEqual(2, party.Members.Count());
-            Assert.IsTrue(party.Members.Any(x => x.Equals(players.ElementAt(1))));
+            Assert.IsTrue(party.Members.Any(x => x.Equals(players.ElementAt(1).UserId)));
         }
 
         [TestMethod]
@@ -218,7 +218,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             var players = db.PlayerCharacters.Read();
             var party = Controller.CreateParty(false, players.First(), players.ElementAt(1), players.ElementAt(2));
             party.State = PartyState.Forming;
-            party.PendingInvites.Add(players.ElementAt(3));
+            party.PendingInvites.Add(players.ElementAt(3).UserId);
             var result = Controller.AcceptInvite(party, players.ElementAt(1));
             Assert.IsFalse(result);
             Assert.AreEqual(3, party.Members.Count());
@@ -231,7 +231,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             var db = ConnectionManager.CurrentConnection;
             var players = db.PlayerCharacters.Read();
             var party = Controller.CreateParty(false, players.First());
-            party.PendingInvites.Add(players.ElementAt(1));
+            party.PendingInvites.Add(players.ElementAt(1).UserId);
             var result = Controller.DeclineInvite(party, players.ElementAt(1));
             Assert.IsTrue(result);
             Assert.AreEqual(0, party.PendingInvites.Count());
@@ -261,7 +261,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             var result = Controller.AddPlayer(party, players.ElementAt(1));
             Assert.IsTrue(result);
             Assert.AreEqual(2, party.Members.Count());
-            Assert.IsTrue(party.Members.Any(x => x.Equals(players.ElementAt(1))));
+            Assert.IsTrue(party.Members.Any(x => x.Equals(players.ElementAt(1).UserId)));
         }
 
         [TestMethod]
@@ -301,7 +301,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             Assert.IsTrue(result);
             Assert.AreEqual(PartyState.Full, party.State);
             Assert.AreEqual(3, party.Members.Count());
-            Assert.IsTrue(party.Members.Any(x => x.Equals(players.ElementAt(2))));
+            Assert.IsTrue(party.Members.Any(x => x.Equals(players.ElementAt(2).UserId)));
         }
 
         [TestMethod]
@@ -342,7 +342,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             Assert.IsFalse(result);
             Assert.AreEqual(PartyState.Started, party.State);
             Assert.AreEqual(3, party.Members.Count());
-            Assert.IsTrue(party.Members.Any(x => x.Equals(players.ElementAt(2))));
+            Assert.IsTrue(party.Members.Any(x => x.Equals(players.ElementAt(2).UserId)));
         }
 
         [TestMethod]
@@ -403,7 +403,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             var db = ConnectionManager.CurrentConnection;
             var players = db.PlayerCharacters.Read();
             var party = Controller.CreateParty(false, players.First());
-            party.PendingInvites.Add(players.ElementAt(1));
+            party.PendingInvites.Add(players.ElementAt(1).UserId);
             party.State = PartyState.Forming;
             var result = Controller.SetReady(party);
             Assert.IsFalse(result);

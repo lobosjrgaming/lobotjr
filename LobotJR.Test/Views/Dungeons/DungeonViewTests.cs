@@ -145,7 +145,7 @@ namespace LobotJR.Test.Views.Dungeons
             View.PushNotification += listener.Object;
             var result = View.AddPlayer(User, otherUser.Username);
             var response = result.Responses.First();
-            Assert.IsTrue(party.PendingInvites.Contains(otherPlayer));
+            Assert.IsTrue(party.PendingInvites.Contains(otherPlayer.UserId));
             Assert.IsTrue(response.Contains($"invited {otherUser.Username}"));
             listener.Verify(x => x(otherUser, It.IsAny<CommandResult>()), Times.Once());
             listener.Verify(x => x(OtherUsers.Last(), It.IsAny<CommandResult>()), Times.Once());
@@ -161,7 +161,7 @@ namespace LobotJR.Test.Views.Dungeons
             var result = View.AddPlayer(User, otherUser.Username);
             var party = PartyController.GetCurrentGroup(Player);
             var response = result.Responses.First();
-            Assert.IsTrue(party.PendingInvites.Contains(otherPlayer));
+            Assert.IsTrue(party.PendingInvites.Contains(otherPlayer.UserId));
             Assert.IsTrue(response.Contains($"invited {otherUser.Username}"));
             listener.Verify(x => x(otherUser, It.IsAny<CommandResult>()));
         }
@@ -255,7 +255,7 @@ namespace LobotJR.Test.Views.Dungeons
         [TestMethod]
         public void AddPlayerReturnsErrorOnPlayerNotFound()
         {
-            var party = PartyController.CreateParty(false, Player, OtherPlayers.ElementAt(1), OtherPlayers.ElementAt(2));
+            PartyController.CreateParty(false, Player, OtherPlayers.ElementAt(1), OtherPlayers.ElementAt(2));
             var username = "InvalidUserName";
             var result = View.AddPlayer(User, username);
             var response = result.Responses.First();
@@ -374,7 +374,7 @@ namespace LobotJR.Test.Views.Dungeons
             party.State = PartyState.Started;
             var result = View.PromotePlayer(User, otherUser.Username);
             var response = result.Responses.First();
-            Assert.AreEqual(otherPlayer, party.Leader);
+            Assert.AreEqual(otherPlayer.UserId, party.Leader);
             Assert.IsTrue(response.Contains($"promoted {otherUser.Username}"));
             listener.Verify(x => x(OtherUsers.First(), It.IsAny<CommandResult>()), Times.Once());
         }
@@ -388,7 +388,7 @@ namespace LobotJR.Test.Views.Dungeons
             party.State = PartyState.Started;
             var result = View.PromotePlayer(User, OtherUsers.ElementAt(1).Username);
             var response = result.Responses.First();
-            Assert.AreEqual(Player, party.Leader);
+            Assert.AreEqual(Player.UserId, party.Leader);
             Assert.IsTrue(response.Contains($"'{OtherUsers.ElementAt(1).Username}' not found"));
         }
 
@@ -401,7 +401,7 @@ namespace LobotJR.Test.Views.Dungeons
             party.State = PartyState.Started;
             var result = View.PromotePlayer(User, User.Username);
             var response = result.Responses.First();
-            Assert.AreEqual(Player, party.Leader);
+            Assert.AreEqual(Player.UserId, party.Leader);
             Assert.IsTrue(response.Contains($"already the party leader"));
         }
 
@@ -521,7 +521,7 @@ namespace LobotJR.Test.Views.Dungeons
             var otherUser = OtherUsers.First();
             var otherPlayer = OtherPlayers.First(x => x.UserId.Equals(otherUser.TwitchId));
             var party = PartyController.CreateParty(false, Player, otherPlayer);
-            party.PendingInvites.Add(OtherPlayers.ElementAt(1));
+            party.PendingInvites.Add(OtherPlayers.ElementAt(1).UserId);
             var result = View.SetReady(User);
             var response = result.Responses.First();
             Assert.AreEqual(PartyState.Forming, party.State);
@@ -620,9 +620,8 @@ namespace LobotJR.Test.Views.Dungeons
             var party = PartyController.CreateParty(false, Player, otherPlayer);
             party.State = PartyState.Full;
             var result = View.StartDungeon(User, "1");
-            Assert.IsNotNull(party.Run);
-            Assert.IsNotNull(party.Run.Dungeon);
-            Assert.IsNotNull(party.Run.Mode);
+            Assert.IsNotNull(party.DungeonId);
+            Assert.IsNotNull(party.ModeId);
             Assert.AreEqual(PartyState.Started, party.State);
         }
 
@@ -689,8 +688,9 @@ namespace LobotJR.Test.Views.Dungeons
             var listener = new Mock<PushNotificationHandler>();
             View.PushNotification += listener.Object;
             Controller.Process();
-            listener.Verify(x => x(User, It.Is<CommandResult>(y => y.Responses.First().Contains(party.Run.Dungeon.Introduction))));
-            listener.Verify(x => x(otherUser, It.Is<CommandResult>(y => y.Responses.First().Contains(party.Run.Dungeon.Introduction))));
+            var dungeon = Controller.GetDungeonById(party.DungeonId);
+            listener.Verify(x => x(User, It.Is<CommandResult>(y => y.Responses.First().Contains(dungeon.Introduction))));
+            listener.Verify(x => x(otherUser, It.Is<CommandResult>(y => y.Responses.First().Contains(dungeon.Introduction))));
         }
 
         [TestMethod]
@@ -755,7 +755,7 @@ namespace LobotJR.Test.Views.Dungeons
             var party = PartyController.CreateParty(false, Player, OtherPlayers.Last());
             var otherUser = OtherUsers.First();
             var otherPlayer = OtherPlayers.First(x => x.UserId.Equals(otherUser.TwitchId));
-            party.PendingInvites.Add(otherPlayer);
+            party.PendingInvites.Add(otherPlayer.UserId);
             var result = View.AddPlayer(User, otherUser.Username);
             var listener = new Mock<PushNotificationHandler>();
             View.PushNotification += listener.Object;

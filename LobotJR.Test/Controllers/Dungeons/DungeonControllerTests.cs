@@ -44,8 +44,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             var db = ConnectionManager.CurrentConnection;
             var mode = db.DungeonModeData.Read(x => x.IsDefault).First();
             var dungeon = db.DungeonData.Read().First();
-            var run = new DungeonRun(dungeon, mode);
-            var name = DungeonController.GetDungeonName(run);
+            var name = DungeonController.GetDungeonName(dungeon, mode);
             Assert.IsFalse(name.Contains(mode.Name));
             Assert.IsFalse(name.Contains('['));
             Assert.IsTrue(name.Contains(dungeon.Name));
@@ -57,8 +56,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             var db = ConnectionManager.CurrentConnection;
             var mode = db.DungeonModeData.Read(x => !x.IsDefault).First();
             var dungeon = db.DungeonData.Read().First();
-            var run = new DungeonRun(dungeon, mode);
-            var name = DungeonController.GetDungeonName(run);
+            var name = DungeonController.GetDungeonName(dungeon, mode);
             Assert.IsTrue(name.Contains(mode.Name));
             Assert.IsTrue(name.Contains('['));
             Assert.IsTrue(name.Contains(dungeon.Name));
@@ -71,8 +69,8 @@ namespace LobotJR.Test.Controllers.Dungeons
             var mode = db.DungeonModeData.Read(x => !x.IsDefault).First();
             var dungeon = db.DungeonData.Read().First();
             var run = DungeonController.ParseDungeonId($"{dungeon.Id}{mode.Flag}");
-            Assert.AreEqual(dungeon, run.Dungeon);
-            Assert.AreEqual(mode, run.Mode);
+            Assert.AreEqual(dungeon.Id, run.DungeonId);
+            Assert.AreEqual(mode.Id, run.ModeId);
         }
 
         [TestMethod]
@@ -82,8 +80,8 @@ namespace LobotJR.Test.Controllers.Dungeons
             var mode = db.DungeonModeData.Read(x => x.IsDefault).First();
             var dungeon = db.DungeonData.Read().First();
             var run = DungeonController.ParseDungeonId($"{dungeon.Id}");
-            Assert.AreEqual(dungeon, run.Dungeon);
-            Assert.AreEqual(mode, run.Mode);
+            Assert.AreEqual(dungeon.Id, run.DungeonId);
+            Assert.AreEqual(mode.Id, run.ModeId);
         }
 
         [TestMethod]
@@ -98,7 +96,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             {
                 foreach (var dungeon in dungeons)
                 {
-                    Assert.IsTrue(allDungeons.Any(x => x.Dungeon.Equals(dungeon) && x.Mode.Equals(mode)));
+                    Assert.IsTrue(allDungeons.Any(x => x.DungeonId.Equals(dungeon.Id) && x.ModeId.Equals(mode.Id)));
                 }
             }
         }
@@ -232,8 +230,9 @@ namespace LobotJR.Test.Controllers.Dungeons
             {
                 State = PartyState.Full
             };
-            var run = new DungeonRun(db.DungeonData.Read().First(), db.DungeonModeData.Read().First());
-            var result = DungeonController.TryStartDungeon(party, run, out var broke);
+            var dungeon = db.DungeonData.Read().First();
+            var mode = db.DungeonModeData.Read().First();
+            var result = DungeonController.TryStartDungeon(party, dungeon.Id, mode.Id, out var _);
             Assert.IsTrue(result);
             Assert.AreEqual(PartyState.Started, party.State);
             Assert.AreEqual(0, player1.Currency);
@@ -255,8 +254,9 @@ namespace LobotJR.Test.Controllers.Dungeons
             {
                 State = PartyState.Forming
             };
-            var run = new DungeonRun(db.DungeonData.Read().First(), db.DungeonModeData.Read().First());
-            var result = DungeonController.TryStartDungeon(party, run, out var broke);
+            var dungeon = db.DungeonData.Read().First();
+            var mode = db.DungeonModeData.Read().First();
+            var result = DungeonController.TryStartDungeon(party, dungeon.Id, mode.Id, out var broke);
             Assert.IsFalse(result);
             Assert.IsFalse(broke.Any());
             Assert.AreEqual(PartyState.Forming, party.State);
@@ -281,8 +281,9 @@ namespace LobotJR.Test.Controllers.Dungeons
             {
                 State = PartyState.Full
             };
-            var run = new DungeonRun(db.DungeonData.Read().First(), db.DungeonModeData.Read().First());
-            var result = DungeonController.TryStartDungeon(party, run, out var broke);
+            var dungeon = db.DungeonData.Read().First();
+            var mode = db.DungeonModeData.Read().First();
+            var result = DungeonController.TryStartDungeon(party, dungeon.Id, mode.Id, out var broke);
             Assert.IsFalse(result);
             Assert.IsTrue(broke.Contains(player1));
             Assert.AreEqual(PartyState.Full, party.State);
@@ -314,7 +315,8 @@ namespace LobotJR.Test.Controllers.Dungeons
             var mode = db.DungeonModeData.Read().Last();
             var party = PartyController.CreateParty(false, player1, player2, player3);
             party.State = PartyState.Started;
-            party.Run = new DungeonRun(dungeon, mode);
+            party.DungeonId = dungeon.Id;
+            party.ModeId = mode.Id;
             party.LastUpdate = DateTime.Now - TimeSpan.FromSeconds(SettingsManager.GetGameSettings().DungeonStepTime);
             return party;
         }
@@ -323,7 +325,7 @@ namespace LobotJR.Test.Controllers.Dungeons
         public async Task ProcessSendsIntroMessageForNewGroup()
         {
             var party = SetupProcessParty();
-            var message = party.Run.Dungeon.Introduction;
+            var message = DungeonController.GetDungeonById(party.DungeonId).Introduction;
             var listener = new Mock<DungeonController.DungeonProgressHandler>();
             DungeonController.DungeonProgress += listener.Object;
             await DungeonController.Process();
@@ -338,7 +340,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             var party = SetupProcessParty();
             party.CurrentEncounter = 1;
             party.StepState = StepState.Setup;
-            var message = party.Run.Dungeon.Encounters.First().SetupText;
+            var message = DungeonController.GetDungeonById(party.DungeonId).Encounters.First().SetupText;
             var listener = new Mock<DungeonController.DungeonProgressHandler>();
             DungeonController.DungeonProgress += listener.Object;
             await DungeonController.Process();
@@ -353,8 +355,8 @@ namespace LobotJR.Test.Controllers.Dungeons
             var party = SetupProcessParty();
             party.CurrentEncounter = 1;
             party.StepState = StepState.Resolving;
-            var encounter = party.Run.Dungeon.Encounters.First();
-            var levels = encounter.Levels.Where(x => x.Mode.Equals(party.Run.Mode)).First();
+            var encounter = DungeonController.GetDungeonById(party.DungeonId).Encounters.First();
+            var levels = encounter.Levels.Where(x => x.Mode.Id.Equals(party.ModeId)).First();
             levels.Difficulty = 1;
             var message = encounter.Enemy;
             var listener = new Mock<DungeonController.DungeonProgressHandler>();
@@ -371,15 +373,16 @@ namespace LobotJR.Test.Controllers.Dungeons
             var party = SetupProcessParty();
             party.CurrentEncounter = 1;
             party.StepState = StepState.Resolving;
-            var encounter = party.Run.Dungeon.Encounters.First();
-            var levels = encounter.Levels.Where(x => x.Mode.Equals(party.Run.Mode)).First();
+            var encounter = DungeonController.GetDungeonById(party.DungeonId).Encounters.First();
+            var levels = encounter.Levels.Where(x => x.Mode.Id.Equals(party.ModeId)).First();
             levels.Difficulty = 0;
-            party.Members.First().CharacterClass.SuccessChance = 1;
+            var members = PartyController.GetPartyPlayers(party);
+            members.First().CharacterClass.SuccessChance = 1;
             var message = encounter.Enemy;
             var listener = new Mock<DungeonController.DungeonProgressHandler>();
             DungeonController.DungeonProgress += listener.Object;
             await DungeonController.Process();
-            party.Members.First().CharacterClass.SuccessChance = 0;
+            members.First().CharacterClass.SuccessChance = 0;
             listener.Verify(x => x(party, It.Is<string>(y => y.Contains(message))), Times.Once);
             Assert.AreEqual(1, party.CurrentEncounter);
             Assert.AreEqual(StepState.Complete, party.StepState);
@@ -392,20 +395,20 @@ namespace LobotJR.Test.Controllers.Dungeons
             party.CurrentEncounter = 1;
             var item = ConnectionManager.CurrentConnection.ItemData.Read().First();
             var old = item.SuccessChance;
-            item.SuccessChance = 1;
+            item.SuccessChance = 1 / 0.75f;
             foreach (var player in party.Members)
             {
                 ConnectionManager.CurrentConnection.Inventories.Create(new Inventory()
                 {
                     Item = item,
                     IsEquipped = true,
-                    UserId = player.UserId,
+                    UserId = player,
                 });
             }
             ConnectionManager.CurrentConnection.Commit();
             party.StepState = StepState.Resolving;
-            var encounter = party.Run.Dungeon.Encounters.First();
-            var levels = encounter.Levels.Where(x => x.Mode.Equals(party.Run.Mode)).First();
+            var encounter = DungeonController.GetDungeonById(party.DungeonId).Encounters.First();
+            var levels = encounter.Levels.Where(x => x.Mode.Id.Equals(party.ModeId)).First();
             levels.Difficulty = 0;
             var message = encounter.Enemy;
             var listener = new Mock<DungeonController.DungeonProgressHandler>();
@@ -424,10 +427,10 @@ namespace LobotJR.Test.Controllers.Dungeons
             var party = SetupProcessParty();
             party.CurrentEncounter = 1;
             party.StepState = StepState.Resolving;
-            var encounter = party.Run.Dungeon.Encounters.First();
-            var levels = encounter.Levels.Where(x => x.Mode.Equals(party.Run.Mode)).First();
+            var encounter = DungeonController.GetDungeonById(party.DungeonId).Encounters.First();
+            var levels = encounter.Levels.Where(x => x.Mode.Id.Equals(party.ModeId)).First();
             levels.Difficulty = 0;
-            var message = party.Run.Dungeon.FailureText;
+            var message = DungeonController.GetDungeonById(party.DungeonId).FailureText;
             var listener = new Mock<DungeonController.DungeonProgressHandler>();
             DungeonController.DungeonProgress += listener.Object;
             await DungeonController.Process();
@@ -444,7 +447,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             var party = SetupProcessParty();
             party.CurrentEncounter = 1;
             party.StepState = StepState.Complete;
-            var encounter = party.Run.Dungeon.Encounters.First();
+            var encounter = DungeonController.GetDungeonById(party.DungeonId).Encounters.First();
             var message = encounter.CompleteText;
             var listener = new Mock<DungeonController.DungeonProgressHandler>();
             DungeonController.DungeonProgress += listener.Object;
@@ -460,7 +463,7 @@ namespace LobotJR.Test.Controllers.Dungeons
         {
             var party = SetupProcessParty();
             party.LastUpdate = DateTime.Now;
-            var message = party.Run.Dungeon.Introduction;
+            var message = DungeonController.GetDungeonById(party.DungeonId).Introduction;
             var listener = new Mock<DungeonController.DungeonProgressHandler>();
             DungeonController.DungeonProgress += listener.Object;
             await DungeonController.Process();
@@ -473,7 +476,7 @@ namespace LobotJR.Test.Controllers.Dungeons
         {
             var party = SetupProcessParty();
             party.LastUpdate = DateTime.Now - TimeSpan.FromSeconds(SettingsManager.GetGameSettings().DungeonStepTime);
-            var message = party.Run.Dungeon.Introduction;
+            var message = DungeonController.GetDungeonById(party.DungeonId).Introduction;
             var listener = new Mock<DungeonController.DungeonProgressHandler>();
             DungeonController.DungeonProgress += listener.Object;
             await DungeonController.Process();
@@ -485,10 +488,10 @@ namespace LobotJR.Test.Controllers.Dungeons
         public async Task ProcessSetsPartyStateCompleteOnDungeonFinish()
         {
             var party = SetupProcessParty();
-            var count = party.Run.Dungeon.Encounters.Count();
+            var count = DungeonController.GetDungeonById(party.DungeonId).Encounters.Count();
             party.CurrentEncounter = count;
             party.StepState = StepState.Complete;
-            var encounter = party.Run.Dungeon.Encounters.Last();
+            var encounter = DungeonController.GetDungeonById(party.DungeonId).Encounters.Last();
             var message = encounter.CompleteText;
             var listener = new Mock<DungeonController.DungeonProgressHandler>();
             DungeonController.DungeonProgress += listener.Object;
@@ -503,6 +506,7 @@ namespace LobotJR.Test.Controllers.Dungeons
         public async Task ProcessCompletesDungeonAndAwardsLootAndPets()
         {
             var db = ConnectionManager.CurrentConnection;
+            db.Stables.Delete();
             foreach (var item in db.DungeonData.Read().First().Loot)
             {
                 item.DropChance = 1;
@@ -519,7 +523,8 @@ namespace LobotJR.Test.Controllers.Dungeons
             {
                 item.DropChance = 0;
             }
-            foreach (var member in party.Members)
+            var members = PartyController.GetPartyPlayers(party);
+            foreach (var member in members)
             {
                 var xp = (int)Math.Round(11 + (member.Level - 2) * 3f);
                 var coins = (int)Math.Round(50 * (1 + 0.05f * member.Level));
@@ -539,13 +544,14 @@ namespace LobotJR.Test.Controllers.Dungeons
         {
             var party = SetupProcessParty();
             party.State = PartyState.Complete;
-            var baseXp = party.Members.ToDictionary(x => x.UserId, x => x.Experience);
-            var baseCoins = party.Members.ToDictionary(x => x.UserId, x => x.Currency);
+            var members = PartyController.GetPartyPlayers(party);
+            var baseXp = members.ToDictionary(x => x.UserId, x => x.Experience);
+            var baseCoins = members.ToDictionary(x => x.UserId, x => x.Currency);
             SettingsManager.GetGameSettings().DungeonCritChance = 0;
             var listener = new Mock<DungeonController.DungeonCompleteHandler>();
             DungeonController.DungeonComplete += listener.Object;
             await DungeonController.Process();
-            foreach (var member in party.Members)
+            foreach (var member in members)
             {
                 var xp = (int)Math.Round(11 + (member.Level - 2) * 3f);
                 var coins = (int)Math.Round(50 * (1 + 0.05f * member.Level));
@@ -568,7 +574,8 @@ namespace LobotJR.Test.Controllers.Dungeons
             var listener = new Mock<DungeonController.DungeonCompleteHandler>();
             DungeonController.DungeonComplete += listener.Object;
             await DungeonController.Process();
-            foreach (var member in party.Members)
+            var members = PartyController.GetPartyPlayers(party);
+            foreach (var member in members)
             {
                 var xp = (int)Math.Round((11 + (member.Level - 2) * 3f) * (1 + settings.DungeonCritBonus));
                 var coins = (int)Math.Round(50 * (1 + 0.05f * member.Level));
@@ -591,7 +598,8 @@ namespace LobotJR.Test.Controllers.Dungeons
             DungeonController.DungeonComplete += listener.Object;
             await DungeonController.Process();
             db.Commit();
-            foreach (var member in party.Members)
+            var members = PartyController.GetPartyPlayers(party);
+            foreach (var member in members)
             {
                 var xp = (int)Math.Round(11 + (member.Level - 2) * 3f) * 2;
                 var coins = (int)Math.Round(50 * (1 + 0.05f * member.Level)) * 2;
@@ -615,7 +623,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             {
                 db.DungeonLockouts.Create(new DungeonLockout()
                 {
-                    UserId = member.UserId,
+                    UserId = member,
                     Timer = timer,
                     Time = DateTime.Now
                 });
@@ -625,7 +633,8 @@ namespace LobotJR.Test.Controllers.Dungeons
             var listener = new Mock<DungeonController.DungeonCompleteHandler>();
             DungeonController.DungeonComplete += listener.Object;
             await DungeonController.Process();
-            foreach (var member in party.Members)
+            var members = PartyController.GetPartyPlayers(party);
+            foreach (var member in members)
             {
                 var xp = (int)Math.Round(11 + (member.Level - 2) * 3f);
                 var coins = (int)Math.Round(50 * (1 + 0.05f * member.Level));
@@ -658,7 +667,8 @@ namespace LobotJR.Test.Controllers.Dungeons
             DungeonController.DungeonComplete += listener.Object;
             await DungeonController.Process();
             db.Commit();
-            foreach (var member in party.Members)
+            var members = PartyController.GetPartyPlayers(party);
+            foreach (var member in members)
             {
                 var xp = (int)Math.Round(11 + (member.Level - 2) * 3f);
                 var coins = (int)Math.Round(50 * (1 + 0.05f * member.Level));
@@ -675,15 +685,17 @@ namespace LobotJR.Test.Controllers.Dungeons
         {
             var party = SetupProcessParty();
             party.State = PartyState.Failed;
-            var encounter = party.Run.Dungeon.Encounters.First();
-            var baseXp = party.Members.ToDictionary(x => x.UserId, x => x.Experience);
-            var baseCurrency = party.Members.ToDictionary(x => x.UserId, x => x.Currency);
+            var members = PartyController.GetPartyPlayers(party);
+            var dungeon = DungeonController.GetDungeonById(party.DungeonId);
+            var encounter = dungeon.Encounters.First();
+            var baseXp = members.ToDictionary(x => x.UserId, x => x.Experience);
+            var baseCurrency = members.ToDictionary(x => x.UserId, x => x.Currency);
             SettingsManager.GetGameSettings().DungeonDeathChance = 0;
             var listener = new Mock<DungeonController.DungeonFailureHandler>();
             DungeonController.DungeonFailure += listener.Object;
             await DungeonController.Process();
             listener.Verify(x => x(party, It.Is<IEnumerable<PlayerCharacter>>(y => y.Count() == 0)), Times.Once);
-            foreach (var member in party.Members)
+            foreach (var member in members)
             {
                 Assert.AreEqual(baseXp[member.UserId], member.Experience);
                 Assert.AreEqual(baseCurrency[member.UserId], member.Currency);
@@ -698,10 +710,12 @@ namespace LobotJR.Test.Controllers.Dungeons
         {
             var party = SetupProcessParty();
             party.State = PartyState.Failed;
-            var encounter = party.Run.Dungeon.Encounters.First();
+            var dungeon = DungeonController.GetDungeonById(party.DungeonId);
+            var encounter = dungeon.Encounters.First();
             var baseXp = new Dictionary<string, int>();
             var baseCurrency = new Dictionary<string, int>();
-            foreach (var member in party.Members)
+            var members = PartyController.GetPartyPlayers(party);
+            foreach (var member in members)
             {
                 baseXp.Add(member.UserId, member.Experience);
                 baseCurrency.Add(member.UserId, member.Currency);
@@ -711,7 +725,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             DungeonController.DungeonFailure += listener.Object;
             await DungeonController.Process();
             listener.Verify(x => x(party, It.Is<IEnumerable<PlayerCharacter>>(y => y.Count() == party.Members.Count)), Times.Once);
-            foreach (var member in party.Members)
+            foreach (var member in members)
             {
                 var xp = (int)Math.Round(11 + (member.Level - 2) * 3f);
                 var coins = (int)Math.Round(50 * (1 + 0.05f * member.Level));
@@ -728,19 +742,21 @@ namespace LobotJR.Test.Controllers.Dungeons
         {
             var party = SetupProcessParty();
             party.State = PartyState.Failed;
-            var encounter = party.Run.Dungeon.Encounters.First();
-            foreach (var member in party.Members)
+            var dungeon = DungeonController.GetDungeonById(party.DungeonId);
+            var encounter = dungeon.Encounters.First();
+            var members = PartyController.GetPartyPlayers(party);
+            foreach (var member in members)
             {
                 member.Experience -= 200;
             }
-            var baseXp = party.Members.ToDictionary(x => x.UserId, x => x.Experience);
-            var baseLevel = party.Members.ToDictionary(x => x.UserId, x => x.Level);
+            var baseXp = members.ToDictionary(x => x.UserId, x => x.Experience);
+            var baseLevel = members.ToDictionary(x => x.UserId, x => x.Level);
             SettingsManager.GetGameSettings().DungeonDeathChance = 1;
             var listener = new Mock<DungeonController.DungeonFailureHandler>();
             DungeonController.DungeonFailure += listener.Object;
             await DungeonController.Process();
             listener.Verify(x => x(party, It.Is<IEnumerable<PlayerCharacter>>(y => y.Count() == party.Members.Count)), Times.Once);
-            foreach (var member in party.Members)
+            foreach (var member in members)
             {
                 var coins = (int)Math.Round(50 * (1 + 0.05f * member.Level));
                 Assert.AreEqual(baseXp[member.UserId], member.Experience);
