@@ -16,8 +16,6 @@ namespace LobotJR.Launcher
     /// </summary>
     public partial class MainWindow : Window
     {
-        private const string _cancelError = "error=access_denied";
-
         private static readonly IEnumerable<string> _chatScopes = new List<string>(new string[] { "chat:read", "chat:edit", "whispers:read", "whispers:edit", "channel:moderate", "user:manage:whispers", "moderator:manage:banned_users", "moderator:read:chatters" });
         private static readonly IEnumerable<string> _broadcastScopes = new List<string>(new string[] { "channel:read:subscriptions", "moderation:read", "channel:read:vips" });
 
@@ -28,7 +26,7 @@ namespace LobotJR.Launcher
         private string _streamerUrlCaption;
 
         private ClientData _clientData;
-        private string _state = Guid.NewGuid().ToString();
+        private readonly string _state = Guid.NewGuid().ToString();
 
         private TokenData _tokenData;
 
@@ -40,9 +38,11 @@ namespace LobotJR.Launcher
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            _timer = new DispatcherTimer();
-            _timer.Interval = TimeSpan.FromSeconds(1);
-            _timer.Tick += _timer_Tick;
+            _timer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(1)
+            };
+            _timer.Tick += Timer_Tick;
             _timer.Start();
 
             _chatUrlCaption = ChatUrl.Content.ToString();
@@ -73,7 +73,7 @@ namespace LobotJR.Launcher
             UpdateClientData.IsEnabled = enabled;
         }
 
-        private void _timer_Tick(object sender, EventArgs e)
+        private void Timer_Tick(object sender, EventArgs e)
         {
             if (_chatUrlTimer > 0)
             {
@@ -208,10 +208,12 @@ namespace LobotJR.Launcher
 
         private void LaunchClientDataUpdater(ClientData clientData)
         {
-            var updateModal = new UpdateConfig();
-            updateModal.ClientIdValue = clientData.ClientId;
-            updateModal.ClientSecretValue = clientData.ClientSecret;
-            updateModal.RedirectUriValue = clientData.RedirectUri;
+            var updateModal = new UpdateConfig
+            {
+                ClientIdValue = clientData.ClientId,
+                ClientSecretValue = clientData.ClientSecret,
+                RedirectUriValue = clientData.RedirectUri
+            };
             var result = updateModal.ShowDialog();
             if (!result.HasValue || !result.Value)
             {
@@ -229,8 +231,10 @@ namespace LobotJR.Launcher
 
         private string BuildTwitchAuthUrl(IEnumerable<string> scopes)
         {
-            var builder = new UriBuilder("https", "id.twitch.tv");
-            builder.Path = "oauth2/authorize";
+            var builder = new UriBuilder("https", "id.twitch.tv")
+            {
+                Path = "oauth2/authorize"
+            };
             AddQuery(builder, "client_id", _clientData.ClientId);
             AddQuery(builder, "redirect_uri", _clientData.RedirectUri);
             AddQuery(builder, "response_type", "code");

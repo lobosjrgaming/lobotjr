@@ -81,12 +81,13 @@ namespace LobotJR.Command.View.Player
 
         public CommandResult GiveExperienceToAll(int amount)
         {
-            foreach (var user in UserController.Viewers)
+            var viewers = UserController.GetViewerList().GetAwaiter().GetResult();
+            foreach (var user in viewers)
             {
                 var player = PlayerController.GetPlayerByUser(user);
                 PlayerController.GainExperience(user, player, amount);
             }
-            return new CommandResult($"Gave {amount} experience to {UserController.Viewers.Count()} viewers.");
+            return new CommandResult($"Gave {amount} experience to {viewers.Count()} viewers.");
         }
 
         public CommandResult SetExperience(string username, int value)

@@ -45,7 +45,6 @@ namespace LobotJR.Test.Controllers.Twitch
             Client.Mock.Verify(x => x.GetModeratorListAsync(), Times.Once());
             Client.Mock.Verify(x => x.GetVipListAsync(), Times.Once());
             Client.Mock.Verify(x => x.GetSubscriberListAsync(), Times.Once());
-            Client.Mock.Verify(x => x.GetChatterListAsync(), Times.Once());
         }
 
         [TestMethod]
@@ -118,30 +117,16 @@ namespace LobotJR.Test.Controllers.Twitch
         }
 
         [TestMethod]
-        public async Task ProcessGetsChatterList()
-        {
-            var db = ConnectionManager.CurrentConnection;
-            var allUsers = db.Users.Read().ToList();
-            var settings = SettingsManager.GetAppSettings();
-            Controller.LastUpdate = DateTime.Now - TimeSpan.FromMinutes(settings.UserDatabaseUpdateTime + 1);
-            await Controller.Process();
-            db.Commit();
-            Assert.AreEqual(allUsers.Count, Controller.Viewers.Count());
-            var missing = allUsers.Select(x => x.Username).Except(Controller.Viewers.Select(x => x.Username)).ToList();
-            Assert.AreEqual(0, missing.Count);
-        }
-
-        [TestMethod]
         public async Task UpdateViewerListGetsChatterList()
         {
             var db = ConnectionManager.CurrentConnection;
             var allUsers = db.Users.Read().ToList();
             var settings = SettingsManager.GetAppSettings();
             Controller.LastUpdate = DateTime.Now - TimeSpan.FromMinutes(settings.UserDatabaseUpdateTime + 1);
-            await Controller.UpdateViewerList();
+            var viewers = await Controller.GetViewerList();
             db.Commit();
-            Assert.AreEqual(allUsers.Count, Controller.Viewers.Count());
-            var missing = allUsers.Select(x => x.Username).Except(Controller.Viewers.Select(x => x.Username)).ToList();
+            Assert.AreEqual(allUsers.Count, viewers.Count());
+            var missing = allUsers.Select(x => x.Username).Except(viewers.Select(x => x.Username)).ToList();
             Assert.AreEqual(0, missing.Count);
         }
 

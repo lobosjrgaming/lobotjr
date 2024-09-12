@@ -32,10 +32,6 @@ namespace LobotJR.Command.Controller.Twitch
         /// </summary>
         public DateTime LastUpdate { get; set; } = DateTime.Now;
         /// <summary>
-        /// Collection of all users currently in chat.
-        /// </summary>
-        public IEnumerable<User> Viewers { get; private set; } = Enumerable.Empty<User>();
-        /// <summary>
         /// The user object for the broadcasting user.
         /// </summary>
         public User BroadcastUser { get; private set; }
@@ -222,7 +218,33 @@ namespace LobotJR.Command.Controller.Twitch
             }
         }
 
-        private void ProcessUpdate(IEnumerable<TwitchUserData> mods, IEnumerable<TwitchUserData> vips, IEnumerable<SubscriptionResponseData> subs, IEnumerable<TwitchUserData> chatters)
+        private IEnumerable<string> UpdateDisplayNames(Dictionary<string, string> userPairs, Dictionary<string, User> databaseUserDict, IEnumerable<string> existingIds)
+        {
+            var userDict = userPairs.ToDictionary(x => x.Key, x => x.Value);
+            var updateIds = existingIds.Where(x => !databaseUserDict[x].Username.Equals(userDict[x])).ToList();
+            if (updateIds.Any())
+            {
+                Logger.Info("Updating display names for {count} users.", updateIds.Count());
+                var cursor = 0;
+                var chunkSize = 1000;
+                do
+                {
+                    ConnectionManager.CurrentConnection.Users.BeginTransaction();
+                    foreach (var toUpdate in updateIds.Skip(cursor).Take(chunkSize))
+                    {
+                        var user = databaseUserDict[toUpdate];
+                        user.Username = userDict[toUpdate];
+                        ConnectionManager.CurrentConnection.Users.Update(user);
+                    }
+                    ConnectionManager.CurrentConnection.Users.Commit();
+                    cursor += chunkSize;
+                }
+                while (cursor < updateIds.Count);
+            }
+            return updateIds;
+        }
+
+        private void ProcessUpdate(IEnumerable<TwitchUserData> mods, IEnumerable<TwitchUserData> vips, IEnumerable<SubscriptionResponseData> subs)
         {
             IEnumerable<KeyValuePair<string, string>> userPairs = new List<KeyValuePair<string, string>>();
             if (mods.Any())
@@ -237,23 +259,21 @@ namespace LobotJR.Command.Controller.Twitch
             {
                 userPairs = userPairs.Union(subs.Distinct().ToDictionary(x => x.UserId, x => x.UserName));
             }
-            if (chatters.Any())
+
+            var userDict = userPairs.ToDictionary(x => x.Key, x => x.Value);
+            var databaseUsers = ConnectionManager.CurrentConnection.Users.Read().ToList();
+            var databaseUserDict = databaseUsers.ToDictionary(x => x.TwitchId, x => x);
+            var existingIds = databaseUserDict.Keys.Intersect(userPairs.Select(x => x.Key)).ToList();
+            var newIds = userDict.Keys.Except(existingIds).ToList();
+            UpdateDisplayNames(userDict, databaseUserDict, existingIds);
+            if (newIds.Any())
             {
-                userPairs = userPairs.Union(chatters.Distinct().ToDictionary(x => x.UserId, x => x.UserName));
+                ConnectionManager.CurrentConnection.Users.BatchCreate(newIds.Select(x => new User() { TwitchId = x, Username = userDict[x] }), 1000, Logger, "user");
             }
-
-            var allUsers = userPairs.ToDictionary(x => x.Key, x => x.Value);
-            var existingUsers = ConnectionManager.CurrentConnection.Users.Read().Intersect(allUsers.Select(x => new User(x.Value, x.Key))).ToDictionary(x => x.TwitchId, x => x.Username);
-            // var existingUsers = ConnectionManager.CurrentConnection.Users.Read().Join(userPairs, user => user.TwitchId, pair => pair.Key, (user, pair) => new KeyValuePair<string, string>(user.TwitchId, user.Username));
-            // var existingUsers = ConnectionManager.CurrentConnection.Users.Read(x => allUsers.Keys.Contains(x.TwitchId)).ToDictionary(x => x.TwitchId, x => x.Username);
-            var newUsers = allUsers.Except(existingUsers);
-
-            ConnectionManager.CurrentConnection.Users.BatchCreate(newUsers.Select(x => new User() { TwitchId = x.Key, Username = x.Value }), 1000, Logger, "user");
-            var dbUsers = ConnectionManager.CurrentConnection.Users.Read().ToList();
 
             if (mods.Any())
             {
-                SyncLists(dbUsers, mods.Select(x => x.UserId), x => x.IsMod, (u, v) => u.IsMod = v);
+                SyncLists(databaseUsers, mods.Select(x => x.UserId), x => x.IsMod, (u, v) => u.IsMod = v);
             }
             else
             {
@@ -262,7 +282,7 @@ namespace LobotJR.Command.Controller.Twitch
 
             if (vips.Any())
             {
-                SyncLists(dbUsers, vips.Select(x => x.UserId), x => x.IsVip, (u, v) => u.IsVip = v);
+                SyncLists(databaseUsers, vips.Select(x => x.UserId), x => x.IsVip, (u, v) => u.IsVip = v);
             }
             else
             {
@@ -271,23 +291,13 @@ namespace LobotJR.Command.Controller.Twitch
 
             if (subs.Any())
             {
-                SyncLists(dbUsers, subs.Select(x => x.UserId), x => x.IsSub, (u, v) => u.IsSub = v);
+                SyncLists(databaseUsers, subs.Select(x => x.UserId), x => x.IsSub, (u, v) => u.IsSub = v);
             }
             else
             {
                 Logger.Warn("Null response attempting to retrieve subscriber list.");
             }
             ConnectionManager.CurrentConnection.Users.Commit();
-
-            if (chatters.Any())
-            {
-                var chatterIds = chatters.Where(x => x != null).Select(x => x.UserId);
-                Viewers = chatterIds.Select(x => dbUsers.FirstOrDefault(y => y.TwitchId.Equals(x))).Where(x => x != null).ToList();
-            }
-            else
-            {
-                Logger.Warn("Null response attempting to retrieve viewer list.");
-            }
 
             var updateTime = (DateTime.Now - LastUpdate).TotalMilliseconds;
             Logger.Info("User database updated in {time} milliseconds.", updateTime);
@@ -368,15 +378,18 @@ namespace LobotJR.Command.Controller.Twitch
         /// Forces an update of just the viewer list. This does not sync mod,
         /// sub, or vip status.
         /// </summary>
-        public async Task UpdateViewerList()
+        public async Task<IEnumerable<User>> GetViewerList()
         {
             var chatters = await TwitchClient.GetChatterListAsync();
             if (chatters.Any())
             {
-                var dbUsers = ConnectionManager.CurrentConnection.Users.Read().ToList();
-                var chatterIds = chatters.Where(x => x != null).Select(x => x.UserId);
-                Viewers = chatterIds.Select(x => dbUsers.FirstOrDefault(y => y.TwitchId.Equals(x))).Where(x => x != null).ToList();
+                var databaseUsers = ConnectionManager.CurrentConnection.Users.Read();
+                var databaseUserDict = databaseUsers.ToDictionary(x => x.TwitchId, x => x);
+                var userDict = chatters.ToDictionary(x => x.UserId, x => x.UserName);
+                var foundIds = userDict.Keys.Intersect(databaseUserDict.Keys).ToList();
+                return foundIds.Select(x => databaseUserDict[x]);
             }
+            return Array.Empty<User>();
         }
 
         public async Task Process()
@@ -389,8 +402,7 @@ namespace LobotJR.Command.Controller.Twitch
                 var mods = await TwitchClient.GetModeratorListAsync();
                 var vips = await TwitchClient.GetVipListAsync();
                 var subs = await TwitchClient.GetSubscriberListAsync();
-                var chatters = await TwitchClient.GetChatterListAsync();
-                ProcessUpdate(mods, vips, subs, chatters);
+                ProcessUpdate(mods, vips, subs);
             }
 
             if (LookupTimer != null && DateTime.Now - LookupTimer > TimeSpan.FromSeconds(settings.UserLookupBatchTime))

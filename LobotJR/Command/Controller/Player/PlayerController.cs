@@ -392,8 +392,8 @@ namespace LobotJR.Command.Controller.Player
             {
                 if (LastAward + TimeSpan.FromMinutes(settings.ExperienceFrequency) <= DateTime.Now)
                 {
-                    await UserController.UpdateViewerList();
-                    var chatters = UserController.Viewers;
+                    await UserController.GetViewerList();
+                    var chatters = await UserController.GetViewerList();
                     var xpToAward = settings.ExperienceValue * CurrentMultiplier;
                     var coinsToAward = settings.CoinValue * CurrentMultiplier;
                     var subMultiplier = settings.SubRewardMultiplier;

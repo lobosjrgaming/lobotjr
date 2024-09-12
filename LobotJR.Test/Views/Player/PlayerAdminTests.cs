@@ -57,8 +57,8 @@ namespace LobotJR.Test.Views.Player
         [TestMethod]
         public async Task GiveExperienceToAllGivesExperienceToViewers()
         {
-            await UserController.UpdateViewerList();
-            var amounts = UserController.Viewers.Select(x => PlayerController.GetPlayerByUser(x)).ToDictionary(x => x, x => x.Experience);
+            var viewers = await UserController.GetViewerList();
+            var amounts = viewers.Select(x => PlayerController.GetPlayerByUser(x)).ToDictionary(x => x, x => x.Experience);
             var amount = 100;
             var response = View.GiveExperienceToAll(amount);
             Assert.AreNotEqual(0, amounts.Count);
