@@ -49,8 +49,7 @@ namespace LobotJR.Command.Model.Fishing
 
         public override bool Equals(object obj)
         {
-            var other = obj as TournamentEntry;
-            return other != null && other.UserId == UserId && other.ResultId == ResultId;
+            return obj is TournamentEntry other && other.UserId == UserId && other.ResultId == ResultId;
         }
 
         public override int GetHashCode()

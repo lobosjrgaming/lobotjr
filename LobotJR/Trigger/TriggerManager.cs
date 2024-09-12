@@ -1,5 +1,7 @@
-﻿using LobotJR.Twitch.Model;
+﻿using LobotJR.Twitch;
+using LobotJR.Twitch.Model;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace LobotJR.Trigger
 {
@@ -8,7 +10,7 @@ namespace LobotJR.Trigger
     /// </summary>
     public class TriggerManager
     {
-        private IEnumerable<ITriggerResponder> Responders;
+        private readonly IEnumerable<ITriggerResponder> Responders;
 
         public TriggerManager(IEnumerable<ITriggerResponder> responders)
         {
@@ -32,10 +34,41 @@ namespace LobotJR.Trigger
                 var match = responder.Pattern.Match(message);
                 if (match.Success)
                 {
-                    return responder.Process(match, user);
+                    var response = responder.Process(match, user);
+                    response.Sender = user;
+                    return response;
                 }
             }
-            return new TriggerResult() { Processed = false };
+            return new TriggerResult() { Sender = user, Processed = false };
+        }
+
+        /// <summary>
+        /// Processes a command result object, adding all output to the logs
+        /// and sending any whispers or chat messages triggered by the command.
+        /// </summary>
+        /// <param name="result">The command result object.</param>
+        /// <param name="irc">The twitch irc client to send messages through.</param>
+        /// <param name="twitchClient">The twitch API client to send whispers through.</param>
+        public async Task HandleResult(TriggerResult result, ITwitchIrcClient irc, ITwitchClient twitchClient)
+        {
+            if (result.Messages != null)
+            {
+                foreach (var responseMessage in result.Messages)
+                {
+                    irc.QueueMessage(responseMessage);
+                }
+            }
+            if (result.Whispers != null)
+            {
+                foreach (var triggerWhisper in result.Whispers)
+                {
+                    twitchClient.QueueWhisper(result.Sender, triggerWhisper);
+                }
+            }
+            if (result.TimeoutSender)
+            {
+                await twitchClient.TimeoutAsync(result.Sender, 1, result.TimeoutMessage);
+            }
         }
     }
 }

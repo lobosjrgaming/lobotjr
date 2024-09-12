@@ -14,8 +14,7 @@
         {
             if (obj != null && obj.GetType().Equals(GetType()))
             {
-                var other = obj as TableObject;
-                return other != null && other.Id == Id;
+                return obj is TableObject other && other.Id == Id;
             }
             return false;
         }

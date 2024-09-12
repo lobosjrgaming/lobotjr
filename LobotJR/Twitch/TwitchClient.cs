@@ -22,17 +22,25 @@ namespace LobotJR.Twitch
     public class TwitchClient : ITwitchClient
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-        private List<string> Blacklist = new List<string>();
+        private readonly List<string> Blacklist = new List<string>();
 
-        private WhisperQueue Queue;
-        private ClientData ClientData;
-        private TokenData TokenData;
+        private readonly WhisperQueue Queue;
+        private readonly ClientData ClientData;
+        private readonly TokenData TokenData;
 
-        public TwitchClient(IRepositoryManager repositoryManager, ClientData clientData, TokenData tokenData)
+        public TwitchClient(IConnectionManager connectionManager, SettingsManager settingsManager, ClientData clientData, TokenData tokenData)
         {
-            Queue = new WhisperQueue(repositoryManager, 3, 100);
+            Queue = new WhisperQueue(connectionManager, settingsManager, 3, 100);
             ClientData = clientData;
             TokenData = tokenData;
+        }
+
+        /// <summary>
+        /// Initializes properties that require database access.
+        /// </summary>
+        public void Initialize()
+        {
+            Queue.UpdateMaxRecipients();
         }
 
         private async Task<RestResponse<TokenResponse>> RefreshToken(TokenResponse token)
@@ -58,7 +66,7 @@ namespace LobotJR.Twitch
                 {
                     if (response.ErrorException != null || response.ErrorMessage != null)
                     {
-                        throw new Exception($"Encountered an exception trying to refresh the token for {TokenData.ChatUser}. {response.ErrorMessage}. {response.ErrorException.ToString()}");
+                        throw new Exception($"Encountered an exception trying to refresh the token for {TokenData.ChatUser}. {response.ErrorMessage}. {response.ErrorException}");
                     }
                     throw new Exception($"Encountered an unexpected response trying to refresh the token for {TokenData.ChatUser}. {response.StatusCode}: {response.Content}");
                 }
@@ -72,7 +80,7 @@ namespace LobotJR.Twitch
                 {
                     if (response.ErrorException != null || response.ErrorMessage != null)
                     {
-                        throw new Exception($"Encountered an exception trying to refresh the token for {TokenData.ChatUser}. {response.ErrorMessage}. {response.ErrorException.ToString()}");
+                        throw new Exception($"Encountered an exception trying to refresh the token for {TokenData.ChatUser}. {response.ErrorMessage}. {response.ErrorException}");
                     }
                     throw new Exception($"Encountered an unexpected response trying to refresh the token for {TokenData.BroadcastUser}. {response.StatusCode}: {response.Content}");
                 }
@@ -169,18 +177,6 @@ namespace LobotJR.Twitch
         }
 
         /// <summary>
-        /// Times out a user synchronously.
-        /// </summary>
-        /// <param name="user">The user object of the user to timeout.</param>
-        /// <param name="duration">The duration of the timeout. Null for a permanent ban.</param>
-        /// <param name="message">The message to send along with the timeout.</param>
-        /// <returns>True if the timeout was executed successfully.</returns>
-        public bool Timeout(User user, int? duration, string message)
-        {
-            return TimeoutAsync(user, duration, message).GetAwaiter().GetResult();
-        }
-
-        /// <summary>
         /// Gets the details of all subscribers to the broadcast user.
         /// </summary>
         /// <returns>A collection of subscription responses from Twitch.</returns>
@@ -254,8 +250,11 @@ namespace LobotJR.Twitch
             var results = await Users.Get(TokenData.BroadcastToken, ClientData, usernames);
             if (results.Any(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized))
             {
-                var failure = results.FirstOrDefault(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized);
-                Logger.Warn("Encountered an unexpected response looking up userids: {statusCode}: {content}", failure.StatusCode, failure.Content);
+                var failures = results.Where(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized);
+                foreach (var failure in failures)
+                {
+                    Logger.Warn("Encountered an unexpected response looking up userids: {statusCode}: {content}. From: {request}", failure.StatusCode, failure.Content, failure.ResponseUri);
+                }
                 return new List<UserResponseData>();
             }
             return results.Where(x => x.Data != null && x.Data.Data != null).SelectMany(x => x.Data.Data);

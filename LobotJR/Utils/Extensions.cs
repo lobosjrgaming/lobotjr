@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace LobotJR.Utils
 {
@@ -48,7 +49,7 @@ namespace LobotJR.Utils
             }
         }
 
-        private static string generateCommonString(int amount, string unit)
+        private static string GenerateCommonString(int amount, string unit)
         {
             var value = unit;
             if (amount > 1)
@@ -70,18 +71,18 @@ namespace LobotJR.Utils
             var hours = (int)Math.Floor(current.TotalHours);
             if (hours > 0)
             {
-                return generateCommonString(hours, "hour");
+                return GenerateCommonString(hours, "hour");
             }
             var minutes = (int)Math.Floor(current.TotalMinutes);
             if (minutes > 0)
             {
-                return generateCommonString(minutes, "minute");
+                return GenerateCommonString(minutes, "minute");
             }
             var seconds = (int)Math.Floor(current.TotalSeconds);
-            return generateCommonString(seconds, "second");
+            return GenerateCommonString(seconds, "second");
         }
 
-        private static string capitalizeWord(string word)
+        private static string CapitalizeWord(string word)
         {
             if (word.Length < 2)
             {
@@ -101,9 +102,9 @@ namespace LobotJR.Utils
             if (separator != null)
             {
                 var words = current.Split(new string[] { separator }, StringSplitOptions.RemoveEmptyEntries);
-                return string.Join("", words.Select(x => capitalizeWord(x)));
+                return string.Join("", words.Select(x => CapitalizeWord(x)));
             }
-            return capitalizeWord(current);
+            return CapitalizeWord(current);
         }
 
         /// <summary>
@@ -215,6 +216,47 @@ namespace LobotJR.Utils
                 }
             }
             return -1;
+        }
+
+        /// <summary>
+        /// Returns a random element from a collection.
+        /// </summary>
+        /// <typeparam name="T">The collection type.</typeparam>
+        /// <param name="current"></param>
+        /// <param name="elements">A collection of type T.</param>
+        /// <returns>A randomly-selected element from that collection.</returns>
+        public static T RandomElement<T>(this Random current, IEnumerable<T> elements)
+        {
+            return elements.ElementAt(current.Next(elements.Count()));
+        }
+
+        /// <summary>
+        /// Returns a string representation of this timespan as a countdown in
+        /// human readable format.
+        /// </summary>
+        /// <param name="time"></param>
+        /// <returns>A string for display.</returns>
+        public static string ToReadableTime(this TimeSpan time)
+        {
+            if (time.TotalSeconds > 1)
+            {
+                var sb = new StringBuilder();
+                if (time.TotalMinutes > 1)
+                {
+                    if (time.TotalHours > 1)
+                    {
+                        if (time.TotalDays > 1)
+                        {
+                            sb.Append($"{(int)Math.Floor(time.TotalDays)} days, ");
+                        }
+                        sb.Append($"{(int)Math.Floor((float)time.Hours)} hours, ");
+                    }
+                    sb.Append($"{(int)Math.Floor((float)time.Minutes)} minutes, and ");
+                }
+                sb.Append($"{(int)Math.Floor((float)time.Seconds)} seconds");
+                return sb.ToString();
+            }
+            return "less than 1 second";
         }
     }
 }

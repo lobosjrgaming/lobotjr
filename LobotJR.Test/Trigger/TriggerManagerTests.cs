@@ -1,9 +1,13 @@
-﻿using LobotJR.Trigger;
+﻿using Autofac;
+using LobotJR.Command.Controller.Player;
+using LobotJR.Command.Controller.Twitch;
+using LobotJR.Test.Mocks;
+using LobotJR.Trigger;
 using LobotJR.Trigger.Responder;
 using LobotJR.Twitch.Model;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System.Collections.Generic;
-using Wolfcoins;
+using System;
+using System.Linq;
 
 namespace LobotJR.Test.Trigger
 {
@@ -11,22 +15,17 @@ namespace LobotJR.Test.Trigger
     public class TriggerManagerTests
     {
         private TriggerManager Manager;
-        private Currency Currency;
+        private PlayerController PlayerController;
+        private UserController UserController;
+        private BlockLinks Trigger;
 
         [TestInitialize]
         public void Initialize()
         {
-            Currency = new Currency();
-            Currency.xpList = new Dictionary<string, int>
-            {
-                { "Level1", Currency.XPForLevel(1) },
-                { "Level2", Currency.XPForLevel(2) }
-            };
-            Manager = new TriggerManager(new ITriggerResponder[]
-            {
-                new BlockLinks(Currency),
-                new NoceanMan()
-            });
+            Manager = AutofacMockSetup.Container.Resolve<TriggerManager>();
+            PlayerController = AutofacMockSetup.Container.Resolve<PlayerController>();
+            UserController = AutofacMockSetup.Container.Resolve<UserController>();
+            Trigger = AutofacMockSetup.Container.Resolve<BlockLinks>();
         }
 
         [TestMethod]
@@ -40,7 +39,10 @@ namespace LobotJR.Test.Trigger
         [TestMethod]
         public void TriggerManagerBlocksLinksForUsersUnderLevel2()
         {
-            var response = Manager.ProcessTrigger("butt.ass", new User("Level1", ""));
+            var user = new User("Level1", "1000");
+            var player = PlayerController.GetPlayerByUser(user);
+            player.Level = 1;
+            var response = Manager.ProcessTrigger("butt.ass", user);
             Assert.IsTrue(response.Processed);
             Assert.IsTrue(response.TimeoutSender);
         }
@@ -48,15 +50,36 @@ namespace LobotJR.Test.Trigger
         [TestMethod]
         public void TriggerManagerAllowsLinksForSubs()
         {
-            var response = Manager.ProcessTrigger("butt.ass", new User("Sub", "") { IsSub = true });
-            Assert.IsNull(response);
+            var user = UserController.GetUserByName("Sub");
+            var response = Manager.ProcessTrigger("butt.ass", user);
+            Assert.IsFalse(response.Processed);
         }
 
         [TestMethod]
         public void TriggerManagerAllowsLinksForLevel2()
         {
-            var response = Manager.ProcessTrigger("butt.ass", new User("Level2", ""));
-            Assert.IsNull(response);
+            var user = new User("Level2", "2000");
+            var player = PlayerController.GetPlayerByUser(user);
+            player.Level = 2;
+            var response = Manager.ProcessTrigger("butt.ass", user);
+            Assert.IsFalse(response.Processed);
+        }
+
+        [TestMethod]
+        public void TriggerManagerDoesNotSendMessagesOnRepeatTriggers()
+        {
+            var user = new User("Level1", "1000");
+            var player = PlayerController.GetPlayerByUser(user);
+            player.Level = 1;
+            Trigger.LastTrigger = DateTime.Now - TimeSpan.FromMinutes(1);
+            var response = Manager.ProcessTrigger("butt.ass", user);
+            Assert.IsTrue(response.Processed);
+            Assert.IsTrue(response.TimeoutSender);
+            Assert.IsTrue(response.Messages.Any());
+            response = Manager.ProcessTrigger("butt.ass", user);
+            Assert.IsTrue(response.Processed);
+            Assert.IsTrue(response.TimeoutSender);
+            Assert.IsFalse(response.Messages.Any());
         }
     }
 }

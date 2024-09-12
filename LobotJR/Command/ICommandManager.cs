@@ -1,9 +1,8 @@
-﻿using LobotJR.Command.Module;
-using LobotJR.Command.System.Twitch;
-using LobotJR.Data;
+﻿using LobotJR.Command.View;
 using LobotJR.Twitch;
 using LobotJR.Twitch.Model;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace LobotJR.Command
 {
@@ -13,27 +12,18 @@ namespace LobotJR.Command
     public interface ICommandManager
     {
         /// <summary>
-        /// Event raised when a module sends a push notification.
+        /// Event raised when a view sends a push notification.
         /// </summary>
         event PushNotificationHandler PushNotifications;
-
-        /// <summary>
-        /// Repository manager for access to data.
-        /// </summary>
-        IRepositoryManager RepositoryManager { get; }
-        /// <summary>
-        /// User lookup service used to translate between usernames and user ids.
-        /// </summary>
-        UserSystem UserSystem { get; }
         /// <summary>
         /// List of ids for registered commands.
         /// </summary>
         IEnumerable<string> Commands { get; }
 
         /// <summary>
-        /// Initializes all registered command modules.
+        /// Initializes all registered command views.
         /// </summary>
-        void InitializeModules();
+        void InitializeViews();
         /// <summary>
         /// Checks if a command id exists or is a valid wildcard pattern.
         /// </summary>
@@ -56,6 +46,6 @@ namespace LobotJR.Command
         /// <param name="result">The command result object.</param>
         /// <param name="irc">The twitch irc client to send messages through.</param>
         /// <param name="twitchClient">The twitch API client to send whispers through.</param>
-        void HandleCommandResult(string whisperMessage, CommandResult result, ITwitchIrcClient irc, ITwitchClient twitchClient);
+        Task HandleResult(string whisperMessage, CommandResult result, ITwitchIrcClient irc, ITwitchClient twitchClient);
     }
 }

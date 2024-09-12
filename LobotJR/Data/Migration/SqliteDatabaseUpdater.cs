@@ -5,6 +5,7 @@ using System.Configuration;
 using System.Data.Entity;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace LobotJR.Data.Migration
 {
@@ -54,7 +55,10 @@ namespace LobotJR.Data.Migration
                     CurrentVersion = SemanticVersion.Parse(appSettings.DatabaseVersion);
                     Context = tempContext;
                 }
-                catch { }
+                catch
+                {
+                    Context = new SqliteDeprecatedContext();
+                }
             }
         }
 
@@ -75,7 +79,10 @@ namespace LobotJR.Data.Migration
         {
             try
             {
+                Context.Database.Connection.Close();
+                Context.Database.Connection.Dispose();
                 Context.Dispose();
+                GC.Collect();
                 File.Delete(databaseFile);
                 File.Move(backupFile, databaseFile);
             }
@@ -86,13 +93,13 @@ namespace LobotJR.Data.Migration
             return true;
         }
 
-        private DatabaseMigrationResult ProcessDatabaseUpdates(DbContext context, SemanticVersion currentVersion)
+        private async Task<DatabaseMigrationResult> ProcessDatabaseUpdates(DbContext context, SemanticVersion currentVersion)
         {
             var result = new DatabaseMigrationResult { PreviousVersion = currentVersion };
             var updates = DatabaseUpdates.Where(x => currentVersion == null && x.FromVersion == null || x.FromVersion >= currentVersion).OrderBy(x => x.FromVersion);
             foreach (var update in updates)
             {
-                var updateResult = update.Update(context);
+                var updateResult = await update.Update(context);
                 result.DebugOutput.Add($"Updating database version from {update.FromVersion} to {update.ToVersion}...");
                 if (updateResult.Success)
                 {
@@ -115,13 +122,13 @@ namespace LobotJR.Data.Migration
         /// restored.
         /// </summary>
         /// <returns>The result of the migration attempt.</returns>
-        public DatabaseMigrationResult UpdateDatabase()
+        public async Task<DatabaseMigrationResult> UpdateDatabase()
         {
             if (CurrentVersion < LatestVersion)
             {
                 var databaseFile = GetDatabaseFile();
                 var backup = BackupDatabase(databaseFile, CurrentVersion);
-                var results = ProcessDatabaseUpdates(Context, CurrentVersion);
+                var results = await ProcessDatabaseUpdates(Context, CurrentVersion);
                 if (!results.Success)
                 {
                     RestoreBackup(backup, databaseFile);
@@ -144,14 +151,11 @@ namespace LobotJR.Data.Migration
             var metadata = metadataRepo.Read().FirstOrDefault();
             if (metadata == null)
             {
-                metadataRepo.Create(new Metadata());
+                metadata = new Metadata();
+                metadataRepo.Create(metadata);
             }
-            else
-            {
-                metadata.DatabaseVersion = LatestVersion.ToString();
-                metadata.LastSchemaUpdate = DateTime.Now;
-                metadataRepo.Update(metadata);
-            }
+            metadata.DatabaseVersion = LatestVersion.ToString();
+            metadata.LastSchemaUpdate = DateTime.Now;
             metadataRepo.Commit();
             updateContext.Dispose();
         }

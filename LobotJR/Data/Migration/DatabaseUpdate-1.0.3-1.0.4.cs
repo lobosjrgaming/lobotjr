@@ -1,6 +1,7 @@
 ﻿using NuGet.Versioning;
 using System;
 using System.Data.Entity;
+using System.Threading.Tasks;
 
 namespace LobotJR.Data.Migration
 {
@@ -11,7 +12,7 @@ namespace LobotJR.Data.Migration
         public bool UsesMetadata => true;
 
 
-        public DatabaseMigrationResult Update(DbContext context)
+        public Task<DatabaseMigrationResult> Update(DbContext context)
         {
             var result = new DatabaseMigrationResult { Success = true };
             var commands = new string[]
@@ -30,10 +31,11 @@ namespace LobotJR.Data.Migration
                 }
                 catch (Exception e)
                 {
+                    result.Success = false;
                     result.DebugOutput.Add($"Exception: {e}");
                 }
             }
-            return result;
+            return Task.FromResult(result);
         }
     }
 }

@@ -51,20 +51,36 @@ namespace LobotJR.Twitch.Model
         /// True if the message is a usernotice alert.
         /// </summary>
         public bool IsUserNotice { get { return "usernotice".Equals(Command, StringComparison.OrdinalIgnoreCase); } }
+        /// <summary>
+        /// True if the user who sent the message is a moderator on the channel
+        /// the message was sent to.
+        /// </summary>
+        public bool IsMod { get { if (Tags.TryGetValue("mod", out var value)) { return value == "1"; } return false; } }
+        /// <summary>
+        /// True if the user who sent the message is a VIP on the channel the
+        /// message was sent to.
+        /// </summary>
+        public bool IsVip { get { if (Tags.TryGetValue("vip", out var value)) { return value == "1"; } return false; } }
+        /// <summary>
+        /// True if the user who sent the message is a subscriber on the
+        /// channel the message was sent to.
+        /// </summary>
+        public bool IsSub { get { if (Tags.TryGetValue("subscriber", out var value)) { return value == "1"; } return false; } }
 
         public static IrcMessage Parse(string message)
         {
             var content = MessagePattern.Match(message);
             if (content.Success)
             {
-                var output = new IrcMessage();
-                output.Tags = content.Groups["tags"].Value
+                var output = new IrcMessage
+                {
+                    Tags = content.Groups["tags"].Value
                     .Split(';')
                     .Select(x => x.Split('='))
                     .Where(x => x.Length == 2)
-                    .ToDictionary(x => x[0], x => x[1]);
-                string id = null;
-                output.Tags.TryGetValue("user-id", out id);
+                    .ToDictionary(x => x[0], x => x[1])
+                };
+                output.Tags.TryGetValue("user-id", out string id);
                 output.UserId = id;
                 output.UserName = content.Groups["user"].Value;
                 output.Command = content.Groups["command"].Value;
@@ -77,9 +93,11 @@ namespace LobotJR.Twitch.Model
                 content = PingPattern.Match(message);
                 if (content.Success)
                 {
-                    var output = new IrcMessage();
-                    output.Command = content.Groups["command"].Value;
-                    output.Message = content.Groups["message"].Value;
+                    var output = new IrcMessage
+                    {
+                        Command = content.Groups["command"].Value,
+                        Message = content.Groups["message"].Value
+                    };
                     return output;
                 }
             }

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using LobotJR.Twitch.Model;
+using System.Collections.Generic;
 
 namespace LobotJR.Trigger
 {
@@ -7,6 +8,10 @@ namespace LobotJR.Trigger
     /// </summary>
     public class TriggerResult
     {
+        /// <summary>
+        /// The user who sent the command that triggered this result.
+        /// </summary>
+        public User Sender { get; set; }
         /// <summary>
         /// Whether or not the trigger was processed.
         /// </summary>

@@ -1,4 +1,5 @@
 ﻿using LobotJR.Data;
+using System;
 
 namespace LobotJR.Twitch.Model
 {
@@ -32,6 +33,14 @@ namespace LobotJR.Twitch.Model
         /// will be for the streamer and bot accounts.
         /// </summary>
         public bool IsAdmin { get; set; }
+        /// <summary>
+        /// If the user has been banned, the time the ban was enacted.
+        /// </summary>
+        public DateTime? BanTime { get; set; }
+        /// <summary>
+        /// The reason the user was banned.
+        /// </summary>
+        public string BanMessage { get; set; }
 
         public User() { }
 

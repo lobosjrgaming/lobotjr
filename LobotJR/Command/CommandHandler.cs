@@ -1,4 +1,4 @@
-﻿using LobotJR.Command.Module;
+﻿using LobotJR.Command.View;
 using System.Collections.Generic;
 using System.Reflection;
 
@@ -44,7 +44,7 @@ namespace LobotJR.Command
         /// <param name="name">The name of the command.</param>
         /// <param name="methodInfo">Reflection data for the method executed by the command.</param>
         /// <param name="commandStrings">The strings that be used to trigger the command.</param>
-        public CommandHandler(string name, ICommandModule target, MethodInfo methodInfo, params string[] commandStrings)
+        public CommandHandler(string name, ICommandView target, MethodInfo methodInfo, params string[] commandStrings)
         {
             Name = name;
             Executor = new CommandExecutor(target, methodInfo);
@@ -71,7 +71,7 @@ namespace LobotJR.Command
         /// <param name="methodInfo">Reflection data for the method executed by the command.</param>
         /// <param name="compactMethodInfo">Reflection data for the method executed by the command in compact mode.</param>
         /// <param name="commandStrings">The strings that be used to trigger the command.</param>
-        public CommandHandler(string name, ICommandModule target, MethodInfo methodInfo, MethodInfo compactMethodInfo, params string[] commandStrings) : this(name, target, methodInfo, commandStrings)
+        public CommandHandler(string name, ICommandView target, MethodInfo methodInfo, MethodInfo compactMethodInfo, params string[] commandStrings) : this(name, target, methodInfo, commandStrings)
         {
             CompactExecutor = new CompactExecutor(target, compactMethodInfo);
         }

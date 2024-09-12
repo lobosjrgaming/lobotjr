@@ -11,10 +11,14 @@ namespace LobotJR.Shared.Utility
 
         T IDeserializer.Deserialize<T>(RestResponse response)
         {
-            var resolver = new DefaultContractResolver();
-            resolver.NamingStrategy = new SnakeCaseNamingStrategy(true, false, true);
-            var settings = new JsonSerializerSettings();
-            settings.ContractResolver = resolver;
+            var resolver = new DefaultContractResolver
+            {
+                NamingStrategy = new SnakeCaseNamingStrategy(true, false, true)
+            };
+            var settings = new JsonSerializerSettings
+            {
+                ContractResolver = resolver
+            };
             return JsonConvert.DeserializeObject<T>(response.Content, settings);
         }
     }

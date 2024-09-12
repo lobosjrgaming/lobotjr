@@ -47,12 +47,6 @@ namespace LobotJR.Command.Model.Fishing
         /// The flavor text given to describe the fish.
         /// </summary>
         public string FlavorText { get; set; }
-
-        public override bool Equals(object obj)
-        {
-            var other = obj as Fish;
-            return other != null && this.Id == other.Id;
-        }
     }
 
     public class FishRarity : TableObject

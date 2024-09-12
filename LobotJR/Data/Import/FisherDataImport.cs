@@ -1,7 +1,5 @@
-﻿using LobotJR.Command.Model.Fishing;
-using LobotJR.Command.System.Twitch;
-using LobotJR.Shared.Authentication;
-using LobotJR.Shared.Client;
+﻿using LobotJR.Command.Controller.Twitch;
+using LobotJR.Command.Model.Fishing;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -65,34 +63,22 @@ namespace LobotJR.Data.Import
         }
 
         /// <summary>
-        /// Fetches the twitch user ids for each username in a collection.
-        /// </summary>
-        /// <param name="usernames">A collection of twitch usernames.</param>
-        /// <param name="userSystem">The user lookup system to convert usernames into user ids.</param>
-        /// <param name="token">The OAuth token object for making twitch API calls.</param>
-        /// <param name="clientData">The client data for the app executing the request.</param>
-        public static void FetchUserIds(IEnumerable<string> usernames, UserSystem userSystem, TokenResponse token, ClientData clientData)
-        {
-            var users = userSystem.GetUsersByNames(usernames.ToArray());
-        }
-
-        /// <summary>
         /// Read the data from the legacy flat-file format, add them to the new
         /// repository, and commit the new data.
         /// </summary>
         /// <param name="fisherList">A dictionary mapping legacy personal leaderboards to twitch usernames.</param>
         /// <param name="fishRepository">The repository containing the fish data.</param>
         /// <param name="leaderboardRepository">The repository containing the personal leaderboard data.</param>
-        /// <param name="userSystem">The user lookup system to convert the stored usernames into user ids.</param>
+        /// <param name="userController">The user lookup controller to convert the stored usernames into user ids.</param>
         /// <exception cref="DirectoryNotFoundException">If the path to fisherDataPath does not exist.</exception>
         /// <exception cref="IOException">If the attempt to access the file at fisherDataPath throws an IOException.</exception>
         /// <exception cref="FileNotFoundException">If the file at fisherDataPath does not exist.</exception>
-        public static void ImportFisherDataIntoSql(Dictionary<string, LegacyFisher> fisherList, IRepository<Fish> fishRepository, IRepository<Catch> leaderboardRepository, UserSystem userSystem)
+        public static void ImportFisherDataIntoSql(Dictionary<string, LegacyFisher> fisherList, IRepository<Fish> fishRepository, IRepository<Catch> leaderboardRepository, UserController userController)
         {
             foreach (var fisher in fisherList)
             {
                 var records = new List<Catch>();
-                var fisherUserId = userSystem.GetUserByName(fisher.Key)?.TwitchId;
+                var fisherUserId = userController.GetUserByName(fisher.Key)?.TwitchId;
                 if (fisherUserId != null)
                 {
                     var existingRecords = leaderboardRepository.Read(x => x.UserId.Equals(fisherUserId)).ToList();
@@ -129,13 +115,13 @@ namespace LobotJR.Data.Import
         /// <param name="fishingLeaderboard">A list of catch data containing leaderboard records for each fish.</param>
         /// <param name="leaderboardRepository">The repository to import the leaderboard data to.</param>
         /// <param name="fishRepository">The repository containing the fish data.</param>
-        /// <param name="userSystem">The user lookup system to convert the stored usernames into user ids.</param>
-        public static void ImportLeaderboardDataIntoSql(List<LegacyCatch> fishingLeaderboard, IRepository<LeaderboardEntry> leaderboardRepository, IRepository<Fish> fishRepository, UserSystem userSystem)
+        /// <param name="userController">The user lookup system to convert the stored usernames into user ids.</param>
+        public static void ImportLeaderboardDataIntoSql(List<LegacyCatch> fishingLeaderboard, IRepository<LeaderboardEntry> leaderboardRepository, IRepository<Fish> fishRepository, UserController userController)
         {
             foreach (var record in fishingLeaderboard)
             {
                 var existing = leaderboardRepository.Read(x => x.Fish.Id == record.ID).FirstOrDefault();
-                var userId = userSystem.GetUserByName(record.caughtBy)?.TwitchId;
+                var userId = userController.GetUserByName(record.caughtBy)?.TwitchId;
                 if (existing == null && userId != null)
                 {
                     leaderboardRepository.Create(new LeaderboardEntry()
@@ -151,6 +137,7 @@ namespace LobotJR.Data.Import
         }
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Needed to load in legacy data for conversion to modern standards")]
     public class LegacyFisher
     {
         public string username { get; set; } = "";
@@ -166,6 +153,7 @@ namespace LobotJR.Data.Import
         public DateTime timeSinceHook { get; set; }
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Needed to load in legacy data for conversion to modern standards")]
     public class LegacyCatch : LegacyFish
     {
         public float length { get; set; } = -1;

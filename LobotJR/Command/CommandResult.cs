@@ -42,22 +42,44 @@ namespace LobotJR.Command
         /// </summary>
         public IList<string> Debug { get; set; } = new List<string>();
 
+        /// <summary>
+        /// Creates a default command result. This indicates the command was
+        /// not processed successfully.
+        /// </summary>
         public CommandResult()
         {
             Processed = false;
         }
 
+        /// <summary>
+        /// Creates a command result indicating a command was processed
+        /// successfully, but has no response messages.
+        /// </summary>
+        /// <param name="processed">True if the command was processed
+        /// successfully.</param>
         public CommandResult(bool processed)
         {
             Processed = processed;
         }
 
-        public CommandResult(User sender)
+        /// <summary>
+        /// Creates a command result indicating a command was processed
+        /// successfully, and has messages to be sent to chat.
+        /// </summary>
+        /// <param name="processed">True if the command was processed
+        /// successfully.</param>
+        /// <param name="messages">A collection of messages to send to chat.</param>
+        public CommandResult(bool processed, params string[] messages)
         {
-            Processed = true;
-            Sender = sender;
+            Processed = processed;
+            Messages = new List<string>(messages);
         }
 
+        /// <summary>
+        /// Creates a command result to use for push notification.
+        /// </summary>
+        /// <param name="sender">The user the messages should be sent to.</param>
+        /// <param name="responses">A collection of messages to be sent to the user.</param>
         public CommandResult(User sender, params string[] responses)
         {
             Processed = true;
@@ -65,12 +87,22 @@ namespace LobotJR.Command
             Responses = new List<string>(responses);
         }
 
+        /// <summary>
+        /// Creates a result for a processed command.
+        /// </summary>
+        /// <param name="responses">A collection of messages to send to the
+        /// user who invoked the command.</param>
         public CommandResult(params string[] responses)
         {
             Processed = true;
             Responses = new List<string>(responses);
         }
 
+        /// <summary>
+        /// Creates a result for a command that threw an exception.
+        /// </summary>
+        /// <param name="errors">A collection of exceptions that were thrown by
+        /// this command.</param>
         public CommandResult(params Exception[] errors)
         {
             Processed = true;

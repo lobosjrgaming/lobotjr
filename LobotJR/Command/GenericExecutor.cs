@@ -1,4 +1,4 @@
-﻿using LobotJR.Command.Module;
+﻿using LobotJR.Command.View;
 using LobotJR.Twitch.Model;
 using System;
 using System.Collections.Generic;
@@ -10,18 +10,35 @@ namespace LobotJR.Command
 {
     public class CommandExecutor : GenericExecutor<CommandResult>
     {
-        public CommandExecutor(ICommandModule target, MethodInfo methodInfo) : base(target, methodInfo)
+        public CommandExecutor(ICommandView target, MethodInfo methodInfo) : base(target, methodInfo, false)
         {
             if (methodInfo.ReturnType != typeof(CommandResult))
             {
                 throw new Exception($"Delegate for command executor must have return type of {typeof(CommandResult)}");
             }
         }
+        public CommandExecutor(ICommandView target, MethodInfo methodInfo, bool ignoreParse) : base(target, methodInfo, ignoreParse)
+        {
+            if (methodInfo.ReturnType != typeof(CommandResult))
+            {
+                throw new Exception($"Delegate for command executor must have return type of {typeof(CommandResult)}");
+            }
+            if (ignoreParse)
+            {
+                var parameters = methodInfo.GetParameters();
+                if ((parameters.Length == 1 && parameters[0].ParameterType != typeof(string))
+                    || (parameters.Length == 2 && parameters[1].ParameterType != typeof(string))
+                    || parameters.Length > 2 || parameters.Length < 1)
+                {
+                    throw new Exception($"Delegate for command executor that ignores parse must have one string parameter to receive unparsed input.");
+                }
+            }
+        }
     }
 
     public class CompactExecutor : GenericExecutor<ICompactResponse>
     {
-        public CompactExecutor(ICommandModule target, MethodInfo methodInfo) : base(target, methodInfo)
+        public CompactExecutor(ICommandView target, MethodInfo methodInfo) : base(target, methodInfo, false)
         {
             if (methodInfo.ReturnType != typeof(ICompactResponse) && methodInfo.ReturnType.GetInterface(nameof(ICompactResponse)) == null)
             {
@@ -32,18 +49,20 @@ namespace LobotJR.Command
 
     public class GenericExecutor<T> where T : class
     {
-        private object Target;
-        private MethodInfo MethodInfo;
-        private ParameterInfo[] Parameters;
-        private int MinParams;
-        private int MaxParams;
-        private bool HasUserParam;
+        private readonly object Target;
+        private readonly MethodInfo MethodInfo;
+        private readonly ParameterInfo[] Parameters;
+        private readonly int MinParams;
+        private readonly int MaxParams;
+        private readonly bool HasUserParam;
+        private readonly bool SkipParse;
 
-        public GenericExecutor(object target, MethodInfo methodInfo)
+        public GenericExecutor(object target, MethodInfo methodInfo, bool skipParse)
         {
             Target = target;
             MethodInfo = methodInfo;
             Parameters = MethodInfo.GetParameters();
+            SkipParse = skipParse;
             MaxParams = Parameters.Length;
             MinParams = MaxParams - Parameters.Count(x => x.HasDefaultValue);
             var userParams = Parameters.Count(x => x.ParameterType == typeof(User));
@@ -145,12 +164,28 @@ namespace LobotJR.Command
 
         private string SimplifyType(Type type)
         {
-            return type.Name.Substring(type.Name.LastIndexOf('.') + 1);
+            if (type == typeof(int) || type == typeof(long))
+            {
+                return "int ";
+            }
+            if (type == typeof(float) || type == typeof(double))
+            {
+                return "float ";
+            }
+            if (type == typeof(bool))
+            {
+                return "bool ";
+            }
+            if (type == typeof(string))
+            {
+                return string.Empty;
+            }
+            return $"{type.Name.Substring(type.Name.LastIndexOf('.') + 1)} ";
         }
 
         public string DescribeParameters()
         {
-            return string.Join(", ", MethodInfo.GetParameters().Where(x => x.ParameterType != typeof(User)).Select(x => $"{(x.HasDefaultValue ? "[optional]" : "")}{x.ParameterType.Name} {x.Name}"));
+            return string.Join(", ", MethodInfo.GetParameters().Where(x => x.ParameterType != typeof(User)).Select(x => $"{{{(x.HasDefaultValue ? "[optional]" : "")}{SimplifyType(x.ParameterType)}{x.Name}}}"));
         }
 
         public T Execute(User user, string parameterString)
@@ -159,44 +194,52 @@ namespace LobotJR.Command
             {
                 parameterString = string.Empty;
             }
-            var passed = SplitParams(parameterString).ToArray();
-            if (passed.Length < MinParams || passed.Length > MaxParams)
-            {
-                throw new ArgumentException($"Invalid parameters. Syntax: {DescribeParameters()}.");
-            }
 
             string typeExceptions = "";
             object[] toPass = new object[Parameters.Length];
-            var userAdjust = 0;
+            var paramAdjust = 0;
             if (HasUserParam)
             {
-                userAdjust = 1;
+                paramAdjust++;
                 toPass[0] = user;
             }
-
-            for (var i = 0; i < passed.Length; i++)
+            if (SkipParse)
             {
-                var param = passed[i];
-                var targetParam = Parameters[i + userAdjust];
-                if (TryChangeType(param, targetParam.ParameterType, out var result))
+                toPass[paramAdjust] = parameterString;
+                return MethodInfo.Invoke(Target, toPass) as T;
+            }
+            else
+            {
+                var passed = SplitParams(parameterString).ToArray();
+                if (passed.Length < MinParams || passed.Length > MaxParams)
                 {
-                    toPass[i + userAdjust] = result;
+                    throw new ArgumentException($"Invalid parameters. Syntax: {DescribeParameters()}.");
                 }
-                else
-                {
-                    typeExceptions += $"Can't convert {param} to {SimplifyType(targetParam.ParameterType)}.";
-                }
-            }
-            for (var i = passed.Length + userAdjust; i < MaxParams + userAdjust; i++)
-            {
-                toPass[i] = Type.Missing;
-            }
 
-            if (!string.IsNullOrWhiteSpace(typeExceptions))
-            {
-                throw new InvalidCastException($"Invalid parameters. {string.Join(" ", typeExceptions)}");
+                for (var i = 0; i < passed.Length; i++)
+                {
+                    var param = passed[i];
+                    var targetParam = Parameters[i + paramAdjust];
+                    if (TryChangeType(param, targetParam.ParameterType, out var result))
+                    {
+                        toPass[i + paramAdjust] = result;
+                    }
+                    else
+                    {
+                        typeExceptions += $"Can't convert {param} to {SimplifyType(targetParam.ParameterType)}.";
+                    }
+                }
+                for (var i = passed.Length + paramAdjust; i < MaxParams + paramAdjust; i++)
+                {
+                    toPass[i] = Type.Missing;
+                }
+
+                if (!string.IsNullOrWhiteSpace(typeExceptions))
+                {
+                    throw new InvalidCastException($"Invalid parameters. {string.Join(" ", typeExceptions)}");
+                }
+                return MethodInfo.Invoke(Target, toPass) as T;
             }
-            return MethodInfo.Invoke(Target, toPass) as T;
         }
     }
 }

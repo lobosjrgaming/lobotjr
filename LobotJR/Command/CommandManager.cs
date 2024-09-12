@@ -1,7 +1,5 @@
 ﻿using Autofac;
-using LobotJR.Command.Module;
-using LobotJR.Command.Module.AccessControl;
-using LobotJR.Command.System.Twitch;
+using LobotJR.Command.View;
 using LobotJR.Data;
 using LobotJR.Twitch;
 using LobotJR.Twitch.Model;
@@ -10,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace LobotJR.Command
 {
@@ -29,24 +28,17 @@ namespace LobotJR.Command
         private readonly Dictionary<string, CompactExecutor> compactIdToExecutorMap = new Dictionary<string, CompactExecutor>();
         private readonly List<string> whisperOnlyCommands = new List<string>();
         private readonly Dictionary<string, Regex> commandStringRegexMap = new Dictionary<string, Regex>();
+        private readonly IConnectionManager ConnectionManager;
 
         /// <summary>
-        /// Event raised when a module sends a push notification.
+        /// Event raised when a view sends a push notification.
         /// </summary>
         public event PushNotificationHandler PushNotifications;
 
         /// <summary>
-        /// Command modules to be loaded.
+        /// Command views to be loaded.
         /// </summary>
-        public IEnumerable<ICommandModule> CommandModules { get; private set; }
-        /// <summary>
-        /// Repository manager for access to stored data types.
-        /// </summary>
-        public IRepositoryManager RepositoryManager { get; set; }
-        /// <summary>
-        /// User lookup service used to translate between usernames and user ids.
-        /// </summary>
-        public UserSystem UserSystem { get; private set; }
+        public IEnumerable<ICommandView> CommandViews { get; private set; }
         /// <summary>
         /// List of ids for registered commands.
         /// </summary>
@@ -57,6 +49,16 @@ namespace LobotJR.Command
                 return commandIdToExecutorMap.Keys
                     .Union(compactIdToExecutorMap.Keys)
                     .ToArray();
+            }
+        }
+
+        public CommandManager(IEnumerable<ICommandView> views, IEnumerable<IMetaController> metaControllers, IConnectionManager connectionManager)
+        {
+            CommandViews = views;
+            ConnectionManager = connectionManager;
+            foreach (var meta in metaControllers)
+            {
+                meta.CommandManager = this;
             }
         }
 
@@ -93,23 +95,19 @@ namespace LobotJR.Command
             }
         }
 
-        private void AddModule(ICommandModule module)
+        private void AddView(ICommandView view)
         {
-            //This is a bad hack to get it working quickly, need a better way to provide back access
-            //Create an access control system that can take the command manager as a parameter to get proper access
-            if (module is AccessControlAdmin)
+            if (view is IPushNotifier)
             {
-                (module as AccessControlAdmin).CommandManager = this;
+                (view as IPushNotifier).PushNotification += View_PushNotification;
             }
 
-            module.PushNotification += Module_PushNotification;
-
             var exceptions = new List<Exception>();
-            foreach (var command in module.Commands)
+            foreach (var command in view.Commands)
             {
                 try
                 {
-                    AddCommand(command, module.Name);
+                    AddCommand(command, view.Name);
                 }
                 catch (AggregateException e)
                 {
@@ -119,22 +117,22 @@ namespace LobotJR.Command
 
             if (exceptions.Count > 0)
             {
-                throw new AggregateException("Failed to load module", exceptions);
+                throw new AggregateException($"Failed to load view {view.Name}", exceptions);
             }
         }
 
-        private void Module_PushNotification(User user, CommandResult commandResult)
+        private void View_PushNotification(User user, CommandResult commandResult)
         {
             PushNotifications?.Invoke(user, commandResult);
         }
 
         private bool CanUserExecute(string commandId, User user)
         {
-            var restrictions = RepositoryManager.Restrictions.Read().Where(x => Restriction.CoversCommand(x.Command, commandId));
+            var restrictions = ConnectionManager.CurrentConnection.Restrictions.Read().Where(x => Restriction.CoversCommand(x.Command, commandId));
             if (restrictions.Any())
             {
                 var groupIds = restrictions.Select(x => x.GroupId).ToList();
-                var groups = RepositoryManager.AccessGroups.Read().Where(x => groupIds.Contains(x.Id));
+                var groups = ConnectionManager.CurrentConnection.AccessGroups.Read().Where(x => groupIds.Contains(x.Id));
 
                 if ((user.IsMod && groups.Any(x => x.IncludeMods))
                     || (user.IsVip && groups.Any(x => x.IncludeVips))
@@ -144,7 +142,7 @@ namespace LobotJR.Command
                     return true;
                 }
 
-                var enrollments = RepositoryManager.Enrollments.Read().Where(x => x.UserId.Equals(user.TwitchId, StringComparison.OrdinalIgnoreCase));
+                var enrollments = ConnectionManager.CurrentConnection.Enrollments.Read().Where(x => x.UserId.Equals(user.TwitchId, StringComparison.OrdinalIgnoreCase));
                 return enrollments.Any(x => groupIds.Contains(x.GroupId));
             }
             return true;
@@ -155,24 +153,17 @@ namespace LobotJR.Command
             return !whisperOnlyCommands.Contains(commandId);
         }
 
-        public CommandManager(IEnumerable<ICommandModule> modules, IRepositoryManager repositoryManager, UserSystem userSystem)
-        {
-            CommandModules = modules;
-            RepositoryManager = repositoryManager;
-            UserSystem = userSystem;
-        }
-
         /// <summary>
-        /// Initializes all registered command modules.
+        /// Initializes all registered command views.
         /// </summary>
-        public void InitializeModules()
+        public void InitializeViews()
         {
             var exceptions = new List<Exception>();
-            foreach (var module in CommandModules)
+            foreach (var view in CommandViews)
             {
                 try
                 {
-                    AddModule(module);
+                    AddView(view);
                 }
                 catch (AggregateException e)
                 {
@@ -223,7 +214,7 @@ namespace LobotJR.Command
                 toSend += entry;
             }
             responses.Add(toSend);
-            return new CommandResult(responses.ToArray());
+            return new CommandResult(user, responses.ToArray());
         }
 
         private CommandResult TryExecuteCommand(CommandRequest request, User user)
@@ -305,6 +296,15 @@ namespace LobotJR.Command
                         }
                     };
                 }
+                if (user.BanTime != null)
+                {
+                    Logger.Debug("Ignoring banned user's command.");
+                    return new CommandResult()
+                    {
+                        Processed = true,
+                        Sender = user,
+                    };
+                }
                 request.CommandId = commandId;
                 request.User = user;
 
@@ -325,11 +325,11 @@ namespace LobotJR.Command
         /// <param name="result">The command result object.</param>
         /// <param name="irc">The twitch irc client to send messages through.</param>
         /// <param name="twitchClient">The twitch API client to send whispers through.</param>
-        public void HandleCommandResult(string whisperMessage, CommandResult result, ITwitchIrcClient irc, ITwitchClient twitchClient)
+        public async Task HandleResult(string whisperMessage, CommandResult result, ITwitchIrcClient irc, ITwitchClient twitchClient)
         {
             if (result.TimeoutSender)
             {
-                twitchClient.Timeout(result.Sender, 1, result.TimeoutMessage);
+                await twitchClient.TimeoutAsync(result.Sender, 1, result.TimeoutMessage);
             }
             if (result.Responses?.Count > 0)
             {

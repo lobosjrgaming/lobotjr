@@ -5,6 +5,9 @@ using System.Reflection;
 
 namespace LobotJR.Utils
 {
+    /// <summary>
+    /// This is a static class that is used to get the MethodInfo object from a method when building command handlers.
+    /// </summary>
     public static class CommandMethod
     {
         public static MethodInfo GetInfo(Func<CommandResult> func) { return func.Method; }
