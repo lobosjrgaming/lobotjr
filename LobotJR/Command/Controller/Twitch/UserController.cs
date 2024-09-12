@@ -80,7 +80,7 @@ namespace LobotJR.Command.Controller.Twitch
             var known = new List<User>();
             if (knownNames.Any())
             {
-                var knownUsers = allUsers.Join(knownNames, user => user.Username.ToLower(), name => name.ToLower(), (user, name) => user);
+                var knownUsers = allUsers.Join(knownNames, user => user.Username, name => name, (user, name) => user, StringComparer.OrdinalIgnoreCase);
                 known.AddRange(knownUsers);
             }
             if (missingNames.Any())
@@ -243,15 +243,12 @@ namespace LobotJR.Command.Controller.Twitch
             }
 
             var allUsers = userPairs.ToDictionary(x => x.Key, x => x.Value);
-            var existingUsers = ConnectionManager.CurrentConnection.Users.Read().Join(userPairs, user => user.TwitchId, pair => pair.Key, (user, pair) => new KeyValuePair<string, string>(user.TwitchId, user.Username));
+            var existingUsers = ConnectionManager.CurrentConnection.Users.Read().Intersect(allUsers.Select(x => new User(x.Value, x.Key))).ToDictionary(x => x.TwitchId, x => x.Username);
+            // var existingUsers = ConnectionManager.CurrentConnection.Users.Read().Join(userPairs, user => user.TwitchId, pair => pair.Key, (user, pair) => new KeyValuePair<string, string>(user.TwitchId, user.Username));
             // var existingUsers = ConnectionManager.CurrentConnection.Users.Read(x => allUsers.Keys.Contains(x.TwitchId)).ToDictionary(x => x.TwitchId, x => x.Username);
-            var newUsers = allUsers.Except(existingUsers, new KeyComparer<string, string>());
+            var newUsers = allUsers.Except(existingUsers);
 
-            foreach (var user in newUsers)
-            {
-                ConnectionManager.CurrentConnection.Users.Create(new User() { TwitchId = user.Key, Username = user.Value });
-            }
-            ConnectionManager.CurrentConnection.Users.Commit();
+            ConnectionManager.CurrentConnection.Users.BatchCreate(newUsers.Select(x => new User() { TwitchId = x.Key, Username = x.Value }), 1000, Logger, "user");
             var dbUsers = ConnectionManager.CurrentConnection.Users.Read().ToList();
 
             if (mods.Any())
@@ -322,7 +319,7 @@ namespace LobotJR.Command.Controller.Twitch
                 {
                     var elapsed = DateTime.Now - startTime;
                     var estimate = TimeSpan.FromMilliseconds(elapsed.TotalMilliseconds / processed * total) - elapsed;
-                    Logger.Info("{count} total user records written. {elapsed} time elapsed, {estimate} estimated remaining.", processed, elapsed.ToString("mm\\:ss"), estimate.ToString("d\\.hh\\:mm\\:ss"));
+                    Logger.Info("{count} total user records written. {elapsed} time elapsed, {estimate} estimated remaining.", processed, elapsed.ToString("hh\\:mm\\:ss"), estimate.ToString("hh\\:mm\\:ss"));
                     logTime = DateTime.Now;
                 }
                 var existing = all[id];
@@ -331,13 +328,15 @@ namespace LobotJR.Command.Controller.Twitch
                 {
                     existing.Username = update;
                     db.Users.Update(existing);
+                    output.Add(existing);
                 }
                 processed++;
             }
             db.Users.Commit();
             var usersToAdd = idsToAdd.Select(x => new User(tempUsers[x], x)).ToList();
-            db.Users.BatchCreate(usersToAdd, 1000, Logger, "user");
-            Logger.Info("Data for {count} users inserted into the database!", processed);
+            var batch = db.Users.BatchCreate(usersToAdd, 1000, Logger, "user");
+            output.AddRange(batch);
+            Logger.Info("Data for {count} users inserted into the database!", output.Count);
             return output;
         }
 

@@ -66,7 +66,7 @@ namespace LobotJR.Shared.User
                 {
                     var elapsed = DateTime.Now - start;
                     var estimate = elapsed - TimeSpan.FromMilliseconds(elapsed.TotalMilliseconds / cursor * total);
-                    Logger.Info("{count} total users processed. {elapsed} time elapsed, {estimate} estimated remaining.", cursor, elapsed.ToString("mm\\:ss"), estimate.ToString("d\\.hh\\:mm\\:ss"));
+                    Logger.Info("{count} total users processed. {elapsed} time elapsed, {estimate} estimated remaining.", cursor, elapsed.ToString("hh\\:mm\\:ss"), estimate.ToString("hh\\:mm\\:ss"));
                     logTime = DateTime.Now;
                 }
                 var client = RestUtils.CreateStandardClient();

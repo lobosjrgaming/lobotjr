@@ -2,6 +2,7 @@
 using LobotJR.Command;
 using LobotJR.Command.Controller.Dungeons;
 using LobotJR.Command.Controller.General;
+using LobotJR.Command.Controller.Player;
 using LobotJR.Command.Model.Dungeons;
 using LobotJR.Command.Model.Player;
 using LobotJR.Command.View;
@@ -124,6 +125,26 @@ namespace LobotJR.Test.Views.Dungeons
             var result = View.CreateParty(User);
             var response = result.Responses.First();
             Assert.IsTrue(response.Contains("outstanding invite"));
+        }
+
+        [TestMethod]
+        public void CreatePartyReturnsErrorIfUserIsTooLowLevel()
+        {
+            Player.Level = 0;
+            var result = View.CreateParty(User);
+            var response = result.Responses.First();
+            Assert.IsTrue(response.Contains($"level {PlayerController.MinLevel} or higher"));
+        }
+
+        [TestMethod]
+        public void CreatePartyReturnsErrorIfUserHasNotPickedAClass()
+        {
+            Player.CharacterClass.CanPlay = false;
+            var result = View.CreateParty(User);
+            Player.CharacterClass.CanPlay = true;
+            var response = result.Responses.First();
+            Assert.AreEqual(2, result.Responses.Count);
+            Assert.IsTrue(response.Contains("haven't picked"));
         }
 
         [TestMethod]

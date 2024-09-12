@@ -223,10 +223,19 @@ namespace LobotJR.Command.View.Dungeons
                 var currentParty = PartyController.GetCurrentGroup(player);
                 if (currentParty == null)
                 {
-                    PartyController.CreateParty(false, player);
-                    Logger.Info("Party Created by {user}", user.Username);
-                    Logger.Info("Total number of parties: {count}", PartyController.PartyCount);
-                    return new CommandResult("Party created! Use '!add <username>' to invite party members.");
+                    if (player.Level >= PlayerController.MinLevel)
+                    {
+                        if (player.CharacterClass.CanPlay)
+                        {
+                            PartyController.CreateParty(false, player);
+                            Logger.Info("Party Created by {user}", user.Username);
+                            Logger.Info("Total number of parties: {count}", PartyController.PartyCount);
+                            return new CommandResult("Party created! Use '!add <username>' to invite party members.");
+                        }
+                        return new CommandResult($"You are high enough level but haven't picked a class! Choose by whispering me one of the following:",
+                            string.Join(", ", PlayerController.GetPlayableClasses().Select(x => $"!C{x.Id - 1} ({x.Name})")));
+                    }
+                    return new CommandResult($"You must be level {PlayerController.MinLevel} or higher to create a party (current level: {player.Level}).");
                 }
                 else if (currentParty.Leader.Equals(player))
                 {

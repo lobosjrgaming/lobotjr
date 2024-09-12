@@ -331,7 +331,7 @@ namespace LobotJR.Command.Controller.Dungeons
         private bool CalculateCheck(float chance)
         {
             var value = Random.NextDouble();
-            Logger.Info("    Is random {} below chance {}?", value, chance);
+            Logger.Debug("    Is random {} below chance {}?", value, chance);
             return value < chance;
         }
 
@@ -367,39 +367,39 @@ namespace LobotJR.Command.Controller.Dungeons
             var members = party.Members.Select(x => PlayerController.GetPlayerByUserId(x));
             var dungeon = GetDungeonById(party.DungeonId);
             var name = GetDungeonName(party.DungeonId, party.ModeId);
-            Logger.Info("Processing dungeon step for party {description} in state {state} for {dungeon} on step {step}", string.Join(", ", party.Members), party.State, name, party.CurrentEncounter);
+            Logger.Debug("Processing dungeon step for party {description} in state {state} for {dungeon} on step {step}", string.Join(", ", party.Members), party.State, name, party.CurrentEncounter);
             string message;
             if (party.CurrentEncounter == 0)
             {
-                Logger.Info("  Sending intro text");
+                Logger.Debug("  Sending intro text");
                 message = dungeon.Introduction;
                 party.CurrentEncounter++;
                 party.StepState = StepState.Setup;
             }
             else if (party.StepState == StepState.Setup)
             {
-                Logger.Info("  Sending encounter setup");
+                Logger.Debug("  Sending encounter setup");
                 message = dungeon.Encounters.ElementAt(party.CurrentEncounter - 1).SetupText;
                 party.StepState = StepState.Resolving;
             }
             else if (party.StepState == StepState.Resolving)
             {
-                Logger.Info("  Resolving encounter...");
+                Logger.Debug("  Resolving encounter...");
                 var encounter = dungeon.Encounters.ElementAt(party.CurrentEncounter - 1);
                 var difficulty = encounter.Levels.FirstOrDefault(x => x.Mode.Id.Equals(party.ModeId)).Difficulty;
                 var successChance = PartySuccessChance(members);
-                Logger.Info("  Encounter difficulty: {difficulty}", difficulty);
-                Logger.Info("  successChance: {chance}", successChance);
+                Logger.Debug("  Encounter difficulty: {difficulty}", difficulty);
+                Logger.Debug("  successChance: {chance}", successChance);
 
                 if (CalculateCheck(difficulty + successChance))
                 {
-                    Logger.Info("  Success!");
+                    Logger.Debug("  Success!");
                     party.StepState = StepState.Complete;
                     message = $"Your party successfully defeated the {encounter.Enemy}!";
                 }
                 else
                 {
-                    Logger.Info("  Failure!");
+                    Logger.Debug("  Failure!");
                     message = dungeon.FailureText;
                     party.StepState = StepState.Setup;
                     party.State = PartyState.Failed;
@@ -407,7 +407,7 @@ namespace LobotJR.Command.Controller.Dungeons
             }
             else //party.StepState == StepState.Complete
             {
-                Logger.Info("  Sending encounter success");
+                Logger.Debug("  Sending encounter success");
                 message = dungeon.Encounters.ElementAt(party.CurrentEncounter - 1).CompleteText;
                 party.CurrentEncounter++;
                 party.StepState = StepState.Setup;
@@ -461,7 +461,7 @@ namespace LobotJR.Command.Controller.Dungeons
             var members = party.Members.Select(x => PlayerController.GetPlayerByUserId(x));
             var dungeon = GetDungeonById(party.DungeonId);
             var name = GetDungeonName(party.DungeonId, party.ModeId);
-            Logger.Info("Processing dungeon complete for party {description} in state {state} for {dungeon}", string.Join(", ", party.Members), party.State, name);
+            Logger.Debug("Processing dungeon complete for party {description} in state {state} for {dungeon}", string.Join(", ", party.Members), party.State, name);
             var history = CreateDungeonHistory(party, true);
             foreach (var member in members)
             {
@@ -515,7 +515,7 @@ namespace LobotJR.Command.Controller.Dungeons
             var members = party.Members.Select(x => PlayerController.GetPlayerByUserId(x));
             var dungeon = GetDungeonById(party.DungeonId);
             var name = GetDungeonName(party.DungeonId, party.ModeId);
-            Logger.Info("Processing dungeon failure for party {description} in state {state} for {dungeon}", string.Join(", ", party.Members), party.State, name);
+            Logger.Debug("Processing dungeon failure for party {description} in state {state} for {dungeon}", string.Join(", ", party.Members), party.State, name);
             var history = CreateDungeonHistory(party, false);
             var deathChance = settings.DungeonDeathChance - PartyDeathChance(members);
             var dead = members.Where(x => CalculateCheck(deathChance - PlayerDeathChance(x))).ToList();

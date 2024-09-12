@@ -2,6 +2,8 @@
 using LobotJR.Command.Model.Equipment;
 using LobotJR.Command.Model.Pets;
 using LobotJR.Command.Model.Player;
+using LobotJR.Twitch.Model;
+using LobotJR.Utils;
 using Newtonsoft.Json;
 using NLog;
 using System;
@@ -150,13 +152,12 @@ namespace LobotJR.Data.Import
             File.WriteAllText("mangled.json", JsonConvert.SerializeObject(mangledRecords));
             var validUsernames = classList.Keys.Except(mangledUsernames).ToArray();
             Logger.Info("Fetching user data for {userCount} users, this could take several minutes", validUsernames.Count());
-            //TODO: For some reason after this process happens once, running it again on the same data files produces weird user counts, when it should be 0 since the process already ran once.
-            var userMap = (await userController.GetUsersByNames(validUsernames.ToArray())).ToDictionary(x => x.Username, x => x, StringComparer.OrdinalIgnoreCase);
+            IEnumerable<User> userResponse = await userController.GetUsersByNames(validUsernames.ToArray());
+            var userMap = userResponse.Distinct(new UserNameEqualityComparer()).ToDictionary(x => x.Username, x => x);
             Logger.Info("Importing data into database.");
             try
             {
                 var total = classList.Count();
-                // For some reason this is throwing a duplicate key exception, I'm guessing it's because there are two user entries that differ only by case
                 var matchedPlayers = classList.Where(x => userMap.ContainsKey(x.Key)).ToDictionary(x => userMap[x.Key].TwitchId, x => x.Value);
                 var playersToAdd = matchedPlayers.Select(x => new PlayerCharacter()
                 {
