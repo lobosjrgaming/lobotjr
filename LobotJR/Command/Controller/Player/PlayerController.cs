@@ -413,6 +413,7 @@ namespace LobotJR.Command.Controller.Player
                         }
                     }
                     ExperienceAwarded?.Invoke(xpToAward, coinsToAward, subMultiplier);
+                    LastAward = DateTime.Now;
                 }
             }
         }

@@ -67,8 +67,8 @@ namespace LobotJR.Data.Import
                 { -1, deprived },
                 { 0, deprived },
                 { 1, new CharacterClass("Warrior", true, 0.1f, 0.03f, 0.05f, 0f, 0f) },
-                { 2, new CharacterClass("Mage", true, 0.03f, 0.1f, 0f, 0.05f, 0.05f) },
-                { 3, new CharacterClass("Rogue", true, 0f, 0.05f, 0.1f, 0.03f, 0.03f) },
+                { 2, new CharacterClass("Mage", true, 0.03f, 0.1f, 0f, 0.05f, 0f) },
+                { 3, new CharacterClass("Rogue", true, 0f, 0.05f, 0.1f, 0.03f, 0f) },
                 { 4, new CharacterClass("Ranger", true, 0.05f, 0f, 0.03f, 0.1f, 0f) },
                 { 5, new CharacterClass("Cleric", true, 0.03f, 0.03f, 0.03f, 0.03f, 0.1f) }
             };
