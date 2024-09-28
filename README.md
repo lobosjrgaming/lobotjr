@@ -60,4 +60,4 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 
 ## License
 
-This project is licensed under the GPL 3.0 License - see the [LICENSE.md](https://github.com/EmpyrealHell/wolfpack-rpg-client/blob/master/LICENSE.md) file for details
+This project is licensed under the MIT license - see the [LICENSE](https://github.com/EmpyrealHell/wolfpack-rpg-client/blob/master/LICENSE) file for details

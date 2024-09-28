@@ -408,7 +408,60 @@ namespace LobotJR.Test.Controllers.Player
             Assert.AreEqual(playerCoins + settings.CoinValue, player.Currency);
             Assert.AreEqual(subXp + settings.ExperienceValue * settings.SubRewardMultiplier, subPlayer.Experience);
             Assert.AreEqual(subCoins + settings.CoinValue * settings.SubRewardMultiplier, subPlayer.Currency);
-            listener.Verify(x => x(settings.ExperienceValue, settings.CoinValue, settings.SubRewardMultiplier), Times.Once);
+            listener.Verify(x => x(settings.ExperienceValue, settings.CoinValue, settings.SubRewardMultiplier), Times.Once());
+        }
+
+        [TestMethod]
+        public async Task ProcessWaitsForInterval()
+        {
+            var db = ConnectionManager.CurrentConnection;
+            var settings = SettingsManager.GetGameSettings();
+            var listener = new Mock<PlayerController.ExperienceAwardHandler>();
+            PlayerController.ExperienceAwarded += listener.Object;
+            PlayerController.CurrentMultiplier = 1;
+            var user = db.Users.Read(x => !x.IsSub).First();
+            var sub = db.Users.Read(x => x.IsSub).First();
+            var player = PlayerController.GetPlayerByUser(user);
+            var subPlayer = PlayerController.GetPlayerByUser(sub);
+            var playerXp = player.Experience;
+            var playerCoins = player.Currency;
+            var subXp = subPlayer.Experience;
+            var subCoins = subPlayer.Currency;
+            PlayerController.AwardsEnabled = true;
+            PlayerController.LastAward = DateTime.Now - TimeSpan.FromMinutes(settings.ExperienceFrequency) + TimeSpan.FromSeconds(1);
+            await PlayerController.Process();
+            Assert.AreEqual(playerXp, player.Experience);
+            Assert.AreEqual(playerCoins, player.Currency);
+            Assert.AreEqual(subXp, subPlayer.Experience);
+            Assert.AreEqual(subCoins, subPlayer.Currency);
+            listener.Verify(x => x(settings.ExperienceValue, settings.CoinValue, settings.SubRewardMultiplier), Times.Never());
+        }
+
+        [TestMethod]
+        public async Task ProcessUpdatesAwardTime()
+        {
+            var db = ConnectionManager.CurrentConnection;
+            var settings = SettingsManager.GetGameSettings();
+            var listener = new Mock<PlayerController.ExperienceAwardHandler>();
+            PlayerController.ExperienceAwarded += listener.Object;
+            PlayerController.CurrentMultiplier = 1;
+            var user = db.Users.Read(x => !x.IsSub).First();
+            var sub = db.Users.Read(x => x.IsSub).First();
+            var player = PlayerController.GetPlayerByUser(user);
+            var subPlayer = PlayerController.GetPlayerByUser(sub);
+            var playerXp = player.Experience;
+            var playerCoins = player.Currency;
+            var subXp = subPlayer.Experience;
+            var subCoins = subPlayer.Currency;
+            PlayerController.AwardsEnabled = true;
+            PlayerController.LastAward = DateTime.Now - TimeSpan.FromMinutes(settings.ExperienceFrequency);
+            await PlayerController.Process();
+            Assert.AreEqual(playerXp + settings.ExperienceValue, player.Experience);
+            Assert.AreEqual(playerCoins + settings.CoinValue, player.Currency);
+            Assert.AreEqual(subXp + settings.ExperienceValue * settings.SubRewardMultiplier, subPlayer.Experience);
+            Assert.AreEqual(subCoins + settings.CoinValue * settings.SubRewardMultiplier, subPlayer.Currency);
+            Assert.IsTrue(DateTime.Now - PlayerController.LastAward < TimeSpan.FromMilliseconds(10));
+            listener.Verify(x => x(settings.ExperienceValue, settings.CoinValue, settings.SubRewardMultiplier), Times.Once());
         }
 
         [TestMethod]
@@ -434,7 +487,7 @@ namespace LobotJR.Test.Controllers.Player
             Assert.AreEqual(playerCoins + settings.CoinValue * 2, player.Currency);
             Assert.AreEqual(subXp + settings.ExperienceValue * settings.SubRewardMultiplier * 2, subPlayer.Experience);
             Assert.AreEqual(subCoins + settings.CoinValue * settings.SubRewardMultiplier * 2, subPlayer.Currency);
-            listener.Verify(x => x(settings.ExperienceValue * 2, settings.CoinValue * 2, settings.SubRewardMultiplier), Times.Once);
+            listener.Verify(x => x(settings.ExperienceValue * 2, settings.CoinValue * 2, settings.SubRewardMultiplier), Times.Once());
         }
 
         [TestMethod]
@@ -453,7 +506,7 @@ namespace LobotJR.Test.Controllers.Player
             await PlayerController.Process();
             Assert.AreEqual(playerXp, player.Experience);
             Assert.AreEqual(playerCoins, player.Currency);
-            listener.Verify(x => x(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+            listener.Verify(x => x(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>()), Times.Never());
         }
 
         [TestMethod]
@@ -472,7 +525,7 @@ namespace LobotJR.Test.Controllers.Player
             await PlayerController.Process();
             Assert.AreEqual(playerXp, player.Experience);
             Assert.AreEqual(playerCoins, player.Currency);
-            listener.Verify(x => x(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+            listener.Verify(x => x(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>()), Times.Never());
         }
     }
 }
