@@ -112,13 +112,13 @@ namespace LobotJR.Data.Import
             var classList = LoadLegacyClassData(classDataPath);
             var regex = new Regex("[^0-9a-zA-Z_]");
             var uniqueKeys = classList.Keys.Distinct(StringComparer.OrdinalIgnoreCase);
-            classList = uniqueKeys.ToDictionary(x => x, x => classList[x], StringComparer.OrdinalIgnoreCase);
+            classList = uniqueKeys.ToDictionary(x => x, x => classList[x.ToLower()], StringComparer.OrdinalIgnoreCase);
 
             foreach (var coin in coinList)
             {
                 if (classList.TryGetValue(coin.Key, out var classCoin))
                 {
-                    classCoin.coins = coin.Value;
+                    classCoin.coins = Math.Max(classCoin.coins, coin.Value);
                 }
                 else
                 {
@@ -134,7 +134,7 @@ namespace LobotJR.Data.Import
             {
                 if (classList.TryGetValue(xp.Key, out var classXp))
                 {
-                    classXp.xp = xp.Value;
+                    classXp.xp = Math.Max(classXp.xp, xp.Value);
                 }
                 else
                 {
