@@ -67,7 +67,7 @@ namespace LobotJR.Test.Views.Fishing
             var userName = user.Username;
             var fisher = FishingController.GetFisherByUser(user);
             fisher.IsFishing = true;
-            fisher.Hooked = db.FishData.Read().First();
+            fisher.HookedId = db.FishData.Read().First().Id;
             fisher.HookedTime = DateTime.Now;
             FishingView.CatchFish(user);
             handlerMock.Verify(x => x(It.IsAny<User>(), It.IsAny<CommandResult>()), Times.Once);

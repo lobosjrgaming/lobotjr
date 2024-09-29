@@ -75,7 +75,7 @@ namespace LobotJR.Test.Views.Fishing
             var user = db.Users.Read().First();
             var fisher = FishingController.GetFisherByUser(user);
             fisher.IsFishing = true;
-            fisher.Hooked = db.FishData.Read().First();
+            fisher.HookedId = db.FishData.Read().First().Id;
             fisher.HookedTime = DateTime.Now.AddSeconds(-settings.FishingHookLength);
             FishingController.Process();
             handlerMock.Verify(x => x(It.IsAny<User>(), It.IsAny<CommandResult>()), Times.Once);
@@ -123,7 +123,7 @@ namespace LobotJR.Test.Views.Fishing
             DataUtils.ClearFisherRecords(db, user);
             fisher.IsFishing = true;
             fisher.HookedTime = DateTime.Now;
-            fisher.Hooked = db.FishData.Read().First();
+            fisher.HookedId = db.FishData.Read().First().Id;
             var response = FishingView.CatchFish(user);
             db.Commit();
             var responses = response.Responses;
@@ -146,7 +146,7 @@ namespace LobotJR.Test.Views.Fishing
             TournamentController.StartTournament();
             DataUtils.ClearFisherRecords(db, user);
             fisher.IsFishing = false;
-            fisher.Hooked = null;
+            fisher.HookedId = -1;
             var response = FishingView.CatchFish(user);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
@@ -167,7 +167,7 @@ namespace LobotJR.Test.Views.Fishing
             DataUtils.ClearFisherRecords(db, user);
             fisher.IsFishing = true;
             fisher.HookedTime = DateTime.Now;
-            fisher.Hooked = null;
+            fisher.HookedId = -1;
             var response = FishingView.CatchFish(user);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
@@ -185,7 +185,7 @@ namespace LobotJR.Test.Views.Fishing
             var user = db.Users.Read().First();
             var fisher = FishingController.GetFisherByUser(user);
             fisher.IsFishing = false;
-            fisher.Hooked = null;
+            fisher.HookedId = -1;
             fisher.HookedTime = null;
             var response = FishingView.Cast(user);
             var responses = response.Responses;
@@ -218,7 +218,7 @@ namespace LobotJR.Test.Views.Fishing
             var user = db.Users.Read().First();
             var fisher = FishingController.GetFisherByUser(user);
             fisher.IsFishing = true;
-            fisher.Hooked = db.FishData.Read().First();
+            fisher.HookedId = db.FishData.Read().First().Id;
             var response = FishingView.Cast(user);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);

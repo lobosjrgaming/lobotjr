@@ -17,16 +17,16 @@ namespace LobotJR.Test.Controllers.Fishing
     public class FishingControllerTests
     {
         private IConnectionManager ConnectionManager;
-        private FishingController FishingSystem;
+        private FishingController FishingController;
         private SettingsManager SettingsManager;
 
         [TestInitialize]
         public void Initialize()
         {
             ConnectionManager = AutofacMockSetup.Container.Resolve<IConnectionManager>();
-            FishingSystem = AutofacMockSetup.Container.Resolve<FishingController>();
+            FishingController = AutofacMockSetup.Container.Resolve<FishingController>();
             SettingsManager = AutofacMockSetup.Container.Resolve<SettingsManager>();
-            FishingSystem.Initialize();
+            FishingController.Initialize();
         }
 
         [TestCleanup]
@@ -40,7 +40,7 @@ namespace LobotJR.Test.Controllers.Fishing
         {
             var db = ConnectionManager.CurrentConnection;
             var user = db.Users.Read().First();
-            var retrieved = FishingSystem.GetFisherByUser(user);
+            var retrieved = FishingController.GetFisherByUser(user);
             Assert.AreEqual(user.TwitchId, retrieved.User.TwitchId);
         }
 
@@ -48,56 +48,46 @@ namespace LobotJR.Test.Controllers.Fishing
         public void CreatesFisherWhenNoneExist()
         {
             var invalidUser = new User() { TwitchId = "InvalidId", Username = "Invalid User" };
-            var retrieved = FishingSystem.GetFisherByUser(invalidUser);
+            var retrieved = FishingController.GetFisherByUser(invalidUser);
             Assert.IsNotNull(retrieved);
         }
 
         [TestMethod]
         public void CalculatesFishSizes()
         {
+            var db = ConnectionManager.CurrentConnection;
+            var fish = db.FishData.Read().First();
             var fisher = new Fisher
             {
                 User = new User("", ""),
-                Hooked = new Fish()
-                {
-                    MinimumWeight = 1,
-                    MaximumWeight = 10,
-                    MinimumLength = 11,
-                    MaximumLength = 20,
-                }
+                HookedId = fish.Id
             };
-            var catchData = FishingSystem.CalculateFishSizes(fisher, false);
-            Assert.IsTrue(fisher.Hooked.MinimumWeight <= catchData.Weight);
-            Assert.IsTrue(fisher.Hooked.MaximumWeight >= catchData.Weight);
-            Assert.IsTrue(fisher.Hooked.MinimumLength <= catchData.Length);
-            Assert.IsTrue(fisher.Hooked.MaximumLength >= catchData.Length);
+            var catchData = FishingController.CalculateFishSizes(fisher, false);
+            Assert.IsTrue(fish.MinimumWeight <= catchData.Weight);
+            Assert.IsTrue(fish.MaximumWeight >= catchData.Weight);
+            Assert.IsTrue(fish.MinimumLength <= catchData.Length);
+            Assert.IsTrue(fish.MaximumLength >= catchData.Length);
         }
 
         [TestMethod]
         public void CalculateFishSizesRandomizesWithSteppedWeights()
         {
             var db = ConnectionManager.CurrentConnection;
-            var fisher = new Fisher()
+            var fish = db.FishData.Read().First();
+            var fisher = new Fisher
             {
-                User = new User("", "")
+                User = new User("", ""),
+                HookedId = fish.Id
             };
-            var fish = new Fish()
-            {
-                MinimumWeight = 1,
-                MaximumWeight = 10,
-                MinimumLength = 11,
-                MaximumLength = 20,
-            };
-            fisher.Hooked = fish;
-            var minWeightGroup = (fisher.Hooked.MaximumWeight - fisher.Hooked.MinimumWeight) / 5 + fisher.Hooked.MinimumWeight;
-            var minLengthGroup = (fisher.Hooked.MaximumLength - fisher.Hooked.MinimumLength) / 5 + fisher.Hooked.MinimumLength;
-            var maxWeightGroup = (fisher.Hooked.MaximumWeight - fisher.Hooked.MinimumWeight) / 5 * 4 + fisher.Hooked.MinimumWeight;
-            var maxLengthGroup = (fisher.Hooked.MaximumLength - fisher.Hooked.MinimumLength) / 5 * 4 + fisher.Hooked.MinimumLength;
+            var minWeightGroup = (fish.MaximumWeight - fish.MinimumWeight) / 5 + fish.MinimumWeight;
+            var minLengthGroup = (fish.MaximumLength - fish.MinimumLength) / 5 + fish.MinimumLength;
+            var maxWeightGroup = (fish.MaximumWeight - fish.MinimumWeight) / 5 * 4 + fish.MinimumWeight;
+            var maxLengthGroup = (fish.MaximumLength - fish.MinimumLength) / 5 * 4 + fish.MinimumLength;
             var sampleSize = 10000;
             var samples = new List<Catch>();
             for (var i = 0; i < sampleSize; i++)
             {
-                samples.Add(FishingSystem.CalculateFishSizes(fisher, false));
+                samples.Add(FishingController.CalculateFishSizes(fisher, false));
             }
             var minGroupSize = samples.Count(x => x.Length <= minLengthGroup && x.Weight <= minWeightGroup);
             var maxGroupSize = samples.Count(x => x.Length >= maxLengthGroup && x.Weight >= maxWeightGroup);
@@ -109,18 +99,12 @@ namespace LobotJR.Test.Controllers.Fishing
         public void CalculateFishSizesRandomizesWithNormalDistribution()
         {
             var db = ConnectionManager.CurrentConnection;
-            var fisher = new Fisher()
+            var fish = db.FishData.Read().First();
+            var fisher = new Fisher
             {
-                User = new User("", "")
+                User = new User("", ""),
+                HookedId = fish.Id
             };
-            var fish = new Fish()
-            {
-                MinimumWeight = 1,
-                MaximumWeight = 10,
-                MinimumLength = 11,
-                MaximumLength = 20,
-            };
-            fisher.Hooked = fish;
 
             var weightRange = fish.MaximumWeight - fish.MinimumWeight;
             var lengthRange = fish.MaximumLength - fish.MinimumLength;
@@ -135,7 +119,7 @@ namespace LobotJR.Test.Controllers.Fishing
             var samples = new List<Catch>();
             for (var i = 0; i < sampleSize; i++)
             {
-                samples.Add(FishingSystem.CalculateFishSizes(fisher, true));
+                samples.Add(FishingController.CalculateFishSizes(fisher, true));
             }
             var oneStdGroupSizeWeight = samples.Count(x => x.Weight >= weightStdMin && x.Weight <= weightStdMax);
             var oneStdGroupSizeLength = samples.Count(x => x.Length >= lengthStdMin && x.Length <= lengthStdMax);
@@ -152,11 +136,11 @@ namespace LobotJR.Test.Controllers.Fishing
         {
             var db = ConnectionManager.CurrentConnection;
             var user = db.Users.Read().First();
-            var fisher = FishingSystem.GetFisherByUser(user);
+            var fisher = FishingController.GetFisherByUser(user);
             fisher.IsFishing = false;
-            fisher.Hooked = null;
+            fisher.HookedId = -1;
             fisher.HookedTime = null;
-            FishingSystem.Cast(fisher.User);
+            FishingController.Cast(fisher.User);
             var now = DateTime.Now;
             var appSettings = SettingsManager.GetGameSettings();
             var min = now.AddSeconds(appSettings.FishingCastMinimum);
@@ -170,8 +154,8 @@ namespace LobotJR.Test.Controllers.Fishing
         public void CastCreatesNewFisherIfNoneExistsWithMatchingUserId()
         {
             var newUser = new User() { TwitchId = "NewId", Username = "NewUser" };
-            FishingSystem.Cast(newUser);
-            var newFisher = FishingSystem.GetFisherByUser(newUser);
+            FishingController.Cast(newUser);
+            var newFisher = FishingController.GetFisherByUser(newUser);
             Assert.IsNotNull(newFisher);
             Assert.IsTrue(newFisher.IsFishing);
         }
@@ -181,10 +165,10 @@ namespace LobotJR.Test.Controllers.Fishing
         {
             var db = ConnectionManager.CurrentConnection;
             var user = db.Users.Read().First();
-            var fisher = FishingSystem.GetFisherByUser(user);
-            var result = FishingSystem.HookFish(fisher, false);
+            var fisher = FishingController.GetFisherByUser(user);
+            var result = FishingController.HookFish(fisher, false);
             Assert.IsTrue(result);
-            Assert.IsNotNull(fisher.Hooked);
+            Assert.IsNotNull(fisher.HookedId);
         }
 
         [TestMethod]
@@ -192,18 +176,20 @@ namespace LobotJR.Test.Controllers.Fishing
         {
             var db = ConnectionManager.CurrentConnection;
             var user = db.Users.Read().First();
-            var fisher = FishingSystem.GetFisherByUser(user);
+            var fisher = FishingController.GetFisherByUser(user);
             var rarities = db.FishData.Read().Select(x => x.Rarity).Distinct().ToArray();
             var sampleSize = 10000;
-            var samples = new List<Fish>();
+            var samples = new List<int>();
             for (var i = 0; i < sampleSize; i++)
             {
-                FishingSystem.HookFish(fisher, true);
-                samples.Add(fisher.Hooked);
+                FishingController.HookFish(fisher, true);
+                samples.Add(fisher.HookedId);
             }
-            var commonCount = samples.Count(x => x.Rarity.Equals(rarities[0]));
-            var uncommonCount = samples.Count(x => x.Rarity.Equals(rarities[1]));
-            var rareCount = samples.Count(x => x.Rarity.Equals(rarities[2]));
+            var fish = db.FishData.Read().ToDictionary(x => x.Id, x => x);
+            var groups = samples.GroupBy(x => fish[x].Rarity, x => x, (rarity, all) => new { Rarity = rarity, Count = all.Count() }).ToDictionary(x => x.Rarity, x => x.Count);
+            var commonCount = groups[rarities[0]];
+            var uncommonCount = groups[rarities[1]];
+            var rareCount = groups[rarities[2]];
             Assert.IsTrue(commonCount >= sampleSize * 0.682 * 0.85 && commonCount <= sampleSize * 0.682 * 1.15);
             Assert.IsTrue(uncommonCount >= sampleSize * 0.272 * 0.85 && uncommonCount <= sampleSize * 0.272 * 1.15);
             Assert.IsTrue(rareCount > 0 && rareCount <= sampleSize * 0.046 * 1.15);
@@ -214,19 +200,21 @@ namespace LobotJR.Test.Controllers.Fishing
         {
             var db = ConnectionManager.CurrentConnection;
             var user = db.Users.Read().First();
-            var fisher = FishingSystem.GetFisherByUser(user);
+            var fisher = FishingController.GetFisherByUser(user);
             var rarities = db.FishData.Read().Select(x => x.Rarity).Distinct().ToArray();
             var sampleSize = 10000;
-            var samples = new List<Fish>();
+            var samples = new List<int>();
             for (var i = 0; i < sampleSize; i++)
             {
-                FishingSystem.HookFish(fisher, false);
-                samples.Add(fisher.Hooked);
+                FishingController.HookFish(fisher, false);
+                samples.Add(fisher.HookedId);
             }
             var weightTotal = (float)rarities.Sum(x => x.Weight);
-            var commonCount = samples.Count(x => x.Rarity.Equals(rarities[0]));
-            var uncommonCount = samples.Count(x => x.Rarity.Equals(rarities[1]));
-            var rareCount = samples.Count(x => x.Rarity.Equals(rarities[2]));
+            var fish = db.FishData.Read().ToDictionary(x => x.Id, x => x);
+            var groups = samples.GroupBy(x => fish[x].Rarity, x => x, (rarity, all) => new { Rarity = rarity, Count = all.Count() }).ToDictionary(x => x.Rarity, x => x.Count);
+            var commonCount = groups[rarities[0]];
+            var uncommonCount = groups[rarities[1]];
+            var rareCount = groups[rarities[2]];
             var commonWeight = (float)rarities[0].Weight / weightTotal;
             var uncommonWeight = (float)rarities[1].Weight / weightTotal;
             var rareWeight = (float)rarities[2].Weight / weightTotal;
@@ -240,13 +228,13 @@ namespace LobotJR.Test.Controllers.Fishing
         {
             var db = ConnectionManager.CurrentConnection;
             var user = db.Users.Read().First();
-            var fisher = FishingSystem.GetFisherByUser(user);
+            var fisher = FishingController.GetFisherByUser(user);
             fisher.IsFishing = true;
-            fisher.Hooked = new Fish();
+            fisher.HookedId = 1;
             fisher.HookedTime = DateTime.Now;
-            FishingSystem.UnhookFish(fisher);
+            FishingController.UnhookFish(fisher);
             Assert.IsFalse(fisher.IsFishing);
-            Assert.IsNull(fisher.Hooked);
+            Assert.AreEqual(-1, fisher.HookedId);
             Assert.IsNull(fisher.HookedTime);
         }
 
@@ -255,9 +243,9 @@ namespace LobotJR.Test.Controllers.Fishing
         {
             var db = ConnectionManager.CurrentConnection;
             var user = db.Users.Read().First();
-            var fisher = FishingSystem.GetFisherByUser(user);
-            fisher.Hooked = db.FishData.Read().First();
-            var catchData = FishingSystem.CatchFish(fisher);
+            var fisher = FishingController.GetFisherByUser(user);
+            fisher.HookedId = db.FishData.Read().First().Id;
+            var catchData = FishingController.CatchFish(fisher);
             Assert.IsNotNull(catchData);
             Assert.AreEqual(db.FishData.Read().First().Id, catchData.Fish.Id);
             Assert.AreEqual(fisher.User.TwitchId, catchData.UserId);
@@ -266,7 +254,7 @@ namespace LobotJR.Test.Controllers.Fishing
         [TestMethod]
         public void CatchFishDoesNothingWhenFisherIsNull()
         {
-            var catchData = FishingSystem.CatchFish(null);
+            var catchData = FishingController.CatchFish(null);
             Assert.IsNull(catchData);
         }
 
@@ -275,9 +263,9 @@ namespace LobotJR.Test.Controllers.Fishing
         {
             var db = ConnectionManager.CurrentConnection;
             var user = db.Users.Read().First();
-            var fisher = FishingSystem.GetFisherByUser(user);
-            fisher.Hooked = null;
-            var catchData = FishingSystem.CatchFish(fisher);
+            var fisher = FishingController.GetFisherByUser(user);
+            fisher.HookedId = -1;
+            var catchData = FishingController.CatchFish(fisher);
             Assert.IsNull(catchData);
         }
 
@@ -286,14 +274,14 @@ namespace LobotJR.Test.Controllers.Fishing
         {
             var db = ConnectionManager.CurrentConnection;
             var user = db.Users.Read().First();
-            var fisher = FishingSystem.GetFisherByUser(user);
+            var fisher = FishingController.GetFisherByUser(user);
             fisher.IsFishing = true;
-            fisher.Hooked = null;
+            fisher.HookedId = -1;
             fisher.HookedTime = DateTime.Now;
             var callbackMock = new Mock<FisherEventHandler>();
-            FishingSystem.FishHooked += callbackMock.Object;
-            FishingSystem.Process();
-            Assert.IsNotNull(fisher.Hooked);
+            FishingController.FishHooked += callbackMock.Object;
+            FishingController.Process();
+            Assert.IsNotNull(fisher.HookedId);
             callbackMock.Verify(x => x(fisher), Times.Once);
         }
 
@@ -302,16 +290,16 @@ namespace LobotJR.Test.Controllers.Fishing
         {
             var db = ConnectionManager.CurrentConnection;
             var user = db.Users.Read().First();
-            var fisher = FishingSystem.GetFisherByUser(user);
+            var fisher = FishingController.GetFisherByUser(user);
             var settings = SettingsManager.GetGameSettings();
             fisher.IsFishing = true;
             fisher.HookedTime = DateTime.Now.AddSeconds(-settings.FishingHookLength);
-            fisher.Hooked = db.FishData.Read().First();
+            fisher.HookedId = db.FishData.Read().First().Id;
             var callbackMock = new Mock<FisherEventHandler>();
-            FishingSystem.FishGotAway += callbackMock.Object;
-            FishingSystem.Process();
+            FishingController.FishGotAway += callbackMock.Object;
+            FishingController.Process();
             Assert.IsFalse(fisher.IsFishing);
-            Assert.IsNull(fisher.Hooked);
+            Assert.AreEqual(-1, fisher.HookedId);
             Assert.IsNull(fisher.HookedTime);
             callbackMock.Verify(x => x(fisher), Times.Once);
         }

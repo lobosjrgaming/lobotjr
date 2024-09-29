@@ -108,7 +108,7 @@ namespace LobotJR.Test.TournamentSystems.Fishing
             TournamentSystem.StartTournament();
             Assert.IsNotNull(TournamentSystem.CurrentTournament);
             Assert.IsFalse(fisher.IsFishing);
-            Assert.IsNull(fisher.Hooked);
+            Assert.AreEqual(-1, fisher.HookedId);
             Assert.IsNull(fisher.HookedTime);
         }
 

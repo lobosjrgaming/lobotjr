@@ -85,6 +85,21 @@ namespace LobotJR.Command.Controller.Fishing
         }
 
         /// <summary>
+        /// Gets the fish record for the fish a fisher current has hooked.
+        /// </summary>
+        /// <param name="id">The fisher to get the hooked fish for.</param>
+        /// <returns>The fish data that fisher has hooked, or null if no fish
+        /// is hooked.</returns>
+        public Fish GetHookedFish(Fisher fisher)
+        {
+            if (fisher.HookedId != -1)
+            {
+                return ConnectionManager.CurrentConnection.FishData.ReadById(fisher.HookedId);
+            }
+            return null;
+        }
+
+        /// <summary>
         /// Resets all fishers by clearing any cast lines or hooked fish.
         /// </summary>
         public void ResetFishers()
@@ -92,7 +107,7 @@ namespace LobotJR.Command.Controller.Fishing
             foreach (var fisher in Fishers)
             {
                 fisher.IsFishing = false;
-                fisher.Hooked = null;
+                fisher.HookedId = -1;
                 fisher.HookedTime = null;
             }
         }
@@ -108,12 +123,12 @@ namespace LobotJR.Command.Controller.Fishing
         /// <returns>The catch object with the calculated data values.</returns>
         public Catch CalculateFishSizes(Fisher fisher, bool useNormalSizes)
         {
-            if (fisher == null || fisher.Hooked == null)
+            if (fisher == null || fisher.HookedId == -1)
             {
                 return null;
             }
 
-            var fish = fisher.Hooked;
+            var fish = GetHookedFish(fisher);
             var catchData = new Catch
             {
                 UserId = fisher.User.TwitchId,
@@ -200,7 +215,7 @@ namespace LobotJR.Command.Controller.Fishing
                 var rarityId = rarities[index].Id;
                 var fishList = ConnectionManager.CurrentConnection.FishData.Read(x => x.Rarity.Id == rarityId).ToList();
                 var fish = Random.RandomElement(fishList);
-                fisher.Hooked = fish;
+                fisher.HookedId = fish.Id;
                 Logger.Debug("Fish {fish} hooked for user {userId}.", fish?.Name, fisher.User.TwitchId);
                 return true;
             }
@@ -213,7 +228,7 @@ namespace LobotJR.Command.Controller.Fishing
         /// <param name="fisher">The fisher to update.</param>
         public void UnhookFish(Fisher fisher)
         {
-            fisher.Hooked = null;
+            fisher.HookedId = -1;
             fisher.HookedTime = null;
             fisher.IsFishing = false;
         }
@@ -232,7 +247,7 @@ namespace LobotJR.Command.Controller.Fishing
             {
                 catchData = CalculateFishSizes(fisher, settings.FishingUseNormalSizes);
                 fisher.IsFishing = false;
-                fisher.Hooked = null;
+                fisher.HookedId = -1;
                 fisher.HookedTime = null;
                 Logger.Debug("User id {userId} catching fish {fish}", fisher.User.TwitchId, catchData?.Fish?.Name);
                 if (catchData != null)
@@ -253,7 +268,7 @@ namespace LobotJR.Command.Controller.Fishing
             foreach (var fisher in Fishers.Where(x => x.IsFishing))
             {
                 if (fisher.IsFishing
-                    && fisher.Hooked == null
+                    && fisher.HookedId == -1
                     && DateTime.Now >= fisher.HookedTime)
                 {
                     Logger.Debug("Hooking fish for user {userId}.", fisher.User.TwitchId);
@@ -262,7 +277,7 @@ namespace LobotJR.Command.Controller.Fishing
                         FishHooked?.Invoke(fisher);
                     }
                 }
-                if (fisher.Hooked != null
+                if (fisher.HookedId != -1
                     && fisher.HookedTime.HasValue
                     && DateTime.Now >= fisher.HookedTime.Value.AddSeconds(settings.FishingHookLength))
                 {

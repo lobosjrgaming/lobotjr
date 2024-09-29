@@ -17,9 +17,9 @@ namespace LobotJR.Command.Model.Fishing
         /// </summary>
         public bool IsFishing { get; set; }
         /// <summary>
-        /// The fish they have hooked, or null if nothing is on the line.
+        /// The id of the fish they have hooked, or -1 if nothing is on the line.
         /// </summary>
-        public Fish Hooked { get; set; }
+        public int HookedId { get; set; } = -1;
         /// <summary>
         /// The time of their last catch.
         /// </summary>
