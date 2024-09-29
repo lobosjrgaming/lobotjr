@@ -27,8 +27,8 @@ namespace LobotJR.Command.View.General
             ConfirmationController = confirmationController;
             Commands = new List<CommandHandler>()
             {
-                new CommandHandler("Confirm", this, CommandMethod.GetInfo(Confirm), "y", "yes", "accept", "confirm"),
-                new CommandHandler("Cancel", this, CommandMethod.GetInfo(Cancel), "n", "no", "decline", "cancel", "nevermind"),
+                new CommandHandler("Confirm", this, CommandMethod.GetInfo(Confirm), "y", "yes", "accept", "confirm") { TimeoutInChat = false },
+                new CommandHandler("Cancel", this, CommandMethod.GetInfo(Cancel), "n", "no", "decline", "cancel", "nevermind") { TimeoutInChat = false },
             };
         }
 
