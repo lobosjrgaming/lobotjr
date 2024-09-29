@@ -59,6 +59,8 @@ namespace LobotJR.Command.View.Player
 
                 new CommandHandler("NextAward", this, CommandMethod.GetInfo(PrintNextAward), "nextaward"),
                 new CommandHandler("PrintInfo", this, CommandMethod.GetInfo<string>(PrintUserInfo), "printinfo"),
+
+                new CommandHandler("ImportFix", this, CommandMethod.GetInfo(ImportFix), "importfix", "import-fix"),
             };
         }
 
@@ -253,6 +255,12 @@ namespace LobotJR.Command.View.Player
                 }
             }
             return new CommandResult(true);
+        }
+
+        public CommandResult ImportFix()
+        {
+            var recordCount = PlayerController.ImportFix();
+            return new CommandResult($"{recordCount} user records updated");
         }
     }
 }

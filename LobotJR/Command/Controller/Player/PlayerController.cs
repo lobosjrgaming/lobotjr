@@ -1,10 +1,12 @@
 ﻿using LobotJR.Command.Controller.Twitch;
 using LobotJR.Command.Model.Player;
 using LobotJR.Data;
+using LobotJR.Data.Import;
 using LobotJR.Twitch.Model;
 using NLog;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -383,6 +385,72 @@ namespace LobotJR.Command.Controller.Player
             AwardsEnabled = false;
             AwardSetter = null;
             ExperienceToggled?.Invoke(false);
+        }
+
+        /// <summary>
+        /// Special one-time-use method to fix a botched import.
+        /// </summary>
+        /// <returns>The number of users updated.</returns>
+        public int ImportFix()
+        {
+            Logger.Info("Loading backup data.");
+            var xpBackupFile = Directory.GetFiles(".", $"{PlayerDataImport.ExperienceDataPath}.*.backup").OrderByDescending(x => x).FirstOrDefault();
+            var coinBackupFile = Directory.GetFiles(".", $"{PlayerDataImport.CoinDataPath}.*.backup").OrderByDescending(x => x).FirstOrDefault();
+            var classBackupFile = Directory.GetFiles(".", $"{PlayerDataImport.ClassDataPath}.*.backup").OrderByDescending(x => x).FirstOrDefault();
+
+            if (!string.IsNullOrWhiteSpace(xpBackupFile) && !string.IsNullOrWhiteSpace(coinBackupFile) && !string.IsNullOrWhiteSpace(classBackupFile))
+            {
+                var xpData = PlayerDataImport.LoadLegacyExperienceData(xpBackupFile);
+                var coinData = PlayerDataImport.LoadLegacyExperienceData(coinBackupFile);
+                var classData = PlayerDataImport.LoadLegacyClassData(classBackupFile);
+
+                var allPlayers = ConnectionManager.CurrentConnection.PlayerCharacters.Read().ToList();
+                var allUsers = ConnectionManager.CurrentConnection.Users.Read().ToList();
+                var mappedPlayers = allPlayers.Join(allUsers, player => player.UserId, user => user.TwitchId, (player, user) => new KeyValuePair<string, PlayerCharacter>(user.Username, player)).ToDictionary(x => x.Key, x => x.Value);
+
+                var fileUsers = xpData.Keys.Concat(coinData.Keys).Concat(classData.Keys).Distinct(StringComparer.OrdinalIgnoreCase);
+
+                var allNames = allUsers.Select(x => x.Username);
+
+                var dbNames = allNames.Intersect(fileUsers, StringComparer.OrdinalIgnoreCase).ToList();
+                if (dbNames.Any())
+                {
+                    var dbUsers = allUsers.Join(dbNames, user => user.Username, name => name, (user, name) => user, StringComparer.OrdinalIgnoreCase).ToList();
+                    var processCount = 0;
+                    var processStart = DateTime.Now;
+                    var processTime = DateTime.Now;
+                    Logger.Info("Processing import fix for {total} records.", dbUsers.Count);
+                    foreach (var pair in mappedPlayers)
+                    {
+                        processCount++;
+                        if (classData.TryGetValue(pair.Key.ToLower(), out var classObject))
+                        {
+                            pair.Value.Currency = coinData[pair.Key.ToLower()];
+                            pair.Value.Level = classObject.level;
+                            pair.Value.Experience = xpData[pair.Key.ToLower()];
+                            var xpLevel = LevelFromExperience(pair.Value.Experience);
+                            if (pair.Value.Level < xpLevel)
+                            {
+                                pair.Value.Level = xpLevel;
+                            }
+                            else if (pair.Value.Level > xpLevel)
+                            {
+                                pair.Value.Experience = ExperienceForLevel(pair.Value.Level);
+                            }
+                        }
+                        if (DateTime.Now - processTime > TimeSpan.FromSeconds(5))
+                        {
+                            var elapsed = DateTime.Now - processStart;
+                            var estimate = TimeSpan.FromMilliseconds(elapsed.TotalMilliseconds / processCount * dbUsers.Count) - elapsed;
+                            Logger.Info("{count} records processed. {elapsed} time elapsed, {estimate} estimated remaining.", processCount, elapsed.ToString("hh\\:mm\\:ss"), estimate.ToString("hh\\:mm\\:ss"));
+                            processTime = DateTime.Now;
+                        }
+                    }
+                    Logger.Info("Import fix for {count} records completed in {elapsed}.", processCount, (DateTime.Now - processStart).ToString("hh\\:mm\\:ss"));
+                    return processCount;
+                }
+            }
+            return 0;
         }
 
         public async Task Process()
