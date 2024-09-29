@@ -17,6 +17,7 @@ namespace LobotJR.Test.Mocks
         public int FooCount { get; private set; } = 0;
         public int FooCountCompact { get; private set; } = 0;
         public int PublicCount { get; private set; } = 0;
+        public int IgnoreCount { get; private set; } = 0;
         public int ModFooCount { get; private set; } = 0;
         public int SubFooCount { get; private set; } = 0;
         public int VipFooCount { get; private set; } = 0;
@@ -30,7 +31,7 @@ namespace LobotJR.Test.Mocks
         public int UserParamCount { get; private set; } = 0;
         public int UserAndStringParamCount { get; private set; } = 0;
         public int NoParseCount { get; private set; } = 0;
-        public int TotalCount { get { return FooCount + FooCountCompact + PublicCount + ModFooCount + SubFooCount + VipFooCount + AdminFooCount + SingleParamCount + MultiParamCount + IntParamCount + BoolParamCount + OptionalParamCount + UserAndOptionalParamCount + UserParamCount + UserAndStringParamCount + NoParseCount; } }
+        public int TotalCount { get { return FooCount + FooCountCompact + PublicCount + IgnoreCount + ModFooCount + SubFooCount + VipFooCount + AdminFooCount + SingleParamCount + MultiParamCount + IntParamCount + BoolParamCount + OptionalParamCount + UserAndOptionalParamCount + UserParamCount + UserAndStringParamCount + NoParseCount; } }
 
         public MockCommandView()
         {
@@ -39,6 +40,7 @@ namespace LobotJR.Test.Mocks
                 new CommandHandler("Foo", this, CommandMethod.GetInfo(Foo), CommandMethod.GetInfo<string>(FooCompact), "Foo"),
                 new CommandHandler("Unrestricted", this, CommandMethod.GetInfo(Foo), CommandMethod.GetInfo<string>(FooCompact), "Unrestricted"),
                 new CommandHandler("Public", this, CommandMethod.GetInfo(Public), "Public") { WhisperOnly = false },
+                new CommandHandler("Ignore", this, CommandMethod.GetInfo(Public), "Ignore") { TimeoutInChat = false },
                 new CommandHandler("ModFoo", this, CommandMethod.GetInfo(ModFoo), "ModFoo"),
                 new CommandHandler("SubFoo", this, CommandMethod.GetInfo(SubFoo), "SubFoo"),
                 new CommandHandler("VipFoo", this, CommandMethod.GetInfo(VipFoo), "VipFoo"),
@@ -57,7 +59,7 @@ namespace LobotJR.Test.Mocks
 
         public void ResetCounts()
         {
-            FooCount = FooCountCompact = PublicCount = ModFooCount = SubFooCount = VipFooCount = AdminFooCount = SingleParamCount
+            FooCount = FooCountCompact = PublicCount = IgnoreCount = ModFooCount = SubFooCount = VipFooCount = AdminFooCount = SingleParamCount
                 = MultiParamCount = IntParamCount = BoolParamCount = OptionalParamCount = UserAndStringParamCount = UserParamCount
                 = UserAndStringParamCount = NoParseCount = 0;
         }
@@ -69,6 +71,12 @@ namespace LobotJR.Test.Mocks
         }
 
         public CommandResult Public()
+        {
+            PublicCount++;
+            return new CommandResult(true);
+        }
+
+        public CommandResult Ignore()
         {
             PublicCount++;
             return new CommandResult(true);

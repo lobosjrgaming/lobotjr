@@ -27,6 +27,7 @@ namespace LobotJR.Command
         private readonly Dictionary<string, CommandExecutor> commandIdToExecutorMap = new Dictionary<string, CommandExecutor>();
         private readonly Dictionary<string, CompactExecutor> compactIdToExecutorMap = new Dictionary<string, CompactExecutor>();
         private readonly List<string> whisperOnlyCommands = new List<string>();
+        private readonly List<string> timeoutCommands = new List<string>();
         private readonly Dictionary<string, Regex> commandStringRegexMap = new Dictionary<string, Regex>();
         private readonly IConnectionManager ConnectionManager;
 
@@ -76,6 +77,10 @@ namespace LobotJR.Command
             if (command.WhisperOnly)
             {
                 whisperOnlyCommands.Add(commandId);
+                if (command.TimeoutInChat)
+                {
+                    timeoutCommands.Add(commandId);
+                }
             }
             var exceptions = new List<Exception>();
             foreach (var commandString in command.CommandStrings)
@@ -151,6 +156,11 @@ namespace LobotJR.Command
         private bool CanExecuteInChat(string commandId)
         {
             return !whisperOnlyCommands.Contains(commandId);
+        }
+
+        private bool TriggersTimeout(string commandId)
+        {
+            return timeoutCommands.Contains(commandId);
         }
 
         /// <summary>
@@ -284,17 +294,21 @@ namespace LobotJR.Command
             {
                 if (!isWhisper && !CanExecuteInChat(commandId))
                 {
-                    return new CommandResult()
+                    if (TriggersTimeout(commandId))
                     {
-                        Processed = true,
-                        Sender = user,
-                        TimeoutSender = true,
-                        Responses = new string[]
+                        return new CommandResult()
                         {
-                            "You just tried to use a command in chat that is only available by whispering me. Reply in this window on twitch or type '/w lobotjr' in chat to use that command.",
-                            "Sorry for purging you. Just trying to do my job to keep chat clear! <3"
-                        }
-                    };
+                            Processed = true,
+                            Sender = user,
+                            TimeoutSender = true,
+                            Responses = new string[]
+                            {
+                                "You just tried to use a command in chat that is only available by whispering me. Reply in this window on twitch or type '/w lobotjr' in chat to use that command.",
+                                "Sorry for purging you. Just trying to do my job to keep chat clear! <3"
+                            }
+                        };
+                    }
+                    return new CommandResult(true);
                 }
                 if (user.BanTime != null)
                 {

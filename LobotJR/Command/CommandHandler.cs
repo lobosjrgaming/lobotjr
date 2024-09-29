@@ -22,6 +22,13 @@ namespace LobotJR.Command
         public bool WhisperOnly { get; set; } = true;
 
         /// <summary>
+        /// Determines whether users executing this command in chat will be
+        /// timed out if they try to execute this command in chat instead of a
+        /// whisper. This will only trigger if WhisperOnly is set to true.
+        /// </summary>
+        public bool TimeoutInChat { get; set; } = true;
+
+        /// <summary>
         /// The strings that can be used to issue the command.
         /// </summary>
         public IEnumerable<string> CommandStrings { get; }
