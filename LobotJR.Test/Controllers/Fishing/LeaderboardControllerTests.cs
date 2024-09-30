@@ -263,7 +263,7 @@ namespace LobotJR.Test.Controllers.Fishing
             }
             db.Commit();
             TournamentController.StartTournament();
-            fisher.Hooked = db.FishData.Read().First();
+            fisher.HookedId = db.FishData.Read().First().Id;
             var catchData = FishingController.CatchFish(fisher);
             db.Commit();
             Assert.IsNotNull(catchData);
