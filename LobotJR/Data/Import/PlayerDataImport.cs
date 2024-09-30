@@ -23,6 +23,18 @@ namespace LobotJR.Data.Import
         public static readonly string ClassDataPath = "classData.json";
         public static IFileSystem FileSystem = new FileSystem();
 
+        public static int ExperienceForLevel(int level)
+        {
+            return (int)(4 * Math.Pow(level, 3) + 50);
+        }
+
+        public static int LevelFromExperience(int experience)
+        {
+            experience = Math.Max(experience, 81);
+            var level = Math.Pow((experience - 50.0f) / 4.0f, (1.0f / 3.0f));
+            return (int)Math.Floor(level);
+        }
+
         public static Dictionary<string, int> LoadLegacyExperienceData(string experienceDataPath)
         {
             try
@@ -106,13 +118,15 @@ namespace LobotJR.Data.Import
             Dictionary<int, Item> itemMap,
             Dictionary<int, Pet> petMap)
         {
+            var maxLevel = 20;
+            var maxExperience = ExperienceForLevel(maxLevel + 1) - 1;
             var classMap = SeedClassData(classRepository, typeRepository, equippableRepository);
             var coinList = LoadLegacyCoinData(coinDataPath);
             var xpList = LoadLegacyExperienceData(xpDataPath);
             var classList = LoadLegacyClassData(classDataPath);
             var regex = new Regex("[^0-9a-zA-Z_]");
             var uniqueKeys = classList.Keys.Distinct(StringComparer.OrdinalIgnoreCase);
-            classList = uniqueKeys.ToDictionary(x => x, x => classList[x.ToLower()], StringComparer.OrdinalIgnoreCase);
+            classList = uniqueKeys.ToDictionary(x => x, x => classList.ContainsKey(x.ToLower()) ? classList[x.ToLower()] : classList[x], StringComparer.OrdinalIgnoreCase);
 
             foreach (var coin in coinList)
             {
@@ -164,8 +178,8 @@ namespace LobotJR.Data.Import
                     UserId = x.Key,
                     CharacterClassId = classMap[x.Value.classType].Id,
                     Currency = x.Value.coins,
-                    Experience = x.Value.xp,
-                    Level = x.Value.level,
+                    Experience = Math.Min(Math.Max(x.Value.xp, ExperienceForLevel(x.Value.level)), maxExperience),
+                    Level = Math.Min(Math.Max(x.Value.level, LevelFromExperience(x.Value.xp)), maxLevel),
                     Prestige = x.Value.prestige,
                 }).ToList();
                 playerRepository.BatchCreate(playersToAdd, 1000, Logger, "player");
