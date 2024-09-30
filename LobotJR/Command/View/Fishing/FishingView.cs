@@ -47,7 +47,8 @@ namespace LobotJR.Command.View.Fishing
 
         private void FishingController_FishHooked(Fisher fisher)
         {
-            var hookMessage = $"{fisher.Hooked.SizeCategory.Message} Type !catch to reel it in!";
+            var fish = FishingController.GetHookedFish(fisher);
+            var hookMessage = $"{fish.SizeCategory.Message} Type !catch to reel it in!";
             PushNotification?.Invoke(fisher.User, new CommandResult(fisher.User, hookMessage));
         }
 
@@ -102,7 +103,7 @@ namespace LobotJR.Command.View.Fishing
         public CommandResult Cast(User user)
         {
             var fisher = FishingController.GetFisherByUser(user);
-            if (fisher.Hooked != null)
+            if (fisher.HookedId != -1)
             {
                 return new CommandResult("Something's already bit your line! Quick, type !catch to snag it!");
             }

@@ -159,7 +159,7 @@ namespace LobotJR.Command.View.Dungeons
                 var leader = UserController.GetUserById(party.Leader);
                 PushNotification?.Invoke(user, new CommandResult($"You declined {leader.Username}'s invite."));
                 PushNotification?.Invoke(leader, new CommandResult($"{user.Username} has declined your party invite."));
-                Logger.Info("{user} delcined party invite from {leader}.", user.Username, leader.Username);
+                Logger.Info("{user} declined party invite from {leader}.", user.Username, leader.Username);
             }
         }
 

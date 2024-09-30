@@ -264,7 +264,7 @@ namespace LobotJR.Test.Command
         }
 
         [TestMethod]
-        public void ProcessMessageDoesNotAllowWhisperOnlyMessageInPublicChat()
+        public void ProcessMessageDoesNotAllowWhisperOnlyTimeoutMessageInPublicChat()
         {
             var user = UserController.GetUserByName("Auth");
             var result = CommandManager.ProcessMessage("Foo", user, false);
@@ -282,6 +282,18 @@ namespace LobotJR.Test.Command
             Assert.IsTrue(result.Processed);
             Assert.IsFalse(result.Errors.Any());
             Assert.AreEqual(1, CommandViewMock.PublicCount);
+        }
+
+        [TestMethod]
+        public void ProcessMessageIgnoresWhisperOnlyNonTimeoutMessageInPublicChat()
+        {
+            var user = UserController.GetUserByName("Auth");
+            var result = CommandManager.ProcessMessage("Ignore", user, false);
+            Assert.IsTrue(result.Processed);
+            Assert.IsFalse(result.Errors.Any());
+            Assert.IsFalse(result.Responses.Any());
+            Assert.IsFalse(result.Messages.Any());
+            Assert.AreEqual(0, CommandViewMock.IgnoreCount);
         }
     }
 }

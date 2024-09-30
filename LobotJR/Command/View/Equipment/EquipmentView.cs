@@ -45,7 +45,7 @@ namespace LobotJR.Command.View.Equipment
         private IEnumerable<string> DescribeItem(Item item, int index, bool isEquipped)
         {
             var equipString = isEquipped ? "Equipped" : "Unequipped";
-            var output = new List<string>() { $"{index}: {item.Name} ({item.Quality.Name + item.Slot.Name}) ({equipString})" };
+            var output = new List<string>() { $"{index}: {item.Name} ({item.Quality.Name} {item.Slot.Name}) ({equipString})" };
             if (item.SuccessChance > 0)
             {
                 output.Add($"+{PrintPercent(item.SuccessChance)} Success Chance");
