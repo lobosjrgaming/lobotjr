@@ -82,7 +82,7 @@ namespace LobotJR.Twitch.Model
                 };
                 output.Tags.TryGetValue("user-id", out string id);
                 output.UserId = id;
-                output.UserName = content.Groups["user"].Value;
+                output.UserName = output.Tags.ContainsKey("display-name") ? output.Tags["display-name"] : content.Groups["user"].Value;
                 output.Command = content.Groups["command"].Value;
                 output.Channel = content.Groups["channel"].Value;
                 output.Message = content.Groups["message"].Value;
