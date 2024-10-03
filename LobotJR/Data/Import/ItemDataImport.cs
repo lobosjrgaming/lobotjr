@@ -102,7 +102,7 @@ namespace LobotJR.Data.Import
             };
         }
 
-        public static Dictionary<int, Item> ImportItemDataIntoSql(string contentFolder, string itemDataPath, string itemFolder, IRepository<Item> itemRepository, IRepository<ItemType> typeRepository, IRepository<ItemSlot> slotRepository, IRepository<ItemQuality> qualityRepository)
+        public static Dictionary<int, int> ImportItemDataIntoSql(string contentFolder, string itemDataPath, string itemFolder, IRepository<Item> itemRepository, IRepository<ItemType> typeRepository, IRepository<ItemSlot> slotRepository, IRepository<ItemQuality> qualityRepository)
         {
             var typeMap = SeedItemTypes(typeRepository);
             var slotMap = SeedItemSlots(slotRepository);
@@ -114,7 +114,7 @@ namespace LobotJR.Data.Import
                 itemRepository.Create(item.Item2);
             }
             itemRepository.Commit();
-            return items.ToDictionary(x => x.Item1, x => x.Item2);
+            return items.ToDictionary(x => x.Item1, x => x.Item2.Id);
         }
     }
 }

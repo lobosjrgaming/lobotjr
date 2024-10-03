@@ -64,7 +64,7 @@ namespace LobotJR.Data.Import
             };
         }
 
-        public static Dictionary<int, Pet> ImportPetDataIntoSql(string contentFolderName, string petDataPath, string petFolder, IRepository<Pet> petRepository, IRepository<PetRarity> rarityRepository)
+        public static Dictionary<int, int> ImportPetDataIntoSql(string contentFolderName, string petDataPath, string petFolder, IRepository<Pet> petRepository, IRepository<PetRarity> rarityRepository)
         {
             var rarityMap = SeedPetRarity(rarityRepository);
 
@@ -74,7 +74,7 @@ namespace LobotJR.Data.Import
                 petRepository.Create(pet.Item2);
             }
             petRepository.Commit();
-            return pets.ToDictionary(x => x.Item1, x => x.Item2);
+            return pets.ToDictionary(x => x.Item1, x => x.Item2.Id);
         }
     }
 }

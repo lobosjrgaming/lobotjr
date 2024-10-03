@@ -1,9 +1,4 @@
 ﻿using LobotJR.Command.Controller.Twitch;
-using LobotJR.Command.Model.Dungeons;
-using LobotJR.Command.Model.Equipment;
-using LobotJR.Command.Model.Fishing;
-using LobotJR.Command.Model.Pets;
-using LobotJR.Command.Model.Player;
 using NLog;
 using System;
 using System.Collections.Generic;
@@ -17,12 +12,15 @@ namespace LobotJR.Data.Import
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         public static IFileSystem FileSystem = new FileSystem();
 
-        private static bool ImportFishData(IRepository<Fish> fishRepository)
+        private static bool ImportFishData(IConnectionManager connectionManager)
         {
             if (FileSystem.Exists(FishDataImport.FishDataPath))
             {
                 Logger.Info("Detected legacy fish data file, migrating to SQLite.");
-                FishDataImport.ImportFishDataIntoSql(FishDataImport.FishDataPath, fishRepository);
+                using (var database = connectionManager.OpenConnection())
+                {
+                    FishDataImport.ImportFishDataIntoSql(FishDataImport.FishDataPath, database.FishData);
+                }
                 FileSystem.Move(FishDataImport.FishDataPath, $"{FishDataImport.FishDataPath}.{DateTime.Now.ToFileTimeUtc()}.backup");
                 Logger.Info("Fish data migration complete!");
                 return true;
@@ -30,7 +28,7 @@ namespace LobotJR.Data.Import
             return false;
         }
 
-        private static async Task<bool> ImportFisherData(IRepository<Fish> fishRepository, IRepository<Catch> catchRepository, IRepository<LeaderboardEntry> leaderboardRepository, UserController userController)
+        private static async Task<bool> ImportFisherData(IConnectionManager connectionManager, UserController userController)
         {
             var hasFisherData = FileSystem.Exists(FisherDataImport.FisherDataPath);
             var hasLeaderboardData = FileSystem.Exists(FisherDataImport.FishingLeaderboardPath);
@@ -38,21 +36,24 @@ namespace LobotJR.Data.Import
             {
                 Logger.Info("Detected legacy fisher data file, migrating to SQLite. This could take a few minutes.");
                 IEnumerable<string> users = new List<string>();
-                Dictionary<string, LegacyFisher> legacyFisherData = FisherDataImport.LoadLegacyFisherData(FisherDataImport.FisherDataPath);
-                List<LegacyCatch> legacyLeaderboardData = FisherDataImport.LoadLegacyFishingLeaderboardData(FisherDataImport.FishingLeaderboardPath);
-                Logger.Info("Converting usernames to user ids...");
-                await userController.GetUsersByNames(legacyFisherData.Keys.Union(legacyLeaderboardData.Select(x => x.caughtBy)).ToArray());
-                if (hasFisherData)
+                using (var database = connectionManager.OpenConnection())
                 {
-                    Logger.Info("Importing user records...");
-                    FisherDataImport.ImportFisherDataIntoSql(legacyFisherData, fishRepository, catchRepository, userController);
-                    FileSystem.Move(FisherDataImport.FisherDataPath, $"{FisherDataImport.FisherDataPath}.{DateTime.Now.ToFileTimeUtc()}.backup");
-                }
-                if (hasLeaderboardData)
-                {
-                    Logger.Info("Importing leaderboard...");
-                    FisherDataImport.ImportLeaderboardDataIntoSql(legacyLeaderboardData, leaderboardRepository, fishRepository, userController);
-                    FileSystem.Move(FisherDataImport.FishingLeaderboardPath, $"{FisherDataImport.FishingLeaderboardPath}.{DateTime.Now.ToFileTimeUtc()}.backup");
+                    Dictionary<string, LegacyFisher> legacyFisherData = FisherDataImport.LoadLegacyFisherData(FisherDataImport.FisherDataPath);
+                    List<LegacyCatch> legacyLeaderboardData = FisherDataImport.LoadLegacyFishingLeaderboardData(FisherDataImport.FishingLeaderboardPath);
+                    Logger.Info("Converting usernames to user ids...");
+                    await userController.GetUsersByNames(legacyFisherData.Keys.Union(legacyLeaderboardData.Select(x => x.caughtBy)).ToArray());
+                    if (hasFisherData)
+                    {
+                        Logger.Info("Importing user records...");
+                        FisherDataImport.ImportFisherDataIntoSql(legacyFisherData, database.FishData, database.Catches, userController);
+                        FileSystem.Move(FisherDataImport.FisherDataPath, $"{FisherDataImport.FisherDataPath}.{DateTime.Now.ToFileTimeUtc()}.backup");
+                    }
+                    if (hasLeaderboardData)
+                    {
+                        Logger.Info("Importing leaderboard...");
+                        FisherDataImport.ImportLeaderboardDataIntoSql(legacyLeaderboardData, database.FishingLeaderboard, database.FishData, userController);
+                        FileSystem.Move(FisherDataImport.FishingLeaderboardPath, $"{FisherDataImport.FishingLeaderboardPath}.{DateTime.Now.ToFileTimeUtc()}.backup");
+                    }
                 }
                 Logger.Info("Fisher data migration complete!");
                 return true;
@@ -60,39 +61,35 @@ namespace LobotJR.Data.Import
             return false;
         }
 
-        private static Dictionary<int, Pet> ImportPetData(IRepository<Pet> petRepository, IRepository<PetRarity> rarityRepository)
+        private static Dictionary<int, int> ImportPetData(IConnectionManager connectionManager)
         {
             var content = PetDataImport.ContentFolderName;
             var listPath = PetDataImport.PetListPath;
             var hasPetData = FileSystem.Exists($"{content}/{listPath}");
-            var hasPetDatabase = petRepository.Read().Any() || rarityRepository.Read().Any();
-            if (hasPetData)
+            using (var database = connectionManager.OpenConnection())
             {
-                Logger.Info("Detected legacy pet data file, migrating to SQLite.");
-                if (hasPetDatabase)
+                var hasPetDatabase = database.PetData.Read().Any() || database.PetRarityData.Read().Any();
+                if (hasPetData)
                 {
-                    Logger.Error("Pet database already contains data.");
-                    throw new Exception("Legacy import error. Aborting import to avoid data loss.");
+                    Logger.Info("Detected legacy pet data file, migrating to SQLite.");
+                    if (hasPetDatabase)
+                    {
+                        Logger.Error("Pet database already contains data.");
+                        throw new Exception("Legacy import error. Aborting import to avoid data loss.");
+                    }
+                    return PetDataImport.ImportPetDataIntoSql(content, listPath, PetDataImport.PetFolder, database.PetData, database.PetRarityData);
                 }
-                return PetDataImport.ImportPetDataIntoSql(content, listPath, PetDataImport.PetFolder, petRepository, rarityRepository);
             }
-            return new Dictionary<int, Pet>();
+            return new Dictionary<int, int>();
         }
 
-        private static void RollbackPetData(IRepository<Pet> petRepository, IRepository<PetRarity> rarityRepository)
+        private static void RollbackPetData(IConnectionManager connectionManager)
         {
-            var pets = petRepository.Read().ToList();
-            foreach (var pet in pets)
+            using (var database = connectionManager.OpenConnection())
             {
-                petRepository.Delete(pet);
+                database.PetData.DeleteAll();
+                database.PetRarityData.DeleteAll();
             }
-            petRepository.Commit();
-            var rarities = rarityRepository.Read().ToList();
-            foreach (var rarity in rarities)
-            {
-                rarityRepository.Delete(rarity);
-            }
-            rarityRepository.Commit();
         }
 
         private static void FinalizePetData()
@@ -103,51 +100,37 @@ namespace LobotJR.Data.Import
             Logger.Info("Pet data migration complete!");
         }
 
-        private static Dictionary<int, Item> ImportItemData(IRepository<Item> itemRepository, IRepository<ItemType> typeRepository, IRepository<ItemSlot> slotRepository, IRepository<ItemQuality> qualityRepository)
+        private static Dictionary<int, int> ImportItemData(IConnectionManager connectionManager)
         {
             var content = ItemDataImport.ContentFolderName;
             var listPath = ItemDataImport.ItemListPath;
             var hasItemData = FileSystem.Exists($"{content}/{listPath}");
-            var hasItemDatabase = itemRepository.Read().Any() || typeRepository.Read().Any() || slotRepository.Read().Any() || qualityRepository.Read().Any();
-            if (hasItemData)
+            using (var database = connectionManager.OpenConnection())
             {
-                Logger.Info("Detected legacy item data files, migrating to SQLite.");
-                if (hasItemDatabase)
+                var hasItemDatabase = database.ItemData.Read().Any() || database.ItemTypeData.Read().Any() || database.ItemSlotData.Read().Any() || database.ItemQualityData.Read().Any();
+                if (hasItemData)
                 {
-                    Logger.Error("Item database already contains data.");
-                    throw new Exception("Legacy import error. Aborting import to avoid data loss.");
+                    Logger.Info("Detected legacy item data files, migrating to SQLite.");
+                    if (hasItemDatabase)
+                    {
+                        Logger.Error("Item database already contains data.");
+                        throw new Exception("Legacy import error. Aborting import to avoid data loss.");
+                    }
+                    return ItemDataImport.ImportItemDataIntoSql(content, listPath, ItemDataImport.ItemFolder, database.ItemData, database.ItemTypeData, database.ItemSlotData, database.ItemQualityData);
                 }
-                return ItemDataImport.ImportItemDataIntoSql(content, listPath, ItemDataImport.ItemFolder, itemRepository, typeRepository, slotRepository, qualityRepository);
             }
-            return new Dictionary<int, Item>();
+            return new Dictionary<int, int>();
         }
 
-        private static void RollbackItemData(IRepository<Item> itemRepository, IRepository<ItemType> typeRepository, IRepository<ItemSlot> slotRepository, IRepository<ItemQuality> qualityRepository)
+        private static void RollbackItemData(IConnectionManager connectionManager)
         {
-            var items = itemRepository.Read().ToList();
-            foreach (var item in items)
+            using (var database = connectionManager.OpenConnection())
             {
-                itemRepository.Delete(item);
+                database.ItemData.DeleteAll();
+                database.ItemTypeData.DeleteAll();
+                database.ItemSlotData.DeleteAll();
+                database.ItemQualityData.DeleteAll();
             }
-            itemRepository.Commit();
-            var types = typeRepository.Read().ToList();
-            foreach (var type in types)
-            {
-                typeRepository.Delete(type);
-            }
-            typeRepository.Commit();
-            var slots = slotRepository.Read().ToList();
-            foreach (var slot in slots)
-            {
-                slotRepository.Delete(slot);
-            }
-            slotRepository.Commit();
-            var qualities = qualityRepository.Read().ToList();
-            foreach (var quality in qualities)
-            {
-                qualityRepository.Delete(quality);
-            }
-            qualityRepository.Commit();
         }
 
         private static void FinalizeItemData()
@@ -158,39 +141,46 @@ namespace LobotJR.Data.Import
             Logger.Info("Item data migration complete!");
         }
 
-        private static bool ImportDungeonData(IRepository<Dungeon> dungeonRepository, IRepository<DungeonTimer> timerRepository, IRepository<DungeonMode> modeRepository, Dictionary<int, Item> itemMap)
+        private static bool ImportDungeonData(IConnectionManager connectionManager, Dictionary<int, int> itemMap)
         {
             var content = DungeonDataImport.ContentFolderName;
             var listPath = DungeonDataImport.DungeonListPath;
             var hasDungeonData = FileSystem.Exists($"{content}/{listPath}");
-            var hasDungeonDatabase = dungeonRepository.Read().Any() || timerRepository.Read().Any();
-            if (hasDungeonData)
+            using (var database = connectionManager.OpenConnection())
             {
-                Logger.Info("Detected legacy dungeon data files, migrating to SQLite.");
-                if (hasDungeonDatabase)
+                var hasDungeonDatabase = database.DungeonData.Read().Any() || database.DungeonTimerData.Read().Any() || database.DungeonModeData.Read().Any();
+                if (hasDungeonData)
                 {
-                    Logger.Error("Dungeon database already contains data.");
-                    throw new Exception("Legacy import error. Aborting import to avoid data loss.");
+                    Logger.Info("Detected legacy dungeon data files, migrating to SQLite.");
+                    if (hasDungeonDatabase)
+                    {
+                        Logger.Error("Dungeon database already contains data.");
+                        throw new Exception("Legacy import error. Aborting import to avoid data loss.");
+                    }
+                    DungeonDataImport.ImportDungeonDataIntoSql(content, listPath, DungeonDataImport.DungeonFolder, database.DungeonData, database.DungeonTimerData, database.DungeonModeData, itemMap.ToDictionary(x => x.Key, x => database.ItemData.ReadById(x.Value)));
                 }
-                DungeonDataImport.ImportDungeonDataIntoSql(content, listPath, DungeonDataImport.DungeonFolder, dungeonRepository, timerRepository, modeRepository, itemMap);
             }
             return true;
         }
 
-        private static void RollbackDungeonData(IRepository<Dungeon> dungeonRepository, IRepository<DungeonTimer> timerRepository)
+        private static void RollbackDungeonData(IConnectionManager connectionManager)
         {
-            var dungeons = dungeonRepository.Read().ToList();
-            foreach (var dungeon in dungeons)
+            using (var database = connectionManager.OpenConnection())
             {
-                dungeonRepository.Delete(dungeon);
+                database.DungeonData.DeleteAll();
+                database.DungeonTimerData.DeleteAll();
             }
-            dungeonRepository.Commit();
-            var timers = timerRepository.Read().ToList();
-            foreach (var timer in timers)
+        }
+
+        private static void RollbackPlayerData(IConnectionManager connectionManager)
+        {
+            using (var database = connectionManager.OpenConnection())
             {
-                timerRepository.Delete(timer);
+                database.PlayerCharacters.DeleteAll();
+                database.CharacterClassData.DeleteAll();
+                database.Inventories.DeleteAll();
+                database.Stables.DeleteAll();
             }
-            timerRepository.Commit();
         }
 
         private static void FinalizeDungeonData()
@@ -202,20 +192,19 @@ namespace LobotJR.Data.Import
         }
 
         private static async Task<bool> ImportPlayerData(
-            IRepository<PlayerCharacter> playerRepository,
-            IRepository<CharacterClass> classRepository,
-            IRepository<ItemType> typeRepository,
-            IRepository<Equippables> equippablesRepository,
-            IRepository<Inventory> inventoryRepository,
-            IRepository<Stable> stableRepository,
+            IConnectionManager connectionManager,
             UserController userController,
-            Dictionary<int, Item> itemMap,
-            Dictionary<int, Pet> petMap)
+            Dictionary<int, int> itemMap,
+            Dictionary<int, int> petMap)
         {
             var hasCoinData = FileSystem.Exists(PlayerDataImport.CoinDataPath);
             var hasXpData = FileSystem.Exists(PlayerDataImport.ExperienceDataPath);
             var hasClassData = FileSystem.Exists(PlayerDataImport.ClassDataPath);
-            var hasPlayerDatabase = playerRepository.Read().Any() || classRepository.Read().Any() || inventoryRepository.Read().Any() || stableRepository.Read().Any();
+            var hasPlayerDatabase = false;
+            using (var database = connectionManager.OpenConnection())
+            {
+                hasPlayerDatabase = database.PlayerCharacters.Read().Any() || database.CharacterClassData.Read().Any() || database.Inventories.Read().Any() || database.Stables.Read().Any();
+            }
             if (hasCoinData && hasXpData && hasClassData)
             {
                 Logger.Info("Detected legacy player data files, migrating to SQLite.");
@@ -224,7 +213,7 @@ namespace LobotJR.Data.Import
                     Logger.Error("Player database already contains data, aborting import.");
                     throw new Exception("Legacy import error. Aborting import to avoid data loss.");
                 }
-                return await PlayerDataImport.ImportPlayerDataIntoSql(PlayerDataImport.CoinDataPath, PlayerDataImport.ExperienceDataPath, PlayerDataImport.ClassDataPath, playerRepository, classRepository, typeRepository, equippablesRepository, inventoryRepository, stableRepository, userController, itemMap, petMap);
+                return await PlayerDataImport.ImportPlayerDataIntoSql(PlayerDataImport.CoinDataPath, PlayerDataImport.ExperienceDataPath, PlayerDataImport.ClassDataPath, connectionManager, userController, itemMap, petMap);
             }
             return false;
         }
@@ -240,18 +229,18 @@ namespace LobotJR.Data.Import
             Logger.Info("Player data migration complete!");
         }
 
-        private static async Task<bool> ImportPlayerData(IDatabase database, UserController userController)
+        private static async Task<bool> ImportPlayerData(IConnectionManager connectionManager, UserController userController)
         {
-            var petMap = ImportPetData(database.PetData, database.PetRarityData);
+            var petMap = ImportPetData(connectionManager);
             if (petMap.Any())
             {
-                var itemMap = ImportItemData(database.ItemData, database.ItemTypeData, database.ItemSlotData, database.ItemQualityData);
+                var itemMap = ImportItemData(connectionManager);
                 if (itemMap.Any())
                 {
-                    var dungeonImport = ImportDungeonData(database.DungeonData, database.DungeonTimerData, database.DungeonModeData, itemMap);
+                    var dungeonImport = ImportDungeonData(connectionManager, itemMap);
                     if (dungeonImport)
                     {
-                        var playerImport = await ImportPlayerData(database.PlayerCharacters, database.CharacterClassData, database.ItemTypeData, database.EquippableData, database.Inventories, database.Stables, userController, itemMap, petMap);
+                        var playerImport = await ImportPlayerData(connectionManager, userController, itemMap, petMap);
                         if (playerImport)
                         {
                             FinalizePlayerData();
@@ -259,22 +248,22 @@ namespace LobotJR.Data.Import
                             FinalizeItemData();
                             FinalizePetData();
                             return true;
-                            //RollbackPlayerData(database.PlayerCharacters, database.CharacterClassData, database.Inventories, database.Stables);
                         }
-                        RollbackDungeonData(database.DungeonData, database.DungeonTimerData);
+                        RollbackPlayerData(connectionManager);
+                        RollbackDungeonData(connectionManager);
                     }
-                    RollbackItemData(database.ItemData, database.ItemTypeData, database.ItemSlotData, database.ItemQualityData);
+                    RollbackItemData(connectionManager);
                 }
-                RollbackPetData(database.PetData, database.PetRarityData);
+                RollbackPetData(connectionManager);
             }
             return false;
         }
 
-        public static async Task ImportLegacyData(IDatabase database, UserController userController)
+        public static async Task ImportLegacyData(IConnectionManager connectionManager, UserController userController)
         {
-            ImportFishData(database.FishData);
-            await ImportFisherData(database.FishData, database.Catches, database.FishingLeaderboard, userController);
-            var playerImport = await ImportPlayerData(database, userController);
+            ImportFishData(connectionManager);
+            await ImportFisherData(connectionManager, userController);
+            var playerImport = await ImportPlayerData(connectionManager, userController);
             if (playerImport)
             {
                 Logger.Info("All legacy data imported into database.");

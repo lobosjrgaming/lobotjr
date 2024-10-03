@@ -40,8 +40,12 @@ namespace LobotJR.Shared.User
         /// <param name="token">The OAuth token object to use for authentication.</param>
         /// <param name="clientData">The client data for the app executing the request.</param>
         /// <param name="users">A collection of usernames.</param>
+        /// <param name="logProgress">True if the method should create log
+        /// entries showing lookup progress. Default is true. You should only
+        /// set this to false if you are handling progress logging in the
+        /// calling method.</param>
         /// <returns>The user data of the users in the collection.</returns>
-        public static async Task<IEnumerable<RestResponse<UserResponse>>> Get(TokenResponse token, ClientData clientData, IEnumerable<string> users)
+        public static async Task<IEnumerable<RestResponse<UserResponse>>> Get(TokenResponse token, ClientData clientData, IEnumerable<string> users, bool logProgress = true)
         {
             var data = new List<RestResponse<UserResponse>>();
             var cursor = 0;
@@ -62,12 +66,15 @@ namespace LobotJR.Shared.User
                         start = DateTime.Now;
                     }
                 }
-                if (DateTime.Now - logTime > TimeSpan.FromSeconds(5))
+                if (logProgress)
                 {
-                    var elapsed = DateTime.Now - start;
-                    var estimate = elapsed - TimeSpan.FromMilliseconds(elapsed.TotalMilliseconds / cursor * total);
-                    Logger.Info("{count} total users processed. {elapsed} time elapsed, {estimate} estimated remaining.", cursor, elapsed.ToString("hh\\:mm\\:ss"), estimate.ToString("hh\\:mm\\:ss"));
-                    logTime = DateTime.Now;
+                    if (DateTime.Now - logTime > TimeSpan.FromSeconds(5))
+                    {
+                        var elapsed = DateTime.Now - start;
+                        var estimate = elapsed - TimeSpan.FromMilliseconds(elapsed.TotalMilliseconds / cursor * total);
+                        Logger.Info("{count} total users processed. {elapsed} time elapsed, {estimate} estimated remaining.", cursor, elapsed.ToString("hh\\:mm\\:ss"), estimate.ToString("hh\\:mm\\:ss"));
+                        logTime = DateTime.Now;
+                    }
                 }
                 var client = RestUtils.CreateStandardClient();
                 var request = RestUtils.CreateStandardRequest("helix/users", Method.Get, token.AccessToken, clientData.ClientId, Logger);
@@ -92,7 +99,10 @@ namespace LobotJR.Shared.User
                 userBatch = users.Skip(cursor).Take(100);
             }
             while (userBatch.Any());
-            Logger.Info("Data for {count} users retrieved!", cursor);
+            if (logProgress)
+            {
+                Logger.Info("Data for {count} users retrieved!", cursor);
+            }
             return data;
         }
     }

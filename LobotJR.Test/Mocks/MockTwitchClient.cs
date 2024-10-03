@@ -28,8 +28,8 @@ namespace LobotJR.Test.Mocks
                 .Returns(() => Task.FromResult(TwitchDataFromUser(GetUsers(x => x.Username.Equals("Vip")))));
             Mock.Setup(x => x.GetSubscriberListAsync())
                 .Returns(() => Task.FromResult(SubscriberDataFromUser(GetUsers(x => x.Username.Equals("Sub")))));
-            Mock.Setup(x => x.GetTwitchUsers(It.IsAny<IEnumerable<string>>()))
-                .Returns((IEnumerable<string> users) =>
+            Mock.Setup(x => x.GetTwitchUsers(It.IsAny<IEnumerable<string>>(), It.IsAny<bool>()))
+                .Returns((IEnumerable<string> users, bool logProgress) =>
                 {
                     var userObjects = GetUsers(x => users.Contains(x.Username, StringComparer.OrdinalIgnoreCase));
                     var userResponse = userObjects.Select(x => new UserResponseData() { DisplayName = x.Username, Login = x.Username, Id = x.TwitchId }).ToList();
@@ -73,7 +73,7 @@ namespace LobotJR.Test.Mocks
             return Mock.Object.GetSubscriberListAsync();
         }
 
-        public Task<IEnumerable<UserResponseData>> GetTwitchUsers(IEnumerable<string> usernames)
+        public Task<IEnumerable<UserResponseData>> GetTwitchUsers(IEnumerable<string> usernames, bool logProgress = true)
         {
             return Mock.Object.GetTwitchUsers(usernames);
         }

@@ -71,7 +71,7 @@ namespace LobotJR.Data.Import
             }
         }
 
-        public static Dictionary<int, CharacterClass> SeedClassData(IRepository<CharacterClass> classRepository, IRepository<ItemType> typeRepository, IRepository<Equippables> equippableRepository)
+        public static Dictionary<int, int> SeedClassData(IRepository<CharacterClass> classRepository, IRepository<ItemType> typeRepository, IRepository<Equippables> equippableRepository)
         {
             var deprived = new CharacterClass("Deprived", false, 0f, 0f, 0f, 0f, 0f) { CanPlay = false };
             var output = new Dictionary<int, CharacterClass>()
@@ -101,33 +101,75 @@ namespace LobotJR.Data.Import
                 }
             }
             equippableRepository.Commit();
-            return output;
+            return output.ToDictionary(x => x.Key, x => x.Value.Id);
         }
 
-        public static async Task<bool> ImportPlayerDataIntoSql(
-            string coinDataPath,
-            string xpDataPath,
-            string classDataPath,
+        public static async Task<int> ImportPlayerDataBatch(
+            IEnumerable<string> users,
+            Dictionary<string, LegacyCharacterClass> classList,
             IRepository<PlayerCharacter> playerRepository,
-            IRepository<CharacterClass> classRepository,
-            IRepository<ItemType> typeRepository,
-            IRepository<Equippables> equippableRepository,
             IRepository<Inventory> inventoryRepository,
             IRepository<Stable> stableRepository,
             UserController userController,
+            Dictionary<int, CharacterClass> classMap,
             Dictionary<int, Item> itemMap,
             Dictionary<int, Pet> petMap)
         {
             var maxLevel = 20;
             var maxExperience = ExperienceForLevel(maxLevel + 1) - 1;
-            var classMap = SeedClassData(classRepository, typeRepository, equippableRepository);
+            var userArray = users.ToArray();
+            IEnumerable<User> userResponse = await userController.GetUsersByNames(userArray, false);
+            var userMap = userResponse.Distinct(new UserNameEqualityComparer()).ToDictionary(x => x.Username, x => x);
+            try
+            {
+                var total = classList.Count();
+                var matchedPlayers = userMap.Where(x => classList.ContainsKey(x.Key)).ToDictionary(x => x.Value.TwitchId, x => classList[x.Key]);
+                var playersToAdd = matchedPlayers.Select(x => new PlayerCharacter()
+                {
+                    UserId = x.Key,
+                    CharacterClassId = classMap[x.Value.classType].Id,
+                    Currency = x.Value.coins,
+                    Experience = Math.Min(Math.Max(x.Value.xp, ExperienceForLevel(x.Value.level)), maxExperience),
+                    Level = Math.Min(Math.Max(x.Value.level, LevelFromExperience(x.Value.xp)), maxLevel),
+                    Prestige = x.Value.prestige,
+                }).ToList();
+                playerRepository.BatchCreate(playersToAdd, userArray.Length, Logger, "player");
+                var stablesToAdd = matchedPlayers.SelectMany(x => x.Value.myPets.Select(y => new Stable()
+                {
+                    UserId = x.Key,
+                    PetId = petMap[y.ID].Id,
+                    Name = y.name,
+                    Level = y.level,
+                    Experience = y.xp,
+                    Affection = y.affection,
+                    Hunger = y.hunger,
+                    IsSparkly = y.isSparkly,
+                    IsActive = y.isActive,
+                })).ToList();
+                stableRepository.BatchCreate(stablesToAdd, userArray.Length, Logger, "stable");
+                var itemsToCreate = matchedPlayers.SelectMany(x => x.Value.myItems.Select(y => new Inventory()
+                {
+                    UserId = x.Key,
+                    ItemId = itemMap[y.itemID].Id,
+                    IsEquipped = y.isActive
+                })).ToList();
+                inventoryRepository.BatchCreate(itemsToCreate, userArray.Length, Logger, "inventory");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex);
+                return 0;
+            }
+            return userArray.Length;
+        }
+
+        private static Dictionary<string, LegacyCharacterClass> LoadLegacyData(string coinDataPath, string xpDataPath, string classDataPath)
+        {
             var coinList = LoadLegacyCoinData(coinDataPath);
             var xpList = LoadLegacyExperienceData(xpDataPath);
             var classList = LoadLegacyClassData(classDataPath);
-            var regex = new Regex("[^0-9a-zA-Z_]");
             var uniqueKeys = classList.Keys.Distinct(StringComparer.OrdinalIgnoreCase);
             classList = uniqueKeys.ToDictionary(x => x, x => classList.ContainsKey(x.ToLower()) ? classList[x.ToLower()] : classList[x], StringComparer.OrdinalIgnoreCase);
-
             foreach (var coin in coinList)
             {
                 if (classList.TryGetValue(coin.Key, out var classCoin))
@@ -159,54 +201,68 @@ namespace LobotJR.Data.Import
                     });
                 }
             }
+            return classList;
+        }
 
-            var mangledUsernames = classList.Keys.Where(x => regex.IsMatch(x)).ToArray();
-            Logger.Warn("Found {count} entries with invalid user names. These records are being skipped, and their coin, xp, and class data values were saved in mangled.json", mangledUsernames.Count());
-            var mangledRecords = mangledUsernames.Select(x => classList[x]).Where(x => x != null).ToArray();
-            File.WriteAllText("mangled.json", JsonConvert.SerializeObject(mangledRecords));
-            var validUsernames = classList.Keys.Except(mangledUsernames).ToArray();
-            Logger.Info("Fetching user data for {userCount} users, this could take several minutes", validUsernames.Count());
-            IEnumerable<User> userResponse = await userController.GetUsersByNames(validUsernames.ToArray());
-            var userMap = userResponse.Distinct(new UserNameEqualityComparer()).ToDictionary(x => x.Username, x => x);
-            Logger.Info("Importing data into database.");
+        public static async Task<bool> ImportPlayerDataIntoSql(
+            string coinDataPath,
+            string xpDataPath,
+            string classDataPath,
+            IConnectionManager connectionManager,
+            UserController userController,
+            Dictionary<int, int> itemMap,
+            Dictionary<int, int> petMap)
+        {
             try
             {
-                var total = classList.Count();
-                var matchedPlayers = classList.Where(x => userMap.ContainsKey(x.Key)).ToDictionary(x => userMap[x.Key].TwitchId, x => x.Value);
-                var playersToAdd = matchedPlayers.Select(x => new PlayerCharacter()
+                var classMap = new Dictionary<int, int>();
+                using (var database = connectionManager.OpenConnection())
                 {
-                    UserId = x.Key,
-                    CharacterClassId = classMap[x.Value.classType].Id,
-                    Currency = x.Value.coins,
-                    Experience = Math.Min(Math.Max(x.Value.xp, ExperienceForLevel(x.Value.level)), maxExperience),
-                    Level = Math.Min(Math.Max(x.Value.level, LevelFromExperience(x.Value.xp)), maxLevel),
-                    Prestige = x.Value.prestige,
-                }).ToList();
-                playerRepository.BatchCreate(playersToAdd, 1000, Logger, "player");
-                var stablesToAdd = matchedPlayers.SelectMany(x => x.Value.myPets.Select(y => new Stable()
+                    classMap = SeedClassData(database.CharacterClassData, database.ItemTypeData, database.EquippableData);
+                }
+                var classList = LoadLegacyData(coinDataPath, xpDataPath, classDataPath);
+                GC.Collect();
+                var regex = new Regex("[^0-9a-zA-Z_]");
+
+                var mangledUsernames = classList.Keys.Where(x => regex.IsMatch(x)).ToArray();
+                Logger.Warn("Found {count} entries with invalid user names. These records are being skipped, and their coin, xp, and class data values were saved in mangled.json", mangledUsernames.Count());
+                var mangledRecords = mangledUsernames.Select(x => classList[x]).Where(x => x != null).ToArray();
+                File.WriteAllText("mangled.json", JsonConvert.SerializeObject(mangledRecords));
+                var validUsernames = classList.Keys.Except(mangledUsernames).ToArray();
+                var cursor = 0;
+                var pageSize = 20000;
+                var failed = false;
+                var startTime = DateTime.Now;
+                Logger.Info("Importing user and player data for {count} users.", validUsernames.Length);
+                while (cursor < validUsernames.Length)
                 {
-                    UserId = x.Key,
-                    PetId = petMap[y.ID].Id,
-                    Name = y.name,
-                    Level = y.level,
-                    Experience = y.xp,
-                    Affection = y.affection,
-                    Hunger = y.hunger,
-                    IsSparkly = y.isSparkly,
-                    IsActive = y.isActive,
-                })).ToList();
-                stableRepository.BatchCreate(stablesToAdd, 1000, Logger, "stable");
-                var itemsToCreate = matchedPlayers.SelectMany(x => x.Value.myItems.Select(y => new Inventory()
+                    var result = 0;
+                    using (var database = connectionManager.OpenConnection())
+                    {
+                        var resolvedClassMap = classMap.ToDictionary(x => x.Key, x => database.CharacterClassData.ReadById(x.Value));
+                        var resolvedItemMap = itemMap.ToDictionary(x => x.Key, x => database.ItemData.ReadById(x.Value));
+                        var resolvedPetMap = petMap.ToDictionary(x => x.Key, x => database.PetData.ReadById(x.Value));
+                        result = await ImportPlayerDataBatch(validUsernames.Skip(cursor).Take(pageSize), classList, database.PlayerCharacters, database.Inventories, database.Stables, userController, resolvedClassMap, resolvedItemMap, resolvedPetMap);
+                    }
+                    if (result == 0)
+                    {
+                        failed = true;
+                        break;
+                    }
+                    cursor += result;
+                    var elapsed = DateTime.Now - startTime;
+                    var estimate = TimeSpan.FromMilliseconds(elapsed.TotalMilliseconds / cursor * validUsernames.Length) - elapsed;
+                    Logger.Info("{count} of {total} records imported. {elapsed} time elapsed, {estimate} estimated remaining.", Math.Min(cursor, validUsernames.Length), validUsernames.Length, elapsed.ToString("hh\\:mm\\:ss"), estimate.ToString("hh\\:mm\\:ss"));
+                }
+                if (failed)
                 {
-                    UserId = x.Key,
-                    ItemId = itemMap[y.itemID].Id,
-                    IsEquipped = y.isActive
-                })).ToList();
-                inventoryRepository.BatchCreate(itemsToCreate, 1000, Logger, "inventory");
+                    Logger.Error("User import failed. Rolling back changes to preserve database integrity, please close the application and try again.");
+                }
             }
             catch (Exception ex)
             {
                 Logger.Error(ex);
+                Logger.Error("Exception occurred while importing player data. Rolling back changes to preserve database integrity, please close the application and try again.");
                 return false;
             }
             return true;

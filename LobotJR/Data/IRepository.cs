@@ -30,6 +30,7 @@ namespace LobotJR.Data
         TEntity Delete(TEntity entry);
         TEntity DeleteById(int id);
         IEnumerable<TEntity> DeleteRange(IEnumerable<TEntity> entries);
+        IEnumerable<TEntity> DeleteAll();
         void Commit();
     }
 }

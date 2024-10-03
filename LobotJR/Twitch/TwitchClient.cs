@@ -244,10 +244,14 @@ namespace LobotJR.Twitch
         /// Gets the Twitch ids for a collection usernames.
         /// </summary>
         /// <param name="usernames">A collection of usernames.</param>
+        /// <param name="logProgress">True if the method should create log
+        /// entries showing lookup progress. Default is true. You should only
+        /// set this to false if you are handling progress logging in the
+        /// calling method.</param>
         /// <returns>A collection of Twitch user data responses.</returns>
-        public async Task<IEnumerable<UserResponseData>> GetTwitchUsers(IEnumerable<string> usernames)
+        public async Task<IEnumerable<UserResponseData>> GetTwitchUsers(IEnumerable<string> usernames, bool logProgress = true)
         {
-            var results = await Users.Get(TokenData.BroadcastToken, ClientData, usernames);
+            var results = await Users.Get(TokenData.BroadcastToken, ClientData, usernames, logProgress);
             if (results.Any(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized))
             {
                 var failures = results.Where(x => x.StatusCode != HttpStatusCode.OK && x.StatusCode != HttpStatusCode.Unauthorized);

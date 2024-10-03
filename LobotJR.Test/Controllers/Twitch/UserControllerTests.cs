@@ -6,6 +6,7 @@ using LobotJR.Twitch.Model;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -225,7 +226,7 @@ namespace LobotJR.Test.Controllers.Twitch
         public async Task GetUsersByNamesGetsAllUsers()
         {
             var db = ConnectionManager.CurrentConnection;
-            var allUsers = await Controller.GetUsersByNames("NewUser", "TwoUser", "ThreeUser");
+            var allUsers = await Controller.GetUsersByNames(new List<string>() { "NewUser", "TwoUser", "ThreeUser" });
             Assert.IsNotNull(allUsers);
             Assert.AreEqual(3, allUsers.Count());
             Assert.IsTrue(allUsers.Any(x => x.Username.Equals("NewUser") && !string.IsNullOrWhiteSpace(x.TwitchId)));
@@ -237,7 +238,7 @@ namespace LobotJR.Test.Controllers.Twitch
         public async Task GetUsersByNamesCreatesMissingUsers()
         {
             var db = ConnectionManager.CurrentConnection;
-            var allUsers = (await Controller.GetUsersByNames("NewUser", "Foo")).ToList();
+            var allUsers = (await Controller.GetUsersByNames(new List<string>() { "NewUser", "Foo" })).ToList();
             Assert.AreEqual(2, allUsers.Count);
             var newUser = allUsers.FirstOrDefault(x => x.Username.Equals("NewUser"));
             var existingUser = allUsers.FirstOrDefault(x => x.Username.Equals("Foo"));
