@@ -73,7 +73,11 @@ namespace LobotJR.Twitch
         /// Gets the Twitch ids for a collection usernames.
         /// </summary>
         /// <param name="usernames">A collection of usernames.</param>
+        /// <param name="logProgress">True if the method should create log
+        /// entries showing lookup progress. Default is true. You should only
+        /// set this to false if you are handling progress logging in the
+        /// calling method.</param>
         /// <returns>A collection of Twitch user data responses.</returns>
-        Task<IEnumerable<UserResponseData>> GetTwitchUsers(IEnumerable<string> usernames);
+        Task<IEnumerable<UserResponseData>> GetTwitchUsers(IEnumerable<string> usernames, bool logProgress = true);
     }
 }

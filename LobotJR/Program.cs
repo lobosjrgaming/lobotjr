@@ -163,10 +163,7 @@ namespace LobotJR
 
         private static async Task ImportLegacyData(IConnectionManager connectionManager, UserController userController)
         {
-            using (var database = connectionManager.OpenConnection())
-            {
-                await DataImporter.ImportLegacyData(database, userController);
-            }
+            await DataImporter.ImportLegacyData(connectionManager, userController);
         }
 
         private static void HandleSubNotifications(IEnumerable<IrcMessage> notifications, UserController userController)

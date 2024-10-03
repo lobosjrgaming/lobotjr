@@ -50,7 +50,6 @@ namespace LobotJR.Data
         {
             var entryList = entries.ToList();
             var total = entryList.Count;
-            logger.Info("Writing {count} {name} records to database.", total, name);
             var startTime = DateTime.Now;
             var logTime = DateTime.Now;
             var processed = 0;
@@ -64,7 +63,7 @@ namespace LobotJR.Data
                     BeginTransaction();
                     var elapsed = DateTime.Now - startTime;
                     var estimate = TimeSpan.FromMilliseconds(elapsed.TotalMilliseconds / processed * total) - elapsed;
-                    logger.Info("{count} total {name} records written. {elapsed} time elapsed, {estimate} estimated remaining.", processed, name, elapsed.ToString("hh\\:mm\\:ss"), estimate.ToString("hh\\:mm\\:ss"));
+                    logger.Info("{count} of {total} {name} records written. {elapsed} time elapsed, {estimate} estimated remaining.", processed, total, name, elapsed.ToString("hh\\:mm\\:ss"), estimate.ToString("hh\\:mm\\:ss"));
                     logTime = DateTime.Now;
                 }
                 Create(entryList.Skip(cursor).Take(batchSize));
@@ -99,6 +98,13 @@ namespace LobotJR.Data
         public IEnumerable<TEntity> DeleteRange(IEnumerable<TEntity> entries)
         {
             return dbSet.RemoveRange(entries);
+        }
+
+        public IEnumerable<TEntity> DeleteAll()
+        {
+            var removed = dbSet.RemoveRange(dbSet);
+            Commit();
+            return removed;
         }
 
         public IEnumerable<TEntity> Read()

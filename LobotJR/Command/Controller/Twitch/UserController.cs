@@ -66,8 +66,12 @@ namespace LobotJR.Command.Controller.Twitch
         /// Gets a collection of user objects from a list of usernames.
         /// </summary>
         /// <param name="names">The names of all users to lookup.</param>
+        /// <param name="logProgress">True if the method should create log
+        /// entries showing lookup progress. Default is true. You should only
+        /// set this to false if you are handling progress logging in the
+        /// calling method.</param>
         /// <returns>The user object for each user provided.</returns>
-        public async Task<IEnumerable<User>> GetUsersByNames(params string[] names)
+        public async Task<IEnumerable<User>> GetUsersByNames(IEnumerable<string> names, bool logProgress = true)
         {
             var allUsers = ConnectionManager.CurrentConnection.Users.Read().ToList();
             var allNames = allUsers.Select(x => x.Username).ToList();
@@ -81,7 +85,7 @@ namespace LobotJR.Command.Controller.Twitch
             }
             if (missingNames.Any())
             {
-                var lookup = await TwitchClient.GetTwitchUsers(missingNames);
+                var lookup = await TwitchClient.GetTwitchUsers(missingNames, logProgress);
                 var users = CreateUsers(lookup);
                 known.AddRange(users);
             }
@@ -312,7 +316,6 @@ namespace LobotJR.Command.Controller.Twitch
             var db = ConnectionManager.CurrentConnection;
             db.Commit();
             db.Users.BeginTransaction();
-            Logger.Info("Writing {count} user records to database.", users.Count());
             var total = users.Count();
             var output = new List<User>();
             var startTime = DateTime.Now;
@@ -329,7 +332,7 @@ namespace LobotJR.Command.Controller.Twitch
                 {
                     var elapsed = DateTime.Now - startTime;
                     var estimate = TimeSpan.FromMilliseconds(elapsed.TotalMilliseconds / processed * total) - elapsed;
-                    Logger.Info("{count} total user records written. {elapsed} time elapsed, {estimate} estimated remaining.", processed, elapsed.ToString("hh\\:mm\\:ss"), estimate.ToString("hh\\:mm\\:ss"));
+                    Logger.Info("{count} of {total} user records written. {elapsed} time elapsed, {estimate} estimated remaining.", processed, total, elapsed.ToString("hh\\:mm\\:ss"), estimate.ToString("hh\\:mm\\:ss"));
                     logTime = DateTime.Now;
                 }
                 var existing = all[id];
@@ -346,7 +349,6 @@ namespace LobotJR.Command.Controller.Twitch
             var usersToAdd = idsToAdd.Select(x => new User(tempUsers[x], x)).ToList();
             var batch = db.Users.BatchCreate(usersToAdd, 1000, Logger, "user");
             output.AddRange(batch);
-            Logger.Info("Data for {count} users inserted into the database!", output.Count);
             return output;
         }
 
