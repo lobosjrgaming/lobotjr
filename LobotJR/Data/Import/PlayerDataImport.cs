@@ -10,7 +10,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -231,7 +230,7 @@ namespace LobotJR.Data.Import
                 File.WriteAllText("mangled.json", JsonConvert.SerializeObject(mangledRecords));
                 var validUsernames = classList.Keys.Except(mangledUsernames).ToArray();
                 var cursor = 0;
-                var pageSize = 10000;
+                var pageSize = 20000;
                 var failed = false;
                 var startTime = DateTime.Now;
                 Logger.Info("Importing user and player data for {count} users.", validUsernames.Length);
@@ -253,8 +252,6 @@ namespace LobotJR.Data.Import
                     cursor += result;
                     var elapsed = DateTime.Now - startTime;
                     var estimate = TimeSpan.FromMilliseconds(elapsed.TotalMilliseconds / cursor * validUsernames.Length) - elapsed;
-                    GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
-                    GC.Collect();
                     Logger.Info("{count} of {total} records imported. {elapsed} time elapsed, {estimate} estimated remaining.", Math.Min(cursor, validUsernames.Length), validUsernames.Length, elapsed.ToString("hh\\:mm\\:ss"), estimate.ToString("hh\\:mm\\:ss"));
                 }
                 if (failed)
