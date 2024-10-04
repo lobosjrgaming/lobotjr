@@ -109,6 +109,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="UIMock.xaml.cs">
+      <DependentUpon>UIMock.xaml</DependentUpon>
+    </Compile>
     <Compile Include="UpdateConfig.xaml.cs">
       <DependentUpon>UpdateConfig.xaml</DependentUpon>
     </Compile>
@@ -124,6 +127,10 @@
       <DependentUpon>TwitchAuthentication.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="UIMock.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="UpdateConfig.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
