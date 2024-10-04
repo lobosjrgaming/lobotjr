@@ -222,9 +222,9 @@ namespace LobotJR.Data.Import
                 }
                 var classList = LoadLegacyData(coinDataPath, xpDataPath, classDataPath);
                 GC.Collect();
-                var regex = new Regex("[^0-9a-zA-Z_]");
+                var regex = new Regex("^[0-9a-zA-Z][0-9a-zA-Z_]*$");
 
-                var mangledUsernames = classList.Keys.Where(x => regex.IsMatch(x)).ToArray();
+                var mangledUsernames = classList.Keys.Where(x => !regex.IsMatch(x)).ToArray();
                 Logger.Warn("Found {count} entries with invalid user names. These records are being skipped, and their coin, xp, and class data values were saved in mangled.json", mangledUsernames.Count());
                 var mangledRecords = mangledUsernames.Select(x => classList[x]).Where(x => x != null).ToArray();
                 File.WriteAllText("mangled.json", JsonConvert.SerializeObject(mangledRecords));
