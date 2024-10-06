@@ -259,7 +259,7 @@ namespace LobotJR.Command.View.Player
 
         public CommandResult ImportFix()
         {
-            var recordCount = PlayerController.ImportFix();
+            var recordCount = PlayerController.ImportFix().GetAwaiter().GetResult();
             return new CommandResult($"{recordCount} user records updated");
         }
     }

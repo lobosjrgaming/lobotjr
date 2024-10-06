@@ -152,8 +152,9 @@ namespace LobotJR.Command.Controller.Twitch
             var existing = ConnectionManager.CurrentConnection.Users.Read(x => twitchId.Equals(x.TwitchId)).FirstOrDefault();
             if (existing == null)
             {
-                existing = new User() { Username = username, TwitchId = twitchId };
+                existing = new User(username, twitchId);
                 ConnectionManager.CurrentConnection.Users.Create(existing);
+                ConnectionManager.CurrentConnection.Commit();
             }
             else if (!existing.Username.Equals(username))
             {
@@ -389,7 +390,11 @@ namespace LobotJR.Command.Controller.Twitch
                 var databaseUserDict = databaseUsers.ToDictionary(x => x.TwitchId, x => x);
                 var userDict = chatters.ToDictionary(x => x.UserId, x => x.UserName);
                 var foundIds = userDict.Keys.Intersect(databaseUserDict.Keys).ToList();
-                return foundIds.Select(x => databaseUserDict[x]);
+                var newIds = userDict.Keys.Except(databaseUserDict.Keys).ToList();
+                var newUsers = newIds.Select(x => new User(userDict[x], x)).ToList();
+                ConnectionManager.CurrentConnection.Users.BatchCreate(newUsers, newUsers.Count, Logger, "User");
+                ConnectionManager.CurrentConnection.Commit();
+                return foundIds.Select(x => databaseUserDict[x]).Concat(newUsers);
             }
             return Array.Empty<User>();
         }

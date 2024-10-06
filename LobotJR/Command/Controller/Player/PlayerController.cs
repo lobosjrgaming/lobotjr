@@ -1,13 +1,17 @@
 ﻿using LobotJR.Command.Controller.Twitch;
+using LobotJR.Command.Model.Equipment;
+using LobotJR.Command.Model.Pets;
 using LobotJR.Command.Model.Player;
 using LobotJR.Data;
 using LobotJR.Data.Import;
 using LobotJR.Twitch.Model;
+using LobotJR.Utils;
 using NLog;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace LobotJR.Command.Controller.Player
@@ -387,11 +391,127 @@ namespace LobotJR.Command.Controller.Player
             ExperienceToggled?.Invoke(false);
         }
 
+        private async Task<int> ImportPlayerDataBatch(
+            IEnumerable<string> users,
+            Dictionary<string, LegacyCharacterClass> classList,
+            IEnumerable<string> playerIds,
+            IRepository<PlayerCharacter> playerRepository,
+            IRepository<Inventory> inventoryRepository,
+            IRepository<Stable> stableRepository,
+            UserController userController,
+            Dictionary<int, CharacterClass> classMap,
+            Dictionary<int, Item> itemMap,
+            Dictionary<int, Pet> petMap)
+        {
+            var maxLevel = 20;
+            var maxExperience = ExperienceForLevel(maxLevel + 1) - 1;
+            var userArray = users.ToArray();
+            IEnumerable<User> userResponse = await userController.GetUsersByNames(userArray, false);
+            var newIds = userResponse.Select(x => x.TwitchId).Except(playerIds);
+            var idMap = userResponse.Distinct(new UserNameEqualityComparer()).ToDictionary(x => x.TwitchId, x => x);
+            var userMap = newIds.Select(x => idMap[x]).ToDictionary(x => x.Username, x => x);
+            try
+            {
+                var total = classList.Count();
+                var matchedPlayers = userMap.Where(x => classList.ContainsKey(x.Key)).ToDictionary(x => x.Value.TwitchId, x => classList[x.Key]);
+                var playersToAdd = matchedPlayers.Select(x => new PlayerCharacter()
+                {
+                    UserId = x.Key,
+                    CharacterClassId = classMap[x.Value.classType].Id,
+                    Currency = x.Value.coins,
+                    Experience = Math.Min(Math.Max(x.Value.xp, ExperienceForLevel(x.Value.level)), maxExperience),
+                    Level = Math.Min(Math.Max(x.Value.level, LevelFromExperience(x.Value.xp)), maxLevel),
+                    Prestige = x.Value.prestige,
+                }).ToList();
+                playerRepository.BatchCreate(playersToAdd, userArray.Length, Logger, "player");
+                var stablesToAdd = matchedPlayers.SelectMany(x => x.Value.myPets.Select(y => new Stable()
+                {
+                    UserId = x.Key,
+                    PetId = petMap[y.ID].Id,
+                    Name = y.name,
+                    Level = y.level,
+                    Experience = y.xp,
+                    Affection = y.affection,
+                    Hunger = y.hunger,
+                    IsSparkly = y.isSparkly,
+                    IsActive = y.isActive,
+                })).ToList();
+                stableRepository.BatchCreate(stablesToAdd, userArray.Length, Logger, "stable");
+                var itemsToCreate = matchedPlayers.SelectMany(x => x.Value.myItems.Select(y => new Inventory()
+                {
+                    UserId = x.Key,
+                    ItemId = itemMap[y.itemID].Id,
+                    IsEquipped = y.isActive
+                })).ToList();
+                inventoryRepository.BatchCreate(itemsToCreate, userArray.Length, Logger, "inventory");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex);
+                return 0;
+            }
+            return userMap.Count;
+        }
+
+        private Dictionary<string, string> LoadKvpFile(string path)
+        {
+            return File.ReadAllLines(path).Select(x => x.Split('=')).ToDictionary(x => x[0], x => x[1]);
+        }
+
+        private Dictionary<int, CharacterClass> BuildClassMap()
+        {
+            try
+            {
+                var oldClasses = new Dictionary<int, string>() {
+                    { -1, "Deprived" },
+                    { 0, "Deprived" },
+                    { 1, "Warrior" },
+                    { 2, "Mage" },
+                    { 3, "Rogue" },
+                    { 4, "Ranger" },
+                    { 5, "Cleric" }
+                };
+                return oldClasses.ToDictionary(x => x.Key, x => ConnectionManager.CurrentConnection.CharacterClassData.Read(y => y.Name.Equals(x.Value)).First());
+            }
+            catch
+            {
+                throw new Exception("Unable to map class data as names have changed. Aborting import fix.");
+            }
+        }
+
+        private Dictionary<int, Item> BuildItemMap()
+        {
+            try
+            {
+                var itemBackupFile = Directory.GetFiles($"./{ItemDataImport.ContentFolderName}", $"{ItemDataImport.ItemListPath}.*.backup").OrderByDescending(x => x).FirstOrDefault();
+                var itemMap = File.ReadAllLines(itemBackupFile).Select(x => x.Split(',')).ToDictionary(x => int.Parse(x[0]), x => LoadKvpFile($"./{ItemDataImport.ContentFolderName}/{ItemDataImport.ItemFolder}/{x[1]}")["Name"]);
+                return itemMap.ToDictionary(x => x.Key, x => ConnectionManager.CurrentConnection.ItemData.Read(y => y.Name.Equals(x.Value)).First());
+            }
+            catch
+            {
+                throw new Exception("Unable to map item data as names have changed. Aborting import fix.");
+            }
+        }
+
+        private Dictionary<int, Pet> BuildPetMap()
+        {
+            try
+            {
+                var petBackupFile = Directory.GetFiles($"./{PetDataImport.ContentFolderName}", $"{PetDataImport.PetListPath}.*.backup").OrderByDescending(x => x).FirstOrDefault();
+                var petMap = File.ReadAllLines(petBackupFile).Select(x => x.Split(',')).ToDictionary(x => int.Parse(x[0]), x => LoadKvpFile($"./{PetDataImport.ContentFolderName}/{PetDataImport.PetFolder}/{x[1]}")["Name"]);
+                return petMap.ToDictionary(x => x.Key, x => ConnectionManager.CurrentConnection.PetData.Read(y => y.Name.Equals(x.Value)).First());
+            }
+            catch
+            {
+                throw new Exception("Unable to map pet data as names have changed. Aborting import fix.");
+            }
+        }
+
         /// <summary>
         /// Special one-time-use method to fix a botched import.
         /// </summary>
         /// <returns>The number of users updated.</returns>
-        public int ImportFix()
+        public async Task<int> ImportFix()
         {
             Logger.Info("Loading backup data.");
             var xpBackupFile = Directory.GetFiles(".", $"{PlayerDataImport.ExperienceDataPath}.*.backup").OrderByDescending(x => x).FirstOrDefault();
@@ -400,55 +520,67 @@ namespace LobotJR.Command.Controller.Player
 
             if (!string.IsNullOrWhiteSpace(xpBackupFile) && !string.IsNullOrWhiteSpace(coinBackupFile) && !string.IsNullOrWhiteSpace(classBackupFile))
             {
-                var xpData = PlayerDataImport.LoadLegacyExperienceData(xpBackupFile);
-                var coinData = PlayerDataImport.LoadLegacyExperienceData(coinBackupFile);
-                var classData = PlayerDataImport.LoadLegacyClassData(classBackupFile);
+                var classMap = BuildClassMap();
+                var itemMap = BuildItemMap();
+                var petMap = BuildPetMap();
+
+                var fileData = PlayerDataImport.LoadLegacyData(coinBackupFile, xpBackupFile, classBackupFile);
+                var fileNames = fileData.Keys.Distinct(StringComparer.OrdinalIgnoreCase);
 
                 var allPlayers = ConnectionManager.CurrentConnection.PlayerCharacters.Read().ToList();
+                var dupePlayers = allPlayers.GroupBy(x => x.UserId).Where(x => x.Count() > 1);
+                var index = 0;
+                var toDelete = new List<PlayerCharacter>();
+                Logger.Info("Removing duplicate player records for {count} users.", dupePlayers.Count());
+                foreach (var player in dupePlayers)
+                {
+                    var dupes = player.ToList();
+                    var first = dupes.First();
+                    var level = dupes.Max(x => x.Level);
+                    var xp = dupes.Max(x => x.Experience);
+                    first.Level = Math.Max(level, LevelFromExperience(xp));
+                    first.Experience = Math.Max(xp, ExperienceForLevel(first.Level));
+                    first.Currency = dupes.Max(x => x.Currency);
+                    toDelete.AddRange(dupes.Skip(1));
+                    index++;
+                }
+                ConnectionManager.CurrentConnection.PlayerCharacters.DeleteRange(toDelete);
+                ConnectionManager.CurrentConnection.Commit();
+                Logger.Info("{count} duplicate records deleted.", toDelete.Count);
+                allPlayers = ConnectionManager.CurrentConnection.PlayerCharacters.Read().ToList();
                 var allUsers = ConnectionManager.CurrentConnection.Users.Read().ToList();
+                var allPlayerIds = allPlayers.Select(x => x.UserId);
                 var mappedPlayers = allPlayers.Join(allUsers, player => player.UserId, user => user.TwitchId, (player, user) => new KeyValuePair<string, PlayerCharacter>(user.Username, player)).ToDictionary(x => x.Key, x => x.Value);
-
-                var fileUsers = xpData.Keys.Concat(coinData.Keys).Concat(classData.Keys).Distinct(StringComparer.OrdinalIgnoreCase);
-
                 var allNames = allUsers.Select(x => x.Username);
 
-                var dbNames = allNames.Intersect(fileUsers, StringComparer.OrdinalIgnoreCase).ToList();
-                if (dbNames.Any())
+                fileNames = fileNames.Except(mappedPlayers.Keys, StringComparer.OrdinalIgnoreCase);
+
+                var regex = new Regex("^[0-9a-zA-Z][0-9a-zA-Z_]*$");
+
+                var mangledUsernames = fileNames.Where(x => !regex.IsMatch(x)).ToArray();
+                var mangledRecords = mangledUsernames.Select(x => fileData[x]).Where(x => x != null).ToArray();
+                var validUsernames = fileNames.Except(mangledUsernames).ToArray();
+                var found = 0;
+                var cursor = 0;
+                var pageSize = 20000;
+                var startTime = DateTime.Now;
+                var database = ConnectionManager.CurrentConnection;
+                Logger.Info("Checking for missed imports among {count} users.", validUsernames.Length);
+                while (cursor < validUsernames.Length)
                 {
-                    var dbUsers = allUsers.Join(dbNames, user => user.Username, name => name, (user, name) => user, StringComparer.OrdinalIgnoreCase).ToList();
-                    var processCount = 0;
-                    var processStart = DateTime.Now;
-                    var processTime = DateTime.Now;
-                    Logger.Info("Processing import fix for {total} records.", dbUsers.Count);
-                    foreach (var pair in mappedPlayers)
+                    var result = await ImportPlayerDataBatch(validUsernames.Skip(cursor).Take(pageSize), fileData, allPlayerIds, database.PlayerCharacters, database.Inventories, database.Stables, UserController, classMap, itemMap, petMap);
+                    cursor += pageSize;
+                    found += result;
+                    var elapsed = DateTime.Now - startTime;
+                    var estimate = TimeSpan.FromMilliseconds(elapsed.TotalMilliseconds / cursor * validUsernames.Length) - elapsed;
+                    if (result > 0)
                     {
-                        processCount++;
-                        if (classData.TryGetValue(pair.Key.ToLower(), out var classObject))
-                        {
-                            pair.Value.Currency = coinData[pair.Key.ToLower()];
-                            pair.Value.Level = classObject.level;
-                            pair.Value.Experience = xpData[pair.Key.ToLower()];
-                            var xpLevel = LevelFromExperience(pair.Value.Experience);
-                            if (pair.Value.Level < xpLevel)
-                            {
-                                pair.Value.Level = xpLevel;
-                            }
-                            else if (pair.Value.Level > xpLevel)
-                            {
-                                pair.Value.Experience = ExperienceForLevel(pair.Value.Level);
-                            }
-                        }
-                        if (DateTime.Now - processTime > TimeSpan.FromSeconds(5))
-                        {
-                            var elapsed = DateTime.Now - processStart;
-                            var estimate = TimeSpan.FromMilliseconds(elapsed.TotalMilliseconds / processCount * dbUsers.Count) - elapsed;
-                            Logger.Info("{count} records processed. {elapsed} time elapsed, {estimate} estimated remaining.", processCount, elapsed.ToString("hh\\:mm\\:ss"), estimate.ToString("hh\\:mm\\:ss"));
-                            processTime = DateTime.Now;
-                        }
+                        Logger.Info("{count} skipped records imported.", result);
                     }
-                    Logger.Info("Import fix for {count} records completed in {elapsed}.", processCount, (DateTime.Now - processStart).ToString("hh\\:mm\\:ss"));
-                    return processCount;
+                    Logger.Info("{count} of {total} records processed. {elapsed} time elapsed, {estimate} estimated remaining.", Math.Min(cursor, validUsernames.Length), validUsernames.Length, elapsed.ToString("hh\\:mm\\:ss"), estimate.ToString("hh\\:mm\\:ss"));
                 }
+                Logger.Info("{count} skipped records imported.", found);
+                return found;
             }
             return 0;
         }
@@ -460,7 +592,6 @@ namespace LobotJR.Command.Controller.Player
             {
                 if (LastAward + TimeSpan.FromMinutes(settings.ExperienceFrequency) <= DateTime.Now)
                 {
-                    await UserController.GetViewerList();
                     var chatters = await UserController.GetViewerList();
                     var xpToAward = settings.ExperienceValue * CurrentMultiplier;
                     var coinsToAward = settings.CoinValue * CurrentMultiplier;
