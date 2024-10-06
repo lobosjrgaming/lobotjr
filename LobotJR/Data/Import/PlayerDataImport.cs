@@ -163,7 +163,7 @@ namespace LobotJR.Data.Import
             return userArray.Length;
         }
 
-        private static Dictionary<string, LegacyCharacterClass> LoadLegacyData(string coinDataPath, string xpDataPath, string classDataPath)
+        public static Dictionary<string, LegacyCharacterClass> LoadLegacyData(string coinDataPath, string xpDataPath, string classDataPath)
         {
             var coinList = LoadLegacyCoinData(coinDataPath);
             var xpList = LoadLegacyExperienceData(xpDataPath);
