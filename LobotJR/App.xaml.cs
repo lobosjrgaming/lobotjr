@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 
-namespace LobotJR.Launcher
+namespace LobotJR
 {
     /// <summary>
     /// Interaction logic for App.xaml
