@@ -580,6 +580,7 @@ namespace LobotJR.Command.Controller.Player
                     Logger.Info("{count} of {total} records processed. {elapsed} time elapsed, {estimate} estimated remaining.", Math.Min(cursor, validUsernames.Length), validUsernames.Length, elapsed.ToString("hh\\:mm\\:ss"), estimate.ToString("hh\\:mm\\:ss"));
                 }
                 Logger.Info("{count} skipped records imported.", found);
+                return found;
             }
             return 0;
         }
