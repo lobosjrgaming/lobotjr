@@ -134,9 +134,14 @@ namespace LobotJR.Command.View.Dungeons
             var entry = GroupFinderController.GetPlayerQueueEntry(player);
             if (entry != null)
             {
+                var lastFormed = "No groups have been formed recently.";
+                if (GroupFinderController.LastGroupFormed != null)
+                {
+                    lastFormed = $"The last group was formed {(DateTime.Now - GroupFinderController.LastGroupFormed.Value).ToReadableTime()} ago.";
+                }
                 return new CommandResult(
                     $"You are queued for {entry.Dungeons.Count()} dungeons and have been waiting {(DateTime.Now - entry.QueueTime).ToReadableTime()}.",
-                    $"The last group was formed {(DateTime.Now - GroupFinderController.LastGroupFormed).ToReadableTime()} ago.");
+                    lastFormed);
             }
             return new CommandResult("You are not queued in the Group Finder.");
         }
