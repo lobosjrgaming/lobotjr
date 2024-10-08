@@ -69,6 +69,12 @@ namespace LobotJR.Test.Controllers.Fishing
             Assert.IsTrue(fish.MaximumLength >= catchData.Length);
         }
 
+        /// <summary>
+        /// This test evaluates one of the randomization methods to check if
+        /// the distribution matches expectations. Because this is a random
+        /// process the test can fail without indicating an actual issue, but
+        /// it should pass *most* of the time.
+        /// </summary>
         [TestMethod]
         public void CalculateFishSizesRandomizesWithSteppedWeights()
         {
@@ -95,6 +101,12 @@ namespace LobotJR.Test.Controllers.Fishing
             Assert.IsTrue(maxGroupSize > 0 && maxGroupSize < sampleSize * 0.02);
         }
 
+        /// <summary>
+        /// This test evaluates one of the randomization methods to check if
+        /// the distribution matches expectations. Because this is a random
+        /// process the test can fail without indicating an actual issue, but
+        /// it should pass *most* of the time.
+        /// </summary>
         [TestMethod]
         public void CalculateFishSizesRandomizesWithNormalDistribution()
         {
