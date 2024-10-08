@@ -22,7 +22,7 @@ namespace LobotJR.Command.Controller.Dungeons
         private readonly PartyController PartyController;
         private readonly List<QueueEntry> GroupFinderQueue = new List<QueueEntry>();
 
-        public DateTime LastGroupFormed { get; private set; } = DateTime.MinValue;
+        public DateTime? LastGroupFormed { get; private set; } = null;
 
         /// <summary>
         /// Event handler for events related to the dungeon finder queue.
@@ -194,6 +194,7 @@ namespace LobotJR.Command.Controller.Dungeons
             GroupFinderQueue.Add(new QueueEntry(player, dungeons.ToList()));
             if (TryCreateParty(out var party))
             {
+                LastGroupFormed = DateTime.Now;
                 PartyFound?.Invoke(party);
                 return true;
             }
