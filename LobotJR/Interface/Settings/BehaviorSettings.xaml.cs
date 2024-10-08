@@ -10,16 +10,17 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace LobotJR.Interface
+namespace LobotJR.Interface.Settings
 {
     /// <summary>
-    /// Interaction logic for Settings.xaml
+    /// Interaction logic for BehaviorSettings.xaml
     /// </summary>
-    public partial class Settings : Window
+    public partial class BehaviorSettings : UserControl
     {
-        public Settings()
+        public BehaviorSettings()
         {
             InitializeComponent();
         }
