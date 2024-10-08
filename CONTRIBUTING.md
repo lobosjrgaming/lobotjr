@@ -1,10 +1,10 @@
-# Wolfpack RPG Client Contribution Guidelines
+# Lobot Contribution Guidelines
 
 ## Introduction
 
 ### Welcome
 
-If you're reading this, then you're thinking about making a contribution to the Wolfpack RPG server. Thanks! This app is built and maintained by volunteers who want to support LobosJr and the community he has built. We wouldn't have this app without people like you.
+If you're reading this, then you're thinking about making a contribution to Lobot, the Wolfpack RPG server. Thanks! This app is built and maintained by volunteers who want to support LobosJr and the community he has built. We wouldn't have this app without people like you.
 
 This document contains a set of guidelines that will help you make sure that any work you do can be integrated into the application seamlessly. We know your time is valuable, and the last thing we want to do is annoy our potential contributors so much that they don't come back. Nobody wants to have to go back and forth for days on a PR.
 
@@ -133,8 +133,8 @@ If you're making large changes to a class, like reorganizing things or moving pa
 
 When creating a bug report, copy the template below and fill it out in your bug description. If there is additional information, add it below the filled-out form. You can also attach screenshots or other helpful information if necessary.
 
-    I encountered this bug on app version {version number}
-    This was encountered on the main [github pages site](https://empyrealhell.github.io/wolfpack-rpg-client)
+    I encountered this bug on at {date and time}
+    The Twitch username I encountered the issue on is {Twitch username}
 
     What I was doing:
     {Description of the action you were attempting}
@@ -177,6 +177,6 @@ The [LobosJr Discord server](http://discord.gg/wolfpack) is another area where t
 
 ### Development Community
 
-The preferred contact method for each of the application managers is listed in [the readme](https://github.com/EmpyrealHell/wolfpack-rpg-client/blob/master/README.md). This is the fastest way to get ahold of someone about the application.
+The preferred contact method for each of the application managers is listed in [the readme](https://github.com/lobosjrgaming/lobotjr/blob/master/README.md). This is the fastest way to get ahold of someone about the application.
 
 Due to the small size of the team, there isn't a channel in the Discord server at this time.
