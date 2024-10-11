@@ -1,4 +1,6 @@
-﻿namespace LobotJR.Data
+﻿using System.Threading.Tasks;
+
+namespace LobotJR.Data
 {
     /// <summary>
     /// Factory for creating connections to the database.
@@ -11,7 +13,7 @@
         /// block.
         /// </summary>
         /// <returns>A newly created connection database.</returns>
-        IDatabase OpenConnection();
+        Task<IDatabase> OpenConnection();
         /// <summary>
         /// The current active connection to the database. Null if no
         /// connection has been opened.

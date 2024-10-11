@@ -12,12 +12,12 @@ namespace LobotJR.Data.Import
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         public static IFileSystem FileSystem = new FileSystem();
 
-        private static bool ImportFishData(IConnectionManager connectionManager)
+        private async static Task<bool> ImportFishData(IConnectionManager connectionManager)
         {
             if (FileSystem.Exists(FishDataImport.FishDataPath))
             {
                 Logger.Info("Detected legacy fish data file, migrating to SQLite.");
-                using (var database = connectionManager.OpenConnection())
+                using (var database = await connectionManager.OpenConnection())
                 {
                     FishDataImport.ImportFishDataIntoSql(FishDataImport.FishDataPath, database.FishData);
                 }
@@ -36,7 +36,7 @@ namespace LobotJR.Data.Import
             {
                 Logger.Info("Detected legacy fisher data file, migrating to SQLite. This could take a few minutes.");
                 IEnumerable<string> users = new List<string>();
-                using (var database = connectionManager.OpenConnection())
+                using (var database = await connectionManager.OpenConnection())
                 {
                     Dictionary<string, LegacyFisher> legacyFisherData = FisherDataImport.LoadLegacyFisherData(FisherDataImport.FisherDataPath);
                     List<LegacyCatch> legacyLeaderboardData = FisherDataImport.LoadLegacyFishingLeaderboardData(FisherDataImport.FishingLeaderboardPath);
@@ -61,12 +61,12 @@ namespace LobotJR.Data.Import
             return false;
         }
 
-        private static Dictionary<int, int> ImportPetData(IConnectionManager connectionManager)
+        private static async Task<Dictionary<int, int>> ImportPetData(IConnectionManager connectionManager)
         {
             var content = PetDataImport.ContentFolderName;
             var listPath = PetDataImport.PetListPath;
             var hasPetData = FileSystem.Exists($"{content}/{listPath}");
-            using (var database = connectionManager.OpenConnection())
+            using (var database = await connectionManager.OpenConnection())
             {
                 var hasPetDatabase = database.PetData.Read().Any() || database.PetRarityData.Read().Any();
                 if (hasPetData)
@@ -83,9 +83,9 @@ namespace LobotJR.Data.Import
             return new Dictionary<int, int>();
         }
 
-        private static void RollbackPetData(IConnectionManager connectionManager)
+        private static async Task RollbackPetData(IConnectionManager connectionManager)
         {
-            using (var database = connectionManager.OpenConnection())
+            using (var database = await connectionManager.OpenConnection())
             {
                 database.PetData.DeleteAll();
                 database.PetRarityData.DeleteAll();
@@ -100,12 +100,12 @@ namespace LobotJR.Data.Import
             Logger.Info("Pet data migration complete!");
         }
 
-        private static Dictionary<int, int> ImportItemData(IConnectionManager connectionManager)
+        private static async Task<Dictionary<int, int>> ImportItemData(IConnectionManager connectionManager)
         {
             var content = ItemDataImport.ContentFolderName;
             var listPath = ItemDataImport.ItemListPath;
             var hasItemData = FileSystem.Exists($"{content}/{listPath}");
-            using (var database = connectionManager.OpenConnection())
+            using (var database = await connectionManager.OpenConnection())
             {
                 var hasItemDatabase = database.ItemData.Read().Any() || database.ItemTypeData.Read().Any() || database.ItemSlotData.Read().Any() || database.ItemQualityData.Read().Any();
                 if (hasItemData)
@@ -122,9 +122,9 @@ namespace LobotJR.Data.Import
             return new Dictionary<int, int>();
         }
 
-        private static void RollbackItemData(IConnectionManager connectionManager)
+        private static async Task RollbackItemData(IConnectionManager connectionManager)
         {
-            using (var database = connectionManager.OpenConnection())
+            using (var database = await connectionManager.OpenConnection())
             {
                 database.ItemData.DeleteAll();
                 database.ItemTypeData.DeleteAll();
@@ -141,12 +141,12 @@ namespace LobotJR.Data.Import
             Logger.Info("Item data migration complete!");
         }
 
-        private static bool ImportDungeonData(IConnectionManager connectionManager, Dictionary<int, int> itemMap)
+        private static async Task<bool> ImportDungeonData(IConnectionManager connectionManager, Dictionary<int, int> itemMap)
         {
             var content = DungeonDataImport.ContentFolderName;
             var listPath = DungeonDataImport.DungeonListPath;
             var hasDungeonData = FileSystem.Exists($"{content}/{listPath}");
-            using (var database = connectionManager.OpenConnection())
+            using (var database = await connectionManager.OpenConnection())
             {
                 var hasDungeonDatabase = database.DungeonData.Read().Any() || database.DungeonTimerData.Read().Any() || database.DungeonModeData.Read().Any();
                 if (hasDungeonData)
@@ -163,18 +163,18 @@ namespace LobotJR.Data.Import
             return true;
         }
 
-        private static void RollbackDungeonData(IConnectionManager connectionManager)
+        private static async Task RollbackDungeonData(IConnectionManager connectionManager)
         {
-            using (var database = connectionManager.OpenConnection())
+            using (var database = await connectionManager.OpenConnection())
             {
                 database.DungeonData.DeleteAll();
                 database.DungeonTimerData.DeleteAll();
             }
         }
 
-        private static void RollbackPlayerData(IConnectionManager connectionManager)
+        private static async Task RollbackPlayerData(IConnectionManager connectionManager)
         {
-            using (var database = connectionManager.OpenConnection())
+            using (var database = await connectionManager.OpenConnection())
             {
                 database.PlayerCharacters.DeleteAll();
                 database.CharacterClassData.DeleteAll();
@@ -201,7 +201,7 @@ namespace LobotJR.Data.Import
             var hasXpData = FileSystem.Exists(PlayerDataImport.ExperienceDataPath);
             var hasClassData = FileSystem.Exists(PlayerDataImport.ClassDataPath);
             var hasPlayerDatabase = false;
-            using (var database = connectionManager.OpenConnection())
+            using (var database = await connectionManager.OpenConnection())
             {
                 hasPlayerDatabase = database.PlayerCharacters.Read().Any() || database.CharacterClassData.Read().Any() || database.Inventories.Read().Any() || database.Stables.Read().Any();
             }
@@ -231,13 +231,13 @@ namespace LobotJR.Data.Import
 
         private static async Task<bool> ImportPlayerData(IConnectionManager connectionManager, UserController userController)
         {
-            var petMap = ImportPetData(connectionManager);
+            var petMap = await ImportPetData(connectionManager);
             if (petMap.Any())
             {
-                var itemMap = ImportItemData(connectionManager);
+                var itemMap = await ImportItemData(connectionManager);
                 if (itemMap.Any())
                 {
-                    var dungeonImport = ImportDungeonData(connectionManager, itemMap);
+                    var dungeonImport = await ImportDungeonData(connectionManager, itemMap);
                     if (dungeonImport)
                     {
                         var playerImport = await ImportPlayerData(connectionManager, userController, itemMap, petMap);
@@ -249,19 +249,19 @@ namespace LobotJR.Data.Import
                             FinalizePetData();
                             return true;
                         }
-                        RollbackPlayerData(connectionManager);
-                        RollbackDungeonData(connectionManager);
+                        await RollbackPlayerData(connectionManager);
+                        await RollbackDungeonData(connectionManager);
                     }
-                    RollbackItemData(connectionManager);
+                    await RollbackItemData(connectionManager);
                 }
-                RollbackPetData(connectionManager);
+                await RollbackPetData(connectionManager);
             }
             return false;
         }
 
         public static async Task ImportLegacyData(IConnectionManager connectionManager, UserController userController)
         {
-            ImportFishData(connectionManager);
+            await ImportFishData(connectionManager);
             await ImportFisherData(connectionManager, userController);
             var playerImport = await ImportPlayerData(connectionManager, userController);
             if (playerImport)

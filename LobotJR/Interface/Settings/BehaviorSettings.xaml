@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:LobotJR.Interface.Settings"
+             xmlns:interface="clr-namespace:LobotJR.Interface"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
@@ -44,7 +45,13 @@
         <Label Content="Twitch Plays" Grid.Row="12" HorizontalAlignment="Right"/>
         <TextBlock Grid.Row="13" Grid.Column="3" Margin="0,5,0,5" TextWrapping="Wrap">Toggles Twitch Plays Dark Souls functionality (requires restart).</TextBlock>
         <TextBox x:Name="LogFile" Grid.Column="2"/>
-        <TextBox x:Name="LogSize" Grid.Row="2" Grid.Column="2"/>
+        <TextBox x:Name="LogSize" Grid.Row="2" Grid.Column="2">
+            <Binding ElementName="AwardSettings" Path="AwardFrequencyValue">
+                <Binding.ValidationRules>
+                    <interface:NumericInputValidator IsReal="False" IsNegative="False"></interface:NumericInputValidator>
+                </Binding.ValidationRules>
+            </Binding>
+        </TextBox>
         <TextBox x:Name="ArchiveCount" Grid.Row="4" Grid.Column="2"/>
         <TextBox x:Name="MaxRecipients" Grid.Row="6" Grid.Column="2"/>
         <TextBox x:Name="UpdateFrequency" Grid.Row="8" Grid.Column="2"/>

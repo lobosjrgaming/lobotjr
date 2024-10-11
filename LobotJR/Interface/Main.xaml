@@ -12,7 +12,7 @@
                 <ToolBar>
                     <Button>Authenticate</Button>
                     <Button>Reconnect</Button>
-                    <Button>Settings</Button>
+                    <Button x:Name="SettingsButton" Click="Settings_Click">Settings</Button>
                 </ToolBar>
                 <ToolBar>
                     <Label>XP:</Label>

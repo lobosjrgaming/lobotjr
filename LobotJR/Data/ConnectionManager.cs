@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using System.Threading.Tasks;
 
 namespace LobotJR.Data
 {
@@ -19,8 +20,13 @@ namespace LobotJR.Data
         /// block, with all changes saved just before the context is disposed.
         /// </summary>
         /// <returns>A new connection to the database.</returns>
-        public IDatabase OpenConnection()
+        public async Task<IDatabase> OpenConnection()
         {
+            while (CurrentConnection != null && !CurrentConnection.IsDisposed)
+            {
+                await Task.Delay(1);
+            }
+
             var context = new SqliteContext();
             context.Initialize();
             CurrentConnection = new SqliteRepositoryManager(context);

@@ -1,4 +1,5 @@
-﻿using LobotJR.Shared.Utility;
+﻿using LobotJR.Interface.Settings;
+using LobotJR.Shared.Utility;
 using NLog;
 using System.Collections.Generic;
 using System.Reflection;
@@ -84,6 +85,12 @@ namespace LobotJR.Interface
             var tokenData = FileUtils.ReadTokenData();
             //This is outside of the try loop because if it fails, it will never succeed until the database state is corrected
             // await ConfigureDatabase(clientData, tokenData);
+        }
+
+        private void Settings_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new SettingsEditor();
+            dialog.ShowDialog();
         }
     }
 }

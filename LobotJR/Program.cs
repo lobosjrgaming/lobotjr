@@ -121,9 +121,9 @@ namespace LobotJR
             return container.BeginLifetimeScope();
         }
 
-        private static void SeedDatabase(IConnectionManager connectionManager, UserController userController, TokenData tokenData)
+        private static async Task SeedDatabase(IConnectionManager connectionManager, UserController userController, TokenData tokenData)
         {
-            using (connectionManager.OpenConnection())
+            using (await connectionManager.OpenConnection())
             {
                 connectionManager.SeedData();
                 userController.LastUpdate = DateTime.MinValue;
@@ -131,9 +131,9 @@ namespace LobotJR
             }
         }
 
-        private static void ConfigureLogging(IConnectionManager connectionManager)
+        private static async Task ConfigureLogging(IConnectionManager connectionManager)
         {
-            using (connectionManager.OpenConnection())
+            using (await connectionManager.OpenConnection())
             {
                 var appSettings = connectionManager.CurrentConnection.AppSettings.Read().First();
                 logFile = appSettings.LoggingFile;
@@ -258,7 +258,7 @@ namespace LobotJR
                 CrashAlert();
             }
 
-            using (connectionManager.OpenConnection())
+            using (await connectionManager.OpenConnection())
             {
                 controllerManager.Initialize();
                 twitchClient.Initialize();
@@ -278,7 +278,7 @@ namespace LobotJR
 
             while (true)
             {
-                using (connectionManager.OpenConnection())
+                using (await connectionManager.OpenConnection())
                 {
                     await controllerManager.Process();
                     await twitchClient.ProcessQueue();
@@ -319,9 +319,9 @@ namespace LobotJR
             {
                 var connectionManager = scope.Resolve<IConnectionManager>();
                 var userController = scope.Resolve<UserController>();
-                SeedDatabase(connectionManager, userController, tokenData);
-                ConfigureLogging(connectionManager);
-                using (connectionManager.OpenConnection())
+                await SeedDatabase(connectionManager, userController, tokenData);
+                await ConfigureLogging(connectionManager);
+                using (await connectionManager.OpenConnection())
                 {
                     var appSettings = connectionManager.CurrentConnection.AppSettings.Read().First();
                     twitchPlays = appSettings.TwitchPlays;

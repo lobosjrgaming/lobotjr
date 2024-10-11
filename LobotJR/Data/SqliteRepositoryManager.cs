@@ -19,6 +19,8 @@ namespace LobotJR.Data
     {
         private DbContext context;
 
+        public bool IsDisposed { get; private set; }
+
         public IRepository<Metadata> Metadata { get; private set; }
         public IRepository<AppSettings> AppSettings { get; private set; }
         public IRepository<GameSettings> GameSettings { get; private set; }
@@ -117,6 +119,7 @@ namespace LobotJR.Data
             context.SaveChanges();
             context.Database.Connection.Close();
             context.Dispose();
+            IsDisposed = true;
         }
     }
 }

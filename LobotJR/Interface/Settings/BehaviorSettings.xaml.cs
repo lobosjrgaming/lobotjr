@@ -1,28 +1,29 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
+﻿using LobotJR.Data;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace LobotJR.Interface.Settings
 {
     /// <summary>
     /// Interaction logic for BehaviorSettings.xaml
     /// </summary>
-    public partial class BehaviorSettings : UserControl
+    public partial class BehaviorSettings : UserControl, ISettingsPage<AppSettings>
     {
+        public string Category => "App";
+
         public BehaviorSettings()
         {
             InitializeComponent();
+        }
+
+
+        public void Load(AppSettings settingsObject)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void Save(AppSettings settingsObject)
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

@@ -18,7 +18,7 @@
         </Grid.RowDefinitions>
         <TextBox x:Name="SearchText" Margin="0,0,20,0"/>
         <Button x:Name="SearchButton" Content="🔍" Width="20" HorizontalAlignment="Right"/>
-        <TreeView Grid.Row="1" Margin="0,5,0,0">
+        <TreeView x:Name="CategoryView" Grid.Row="1" Margin="0,5,0,0" SelectedItemChanged="CategoryView_SelectedItemChanged">
             <TreeViewItem Header="App Settings">
                 <TreeViewItem Header="Twitch Authentication"/>
                 <TreeViewItem Header="Bot Behavior"/>
@@ -34,12 +34,14 @@
                 </TreeViewItem>
             </TreeViewItem>
             <TreeViewItem Header="UI Settings">
-                <Label Content="Font &amp; Color"/>
+                <TreeViewItem Header="Font &amp; Color"/>
             </TreeViewItem>
         </TreeView>
         <ScrollViewer Margin="5,0,0,0" Grid.RowSpan="2" Grid.Column="2" VerticalScrollBarVisibility="Auto">
             <StackPanel x:Name="SettingsContainer" Margin="0,0,5,0">
-                <local:BehaviorSettings/>
+                <local:TwitchClientSettings x:Name="TwitchAuthPage"/>
+                <local:BehaviorSettings x:Name="BehaviorPage"/>
+                <local:AwardSettings x:Name="AwardPage"/>
             </StackPanel>
         </ScrollViewer>
         <Button x:Name="Ok" Content="Ok" Margin="0,5,80,0" Width="75" Grid.Row="4" Grid.ColumnSpan="3" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>

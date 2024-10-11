@@ -1,28 +1,52 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
+﻿using LobotJR.Data;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace LobotJR.Interface.Settings
 {
     /// <summary>
     /// Interaction logic for AwardSettings.xaml
     /// </summary>
-    public partial class AwardSettings : UserControl
+    public partial class AwardSettings : UserControl, ISettingsPage<GameSettings>
     {
+        public string Category => "RPG";
+
+        public string AwardFrequencyValue { get; set; }
+        public string XpAmountValue { get; set; }
+        public string CoinAmountValue { get; set; }
+        public string SubMultiplierValue { get; set; }
+
         public AwardSettings()
         {
             InitializeComponent();
+        }
+
+        public void Load(GameSettings settingsObject)
+        {
+            AwardFrequencyValue = settingsObject.ExperienceFrequency.ToString();
+            XpAmountValue = settingsObject.ExperienceValue.ToString();
+            CoinAmountValue = settingsObject.CoinValue.ToString();
+            SubMultiplierValue = settingsObject.SubRewardMultiplier.ToString();
+        }
+
+        public void Save(GameSettings settingsObject)
+        {
+            int value;
+            if (int.TryParse(AwardFrequencyValue, out value))
+            {
+                settingsObject.ExperienceFrequency = value;
+            }
+            if (int.TryParse(XpAmountValue, out value))
+            {
+                settingsObject.ExperienceValue = value;
+            }
+            if (int.TryParse(CoinAmountValue, out value))
+            {
+                settingsObject.CoinValue = value;
+            }
+            if (int.TryParse(SubMultiplierValue, out value))
+            {
+                settingsObject.SubRewardMultiplier = value;
+            }
         }
     }
 }

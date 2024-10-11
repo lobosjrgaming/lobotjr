@@ -241,12 +241,14 @@
     <Compile Include="Interface\Main.xaml.cs">
       <DependentUpon>Main.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Interface\NumericInputValidator.cs" />
     <Compile Include="Interface\Settings\AwardSettings.xaml.cs">
       <DependentUpon>AwardSettings.xaml</DependentUpon>
     </Compile>
     <Compile Include="Interface\Settings\BehaviorSettings.xaml.cs">
       <DependentUpon>BehaviorSettings.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Interface\Settings\ISettingsPage.cs" />
     <Compile Include="Interface\Settings\SettingsEditor.xaml.cs">
       <DependentUpon>SettingsEditor.xaml</DependentUpon>
     </Compile>
