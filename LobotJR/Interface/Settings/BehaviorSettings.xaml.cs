@@ -1,29 +1,18 @@
-﻿using LobotJR.Data;
-using System.Windows.Controls;
+﻿using System.Windows.Controls;
 
 namespace LobotJR.Interface.Settings
 {
     /// <summary>
     /// Interaction logic for BehaviorSettings.xaml
     /// </summary>
-    public partial class BehaviorSettings : UserControl, ISettingsPage<AppSettings>
+    public partial class BehaviorSettings : UserControl, ISettingsPage
     {
         public string Category => "App";
+        public string PageName => "Bot Behavior";
 
         public BehaviorSettings()
         {
             InitializeComponent();
-        }
-
-
-        public void Load(AppSettings settingsObject)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public void Save(AppSettings settingsObject)
-        {
-            throw new System.NotImplementedException();
         }
     }
 }

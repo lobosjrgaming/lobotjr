@@ -226,6 +226,7 @@
     <Compile Include="Command\Controller\Fishing\TournamentController.cs" />
     <Compile Include="Command\Controller\Twitch\UserController.cs" />
     <Compile Include="Command\Model\AccessControl\AccessGroup.cs" />
+    <Compile Include="Data\ClientSettings.cs" />
     <Compile Include="Data\IDatabase.cs" />
     <Compile Include="Data\IConnectionManager.cs" />
     <Compile Include="Data\ConnectionManager.cs" />

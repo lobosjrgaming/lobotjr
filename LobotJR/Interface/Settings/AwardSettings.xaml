@@ -24,36 +24,36 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         <Label Content="Award Frequency" HorizontalAlignment="Right"/>
-        <TextBlock Grid.Row="1" Grid.Column="1" Margin="0,5,0,5" TextWrapping="Wrap">How often (in minutes) viewers will be awarded xp and coins.</TextBlock>
+        <TextBlock Grid.Row="1" Grid.Column="1" TextWrapping="Wrap">How often (in minutes) viewers will be awarded xp and coins.</TextBlock>
         <Label Content="XP Amount" Grid.Row="2" HorizontalAlignment="Right"/>
-        <TextBlock Grid.Row="3" Grid.Column="1" Margin="0,5,0,5" TextWrapping="Wrap">The amount of experience given to viewers each interval.</TextBlock>
+        <TextBlock Grid.Row="3" Grid.Column="1" TextWrapping="Wrap">The amount of experience given to viewers each interval.</TextBlock>
         <Label Content="Coin Amount" Grid.Row="4" HorizontalAlignment="Right"/>
-        <TextBlock Grid.Row="5" Grid.Column="1" Margin="0,5,0,5" TextWrapping="Wrap">The amount of Wolfcoins given to viewers each interval.</TextBlock>
+        <TextBlock Grid.Row="5" Grid.Column="1" TextWrapping="Wrap">The amount of Wolfcoins given to viewers each interval.</TextBlock>
         <Label Content="Sub Multiplier" Grid.Row="6" HorizontalAlignment="Right"/>
-        <TextBlock Grid.Row="7" Grid.Column="1" Margin="0,5,0,5" TextWrapping="Wrap">The multiplier to experience and Wolfcoin awards for channel subscribers.</TextBlock>
-        <TextBox x:Name="AwardFrequency" Grid.Column="1">
-            <Binding ElementName="AwardSettings" Path="AwardFrequencyValue">
+        <TextBlock Grid.Row="7" Grid.Column="1" TextWrapping="Wrap">The multiplier to experience and Wolfcoin awards for channel subscribers.</TextBlock>
+        <TextBox x:Name="AwardFrequency" Grid.Column="1" VerticalAlignment="Center">
+            <Binding Path="GameSettings.ExperienceFrequency">
                 <Binding.ValidationRules>
                     <interface:NumericInputValidator IsReal="False" IsNegative="False"></interface:NumericInputValidator>
                 </Binding.ValidationRules>
             </Binding>
         </TextBox>
-        <TextBox x:Name="XpAmount" Grid.Row="2" Grid.Column="1">
-            <Binding ElementName="AwardSettings" Path="XpAmountValue">
+        <TextBox x:Name="XpAmount" Grid.Row="2" Grid.Column="1" VerticalAlignment="Center">
+            <Binding Path="GameSettings.ExperienceValue">
                 <Binding.ValidationRules>
                     <interface:NumericInputValidator IsReal="False" IsNegative="True"></interface:NumericInputValidator>
                 </Binding.ValidationRules>
             </Binding>
         </TextBox>
-        <TextBox x:Name="CoinAmount" Grid.Row="4" Grid.Column="1">
-            <Binding ElementName="AwardSettings" Path="CoinAmountValue">
+        <TextBox x:Name="CoinAmount" Grid.Row="4" Grid.Column="1" VerticalAlignment="Center">
+            <Binding Path="GameSettings.CoinValue">
                 <Binding.ValidationRules>
                     <interface:NumericInputValidator IsReal="False" IsNegative="True"></interface:NumericInputValidator>
                 </Binding.ValidationRules>
             </Binding>
         </TextBox>
-        <TextBox x:Name="SubMultiplier" Grid.Row="6" Grid.Column="1">
-            <Binding ElementName="AwardSettings" Path="SubMultiplierValue">
+        <TextBox x:Name="SubMultiplier" Grid.Row="6" Grid.Column="1" VerticalAlignment="Center">
+            <Binding Path="GameSettings.SubRewardMultiplier">
                 <Binding.ValidationRules>
                     <interface:NumericInputValidator IsReal="False" IsNegative="False"></interface:NumericInputValidator>
                 </Binding.ValidationRules>

@@ -24,6 +24,7 @@ namespace LobotJR.Data
         public IRepository<Metadata> Metadata { get; private set; }
         public IRepository<AppSettings> AppSettings { get; private set; }
         public IRepository<GameSettings> GameSettings { get; private set; }
+        public IRepository<ClientSettings> ClientSettings { get; private set; }
         public IRepository<BugReport> BugReports { get; private set; }
         public IRepository<DataTimer> DataTimers { get; private set; }
         public IRepository<User> Users { get; private set; }
@@ -74,6 +75,7 @@ namespace LobotJR.Data
             Metadata = new SqliteRepository<Metadata>(context);
             AppSettings = new SqliteRepository<AppSettings>(context);
             GameSettings = new SqliteRepository<GameSettings>(context);
+            ClientSettings = new SqliteRepository<ClientSettings>(context);
             BugReports = new SqliteRepository<BugReport>(context);
             DataTimers = new SqliteRepository<DataTimer>(context);
             Users = new SqliteRepository<User>(context);

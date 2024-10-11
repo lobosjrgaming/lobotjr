@@ -1,9 +1,8 @@
 ﻿namespace LobotJR.Interface.Settings
 {
-    public interface ISettingsPage<T>
+    public interface ISettingsPage
     {
         string Category { get; }
-        void Load(T settingsObject);
-        void Save(T settingsObject);
+        string PageName { get; }
     }
 }

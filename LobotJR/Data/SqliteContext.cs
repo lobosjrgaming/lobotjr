@@ -21,6 +21,7 @@ namespace LobotJR.Data
         public DbSet<Metadata> Metadata { get; set; }
         public DbSet<AppSettings> AppSettings { get; set; }
         public DbSet<GameSettings> GameSettings { get; set; }
+        public DbSet<ClientSettings> ClientSettings { get; set; }
         public DbSet<BugReport> BugReports { get; set; }
         public DbSet<DataTimer> DataTimers { get; set; }
 

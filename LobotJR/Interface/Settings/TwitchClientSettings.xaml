@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:LobotJR.Interface.Settings"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
+             d:DesignHeight="450" d:DesignWidth="800" Loaded="UserControl_Loaded">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -20,9 +20,9 @@
         <TextBlock Grid.ColumnSpan="2" TextWrapping="Wrap">
             These values come from the Twitch app you registered in the <Hyperlink NavigateUri="https://dev.twitch.tv/console/apps">Twitch developer console</Hyperlink>. Your app must have <Hyperlink NavigateUri="http://localhost:9000/">http://localhost:9000/</Hyperlink> listed as an OAuth Redirect URL for authentication to work.
         </TextBlock>
-        <Label Content="Client ID" Margin="0,5,0,0" Grid.Row="1" HorizontalAlignment="Right"/>
-        <Label Content="Client Secret" Margin="0,5,0,0" Grid.Row="2" HorizontalAlignment="Right"/>
-        <TextBox x:Name="ClientId" Margin="0,5,0,0" Grid.Row="1" Grid.Column="1"/>
-        <PasswordBox x:Name="ClientSecret" Margin="0,5,0,0" Grid.Row="2" Grid.Column="1"/>
+        <Label Content="Client ID" Grid.Row="1" HorizontalAlignment="Right"/>
+        <Label Content="Client Secret" Grid.Row="2" HorizontalAlignment="Right"/>
+        <TextBox x:Name="ClientId" Grid.Row="1" Grid.Column="1" VerticalAlignment="Center" Text="{Binding ClientData.ClientId}"/>
+        <PasswordBox x:Name="ClientSecret" Grid.Row="2" Grid.Column="1" VerticalAlignment="Center" PasswordChanged="ClientSecret_PasswordChanged"/>
     </Grid>
 </UserControl>
