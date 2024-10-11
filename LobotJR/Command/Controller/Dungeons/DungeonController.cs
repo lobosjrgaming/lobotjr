@@ -49,9 +49,13 @@ namespace LobotJR.Command.Controller.Dungeons
         /// <param name="experience">The amount of experience earned.</param>
         /// <param name="currency">The amount of wolfcoins earned.</param>
         /// <param name="loot">The loot the player earned, if any.</param>
+        /// <param name="wasQueueGroup">Group was formed by the dungeon finder
+        /// queue.</param>
         /// <param name="groupFinderBonus">The player earned double rewards
         /// from the Daily Group Finder bonus.</param>
-        public delegate void DungeonCompleteHandler(PlayerCharacter player, int experience, int currency, Item loot, bool groupFinderBonus);
+        /// <param name="critBonus">The player earned the critical experience
+        /// bonus.</param>
+        public delegate void DungeonCompleteHandler(PlayerCharacter player, int experience, int currency, Item loot, bool wasQueueGroup, bool groupFinderBonus, bool critBonus);
         /// <summary>
         /// Event fired when a player completes a dungeon.
         /// </summary>
@@ -335,20 +339,14 @@ namespace LobotJR.Command.Controller.Dungeons
             return value < chance;
         }
 
-        private int CalculateExperienceReward(PlayerCharacter player, bool includeBonuses)
+        private float CalculateExperienceRewardRaw(PlayerCharacter player, bool includeBonuses)
         {
             var experienceMultiplier = 1f;
-            var variance = 1f;
             if (includeBonuses)
             {
                 experienceMultiplier += player.CharacterClass.XpBonus + EquipmentController.GetEquippedGear(player).Sum(x => x.XpBonus);
-                var settings = SettingsManager.GetGameSettings();
-                if (CalculateCheck(settings.DungeonCritChance))
-                {
-                    variance += settings.DungeonCritBonus;
-                }
             }
-            return (int)Math.Round((11 + (player.Level - 2) * 3) * experienceMultiplier * variance);
+            return (11 + (player.Level - 2) * 3) * experienceMultiplier;
         }
 
         private int CalculateCoinReward(PlayerCharacter player, bool includeBonuses)
@@ -463,18 +461,25 @@ namespace LobotJR.Command.Controller.Dungeons
             var name = GetDungeonName(party.DungeonId, party.ModeId);
             Logger.Debug("Processing dungeon complete for party {description} in state {state} for {dungeon}", string.Join(", ", party.Members), party.State, name);
             var history = CreateDungeonHistory(party, true);
+            var settings = SettingsManager.GetGameSettings();
             foreach (var member in members)
             {
                 var user = PlayerController.GetUserByPlayer(member);
-                var xp = CalculateExperienceReward(member, true);
+                var xpRaw = CalculateExperienceRewardRaw(member, true);
+                var crit = CalculateCheck(settings.DungeonCritChance);
+                if (crit)
+                {
+                    xpRaw *= 1f + settings.DungeonCritBonus;
+                }
                 var coins = CalculateCoinReward(member, true);
                 var gfBonus = party.IsQueueGroup && GroupFinderController.GetLockoutTime(member).TotalMilliseconds <= 0;
                 if (gfBonus)
                 {
-                    xp *= 2;
+                    xpRaw *= 2;
                     coins *= 2;
                     GroupFinderController.SetLockout(member);
                 }
+                var xp = (int)Math.Round(xpRaw);
                 PlayerController.GainExperience(member, xp);
                 member.Currency += coins;
 
@@ -489,7 +494,7 @@ namespace LobotJR.Command.Controller.Dungeons
                 {
                     EquipmentController.AddInventoryRecord(user, earnedDrop);
                 }
-                DungeonComplete?.Invoke(member, xp, coins, earnedDrop, gfBonus);
+                DungeonComplete?.Invoke(member, xp, coins, earnedDrop, party.IsQueueGroup, gfBonus, crit);
 
                 var activePet = PetController.GetActivePet(member);
                 if (activePet != null)
@@ -521,7 +526,7 @@ namespace LobotJR.Command.Controller.Dungeons
             var dead = members.Where(x => CalculateCheck(deathChance - PlayerDeathChance(x))).ToList();
             foreach (var member in dead)
             {
-                var xp = CalculateExperienceReward(member, false);
+                var xp = (int)Math.Round(CalculateExperienceRewardRaw(member, false));
                 var coins = CalculateCoinReward(member, false);
                 var toNewLevel = PlayerController.GetExperienceToNextLevel(member.Experience - xp);
                 if (toNewLevel <= xp)

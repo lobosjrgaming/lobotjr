@@ -84,11 +84,11 @@ namespace LobotJR.Command.View.Dungeons
             };
         }
 
-        private void DungeonController_DungeonComplete(PlayerCharacter player, int experience, int currency, Item loot, bool groupFinderBonus)
+        private void DungeonController_DungeonComplete(PlayerCharacter player, int experience, int currency, Item loot, bool wasQueueGroup, bool groupFinderBonus, bool critBonus)
         {
             var user = PlayerController.GetUserByPlayer(player);
             var messages = new List<string>();
-            if (!groupFinderBonus)
+            if (!wasQueueGroup)
             {
                 messages.Add("Dungeon complete. Your party remains intact.");
             }
@@ -96,12 +96,18 @@ namespace LobotJR.Command.View.Dungeons
             {
                 messages.Add("You earned double rewards for completing a daily Group Finder dungeon! Queue up again in 24 hours to receive the 2x bonus again! (You can whisper me '!daily' for a status.)");
             }
+            if (critBonus)
+            {
+                var settings = SettingsManager.GetGameSettings();
+                var percentBonus = (int)Math.Round(settings.DungeonCritBonus * 100);
+                messages.Add($"It was a critical success! You earned a {percentBonus}% bonus to experience!");
+            }
             messages.Add($"{user.Username}, you've earned {experience} XP and {currency} Wolfcoins for completing the dungeon!");
             if (loot != null)
             {
                 messages.Add($"You looted {loot.Name}!");
             }
-            if (groupFinderBonus)
+            if (wasQueueGroup)
             {
                 messages.Add("You completed a group finder dungeon. Type !queue to join another group!");
             }

@@ -46,7 +46,7 @@ namespace LobotJR.Command.Controller.Dungeons
         private bool IsViableParty(IEnumerable<QueueEntry> players)
         {
             var distribution = players.Select(x => x.UserId).GroupBy(x => PlayerController.GetPlayerByUserId(x).CharacterClass);
-            return !distribution.Any(x => x.Count() > 2);
+            return !distribution.Any(x => x.Count() > 1);
         }
 
         private IEnumerable<DungeonRun> GetGroupDungeons(IEnumerable<QueueEntry> players)
