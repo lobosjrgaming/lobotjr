@@ -734,6 +734,8 @@ namespace LobotJR.Test.Views.Dungeons
         [TestMethod]
         public void DungeonCompleteEventSendsCompleteMessageWithAwards()
         {
+            var settings = SettingsManager.GetGameSettings();
+            settings.DungeonCritChance = 0;
             var otherUser = OtherUsers.First();
             var otherPlayer = OtherPlayers.First(x => x.UserId.Equals(otherUser.TwitchId));
             var party = PartyController.CreateParty(false, Player, otherPlayer);
@@ -746,6 +748,44 @@ namespace LobotJR.Test.Views.Dungeons
             Controller.Process();
             listener.Verify(x => x(User, It.Is<CommandResult>(y => y.Responses.Any(z => z.Contains("you've earned")))), Times.Once());
             listener.Verify(x => x(otherUser, It.Is<CommandResult>(y => y.Responses.Any(z => z.Contains("you've earned")))), Times.Once());
+        }
+
+        [TestMethod]
+        public void DungeonCompleteEventSendsGroupFinderBonusMessage()
+        {
+            var settings = SettingsManager.GetGameSettings();
+            settings.DungeonCritChance = 0;
+            var otherUser = OtherUsers.First();
+            var otherPlayer = OtherPlayers.First(x => x.UserId.Equals(otherUser.TwitchId));
+            var party = PartyController.CreateParty(true, Player, otherPlayer);
+            party.State = PartyState.Full;
+            View.StartDungeon(User);
+            party.State = PartyState.Complete;
+            party.LastUpdate = DateTime.MinValue;
+            var listener = new Mock<PushNotificationHandler>();
+            View.PushNotification += listener.Object;
+            Controller.Process();
+            listener.Verify(x => x(User, It.Is<CommandResult>(y => y.Responses.Any(z => z.Contains("double rewards")) && y.Responses.Any(z => z.Contains("!queue")))), Times.Once());
+            listener.Verify(x => x(otherUser, It.Is<CommandResult>(y => y.Responses.Any(z => z.Contains("double rewards")) && y.Responses.Any(z => z.Contains("!queue")))), Times.Once());
+        }
+
+        [TestMethod]
+        public void DungeonCompleteEventSendsCritBonusMessage()
+        {
+            var settings = SettingsManager.GetGameSettings();
+            settings.DungeonCritChance = 1;
+            var otherUser = OtherUsers.First();
+            var otherPlayer = OtherPlayers.First(x => x.UserId.Equals(otherUser.TwitchId));
+            var party = PartyController.CreateParty(false, Player, otherPlayer);
+            party.State = PartyState.Full;
+            View.StartDungeon(User);
+            party.State = PartyState.Complete;
+            party.LastUpdate = DateTime.MinValue;
+            var listener = new Mock<PushNotificationHandler>();
+            View.PushNotification += listener.Object;
+            Controller.Process();
+            listener.Verify(x => x(User, It.Is<CommandResult>(y => y.Responses.Any(z => z.Contains("critical success")))), Times.Once());
+            listener.Verify(x => x(otherUser, It.Is<CommandResult>(y => y.Responses.Any(z => z.Contains("critical success")))), Times.Once());
         }
 
         [TestMethod]

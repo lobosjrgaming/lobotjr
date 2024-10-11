@@ -528,7 +528,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             {
                 var xp = (int)Math.Round(11 + (member.Level - 2) * 3f);
                 var coins = (int)Math.Round(50 * (1 + 0.05f * member.Level));
-                listener.Verify(x => x(member, xp, coins, It.IsNotNull<Item>(), false), Times.Once);
+                listener.Verify(x => x(member, xp, coins, It.IsNotNull<Item>(), false, false, false), Times.Once);
                 if (!member.Equals(party.Members.First()))
                 {
                     petListener.Verify(x => x(It.Is<User>(y => y.TwitchId.Equals(member.UserId)), It.IsNotNull<Stable>()));
@@ -555,7 +555,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             {
                 var xp = (int)Math.Round(11 + (member.Level - 2) * 3f);
                 var coins = (int)Math.Round(50 * (1 + 0.05f * member.Level));
-                listener.Verify(x => x(member, xp, coins, null, false), Times.Once);
+                listener.Verify(x => x(member, xp, coins, null, false, false, false), Times.Once);
                 Assert.AreEqual(baseXp[member.UserId] + xp, member.Experience);
                 Assert.AreEqual(baseCoins[member.UserId] + coins, member.Currency);
             }
@@ -579,7 +579,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             {
                 var xp = (int)Math.Round((11 + (member.Level - 2) * 3f) * (1 + settings.DungeonCritBonus));
                 var coins = (int)Math.Round(50 * (1 + 0.05f * member.Level));
-                listener.Verify(x => x(member, xp, coins, null, false), Times.Once);
+                listener.Verify(x => x(member, xp, coins, null, false, false, true), Times.Once);
             }
             Assert.AreEqual(PartyState.Full, party.State);
             Assert.AreEqual(0, party.CurrentEncounter);
@@ -603,7 +603,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             {
                 var xp = (int)Math.Round(11 + (member.Level - 2) * 3f) * 2;
                 var coins = (int)Math.Round(50 * (1 + 0.05f * member.Level)) * 2;
-                listener.Verify(x => x(member, xp, coins, null, true), Times.Once);
+                listener.Verify(x => x(member, xp, coins, null, true, true, false), Times.Once);
                 Assert.IsTrue(db.DungeonLockouts.Read(x => x.UserId.Equals(member.UserId)).Any());
             }
             Assert.AreEqual(PartyState.Disbanded, party.State);
@@ -638,7 +638,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             {
                 var xp = (int)Math.Round(11 + (member.Level - 2) * 3f);
                 var coins = (int)Math.Round(50 * (1 + 0.05f * member.Level));
-                listener.Verify(x => x(member, xp, coins, null, false), Times.Once);
+                listener.Verify(x => x(member, xp, coins, null, true, false, false), Times.Once);
             }
             Assert.AreEqual(PartyState.Disbanded, party.State);
             Assert.AreEqual(0, party.CurrentEncounter);
@@ -672,7 +672,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             {
                 var xp = (int)Math.Round(11 + (member.Level - 2) * 3f);
                 var coins = (int)Math.Round(50 * (1 + 0.05f * member.Level));
-                listener.Verify(x => x(member, xp, coins, null, false), Times.Once);
+                listener.Verify(x => x(member, xp, coins, null, false, false, false), Times.Once);
             }
             Assert.AreEqual(PartyState.Full, party.State);
             Assert.AreEqual(0, party.CurrentEncounter);
