@@ -232,9 +232,8 @@ namespace LobotJR.Test.Controllers.Dungeons
             var player2 = db.PlayerCharacters.Read().ElementAt(2);
             var player3 = db.PlayerCharacters.Read().ElementAt(3);
             var player4 = db.PlayerCharacters.Read().ElementAt(4);
-            player2.CharacterClass = db.CharacterClassData.Read(x => x.CanPlay && !x.Equals(player.CharacterClass)).First();
-            player3.CharacterClass = player2.CharacterClass;
-            player4.CharacterClass = db.CharacterClassData.Read(x => x.CanPlay && !x.Equals(player.CharacterClass) && !x.Equals(player2.CharacterClass)).First();
+            player3.CharacterClass = db.CharacterClassData.Read(x => x.CanPlay && !x.Equals(player.CharacterClass)).First();
+            player4.CharacterClass = db.CharacterClassData.Read(x => x.CanPlay && !x.Equals(player.CharacterClass) && !x.Equals(player3.CharacterClass)).First();
             var run = new DungeonRun(db.DungeonData.Read().First(), db.DungeonModeData.Read().First());
             var listener = new Mock<GroupFinderController.DungeonQueueHandler>();
             Controller.PartyFound += listener.Object;
@@ -243,16 +242,17 @@ namespace LobotJR.Test.Controllers.Dungeons
             Controller.QueuePlayer(player3, new List<DungeonRun>() { run });
             Thread.Sleep(1);
             Controller.QueuePlayer(player4, new List<DungeonRun>() { run });
-            listener.Verify(x => x(It.Is<Party>(y => !y.Members.Contains(player3.UserId))), Times.Once());
+            listener.Verify(x => x(It.Is<Party>(y => !y.Members.Contains(player2.UserId))), Times.Once());
         }
 
         [TestMethod]
-        public void QueuePlayerDoesNotCreateGroupWithMoreThanTwoOfTheSameClass()
+        public void QueuePlayerDoesNotCreateGroupWithMoreThanOneOfTheSameClass()
         {
             var db = ConnectionManager.CurrentConnection;
             var player = db.PlayerCharacters.Read().First();
             var player2 = db.PlayerCharacters.Read().ElementAt(2);
             var player3 = db.PlayerCharacters.Read().ElementAt(3);
+            player2.CharacterClass = db.CharacterClassData.Read(x => x.CanPlay && !x.Equals(player.CharacterClass)).First();
             var run = new DungeonRun(db.DungeonData.Read().First(), db.DungeonModeData.Read().First());
             var listener = new Mock<GroupFinderController.DungeonQueueHandler>();
             Controller.PartyFound += listener.Object;
