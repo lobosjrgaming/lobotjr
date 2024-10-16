@@ -63,32 +63,39 @@ namespace LobotJR.Command.Controller.Dungeons
         {
             party = null;
             var settings = SettingsManager.GetGameSettings();
-            if (GroupFinderQueue.Count() >= settings.DungeonPartySize)
+            if (GroupFinderQueue.Count >= settings.DungeonPartySize)
             {
-                for (var skip = 0; skip <= GroupFinderQueue.Count - settings.DungeonPartySize; skip++)
+                for (var firstSkip = 0; firstSkip <= GroupFinderQueue.Count - settings.DungeonPartySize; firstSkip++)
                 {
-                    var group = GroupFinderQueue.Take(settings.DungeonPartySize - 1);
-                    var next = GroupFinderQueue.Skip(group.Count() + skip).Take(1);
-                    group = group.Concat(next);
-                    if (IsViableParty(group))
+                    var firstMember = GroupFinderQueue.Skip(firstSkip).Take(1);
+                    for (var secondSkip = firstSkip + 1; secondSkip <= GroupFinderQueue.Count - settings.DungeonPartySize + 1; secondSkip++)
                     {
-                        var dungeons = GetGroupDungeons(group);
-                        if (dungeons.Any())
+                        var secondMember = GroupFinderQueue.Skip(secondSkip).Take(1);
+                        for (var thirdSkip = secondSkip + 1; thirdSkip <= GroupFinderQueue.Count - settings.DungeonPartySize + 2; thirdSkip++)
                         {
-                            var newParty = PartyController.CreateParty(true, group.Select(x => x.UserId).ToArray());
-                            newParty.SetQueueTimes(group.ToDictionary(x => x.UserId, x => (int)Math.Floor((DateTime.Now - x.QueueTime).TotalSeconds)));
-                            var toRun = random.RandomElement(dungeons);
-                            newParty.DungeonId = toRun.DungeonId;
-                            newParty.ModeId = toRun.ModeId;
-                            party = newParty;
-                            party.State = PartyState.Full;
-                            var leader = group.OrderByDescending(x => x.QueueTime).First();
-                            PartyController.SetLeader(party, leader.UserId);
-                            foreach (var entry in group.ToList())
+                            var thirdMember = GroupFinderQueue.Skip(thirdSkip).Take(1);
+                            var group = firstMember.Concat(secondMember).Concat(thirdMember);
+                            if (IsViableParty(group))
                             {
-                                GroupFinderQueue.Remove(entry);
+                                var dungeons = GetGroupDungeons(group);
+                                if (dungeons.Any())
+                                {
+                                    var newParty = PartyController.CreateParty(true, group.Select(x => x.UserId).ToArray());
+                                    newParty.SetQueueTimes(group.ToDictionary(x => x.UserId, x => (int)Math.Floor((DateTime.Now - x.QueueTime).TotalSeconds)));
+                                    var toRun = random.RandomElement(dungeons);
+                                    newParty.DungeonId = toRun.DungeonId;
+                                    newParty.ModeId = toRun.ModeId;
+                                    party = newParty;
+                                    party.State = PartyState.Full;
+                                    var leader = group.OrderByDescending(x => x.QueueTime).First();
+                                    PartyController.SetLeader(party, leader.UserId);
+                                    foreach (var entry in group.ToList())
+                                    {
+                                        GroupFinderQueue.Remove(entry);
+                                    }
+                                    return true;
+                                }
                             }
-                            return true;
                         }
                     }
                 }
