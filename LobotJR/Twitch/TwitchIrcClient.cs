@@ -40,7 +40,7 @@ namespace LobotJR.Twitch
         private DateTime? LastReconnect;
         private TimeSpan ReconnectTimer = ReconnectTimerBase;
 
-        private DateTime LastMessage;
+        public DateTime LastMessage { get; private set; }
         private bool PingSent;
 
         private readonly Queue<string> MessageQueue = new Queue<string>();

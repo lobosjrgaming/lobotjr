@@ -2,6 +2,7 @@
 using LobotJR.Command;
 using LobotJR.Data;
 using LobotJR.Interface.Settings;
+using LobotJR.Shared.Authentication;
 using LobotJR.Shared.Utility;
 using LobotJR.Utils;
 using NLog;
@@ -10,6 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Input;
@@ -154,6 +156,23 @@ namespace LobotJR.Interface
             CommandInputLabel.Foreground = Colors[ColorKeys.Info];
             CommandInput.Foreground = Colors[ColorKeys.Info];
             CommandInput.CaretBrush = Colors[ColorKeys.Info];
+        }
+
+        private async Task<bool> ValidateTokens(TokenData tokenData)
+        {
+            if (tokenData.ChatToken != null)
+            {
+                var validationResponse = await AuthToken.Validate(tokenData.ChatToken.AccessToken);
+                tokenData.ChatUser = validationResponse.Login;
+                tokenData.ChatId = validationResponse.UserId;
+            }
+            if (tokenData.BroadcastToken != null)
+            {
+                var validationResponse = await AuthToken.Validate(tokenData.BroadcastToken.AccessToken);
+                tokenData.BroadcastUser = validationResponse.Login;
+                tokenData.BroadcastId = validationResponse.UserId;
+            }
+            return tokenData.ChatToken != null && tokenData.BroadcastToken != null;
         }
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
