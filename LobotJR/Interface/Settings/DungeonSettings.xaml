@@ -1,0 +1,79 @@
+﻿<UserControl x:Class="LobotJR.Interface.Settings.DungeonSettings"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:LobotJR.Interface.Settings"
+             xmlns:interface="clr-namespace:LobotJR.Interface"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Label Content="Party Size" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="1" Grid.Column="1" TextWrapping="Wrap">The max number of players in a dungeon party.</TextBlock>
+        <Label Content="Step Time" Grid.Row="2" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="3" Grid.Column="1" TextWrapping="Wrap">The time (in milliseconds) to wait between each step of a dungeon.</TextBlock>
+        <Label Content="Death Chance" Grid.Row="4" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="5" Grid.Column="1" TextWrapping="Wrap">The probability (from 0 to 1) for a player to die when they fail a dungeon.</TextBlock>
+        <Label Content="Crit Chance" Grid.Row="6" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="7" Grid.Column="1" TextWrapping="Wrap">The probability (from 0 to 1) for a player to gain bonus experience when they complete a dungeon.</TextBlock>
+        <Label Content="Crit Bonus" Grid.Row="8" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="9" Grid.Column="1" TextWrapping="Wrap">The multiplier added to the base experience reward (so a value of 1 is a 100% bonus, or 2x the base value).</TextBlock>
+        <Label Content="Restrict Level" Grid.Row="10" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="11" Grid.Column="1" TextWrapping="Wrap">Whether to enforce the dungeon min and max level.</TextBlock>
+        <TextBox x:Name="PartySize" Grid.Column="1" VerticalAlignment="Center">
+            <Binding Path="GameSettings.DungeonPartySize">
+                <Binding.ValidationRules>
+                    <interface:NumericInputValidator IsReal="False" IsNegative="False"/>
+                </Binding.ValidationRules>
+            </Binding>
+        </TextBox>
+        <TextBox x:Name="StepTime" Grid.Row="2" Grid.Column="1" VerticalAlignment="Center">
+            <Binding Path="GameSettings.DungeonStepTime">
+                <Binding.ValidationRules>
+                    <interface:NumericInputValidator IsReal="False" IsNegative="False"/>
+                </Binding.ValidationRules>
+            </Binding>
+        </TextBox>
+        <TextBox x:Name="DeathChance" Grid.Row="4" Grid.Column="1" VerticalAlignment="Center">
+            <Binding Path="GameSettings.DungeonDeathChance">
+                <Binding.ValidationRules>
+                    <interface:NumericInputValidator IsReal="True" IsNegative="False" Min="0" Max="0"/>
+                </Binding.ValidationRules>
+            </Binding>
+        </TextBox>
+        <TextBox x:Name="CritChance" Grid.Row="6" Grid.Column="1" VerticalAlignment="Center">
+            <Binding Path="GameSettings.DungeonCritChance">
+                <Binding.ValidationRules>
+                    <interface:NumericInputValidator IsReal="True" IsNegative="False" Min="0" Max="1"/>
+                </Binding.ValidationRules>
+            </Binding>
+        </TextBox>
+        <TextBox x:Name="CritBonus" Grid.Row="8" Grid.Column="1" VerticalAlignment="Center">
+            <Binding Path="GameSettings.DungeonCritBonus">
+                <Binding.ValidationRules>
+                    <interface:NumericInputValidator IsReal="True" IsNegative="False" Min="0" Max="1"/>
+                </Binding.ValidationRules>
+            </Binding>
+        </TextBox>
+        <CheckBox x:Name="RestrictLevel" Grid.Row="10" Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding GameSettings.DungeonLevelRestrictions}"/>
+    </Grid>
+</UserControl>

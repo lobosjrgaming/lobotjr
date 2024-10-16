@@ -8,7 +8,7 @@ namespace LobotJR.Interface.Settings
     public partial class TwitchClientSettings : UserControl, ISettingsPage
     {
         public string Category => "App";
-        public string PageName => "Twitch Authentication";
+        public string PageName => "Authentication";
 
         public TwitchClientSettings()
         {

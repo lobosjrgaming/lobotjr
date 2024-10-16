@@ -53,6 +53,17 @@ namespace LobotJR.Command
             }
         }
 
+        /// <summary>
+        /// List of command strings and aliases for registered commands.
+        /// </summary>
+        public IEnumerable<string> CommandStrings
+        {
+            get
+            {
+                return commandStringToIdMap.Keys.ToList();
+            }
+        }
+
         public CommandManager(IEnumerable<ICommandView> views, IEnumerable<IMetaController> metaControllers, IConnectionManager connectionManager)
         {
             CommandViews = views;
@@ -126,9 +137,9 @@ namespace LobotJR.Command
             }
         }
 
-        private void View_PushNotification(User user, CommandResult commandResult)
+        private async Task View_PushNotification(User user, CommandResult commandResult)
         {
-            PushNotifications?.Invoke(user, commandResult);
+            await PushNotifications?.Invoke(user, commandResult);
         }
 
         private bool CanUserExecute(string commandId, User user)
@@ -339,17 +350,36 @@ namespace LobotJR.Command
         /// <param name="result">The command result object.</param>
         /// <param name="irc">The twitch irc client to send messages through.</param>
         /// <param name="twitchClient">The twitch API client to send whispers through.</param>
-        public async Task HandleResult(string whisperMessage, CommandResult result, ITwitchIrcClient irc, ITwitchClient twitchClient)
+        /// <param name="isInternal">Whether this was an internal command
+        /// invoked through the UI, or a normal message sent through Twitch.</param>
+        public async Task HandleResult(string whisperMessage, CommandResult result, ITwitchIrcClient irc, ITwitchClient twitchClient, bool isInternal = false)
         {
             if (result.TimeoutSender)
             {
-                await twitchClient.TimeoutAsync(result.Sender, 1, result.TimeoutMessage);
+                if (isInternal)
+                {
+                    Logger.Warn("This command would have attempted to time you out if sent through Twitch.");
+                }
+                else
+                {
+                    await twitchClient.TimeoutAsync(result.Sender, 1, result.TimeoutMessage);
+                }
             }
             if (result.Responses?.Count > 0)
             {
-                foreach (var response in result.Responses)
+                if (isInternal)
                 {
-                    twitchClient.QueueWhisper(result.Sender, response);
+                    foreach (var response in result.Responses)
+                    {
+                        Logger.Info(response);
+                    }
+                }
+                else
+                {
+                    foreach (var response in result.Responses)
+                    {
+                        twitchClient.QueueWhisper(result.Sender, response);
+                    }
                 }
             }
             if (result.Messages?.Count > 0)

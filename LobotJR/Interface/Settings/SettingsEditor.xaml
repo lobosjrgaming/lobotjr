@@ -5,11 +5,20 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:LobotJR.Interface.Settings"
         mc:Ignorable="d"
-        Title="Settings" Height="450" Width="800" Loaded="Window_Loaded">
+        Title="Settings" Height="350" Width="600" Loaded="Window_Loaded">
+    <Window.Resources>
+        <Style x:Key="ValidationErrorTooltip" TargetType="{x:Type TextBox}">
+            <Style.Triggers>
+                <Trigger Property="Validation.HasError" Value="true">
+                    <Setter Property="ToolTip" Value="{Binding RelativeSource={x:Static RelativeSource.Self}, Path=(Validation.Errors)/ErrorContent}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
     <Grid Margin="10,10,10,10">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="2*"/>
+            <ColumnDefinition Width="3*"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -24,7 +33,7 @@
             <StackPanel x:Name="SettingsContainer" Margin="0,0,5,0">
             </StackPanel>
         </ScrollViewer>
-        <Button x:Name="Ok" Content="Ok" Margin="0,5,80,0" Width="75" Grid.Row="4" Grid.ColumnSpan="3" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
-        <Button x:Name="Cancel" Content="Cancel" Width="75" Grid.Row="4" Grid.ColumnSpan="3" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+        <Button x:Name="Ok" Content="Ok" Margin="0,5,80,0" Width="75" Grid.Row="4" Grid.ColumnSpan="3" HorizontalAlignment="Right" VerticalAlignment="Bottom" Click="Ok_Click"/>
+        <Button x:Name="Cancel" Content="Cancel" Width="75" Grid.Row="4" Grid.ColumnSpan="3" HorizontalAlignment="Right" VerticalAlignment="Bottom" Click="Cancel_Click"/>
     </Grid>
 </Window>

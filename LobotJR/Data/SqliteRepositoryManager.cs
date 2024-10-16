@@ -9,6 +9,7 @@ using LobotJR.Command.Model.Player;
 using LobotJR.Twitch;
 using LobotJR.Twitch.Model;
 using System.Data.Entity;
+using System.Threading;
 
 namespace LobotJR.Data
 {
@@ -18,8 +19,7 @@ namespace LobotJR.Data
     public class SqliteRepositoryManager : IDatabase
     {
         private DbContext context;
-
-        public bool IsDisposed { get; private set; }
+        private readonly SemaphoreSlim Semaphore;
 
         public IRepository<Metadata> Metadata { get; private set; }
         public IRepository<AppSettings> AppSettings { get; private set; }
@@ -59,13 +59,16 @@ namespace LobotJR.Data
         public IRepository<CharacterClass> CharacterClassData { get; private set; }
         public IRepository<Equippables> EquippableData { get; private set; }
 
-        public SqliteRepositoryManager(DbContext context)
+        public SqliteRepositoryManager(DbContext context, SemaphoreSlim semaphore)
         {
+            Semaphore = semaphore;
             SetContext(context);
         }
 
         public SqliteRepositoryManager()
         {
+            Semaphore = new SemaphoreSlim(1, 1);
+            Semaphore.Wait();
             SetContext(new SqliteContext());
         }
 
@@ -121,7 +124,7 @@ namespace LobotJR.Data
             context.SaveChanges();
             context.Database.Connection.Close();
             context.Dispose();
-            IsDisposed = true;
+            Semaphore.Release();
         }
     }
 }

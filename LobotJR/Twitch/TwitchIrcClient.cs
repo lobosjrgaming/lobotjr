@@ -5,6 +5,7 @@ using NLog;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Text;
@@ -33,8 +34,8 @@ namespace LobotJR.Twitch
         private readonly TokenData TokenData;
         private readonly ITwitchClient TwitchClient;
         private bool IsSecure;
-
-        private CancellationTokenSource CancellationTokenSource;
+        private readonly List<IrcMessage> InjectionMessages = new List<IrcMessage>();
+        private readonly SemaphoreSlim InjectSemaphore = new SemaphoreSlim(1, 1);
 
         private DateTime? LastReconnect;
         private TimeSpan ReconnectTimer = ReconnectTimerBase;
@@ -165,28 +166,20 @@ namespace LobotJR.Twitch
             return null;
         }
 
-        /// <summary>
-        /// Starts a thread that listens for messages and sends message events.
-        /// </summary>
-        /// <returns>The cancellation token source used to cancel the thread.</returns>
-        public CancellationTokenSource Start()
+        private IEnumerable<IrcMessage> GetAndClearInjections()
         {
-            CancellationTokenSource = new CancellationTokenSource();
-            var task = Task.Factory.StartNew(Run, CancellationTokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
-            return CancellationTokenSource;
-        }
-
-        private async Task Run()
-        {
-            while (!CancellationTokenSource.IsCancellationRequested)
+            List<IrcMessage> output;
+            InjectSemaphore.Wait();
+            try
             {
-                await Process();
-                Thread.Sleep(100);
+                output = InjectionMessages.ToList();
+                InjectionMessages.Clear();
             }
-            if (Client.Connected)
+            finally
             {
-                Client.Dispose();
+                InjectSemaphore.Release();
             }
+            return output;
         }
 
         /// <summary>
@@ -197,6 +190,7 @@ namespace LobotJR.Twitch
         public async Task<IEnumerable<IrcMessage>> Process()
         {
             var output = new List<IrcMessage>();
+            output.AddRange(GetAndClearInjections());
             if (Client.Connected)
             {
                 if (this.MessageQueue.Count > 0)
@@ -271,6 +265,27 @@ namespace LobotJR.Twitch
         public void QueueMessage(string message)
         {
             this.MessageQueue.Enqueue(message);
+        }
+
+        /// <summary>
+        /// Injects a message into the incoming message stream. Used to allow
+        /// the bot UI to send commands without going through the IRC
+        /// connection.
+        /// </summary>
+        /// <param name="message">The text message to inject.</param>
+        /// <param name="username">The Username to send from.</param>
+        /// <param name="userid">The Twitch ID of the user to send from.</param>
+        public void InjectMessage(string message, string username, string userid)
+        {
+            InjectSemaphore.Wait();
+            try
+            {
+                InjectionMessages.Add(IrcMessage.Create(message, username, userid));
+            }
+            finally
+            {
+                InjectSemaphore.Release();
+            }
         }
 
         public void Dispose()

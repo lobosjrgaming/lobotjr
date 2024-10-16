@@ -216,7 +216,7 @@ namespace LobotJR.Data.Import
             try
             {
                 var classMap = new Dictionary<int, int>();
-                using (var database = await connectionManager.OpenConnection())
+                using (var database = connectionManager.OpenConnection())
                 {
                     classMap = SeedClassData(database.CharacterClassData, database.ItemTypeData, database.EquippableData);
                 }
@@ -237,7 +237,7 @@ namespace LobotJR.Data.Import
                 while (cursor < validUsernames.Length)
                 {
                     var result = 0;
-                    using (var database = await connectionManager.OpenConnection())
+                    using (var database = connectionManager.OpenConnection())
                     {
                         var resolvedClassMap = classMap.ToDictionary(x => x.Key, x => database.CharacterClassData.ReadById(x.Value));
                         var resolvedItemMap = itemMap.ToDictionary(x => x.Key, x => database.ItemData.ReadById(x.Value));

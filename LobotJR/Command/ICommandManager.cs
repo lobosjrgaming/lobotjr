@@ -19,6 +19,10 @@ namespace LobotJR.Command
         /// List of ids for registered commands.
         /// </summary>
         IEnumerable<string> Commands { get; }
+        /// <summary>
+        /// List of command strings and aliases for registered commands.
+        /// </summary>
+        IEnumerable<string> CommandStrings { get; }
 
         /// <summary>
         /// Initializes all registered command views.
@@ -46,6 +50,8 @@ namespace LobotJR.Command
         /// <param name="result">The command result object.</param>
         /// <param name="irc">The twitch irc client to send messages through.</param>
         /// <param name="twitchClient">The twitch API client to send whispers through.</param>
-        Task HandleResult(string whisperMessage, CommandResult result, ITwitchIrcClient irc, ITwitchClient twitchClient);
+        /// <param name="isInternal">Whether this was an internal command
+        /// invoked through the UI, or a normal message sent through Twitch.</param>
+        Task HandleResult(string whisperMessage, CommandResult result, ITwitchIrcClient irc, ITwitchClient twitchClient, bool isInternal = false);
     }
 }

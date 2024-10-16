@@ -20,61 +20,27 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Media;
-using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace LobotJR
 {
-    public class Program
+    public class Bot
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        private string LogFile = "output.log";
 
-        private static string logFile = "output.log";
-        private static bool isLive = false;
-        private static bool hasCrashed = false;
-        private static bool doRecover = true;
+        public ILifetimeScope Scope { get; private set; }
+        public CancellationTokenSource CancellationTokenSource { get; private set; } = new CancellationTokenSource();
+        public bool TwitchPlays { get; private set; }
+        public bool IsLive { get; private set; } = false;
+        public bool HasCrashed { get; private set; } = false;
 
-        static async Task Main()
+        private void CrashAlert()
         {
-            LogManager.Setup().LoadConfiguration(builder =>
+            if (IsLive)
             {
-                builder.ForLogger().FilterMinLevel(LogLevel.Info).WriteToConsole(layout: "${time}|${level:uppercase=true}|${message:withexception=true}");
-            });
-            Logger.Info("Launching Lobot version {version}", Assembly.GetExecutingAssembly().GetName().Version);
-            var clientData = FileUtils.ReadClientData();
-            var tokenData = FileUtils.ReadTokenData();
-            //This is outside of the try loop because if it fails, it will never succeed until the database state is corrected
-            await ConfigureDatabase(clientData, tokenData);
-            while (doRecover)
-            {
-                try
-                {
-                    await Initialize(clientData, tokenData);
-                }
-                catch (Exception ex)
-                {
-                    var now = DateTime.UtcNow;
-                    var folder = $"CrashDump.{now:yyyyMMddTHHmmssfffZ}";
-                    Logger.Error(ex);
-                    Logger.Error("The application has encountered an unexpected error: {message}", ex.Message);
-                    Directory.CreateDirectory(folder);
-                    File.Copy($"./{logFile}", $"{folder}/{logFile}");
-                    ZipFile.CreateFromDirectory(folder, $"{folder}.zip");
-                    File.Delete($"{folder}/{logFile}");
-                    Directory.Delete(folder);
-                    Logger.Error("The full details of the error can be found in {file}", $"{folder}.zip");
-                    hasCrashed = true;
-                    CrashAlert();
-                }
-            }
-            Console.ReadKey();
-        }
-
-        private static void CrashAlert()
-        {
-            if (isLive)
-            {
-                if (hasCrashed)
+                if (HasCrashed)
                 {
                     var alertFile = "./Resources/alert.wav";
                     var alertDefault = "./Resources/alert.default.wav";
@@ -89,12 +55,12 @@ namespace LobotJR
                             player.PlaySync();
                         }
                     }
-                    hasCrashed = false;
+                    HasCrashed = false;
                 }
             }
         }
 
-        private static async Task UpdateDatabase(ClientData clientData, TokenData tokenData)
+        private async Task UpdateDatabase(ClientData clientData, TokenData tokenData)
         {
             var updaterContainer = AutofacSetup.SetupUpdater(clientData, tokenData);
             using (var updaterScope = updaterContainer.BeginLifetimeScope())
@@ -115,28 +81,27 @@ namespace LobotJR
             }
         }
 
-        private static ILifetimeScope CreateApplicationScope(ClientData clientData, TokenData tokenData)
+        private ILifetimeScope CreateApplicationScope(ClientData clientData, TokenData tokenData)
         {
             var container = AutofacSetup.Setup(clientData, tokenData);
             return container.BeginLifetimeScope();
         }
 
-        private static async Task SeedDatabase(IConnectionManager connectionManager, UserController userController, TokenData tokenData)
+        private void SeedDatabase(IConnectionManager connectionManager, UserController userController, TokenData tokenData)
         {
-            using (await connectionManager.OpenConnection())
+            using (connectionManager.OpenConnection())
             {
                 connectionManager.SeedData();
-                userController.LastUpdate = DateTime.MinValue;
                 userController.SetBotUsers(userController.GetOrCreateUser(tokenData.BroadcastId, tokenData.BroadcastUser), userController.GetOrCreateUser(tokenData.ChatId, tokenData.ChatUser));
             }
         }
 
-        private static async Task ConfigureLogging(IConnectionManager connectionManager)
+        private void ConfigureLogging(IConnectionManager connectionManager)
         {
-            using (await connectionManager.OpenConnection())
+            using (connectionManager.OpenConnection())
             {
                 var appSettings = connectionManager.CurrentConnection.AppSettings.Read().First();
-                logFile = appSettings.LoggingFile;
+                LogFile = appSettings.LoggingFile;
                 LogManager.Setup().LoadConfiguration(builder =>
                 {
                     builder.ForLogger().FilterMinLevel(LogLevel.Debug)
@@ -161,12 +126,7 @@ namespace LobotJR
             }
         }
 
-        private static async Task ImportLegacyData(IConnectionManager connectionManager, UserController userController)
-        {
-            await DataImporter.ImportLegacyData(connectionManager, userController);
-        }
-
-        private static void HandleSubNotifications(IEnumerable<IrcMessage> notifications, UserController userController)
+        private void HandleSubNotifications(IEnumerable<IrcMessage> notifications, UserController userController)
         {
             foreach (var sub in notifications)
             {
@@ -201,7 +161,7 @@ namespace LobotJR
             }
         }
 
-        private static async Task HandleTriggersAndCommands(IEnumerable<IrcMessage> messages, UserController userController, ICommandManager commandManager, TriggerManager triggerManager, ITwitchIrcClient ircClient, ITwitchClient twitchClient)
+        private async Task HandleTriggersAndCommands(IEnumerable<IrcMessage> messages, UserController userController, ICommandManager commandManager, TriggerManager triggerManager, ITwitchIrcClient ircClient, ITwitchClient twitchClient)
         {
             foreach (var message in messages)
             {
@@ -218,7 +178,7 @@ namespace LobotJR
                         var result = commandManager.ProcessMessage(message.Message.Substring(1), chatter, message.IsWhisper);
                         if (result != null && result.Processed)
                         {
-                            await commandManager.HandleResult(message.Message, result, ircClient, twitchClient);
+                            await commandManager.HandleResult(message.Message, result, ircClient, twitchClient, message.IsInternal);
                             continue;
                         }
                     }
@@ -236,29 +196,111 @@ namespace LobotJR
             }
         }
 
-        private static async Task RunBot(ILifetimeScope scope)
+        private async Task RunBot()
         {
-            var twitchClient = scope.Resolve<ITwitchClient>();
-            var ircClient = scope.Resolve<ITwitchIrcClient>();
-            var controllerManager = scope.Resolve<IControllerManager>();
-            var commandManager = scope.Resolve<ICommandManager>();
-            var connectionManager = scope.Resolve<IConnectionManager>();
-            var triggerManager = scope.Resolve<TriggerManager>();
+            var connectionManager = Scope.Resolve<IConnectionManager>();
+            var controllerManager = Scope.Resolve<IControllerManager>();
+            var commandManager = Scope.Resolve<ICommandManager>();
+            var triggerManager = Scope.Resolve<TriggerManager>();
+            var twitchClient = Scope.Resolve<TwitchClient>();
+            var ircClient = Scope.Resolve<ITwitchIrcClient>();
+            var userController = Scope.Resolve<UserController>();
+            var lastTime = DateTime.Now;
+            while (!CancellationTokenSource.IsCancellationRequested)
+            {
+                try
+                {
+                    using (connectionManager.OpenConnection())
+                    {
+                        await controllerManager.Process();
+                        await twitchClient.ProcessQueue();
+                        var ircMessages = await ircClient.Process();
 
-            var userController = scope.Resolve<UserController>();
-            var playerController = scope.Resolve<PlayerController>();
+                        if (ircMessages.Any())
+                        {
+                            HandleSubNotifications(ircMessages.Where(x => x.IsUserNotice), userController);
+                            await HandleTriggersAndCommands(ircMessages.Where(x => x.IsChat || x.IsWhisper), userController, commandManager, triggerManager, ircClient, twitchClient);
+                        }
+                    }
+                    var now = DateTime.Now;
+                    if (lastTime.Day != now.Day)
+                    {
+                        // db contexts don't get freed until garbage collection runs, so we need this to not get file lock errors
+                        GC.Collect();
+                        var existing = Directory.GetFiles(".", "data.sqlite.*.archive").OrderBy(x => x);
+                        var toDelete = existing.Take(existing.Count() - 4);
+                        if (toDelete.Any())
+                        {
+                            foreach (var file in toDelete)
+                            {
+                                File.Delete(file);
+                            }
+                        }
+                        File.Copy(".\\data.sqlite", $".\\data.sqlite.{now:yyyyMMdd}.archive");
+                    }
+                    lastTime = now;
+                    // Nominal delay so it doesn't chew up the CPU
+                    await Task.Delay(10);
+                }
+                catch (Exception ex)
+                {
+                    var now = DateTime.UtcNow;
+                    var folder = $"CrashDump.{now:yyyyMMddTHHmmssfffZ}";
+                    Logger.Fatal(ex);
+                    Logger.Fatal("The application has encountered an unexpected error: {message}", ex.Message);
+                    Directory.CreateDirectory(folder);
+                    File.Copy($"./{LogFile}", $"{folder}/{LogFile}");
+                    ZipFile.CreateFromDirectory(folder, $"{folder}.zip");
+                    File.Delete($"{folder}/{LogFile}");
+                    Directory.Delete(folder);
+                    Logger.Fatal("The full details of the error can be found in {file}", $"{folder}.zip");
+                    HasCrashed = true;
+                    CrashAlert();
+                }
+            }
+            Scope.Dispose();
+        }
 
-            doRecover = false;
-            await ImportLegacyData(connectionManager, userController);
-            doRecover = true;
-            playerController.ExperienceToggled += (bool enabled) => { isLive = enabled; };
-            if (isLive)
+        private async Task RunTwitchPlays()
+        {
+            Logger.Info("Twitch Plays mode enabled!");
+            var ircClient = Scope.Resolve<ITwitchIrcClient>();
+            await new ChatController(ircClient, CancellationTokenSource).Play();
+            Scope.Dispose();
+        }
+
+        public async Task Initialize(ClientData clientData, TokenData tokenData)
+        {
+            RestLogger.SetSensitiveData(clientData, tokenData);
+            await UpdateDatabase(clientData, tokenData);
+            bool twitchPlays = false;
+            Scope = CreateApplicationScope(clientData, tokenData);
+            var connectionManager = Scope.Resolve<IConnectionManager>();
+            var userController = Scope.Resolve<UserController>();
+            SeedDatabase(connectionManager, userController, tokenData);
+            ConfigureLogging(connectionManager);
+            using (connectionManager.OpenConnection())
+            {
+                var appSettings = connectionManager.CurrentConnection.AppSettings.Read().First();
+                twitchPlays = appSettings.TwitchPlays;
+            }
+
+            var twitchClient = Scope.Resolve<ITwitchClient>();
+            var ircClient = Scope.Resolve<ITwitchIrcClient>();
+            var controllerManager = Scope.Resolve<IControllerManager>();
+            var commandManager = Scope.Resolve<ICommandManager>();
+            var triggerManager = Scope.Resolve<TriggerManager>();
+            var playerController = Scope.Resolve<PlayerController>();
+
+            await DataImporter.ImportLegacyData(connectionManager, userController);
+            playerController.ExperienceToggled += (bool enabled) => { IsLive = enabled; };
+            if (IsLive)
             {
                 playerController.EnableAwards(new User("Auto Recovery", ""));
                 CrashAlert();
             }
 
-            using (await connectionManager.OpenConnection())
+            using (connectionManager.OpenConnection())
             {
                 controllerManager.Initialize();
                 twitchClient.Initialize();
@@ -266,85 +308,39 @@ namespace LobotJR
 
             commandManager.InitializeViews();
             commandManager.PushNotifications +=
-                (User user, CommandResult commandResult) =>
+                async (User user, CommandResult commandResult) =>
                 {
                     string message = "Push Notification";
                     commandResult.Sender = user;
-                    commandManager.HandleResult(message, commandResult, ircClient, twitchClient);
+                    await commandManager.HandleResult(message, commandResult, ircClient, twitchClient);
                 };
 
             var lastTime = DateTime.Now;
             await ircClient.Connect();
-
-            while (true)
-            {
-                using (await connectionManager.OpenConnection())
-                {
-                    await controllerManager.Process();
-                    await twitchClient.ProcessQueue();
-                    var ircMessages = await ircClient.Process();
-
-                    if (ircMessages.Any())
-                    {
-                        HandleSubNotifications(ircMessages.Where(x => x.IsUserNotice), userController);
-                        await HandleTriggersAndCommands(ircMessages.Where(x => x.IsChat || x.IsWhisper), userController, commandManager, triggerManager, ircClient, twitchClient);
-                    }
-                }
-                var now = DateTime.Now;
-                if (lastTime.Day != now.Day)
-                {
-                    // db contexts don't get freed until garbage collection runs, so we need this to not get file lock errors
-                    GC.Collect();
-                    var existing = Directory.GetFiles(".", "data.sqlite.*.archive").OrderBy(x => x);
-                    var toDelete = existing.Take(existing.Count() - 4);
-                    if (toDelete.Any())
-                    {
-                        foreach (var file in toDelete)
-                        {
-                            File.Delete(file);
-                        }
-                    }
-                    File.Copy(".\\data.sqlite", $".\\data.sqlite.{now:yyyyMMdd}.archive");
-                }
-                lastTime = now;
-                // Nominal delay so it doesn't chew up the CPU
-                await Task.Delay(10);
-            }
         }
 
-        private static async Task Initialize(ClientData clientData, TokenData tokenData)
+        public void ProcessCommand(string message, string username, string userid)
         {
-            bool twitchPlays = false;
-            using (var scope = CreateApplicationScope(clientData, tokenData))
-            {
-                var connectionManager = scope.Resolve<IConnectionManager>();
-                var userController = scope.Resolve<UserController>();
-                await SeedDatabase(connectionManager, userController, tokenData);
-                await ConfigureLogging(connectionManager);
-                using (await connectionManager.OpenConnection())
-                {
-                    var appSettings = connectionManager.CurrentConnection.AppSettings.Read().First();
-                    twitchPlays = appSettings.TwitchPlays;
-                }
-
-                if (twitchPlays)
-                {
-                    Logger.Info("Twitch Plays mode enabled!");
-                    var ircClient = scope.Resolve<ITwitchIrcClient>();
-                    await ircClient.Connect();
-                    await new ChatController().Play(ircClient);
-                }
-                else
-                {
-                    await RunBot(scope);
-                }
-            }
+            var ircClient = Scope.Resolve<ITwitchIrcClient>();
+            ircClient.InjectMessage(message, username, userid);
         }
 
-        private static async Task ConfigureDatabase(ClientData clientData, TokenData tokenData)
+        public CancellationTokenSource Start()
         {
-            RestLogger.SetSensitiveData(clientData, tokenData);
-            await UpdateDatabase(clientData, tokenData);
+            if (TwitchPlays)
+            {
+                Task.Factory.StartNew(RunTwitchPlays, CancellationTokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            }
+            else
+            {
+                Task.Factory.StartNew(RunBot, CancellationTokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            }
+            return CancellationTokenSource;
+        }
+
+        public void Cancel()
+        {
+            CancellationTokenSource.Cancel();
         }
     }
 }

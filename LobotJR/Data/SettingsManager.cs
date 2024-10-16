@@ -32,5 +32,16 @@ namespace LobotJR.Data
             }
             return existing;
         }
+
+        public ClientSettings GetClientSettings()
+        {
+            var existing = ConnectionManager.CurrentConnection.ClientSettings.Read().FirstOrDefault();
+            if (existing == null)
+            {
+                existing = new ClientSettings();
+                ConnectionManager.CurrentConnection.ClientSettings.Create(existing);
+            }
+            return existing;
+        }
     }
 }

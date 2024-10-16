@@ -1,0 +1,62 @@
+﻿<UserControl x:Class="LobotJR.Interface.Settings.FishingSettings"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:LobotJR.Interface.Settings"
+             xmlns:interface="clr-namespace:LobotJR.Interface"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Label Content="Cast Time (Min)" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="1" Grid.Column="1" TextWrapping="Wrap">The minimum time (in seconds) it takes after casting to hook a fish.</TextBlock>
+        <Label Content="Cast Time (Max)" Grid.Row="2" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="3" Grid.Column="1" TextWrapping="Wrap">The maximum time (in seconds) it takes after casting to hook a fish.</TextBlock>
+        <Label Content="Hook Length" Grid.Row="4" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="5" Grid.Column="1" TextWrapping="Wrap">The length of time (in seconds) a hooked fish stays on the line.</TextBlock>
+        <Label Content="Normal Rarity" Grid.Row="6" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="7" Grid.Column="1" TextWrapping="Wrap">Whether to use a normal distribution of fish rarities, as opposed to fixed chances.</TextBlock>
+        <Label Content="Normal Size" Grid.Row="8" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="9" Grid.Column="1" TextWrapping="Wrap">Whether to use a normal distribution of fish sizes, as opposed to size categories.</TextBlock>
+        <TextBox x:Name="CastTimeMin" Grid.Column="1" VerticalAlignment="Center">
+            <Binding Path="GameSettings.FishingCastMinimum">
+                <Binding.ValidationRules>
+                    <interface:NumericInputValidator IsReal="False" IsNegative="False"/>
+                </Binding.ValidationRules>
+            </Binding>
+        </TextBox>
+        <TextBox x:Name="CastTimeMax" Grid.Row="2" Grid.Column="1" VerticalAlignment="Center">
+            <Binding Path="GameSettings.FishingCastMaximum">
+                <Binding.ValidationRules>
+                    <interface:NumericInputValidator IsReal="False" IsNegative="False"/>
+                </Binding.ValidationRules>
+            </Binding>
+        </TextBox>
+        <TextBox x:Name="HookLength" Grid.Row="4" Grid.Column="1" VerticalAlignment="Center">
+            <Binding Path="GameSettings.FishingHookLength">
+                <Binding.ValidationRules>
+                    <interface:NumericInputValidator IsReal="False" IsNegative="False"/>
+                </Binding.ValidationRules>
+            </Binding>
+        </TextBox>
+        <CheckBox x:Name="NormalRarity" Grid.Row="6" Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding GameSettings.FishingUseNormalRarity}"/>
+        <CheckBox x:Name="NormalSize" Grid.Row="8" Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding GameSettings.FishingUseNormalSizes}"/>
+    </Grid>
+</UserControl>

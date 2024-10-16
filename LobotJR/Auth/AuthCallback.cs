@@ -21,8 +21,10 @@ namespace LobotJR.Auth
 
         private string BuildAuthUrl(string clientId, IEnumerable<string> scopes)
         {
-            var builder = new UriBuilder("https", "id.twitch.tv");
-            builder.Path = "oauth2/authorize";
+            var builder = new UriBuilder("https", "id.twitch.tv")
+            {
+                Path = "oauth2/authorize"
+            };
             AddQuery(builder, "client_id", clientId);
             AddQuery(builder, "redirect_uri", RedirectUri);
             AddQuery(builder, "response_type", "code");

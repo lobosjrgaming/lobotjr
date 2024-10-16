@@ -17,11 +17,10 @@ namespace LobotJR.Data
     /// </summary>
     public interface IDatabase : IDisposable
     {
-        bool IsDisposed { get; }
-
         // Application Data
         IRepository<Metadata> Metadata { get; }
         IRepository<AppSettings> AppSettings { get; }
+        IRepository<ClientSettings> ClientSettings { get; }
         IRepository<BugReport> BugReports { get; }
         IRepository<DataTimer> DataTimers { get; }
         IRepository<User> Users { get; }

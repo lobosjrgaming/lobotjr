@@ -1,5 +1,6 @@
 ﻿using LobotJR.Twitch.Model;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace LobotJR.Command.View
 {
@@ -8,7 +9,7 @@ namespace LobotJR.Command.View
     /// </summary>
     /// <param name="user">The user to push to, or null for public pushes.</param>
     /// <param name="commandResult">The CommandResult object to process.</param>
-    public delegate void PushNotificationHandler(User user, CommandResult commandResult);
+    public delegate Task PushNotificationHandler(User user, CommandResult commandResult);
 
     /// <summary>
     /// Holds the view logic for a grouping of commands.

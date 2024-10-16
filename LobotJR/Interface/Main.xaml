@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:LobotJR.Interface"
         mc:Ignorable="d"
-        Title="Lobot" Height="450" Width="800" Loaded="Window_Loaded">
+        Title="Lobot" Height="450" Width="800" Loaded="Window_Loaded" Icon="/Resources/Lobot.ico">
     <DockPanel>
         <ToolBarPanel DockPanel.Dock="Top">
             <ToolBarTray>
@@ -77,38 +77,29 @@
                 <Label>💬00:00:00</Label>
             </StatusBarItem>
         </StatusBar>
-        <TextBox DockPanel.Dock="Bottom" Text="Command Input" Background="Black" Foreground="White" BorderBrush="{x:Null}"/>
+        <Border DockPanel.Dock="Bottom" BorderThickness="1" BorderBrush="{DynamicResource {x:Static SystemColors.ControlBrushKey}}" >
+            <DockPanel x:Name="CommandInputPanel" Background="Black">
+                <TextBlock x:Name="CommandInputLabel" DockPanel.Dock="Left" Foreground="White">></TextBlock>
+                <TextBox x:Name="CommandInput" Background="{x:Null}" Foreground="White" CaretBrush="White" PreviewKeyDown="CommandInput_PreviewKeyDown" BorderThickness="0" />
+            </DockPanel>
+        </Border>
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="4*"/>
-                <ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <RichTextBox x:Name="LogOutput" Grid.Column="0" FontFamily="Consolas" Background="Black" Foreground="White" Height="375" BorderBrush="{x:Null}">
-                <FlowDocument>
-                    <Paragraph>
-                        <Bold Foreground="Yellow">12:00:00></Bold>
-                        <Run Foreground="Yellow">A warning log message</Run>
-                        <LineBreak />
-                        <Bold Foreground="Red">12:01:00></Bold>
-                        <Run Foreground="Red">An error log message</Run>
-                        <LineBreak />
-                        <Bold Foreground="White">12:02:00></Bold>
-                        <Run Foreground="White">An info log message</Run>
-                        <LineBreak />
-                        <Bold Foreground="Gray">12:03:00></Bold>
-                        <Run Foreground="Gray">A debug log message</Run>
-                    </Paragraph>
-                </FlowDocument>
+            <RichTextBox x:Name="LogOutput" FontFamily="Consolas" Background="Black" Foreground="White" BorderBrush="{x:Null}" VerticalScrollBarVisibility="Auto">
+                <FlowDocument LineHeight="1"/>
             </RichTextBox>
-            <GridSplitter Grid.Column="1"/>
+            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch"/>
             <Grid Grid.Column="2">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
-                    <RowDefinition Height="5"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
@@ -129,7 +120,7 @@
                         </FlowDocument>
                     </RichTextBox>
                 </StackPanel>
-                <GridSplitter Grid.Row="1" />
+                <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch"/>
                 <StackPanel Grid.Row="2" Background="Black">
                     <Label Foreground="White">Last Group Formed: 2:00</Label>
                     <RichTextBox Background="Black" Foreground="White" BorderBrush="{x:Null}" IsReadOnly="True">

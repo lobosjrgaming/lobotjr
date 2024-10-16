@@ -8,7 +8,7 @@ namespace LobotJR.Interface.Settings
     public partial class BehaviorSettings : UserControl, ISettingsPage
     {
         public string Category => "App";
-        public string PageName => "Bot Behavior";
+        public string PageName => "Core";
 
         public BehaviorSettings()
         {

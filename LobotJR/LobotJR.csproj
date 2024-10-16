@@ -64,6 +64,9 @@
   <PropertyGroup>
     <StartupObject>LobotJR.App</StartupObject>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>Resources\Lobot.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Autofac, Version=6.5.0.0, Culture=neutral, PublicKeyToken=17863af14b0044da, processorArchitecture=MSIL">
       <HintPath>..\packages\Autofac.6.5.0\lib\netstandard2.0\Autofac.dll</HintPath>
@@ -239,10 +242,30 @@
     <Compile Include="Data\Import\ItemDataImport.cs" />
     <Compile Include="Data\Import\PetDataImport.cs" />
     <Compile Include="Data\Import\PlayerDataImport.cs" />
+    <Compile Include="Data\Migration\DatabaseUpdate-1.1.6-1.2.0.cs" />
+    <Compile Include="Interface\HexConverter.cs" />
     <Compile Include="Interface\Main.xaml.cs">
       <DependentUpon>Main.xaml</DependentUpon>
     </Compile>
     <Compile Include="Interface\NumericInputValidator.cs" />
+    <Compile Include="Interface\Settings\DungeonSettings.xaml.cs">
+      <DependentUpon>DungeonSettings.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\Settings\LogSettings.xaml.cs">
+      <DependentUpon>LogSettings.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\Settings\TournamentSettings.xaml.cs">
+      <DependentUpon>TournamentSettings.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\Settings\PetSettings.xaml.cs">
+      <DependentUpon>PetSettings.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\Settings\FishingSettings.xaml.cs">
+      <DependentUpon>FishingSettings.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\Settings\PriceSettings.xaml.cs">
+      <DependentUpon>PriceSettings.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Interface\Settings\AwardSettings.xaml.cs">
       <DependentUpon>AwardSettings.xaml</DependentUpon>
     </Compile>
@@ -262,6 +285,7 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <Compile Include="Data\Migration\DatabaseUpdate-1.1.0-1.1.6.cs" />
+    <Compile Include="Utils\InterfaceUtils.cs" />
     <Compile Include="Utils\UserEqualityComparers.cs" />
     <Compile Include="Data\Metadata.cs" />
     <Compile Include="Data\Migration\DatabaseUpdate-1.0.7-1.1.0.cs" />
@@ -302,7 +326,7 @@
     <Compile Include="Command\Controller\IProcessor.cs" />
     <Compile Include="Command\Controller\IControllerManager.cs" />
     <Compile Include="Command\Controller\ControllerManager.cs" />
-    <Compile Include="Program.cs" />
+    <Compile Include="Bot.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Settings.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -376,9 +400,36 @@
     <Content Include="Resources\alert.default.wav">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Resources\Lobot.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <Page Include="Interface\Main.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Interface\Settings\DungeonSettings.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Interface\Settings\LogSettings.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Interface\Settings\TournamentSettings.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Interface\Settings\PetSettings.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Interface\Settings\FishingSettings.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Interface\Settings\PriceSettings.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

@@ -1,6 +1,8 @@
 ﻿using LobotJR.Data;
 using LobotJR.Shared.Client;
+using System;
 using System.Collections.Generic;
+using System.Drawing.Text;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -17,7 +19,14 @@ namespace LobotJR.Interface.Settings
             new TwitchClientSettings(),
             new BehaviorSettings(),
 
-            new AwardSettings()
+            new AwardSettings(),
+            new PriceSettings(),
+            new DungeonSettings(),
+            new PetSettings(),
+            new FishingSettings(),
+            new TournamentSettings(),
+
+            new LogSettings()
         };
         private Dictionary<string, UserControl> TreeMap;
 
@@ -30,6 +39,8 @@ namespace LobotJR.Interface.Settings
             ClientSecret = "TestSecret"
         };
 
+        public IEnumerable<string> Fonts { get; set; } = Array.Empty<string>();
+
         public SettingsEditor()
         {
             InitializeComponent();
@@ -38,6 +49,10 @@ namespace LobotJR.Interface.Settings
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
+            using (var installedFonts = new InstalledFontCollection())
+            {
+                Fonts = installedFonts.Families.Select(x => x.Name);
+            }
             TreeMap = Pages.ToDictionary(x => (x as ISettingsPage).PageName, x => x);
             var categories = new Dictionary<string, TreeViewItem>();
             foreach (var control in Pages)
@@ -65,7 +80,7 @@ namespace LobotJR.Interface.Settings
                             var newControl = new TreeViewItem { Header = step };
                             parent.Items.Add(newControl);
                             parent = newControl;
-                            categories.Add(string.Join(",", chain.Take(i + 1)), newControl);
+                            categories.Add(string.Join(".", chain.Take(i + 1)), newControl);
                         }
                     }
                     parent.Items.Add(new TreeViewItem() { Header = page.PageName });
@@ -91,6 +106,18 @@ namespace LobotJR.Interface.Settings
                     SettingsContainer.Children.Add(page);
                 }
             }
+        }
+
+        private void Ok_Click(object sender, RoutedEventArgs e)
+        {
+            DialogResult = true;
+            Close();
+        }
+
+        private void Cancel_Click(object sender, RoutedEventArgs e)
+        {
+            DialogResult = false;
+            Close();
         }
     }
 }
