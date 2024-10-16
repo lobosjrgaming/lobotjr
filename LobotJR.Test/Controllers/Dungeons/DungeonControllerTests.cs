@@ -377,12 +377,18 @@ namespace LobotJR.Test.Controllers.Dungeons
             var levels = encounter.Levels.Where(x => x.Mode.Id.Equals(party.ModeId)).First();
             levels.Difficulty = 0;
             var members = PartyController.GetPartyPlayers(party);
-            members.First().CharacterClass.SuccessChance = 1;
+            foreach (var member in members)
+            {
+                member.CharacterClass.SuccessChance = 1;
+            }
             var message = encounter.Enemy;
             var listener = new Mock<DungeonController.DungeonProgressHandler>();
             DungeonController.DungeonProgress += listener.Object;
             await DungeonController.Process();
-            members.First().CharacterClass.SuccessChance = 0;
+            foreach (var member in members)
+            {
+                member.CharacterClass.SuccessChance = 0;
+            }
             listener.Verify(x => x(party, It.Is<string>(y => y.Contains(message))), Times.Once);
             Assert.AreEqual(1, party.CurrentEncounter);
             Assert.AreEqual(StepState.Complete, party.StepState);
@@ -537,6 +543,39 @@ namespace LobotJR.Test.Controllers.Dungeons
             Assert.AreEqual(PartyState.Full, party.State);
             Assert.AreEqual(0, party.CurrentEncounter);
             Assert.AreEqual(StepState.Setup, party.StepState);
+        }
+
+        [TestMethod]
+        public async Task ProcessDoesNotGiveDuplicateLootOnDungeonComplete()
+        {
+            var db = ConnectionManager.CurrentConnection;
+            db.Stables.Delete();
+            foreach (var item in db.DungeonData.Read().First().Loot)
+            {
+                item.DropChance = 1;
+            }
+            var party = SetupProcessParty();
+            party.State = PartyState.Complete;
+            SettingsManager.GetGameSettings().DungeonCritChance = 0;
+            var listener = new Mock<DungeonController.DungeonCompleteHandler>();
+            DungeonController.DungeonComplete += listener.Object;
+            var members = PartyController.GetPartyPlayers(party);
+            var first = members.First();
+            var items = db.ItemData.Read();
+            var filter = db.EquippableData.Read(x => x.CharacterClass.Equals(first.CharacterClass));
+            var itemsToAdd = items.Where(x => filter.Any(y => y.ItemType.Equals(x.Type)));
+            foreach (var itemToAdd in itemsToAdd)
+            {
+                db.Inventories.Create(new Inventory() { Item = itemToAdd, UserId = first.UserId });
+            }
+            db.Inventories.Commit();
+            await DungeonController.Process();
+            foreach (var item in db.DungeonData.Read().First().Loot)
+            {
+                item.DropChance = 0;
+            }
+            listener.Verify(x => x(first, It.IsAny<int>(), It.IsAny<int>(), It.IsNotNull<Item>(), false, false, false), Times.Never);
+            listener.Verify(x => x(first, It.IsAny<int>(), It.IsAny<int>(), null, false, false, false), Times.Once());
         }
 
         [TestMethod]

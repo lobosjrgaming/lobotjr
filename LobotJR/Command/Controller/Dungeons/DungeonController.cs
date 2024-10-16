@@ -486,7 +486,12 @@ namespace LobotJR.Command.Controller.Dungeons
                 var loot = ConnectionManager.CurrentConnection.LootData.Read(x => x.Dungeon.Id == party.DungeonId && x.Mode.Id == party.ModeId);
                 var lootFilter = ConnectionManager.CurrentConnection.EquippableData.Read(x => x.CharacterClass.Equals(member.CharacterClass));
                 var currentLoot = EquipmentController.GetInventoryByPlayer(member);
-                var possibleDrops = loot.Where(x => !currentLoot.Any(y => y.Item.Equals(x)) && lootFilter.Any(y => y.ItemType.Equals(x.Item.Type)));
+
+                var filterTypes = lootFilter.Select(x => x.ItemType).ToList();
+                var filteredLoot = loot.Where(x => filterTypes.Contains(x.Item.Type));
+                var currentItems = currentLoot.Select(x => x.Item);
+                var possibleDrops = filteredLoot.Where(x => !currentItems.Contains(x.Item));
+
                 var lootChance = PlayerLootChance(member);
                 var drops = possibleDrops.Where(x => CalculateCheck((float)x.DropChance + lootChance));
                 var earnedDrop = drops.FirstOrDefault()?.Item;
