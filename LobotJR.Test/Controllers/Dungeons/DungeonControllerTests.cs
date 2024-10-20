@@ -515,7 +515,10 @@ namespace LobotJR.Test.Controllers.Dungeons
             db.Stables.Delete();
             foreach (var item in db.DungeonData.Read().First().Loot)
             {
-                item.DropChance = 1;
+                //Drop chance is actually a penalty applied to the party's item
+                //find stat, so setting it to -1 guarantees a drop even with 0
+                //item find from gear
+                item.DropChance = -1;
             }
             var party = SetupProcessParty();
             party.State = PartyState.Complete;
@@ -640,8 +643,8 @@ namespace LobotJR.Test.Controllers.Dungeons
             var members = PartyController.GetPartyPlayers(party);
             foreach (var member in members)
             {
-                var xp = (int)Math.Round(11 + (member.Level - 2) * 3f) * 2;
-                var coins = (int)Math.Round(50 * (1 + 0.05f * member.Level)) * 2;
+                var xp = (int)Math.Round((11 + (member.Level - 2) * 3f) * 2);
+                var coins = (int)Math.Round(50 * (1 + 0.05f * member.Level) * 2);
                 listener.Verify(x => x(member, xp, coins, null, true, true, false), Times.Once);
                 Assert.IsTrue(db.DungeonLockouts.Read(x => x.UserId.Equals(member.UserId)).Any());
             }
