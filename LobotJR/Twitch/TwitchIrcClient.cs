@@ -1,4 +1,4 @@
-﻿using LobotJR.Shared.Authentication;
+﻿using LobotJR.Twitch.Api.Authentication;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using NLog;
@@ -138,7 +138,7 @@ namespace LobotJR.Twitch
         private void ExpectResponse()
         {
             LastMessage = DateTime.Now - IdleLimit;
-            PingSent = true;
+            //PingSent = true;
         }
 
         private async Task WriteLine(string line)

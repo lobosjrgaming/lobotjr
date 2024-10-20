@@ -1,11 +1,11 @@
 ﻿using LobotJR.Data;
-using LobotJR.Shared.Authentication;
-using LobotJR.Shared.Channel;
-using LobotJR.Shared.Chat;
-using LobotJR.Shared.Client;
-using LobotJR.Shared.User;
-using LobotJR.Shared.Utility;
+using LobotJR.Twitch.Api.Authentication;
+using LobotJR.Twitch.Api.Channel;
+using LobotJR.Twitch.Api.Chat;
+using LobotJR.Twitch.Api.Client;
+using LobotJR.Twitch.Api.User;
 using LobotJR.Twitch.Model;
+using LobotJR.Utils;
 using NLog;
 using RestSharp;
 using System;

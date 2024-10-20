@@ -1,8 +1,8 @@
 ﻿using LobotJR.Command.Model.Twitch;
 using LobotJR.Data;
-using LobotJR.Shared.Channel;
-using LobotJR.Shared.User;
 using LobotJR.Twitch;
+using LobotJR.Twitch.Api.Channel;
+using LobotJR.Twitch.Api.User;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using NLog;

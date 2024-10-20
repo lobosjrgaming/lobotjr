@@ -22,11 +22,11 @@ using LobotJR.Command.View.Player;
 using LobotJR.Command.View.Twitch;
 using LobotJR.Data;
 using LobotJR.Data.Migration;
-using LobotJR.Shared.Authentication;
-using LobotJR.Shared.Client;
 using LobotJR.Trigger;
 using LobotJR.Trigger.Responder;
 using LobotJR.Twitch;
+using LobotJR.Twitch.Api.Authentication;
+using LobotJR.Twitch.Api.Client;
 
 namespace LobotJR.Utils
 {

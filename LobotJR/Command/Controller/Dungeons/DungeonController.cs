@@ -299,6 +299,13 @@ namespace LobotJR.Command.Controller.Dungeons
             return party.LastUpdate == null || party.LastUpdate + stepTime <= DateTime.Now;
         }
 
+        private bool CalculateCheck(float chance)
+        {
+            var value = Random.NextDouble();
+            Logger.Debug("    Is random {} below chance {}?", value, chance);
+            return value < chance;
+        }
+
         private Dictionary<CharacterClass, float> GetClassModifiers(IEnumerable<PlayerCharacter> players)
         {
             return players.GroupBy(x => x.CharacterClass).ToDictionary(x => x.Key, x => 1f / x.Count());
@@ -310,9 +317,8 @@ namespace LobotJR.Command.Controller.Dungeons
             return (player.CharacterClass.SuccessChance + EquipmentController.GetEquippedGear(player).Sum(x => x.SuccessChance)) * multiplier;
         }
 
-        private float PartySuccessChance(IEnumerable<PlayerCharacter> players)
+        private float PartySuccessChance(IEnumerable<PlayerCharacter> players, Dictionary<CharacterClass, float> classMultipliers)
         {
-            var classMultipliers = GetClassModifiers(players);
             return players.Sum(x => PlayerSuccessChance(x) * classMultipliers[x.CharacterClass]);
         }
 
@@ -321,48 +327,40 @@ namespace LobotJR.Command.Controller.Dungeons
             return EquipmentController.GetEquippedGear(player).Sum(x => x.PreventDeathBonus);
         }
 
-        private float PartyDeathChance(IEnumerable<PlayerCharacter> players)
+        private float PartyDeathChance(IEnumerable<PlayerCharacter> players, Dictionary<CharacterClass, float> classMultipliers)
         {
-            var classMultipliers = GetClassModifiers(players);
             return players.Sum(x => x.CharacterClass.PreventDeathBonus * classMultipliers[x.CharacterClass]);
         }
 
-        private float PlayerLootChance(PlayerCharacter player)
+        private float PartyLootChance(IEnumerable<PlayerCharacter> players, Dictionary<CharacterClass, float> classMultipliers)
         {
-            return EquipmentController.GetEquippedGear(player).Sum(x => x.ItemFind);
+            return players.Sum(x => (x.CharacterClass.ItemFind + EquipmentController.GetEquippedGear(x).Sum(y => y.ItemFind)) * classMultipliers[x.CharacterClass]);
         }
 
-        private bool CalculateCheck(float chance)
+        private float CalculatePlayerExperience(PlayerCharacter player)
         {
-            var value = Random.NextDouble();
-            Logger.Debug("    Is random {} below chance {}?", value, chance);
-            return value < chance;
+            return 11 + (player.Level - 2) * 3;
         }
 
-        private float CalculateExperienceRewardRaw(PlayerCharacter player, bool includeBonuses)
+        private float PartyExperienceBonus(IEnumerable<PlayerCharacter> players, Dictionary<CharacterClass, float> classMultipliers)
         {
-            var experienceMultiplier = 1f;
-            if (includeBonuses)
-            {
-                experienceMultiplier += player.CharacterClass.XpBonus + EquipmentController.GetEquippedGear(player).Sum(x => x.XpBonus);
-            }
-            return (11 + (player.Level - 2) * 3) * experienceMultiplier;
+            return players.Sum(x => (x.CharacterClass.XpBonus + EquipmentController.GetEquippedGear(x).Sum(y => y.XpBonus)) * classMultipliers[x.CharacterClass]);
         }
 
-        private int CalculateCoinReward(PlayerCharacter player, bool includeBonuses)
+        private float CalculatePlayerCoins(PlayerCharacter player)
         {
-            var coinMultiplier = 1f;
-            var levelScale = 1 + 0.05f * player.Level;
-            if (includeBonuses)
-            {
-                coinMultiplier += player.CharacterClass.CoinBonus + EquipmentController.GetEquippedGear(player).Sum(x => x.CoinBonus);
-            }
-            return (int)Math.Round(50 * coinMultiplier * levelScale);
+            return 50 * (1 + 0.05f * player.Level);
+        }
+
+        private float PartyCoinBonus(IEnumerable<PlayerCharacter> players, Dictionary<CharacterClass, float> classMultipliers)
+        {
+            return players.Sum(x => (x.CharacterClass.CoinBonus + EquipmentController.GetEquippedGear(x).Sum(y => y.CoinBonus)) * classMultipliers[x.CharacterClass]);
         }
 
         private void ProgressDungeon(Party party)
         {
             var members = party.Members.Select(x => PlayerController.GetPlayerByUserId(x));
+            var classMultipliers = GetClassModifiers(members);
             var dungeon = GetDungeonById(party.DungeonId);
             var name = GetDungeonName(party.DungeonId, party.ModeId);
             Logger.Debug("Processing dungeon step for party {description} in state {state} for {dungeon} on step {step}", string.Join(", ", party.Members), party.State, name, party.CurrentEncounter);
@@ -385,7 +383,7 @@ namespace LobotJR.Command.Controller.Dungeons
                 Logger.Debug("  Resolving encounter...");
                 var encounter = dungeon.Encounters.ElementAt(party.CurrentEncounter - 1);
                 var difficulty = encounter.Levels.FirstOrDefault(x => x.Mode.Id.Equals(party.ModeId)).Difficulty;
-                var successChance = PartySuccessChance(members);
+                var successChance = PartySuccessChance(members, classMultipliers);
                 Logger.Debug("  Encounter difficulty: {difficulty}", difficulty);
                 Logger.Debug("  successChance: {chance}", successChance);
 
@@ -462,24 +460,29 @@ namespace LobotJR.Command.Controller.Dungeons
             Logger.Debug("Processing dungeon complete for party {description} in state {state} for {dungeon}", string.Join(", ", party.Members), party.State, name);
             var history = CreateDungeonHistory(party, true);
             var settings = SettingsManager.GetGameSettings();
+            var classMultipliers = GetClassModifiers(members);
+            var lootChance = PartyLootChance(members, classMultipliers);
+            var xpBonus = PartyExperienceBonus(members, classMultipliers);
+            var coinBonus = PartyCoinBonus(members, classMultipliers);
             foreach (var member in members)
             {
                 var user = PlayerController.GetUserByPlayer(member);
-                var xpRaw = CalculateExperienceRewardRaw(member, true);
+                var xpRaw = CalculatePlayerExperience(member);
                 var crit = CalculateCheck(settings.DungeonCritChance);
                 if (crit)
                 {
                     xpRaw *= 1f + settings.DungeonCritBonus;
                 }
-                var coins = CalculateCoinReward(member, true);
+                var coinsRaw = CalculatePlayerCoins(member);
                 var gfBonus = party.IsQueueGroup && GroupFinderController.GetLockoutTime(member).TotalMilliseconds <= 0;
                 if (gfBonus)
                 {
                     xpRaw *= 2;
-                    coins *= 2;
+                    coinsRaw *= 2;
                     GroupFinderController.SetLockout(member);
                 }
-                var xp = (int)Math.Round(xpRaw);
+                var xp = (int)Math.Round(xpRaw * (1f + xpBonus));
+                var coins = (int)Math.Round(coinsRaw * (1f + coinBonus));
                 PlayerController.GainExperience(member, xp);
                 member.Currency += coins;
 
@@ -492,8 +495,7 @@ namespace LobotJR.Command.Controller.Dungeons
                 var currentItems = currentLoot.Select(x => x.Item);
                 var possibleDrops = filteredLoot.Where(x => !currentItems.Contains(x.Item));
 
-                var lootChance = PlayerLootChance(member);
-                var drops = possibleDrops.Where(x => CalculateCheck((float)x.DropChance + lootChance));
+                var drops = possibleDrops.Where(x => CalculateCheck(lootChance - (float)x.DropChance));
                 var earnedDrop = drops.FirstOrDefault()?.Item;
                 if (earnedDrop != null)
                 {
@@ -501,16 +503,17 @@ namespace LobotJR.Command.Controller.Dungeons
                 }
                 DungeonComplete?.Invoke(member, xp, coins, earnedDrop, party.IsQueueGroup, gfBonus, crit);
 
-                var activePet = PetController.GetActivePet(member);
-                if (activePet != null)
-                {
-                    PetController.AddHunger(member, activePet);
-                }
                 var rarity = PetController.RollForRarity();
                 Stable earnedPet = null;
                 if (rarity != null)
                 {
                     PetController.GrantPet(user, rarity);
+                }
+
+                var activePet = PetController.GetActivePet(member);
+                if (activePet != null)
+                {
+                    PetController.AddHunger(member, activePet);
                 }
 
                 AddParticipant(history, party, member.UserId, xp, coins, earnedDrop, earnedPet?.Pet);
@@ -527,12 +530,13 @@ namespace LobotJR.Command.Controller.Dungeons
             var name = GetDungeonName(party.DungeonId, party.ModeId);
             Logger.Debug("Processing dungeon failure for party {description} in state {state} for {dungeon}", string.Join(", ", party.Members), party.State, name);
             var history = CreateDungeonHistory(party, false);
-            var deathChance = settings.DungeonDeathChance - PartyDeathChance(members);
+            var classMultipliers = GetClassModifiers(members);
+            var deathChance = settings.DungeonDeathChance - PartyDeathChance(members, classMultipliers);
             var dead = members.Where(x => CalculateCheck(deathChance - PlayerDeathChance(x))).ToList();
             foreach (var member in dead)
             {
-                var xp = (int)Math.Round(CalculateExperienceRewardRaw(member, false));
-                var coins = CalculateCoinReward(member, false);
+                var xp = (int)Math.Round(CalculatePlayerExperience(member));
+                var coins = (int)Math.Round(CalculatePlayerCoins(member));
                 var toNewLevel = PlayerController.GetExperienceToNextLevel(member.Experience - xp);
                 if (toNewLevel <= xp)
                 {

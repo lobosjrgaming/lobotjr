@@ -1,5 +1,5 @@
 ﻿using LobotJR.Data;
-using LobotJR.Shared.Client;
+using LobotJR.Twitch.Api.Client;
 using System;
 using System.Collections.Generic;
 using System.Drawing.Text;

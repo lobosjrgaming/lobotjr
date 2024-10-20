@@ -1,6 +1,6 @@
-﻿using LobotJR.Shared.Authentication;
-using LobotJR.Shared.Client;
-using LobotJR.Shared.User;
+﻿using LobotJR.Twitch.Api.Authentication;
+using LobotJR.Twitch.Api.Client;
+using LobotJR.Twitch.Api.User;
 using NuGet.Versioning;
 using System;
 using System.Collections.Generic;

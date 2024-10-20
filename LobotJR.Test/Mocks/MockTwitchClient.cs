@@ -1,7 +1,7 @@
 ﻿using LobotJR.Data;
-using LobotJR.Shared.Channel;
-using LobotJR.Shared.User;
 using LobotJR.Twitch;
+using LobotJR.Twitch.Api.Channel;
+using LobotJR.Twitch.Api.User;
 using LobotJR.Twitch.Model;
 using Moq;
 using System;
