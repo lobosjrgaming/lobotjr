@@ -592,6 +592,7 @@ namespace LobotJR.Command.Controller.Player
             {
                 if (LastAward + TimeSpan.FromMinutes(settings.ExperienceFrequency) <= DateTime.Now)
                 {
+                    LastAward = DateTime.Now;
                     var chatters = await UserController.GetViewerList();
                     var xpToAward = settings.ExperienceValue * CurrentMultiplier;
                     var coinsToAward = settings.CoinValue * CurrentMultiplier;
@@ -612,7 +613,6 @@ namespace LobotJR.Command.Controller.Player
                         }
                     }
                     ExperienceAwarded?.Invoke(xpToAward, coinsToAward, subMultiplier);
-                    LastAward = DateTime.Now;
                 }
             }
         }

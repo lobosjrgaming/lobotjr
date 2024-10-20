@@ -302,7 +302,6 @@ namespace LobotJR.Command.Controller.Dungeons
         private bool CalculateCheck(float chance)
         {
             var value = Random.NextDouble();
-            Logger.Debug("    Is random {} below chance {}?", value, chance);
             return value < chance;
         }
 
