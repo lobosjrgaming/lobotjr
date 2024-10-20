@@ -138,10 +138,10 @@ namespace LobotJR.Interface
             }
         }
 
-        private void LoadSettings(ILifetimeScope scope)
+        private async Task LoadSettings(ILifetimeScope scope)
         {
             var connectionManager = scope.Resolve<IConnectionManager>();
-            using (var db = connectionManager.OpenConnection())
+            using (var db = await connectionManager.OpenConnection())
             {
                 var settingsManager = scope.Resolve<SettingsManager>();
                 Settings.CopyFrom(settingsManager.GetClientSettings());
@@ -166,7 +166,7 @@ namespace LobotJR.Interface
             try
             {
                 await Bot.Initialize(clientData, tokenData);
-                LoadSettings(Bot.Scope);
+                await LoadSettings(Bot.Scope);
                 UpdateLogView();
                 CancellationTokenSource = Bot.Start();
             }
@@ -225,11 +225,11 @@ namespace LobotJR.Interface
             await LaunchBot(clientData, tokenData);
         }
 
-        private void Settings_Click(object sender, RoutedEventArgs e)
+        private async void Settings_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new SettingsEditor();
             var connectionManager = Bot.Scope.Resolve<IConnectionManager>();
-            using (var db = connectionManager.OpenConnection())
+            using (var db = await connectionManager.OpenConnection())
             {
                 var manager = Bot.Scope.Resolve<SettingsManager>();
                 dialog.GameSettings.CopyFrom(manager.GetGameSettings());
@@ -242,7 +242,7 @@ namespace LobotJR.Interface
             var result = dialog.ShowDialog();
             if (result.HasValue && result.Value)
             {
-                using (var db = connectionManager.OpenConnection())
+                using (var db = await connectionManager.OpenConnection())
                 {
                     var manager = Bot.Scope.Resolve<SettingsManager>();
                     manager.GetGameSettings().CopyFrom(dialog.GameSettings);
@@ -251,7 +251,7 @@ namespace LobotJR.Interface
                     Settings.CopyFrom(dialog.ClientSettings);
                     FileUtils.WriteClientData(dialog.ClientData);
                 }
-                LoadSettings(Bot.Scope);
+                await LoadSettings(Bot.Scope);
                 UpdateLogView();
             }
         }

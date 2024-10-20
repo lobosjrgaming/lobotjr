@@ -87,18 +87,18 @@ namespace LobotJR
             return container.BeginLifetimeScope();
         }
 
-        private void SeedDatabase(IConnectionManager connectionManager, UserController userController, TokenData tokenData)
+        private async Task SeedDatabase(IConnectionManager connectionManager, UserController userController, TokenData tokenData)
         {
-            using (connectionManager.OpenConnection())
+            using (await connectionManager.OpenConnection())
             {
                 connectionManager.SeedData();
                 userController.SetBotUsers(userController.GetOrCreateUser(tokenData.BroadcastId, tokenData.BroadcastUser), userController.GetOrCreateUser(tokenData.ChatId, tokenData.ChatUser));
             }
         }
 
-        private void ConfigureLogging(IConnectionManager connectionManager)
+        private async Task ConfigureLogging(IConnectionManager connectionManager)
         {
-            using (connectionManager.OpenConnection())
+            using (await connectionManager.OpenConnection())
             {
                 var appSettings = connectionManager.CurrentConnection.AppSettings.Read().First();
                 LogFile = appSettings.LoggingFile;
@@ -210,7 +210,7 @@ namespace LobotJR
             {
                 try
                 {
-                    using (connectionManager.OpenConnection())
+                    using (await connectionManager.OpenConnection())
                     {
                         await controllerManager.Process();
                         await twitchClient.ProcessQueue();
@@ -277,9 +277,9 @@ namespace LobotJR
             Scope = CreateApplicationScope(clientData, tokenData);
             var connectionManager = Scope.Resolve<IConnectionManager>();
             var userController = Scope.Resolve<UserController>();
-            SeedDatabase(connectionManager, userController, tokenData);
-            ConfigureLogging(connectionManager);
-            using (connectionManager.OpenConnection())
+            await SeedDatabase(connectionManager, userController, tokenData);
+            await ConfigureLogging(connectionManager);
+            using (await connectionManager.OpenConnection())
             {
                 var appSettings = connectionManager.CurrentConnection.AppSettings.Read().First();
                 twitchPlays = appSettings.TwitchPlays;
@@ -300,7 +300,7 @@ namespace LobotJR
                 CrashAlert();
             }
 
-            using (connectionManager.OpenConnection())
+            using (await connectionManager.OpenConnection())
             {
                 controllerManager.Initialize();
                 twitchClient.Initialize();
