@@ -287,8 +287,10 @@ namespace LobotJR.Command.Controller.Pets
         public Stable GrantPet(User user, PetRarity rarity)
         {
             var availablePets = ConnectionManager.CurrentConnection.PetData.Read(x => x.Rarity.Equals(rarity)).ToList();
-            var stable = GetStableForUser(user).Select(x => x.Pet).ToList();
-            var unownedPets = availablePets.Except(stable);
+            var stable = GetStableForUser(user);
+            var ownedPets = stable.Select(x => x.Pet).ToList();
+            var isSparkly = Random.NextDouble() < 0.01f;
+            var unownedPets = availablePets.Except(ownedPets);
             if (unownedPets.Any())
             {
                 var toGrant = unownedPets.ElementAt(Random.Next(0, unownedPets.Count()));
@@ -297,11 +299,20 @@ namespace LobotJR.Command.Controller.Pets
                     Name = toGrant.Name,
                     UserId = user.TwitchId,
                     Pet = toGrant,
-                    IsSparkly = Random.NextDouble() < 0.01f
+                    IsSparkly = isSparkly,
+                    Hunger = SettingsManager.GetGameSettings().PetHungerMax
                 };
                 ConnectionManager.CurrentConnection.Stables.Create(toAdd);
                 PetFound?.Invoke(user, toAdd);
                 return toAdd;
+            }
+            var dullPets = stable.Where(x => !x.IsSparkly && x.Pet.Rarity.Equals(rarity));
+            if (isSparkly && dullPets.Any())
+            {
+                var toUpgrade = dullPets.ElementAt(Random.Next(0, dullPets.Count()));
+                toUpgrade.IsSparkly = true;
+                //Probably need a shiny upgrade event instead for better messaging
+                PetFound?.Invoke(user, toUpgrade);
             }
             return null;
         }
