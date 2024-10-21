@@ -7,6 +7,7 @@ using Moq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace LobotJR.Test.Mocks
@@ -43,7 +44,7 @@ namespace LobotJR.Test.Mocks
                 });
         }
 
-        private IEnumerable<User> GetUsers(Func<User, bool> predicate)
+        private IEnumerable<User> GetUsers(Expression<Func<User, bool>> predicate)
         {
             return ConnectionManager.CurrentConnection.Users.Read(predicate);
         }

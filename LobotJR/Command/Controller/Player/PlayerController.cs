@@ -184,6 +184,28 @@ namespace LobotJR.Command.Controller.Player
         }
 
         /// <summary>
+        /// Gets a collection of players from a collection of users, optimized
+        /// for bulk processing.
+        /// </summary>
+        /// <param name="users">A collection of user objects.</param>
+        /// <returns>A collection of player character objects for each user.</returns>
+        public IEnumerable<PlayerCharacter> GetPlayersByUsers(IEnumerable<User> users)
+        {
+            var newClass = ConnectionManager.CurrentConnection.CharacterClassData.First(x => !x.CanPlay);
+            var userIds = users.Select(x => x.TwitchId).ToList();
+            var existingPlayers = ConnectionManager.CurrentConnection.PlayerCharacters.Read(x => userIds.Contains(x.UserId)).ToList();
+            var existingIds = existingPlayers.Select(x => x.UserId);
+            var missingUsers = userIds.Except(existingIds);
+            if (missingUsers.Any())
+            {
+                var newPlayers = missingUsers.Select(x => new PlayerCharacter() { UserId = x, CharacterClassId = newClass.Id });
+                newPlayers = ConnectionManager.CurrentConnection.PlayerCharacters.BatchCreate(newPlayers, newPlayers.Count(), Logger, "Players");
+                existingPlayers = existingPlayers.Concat(newPlayers).ToList();
+            }
+            return existingPlayers;
+        }
+
+        /// <summary>
         /// Gets the user object for a given player.
         /// </summary>
         /// <param name="player">The player to get the user object for.</param>
@@ -594,13 +616,16 @@ namespace LobotJR.Command.Controller.Player
                 {
                     LastAward = DateTime.Now;
                     var chatters = await UserController.GetViewerList();
+                    var chatterDict = chatters.ToDictionary(x => x.TwitchId, x => x);
                     var xpToAward = settings.ExperienceValue * CurrentMultiplier;
                     var coinsToAward = settings.CoinValue * CurrentMultiplier;
                     var subMultiplier = settings.SubRewardMultiplier;
                     Logger.Info("{coins} wolfcoins and {xp} experience awarded to {count} viewers.", coinsToAward, xpToAward, chatters.Count());
-                    foreach (var chatter in chatters)
+                    var players = GetPlayersByUsers(chatters);
+                    ConnectionManager.CurrentConnection.PlayerCharacters.BeginTransaction();
+                    foreach (var player in players)
                     {
-                        var player = GetPlayerByUser(chatter);
+                        var chatter = chatterDict[player.UserId];
                         if (chatter.IsSub)
                         {
                             GainExperience(chatter, player, xpToAward * subMultiplier);
@@ -612,7 +637,9 @@ namespace LobotJR.Command.Controller.Player
                             player.Currency += coinsToAward;
                         }
                     }
+                    ConnectionManager.CurrentConnection.PlayerCharacters.Commit();
                     ExperienceAwarded?.Invoke(xpToAward, coinsToAward, subMultiplier);
+                    Logger.Info("Experience awarded to {count} users in {time}.", chatters.Count(), DateTime.Now - LastAward);
                 }
             }
         }

@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace LobotJR.Test.Mocks
 {
@@ -22,11 +23,11 @@ namespace LobotJR.Test.Mocks
         private MockContext Context;
         public IDatabase CurrentConnection { get; private set; }
 
-        public IDatabase OpenConnection()
+        public Task<IDatabase> OpenConnection()
         {
             Context = MockContext.Create();
             CurrentConnection = new SqliteRepositoryManager(Context, new SemaphoreSlim(1, 1));
-            return CurrentConnection;
+            return Task.FromResult(CurrentConnection);
         }
 
         private Fish CreateFish(int id, string name, string flavorText, int minLength, int maxLength, int minWeight, int maxWeight, int sizeId, string sizeName, string sizeMessage, int rarityId, string rarityName, float rarityWeight)

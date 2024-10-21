@@ -388,6 +388,13 @@ namespace LobotJR.Command
                 {
                     irc.QueueMessage(broadcastMessage);
                 }
+                if (isInternal)
+                {
+                    foreach (var message in result.Messages)
+                    {
+                        Logger.Info(message);
+                    }
+                }
             }
             if (result.Errors?.Count > 0)
             {

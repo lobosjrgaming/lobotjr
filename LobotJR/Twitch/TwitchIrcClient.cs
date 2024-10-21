@@ -64,7 +64,7 @@ namespace LobotJR.Twitch
         /// </summary>
         public void Restart()
         {
-            this.Dispose();
+            Dispose();
             Client = new TcpClient();
         }
 
@@ -96,11 +96,11 @@ namespace LobotJR.Twitch
                         AutoFlush = false
                     };
 
+                    ExpectResponse();
                     await WriteLines("CAP REQ :twitch.tv/tags twitch.tv/commands",
                         $"PASS oauth:{TokenData.ChatToken.AccessToken}",
                         $"NICK {TokenData.ChatUser.ToLower()}",
                         $"JOIN #{TokenData.BroadcastUser}");
-                    ExpectResponse();
                     Logger.Info("Logged in to Twitch IRC server as {user}", TokenData.ChatUser);
                     LastReconnect = null;
                     return true;
@@ -138,13 +138,24 @@ namespace LobotJR.Twitch
         private void ExpectResponse()
         {
             LastMessage = DateTime.Now - IdleLimit;
-            //PingSent = true;
         }
 
-        private async Task WriteLine(string line)
+        private async Task<bool> WriteLine(string line)
         {
-            await OutputStream.WriteLineAsync(line);
-            await OutputStream.FlushAsync();
+            try
+            {
+                await OutputStream.WriteLineAsync(line);
+                await OutputStream.FlushAsync();
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+                Logger.Error("Encountered an error sending data to IRC. Reconnecting.");
+                Dispose();
+                LastReconnect = DateTime.Now;
+                return false;
+            }
+            return true;
         }
 
         private async Task WriteLines(params string[] lines)
@@ -166,10 +177,10 @@ namespace LobotJR.Twitch
             return null;
         }
 
-        private IEnumerable<IrcMessage> GetAndClearInjections()
+        private async Task<IEnumerable<IrcMessage>> GetAndClearInjections()
         {
             List<IrcMessage> output;
-            InjectSemaphore.Wait();
+            await InjectSemaphore.WaitAsync();
             try
             {
                 output = InjectionMessages.ToList();
@@ -190,17 +201,27 @@ namespace LobotJR.Twitch
         public async Task<IEnumerable<IrcMessage>> Process()
         {
             var output = new List<IrcMessage>();
-            output.AddRange(GetAndClearInjections());
+            output.AddRange(await GetAndClearInjections());
             if (Client.Connected)
             {
-                if (this.MessageQueue.Count > 0)
+                if (MessageQueue.Count > 0)
                 {
-                    var toSend = this.MessageQueue.Dequeue();
+                    var toSend = MessageQueue.Peek();
                     if (toSend != null && Timer.AvailableOccurrences() > 0)
                     {
-                        await WriteLine($"PRIVMSG #{TokenData.BroadcastUser} :{toSend}");
-                        Timer.AddOccurrence(DateTime.Now);
-                        ExpectResponse();
+                        var success = await WriteLine($"PRIVMSG #{TokenData.BroadcastUser} :{toSend}");
+                        if (success)
+                        {
+                            MessageQueue.Dequeue();
+                            Timer.AddOccurrence(DateTime.Now);
+                            //ExpectResponse();
+                        }
+                        else
+                        {
+                            //If write fails, the client is disconnected
+                            //abort the process so it can reconnect
+                            return output;
+                        }
                     }
                 }
 
@@ -264,7 +285,7 @@ namespace LobotJR.Twitch
         /// <param name="message">The message to send.</param>
         public void QueueMessage(string message)
         {
-            this.MessageQueue.Enqueue(message);
+            MessageQueue.Enqueue(message);
         }
 
         /// <summary>
