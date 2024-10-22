@@ -4,9 +4,9 @@ namespace LobotJR.Data
 {
     public enum ToolbarDisplay
     {
-        IconsOnly,
-        TextOnly,
-        IconsAndText
+        Icons,
+        Text,
+        Both
     }
 
     [Flags]
@@ -45,7 +45,7 @@ namespace LobotJR.Data
         /// Whether to show only icons, names, or both for buttons on the
         /// toolbar.
         /// </summary>
-        public ToolbarDisplay ToolbarDisplay { get; set; } = ToolbarDisplay.IconsOnly;
+        public ToolbarDisplay ToolbarDisplay { get; set; } = ToolbarDisplay.Icons;
         /// <summary>
         /// The RGB color value for the background of the log display.
         /// </summary>

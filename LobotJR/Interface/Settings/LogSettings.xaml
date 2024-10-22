@@ -62,47 +62,53 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <Label Content="History Size" HorizontalAlignment="Right"/>
-            <TextBlock Grid.Row="1" Grid.Column="1" TextWrapping="Wrap">The number of recent entries to keep in the log history.</TextBlock>
-            <Label Content="Log Font" Grid.Row="2" HorizontalAlignment="Right"/>
-            <TextBlock Grid.Row="3" Grid.Column="1" TextWrapping="Wrap">The name of the font to use for the log display.</TextBlock>
-            <Label Content="Log Font Size" Grid.Row="4" HorizontalAlignment="Right"/>
-            <TextBlock Grid.Row="5" Grid.Column="1" TextWrapping="Wrap">The size of the font to use for the log display, from 6 to 72.</TextBlock>
-            <Label Content="Background Color" Grid.Row="6" HorizontalAlignment="Right"/>
-            <TextBlock Grid.Row="7" Grid.Column="1" TextWrapping="Wrap">The color (hex RGB) of the log background.</TextBlock>
-            <Label Content="Debug Color" Grid.Row="8" HorizontalAlignment="Right"/>
-            <TextBlock Grid.Row="9" Grid.Column="1" TextWrapping="Wrap">The color (hex RGB) of debug messages.</TextBlock>
-            <Label Content="Info Color" Grid.Row="10" HorizontalAlignment="Right"/>
-            <TextBlock Grid.Row="11" Grid.Column="1" TextWrapping="Wrap">The color (hex RGB) of info messages.</TextBlock>
-            <Label Content="Warning Color" Grid.Row="12" HorizontalAlignment="Right"/>
-            <TextBlock Grid.Row="13" Grid.Column="1" TextWrapping="Wrap">The color (hex RGB) of warning messages.</TextBlock>
-            <Label Content="Error Color" Grid.Row="14" HorizontalAlignment="Right"/>
-            <TextBlock Grid.Row="15" Grid.Column="1" TextWrapping="Wrap">The color (hex RGB) of error messages.</TextBlock>
-            <Label Content="Crash Color" Grid.Row="16" HorizontalAlignment="Right"/>
-            <TextBlock Grid.Row="17" Grid.Column="1" TextWrapping="Wrap">The color (hex RGB) of crash messages.</TextBlock>
-            <TextBox x:Name="HistorySize" Grid.Column="1" VerticalAlignment="Center">
+            <Label Content="Toolbar Display" HorizontalAlignment="Right"/>
+            <TextBlock Grid.Row="1" Grid.Column="1" TextWrapping="Wrap">How the toolbar button should be displayed.</TextBlock>
+            <Label Content="History Size" Grid.Row="2"  HorizontalAlignment="Right"/>
+            <TextBlock Grid.Row="3" Grid.Column="1" TextWrapping="Wrap">The number of recent entries to keep in the log history.</TextBlock>
+            <Label Content="Log Font" Grid.Row="4" HorizontalAlignment="Right"/>
+            <TextBlock Grid.Row="5" Grid.Column="1" TextWrapping="Wrap">The name of the font to use for the log display.</TextBlock>
+            <Label Content="Log Font Size" Grid.Row="6" HorizontalAlignment="Right"/>
+            <TextBlock Grid.Row="7" Grid.Column="1" TextWrapping="Wrap">The size of the font to use for the log display, from 6 to 72.</TextBlock>
+            <Label Content="Background Color" Grid.Row="8" HorizontalAlignment="Right"/>
+            <TextBlock Grid.Row="9" Grid.Column="1" TextWrapping="Wrap">The color (hex RGB) of the log background.</TextBlock>
+            <Label Content="Debug Color" Grid.Row="10" HorizontalAlignment="Right"/>
+            <TextBlock Grid.Row="11" Grid.Column="1" TextWrapping="Wrap">The color (hex RGB) of debug messages.</TextBlock>
+            <Label Content="Info Color" Grid.Row="12" HorizontalAlignment="Right"/>
+            <TextBlock Grid.Row="13" Grid.Column="1" TextWrapping="Wrap">The color (hex RGB) of info messages.</TextBlock>
+            <Label Content="Warning Color" Grid.Row="14" HorizontalAlignment="Right"/>
+            <TextBlock Grid.Row="15" Grid.Column="1" TextWrapping="Wrap">The color (hex RGB) of warning messages.</TextBlock>
+            <Label Content="Error Color" Grid.Row="16" HorizontalAlignment="Right"/>
+            <TextBlock Grid.Row="17" Grid.Column="1" TextWrapping="Wrap">The color (hex RGB) of error messages.</TextBlock>
+            <Label Content="Crash Color" Grid.Row="18" HorizontalAlignment="Right"/>
+            <TextBlock Grid.Row="19" Grid.Column="1" TextWrapping="Wrap">The color (hex RGB) of crash messages.</TextBlock>
+            <ComboBox x:Name="Display" Grid.Column="1" VerticalAlignment="Center" ItemsSource="{Binding Path=ToolbarDisplayEnum}" SelectedValue="{Binding Path=ClientSettings.ToolbarDisplay}">
+            </ComboBox>
+            <TextBox x:Name="HistorySize" Grid.Row="2" Grid.Column="1" VerticalAlignment="Center">
                 <Binding Path="ClientSettings.LogHistorySize" UpdateSourceTrigger="PropertyChanged">
                     <Binding.ValidationRules>
                         <interface:NumericInputValidator/>
                     </Binding.ValidationRules>
                 </Binding>
             </TextBox>
-            <ComboBox x:Name="Family" Grid.Row="2" Grid.Column="1" VerticalAlignment="Center" SelectionChanged="Family_SelectionChanged" ItemsSource="{Binding Path=Fonts}" SelectedValue="{Binding Path=ClientSettings.FontFamily}">
+            <ComboBox x:Name="Family" Grid.Row="4" Grid.Column="1" VerticalAlignment="Center" SelectionChanged="Family_SelectionChanged" ItemsSource="{Binding Path=Fonts}" SelectedValue="{Binding Path=ClientSettings.FontFamily}">
             </ComboBox>
-            <TextBox x:Name="Size" Grid.Row="4" Grid.Column="1" VerticalAlignment="Center" TextChanged="Preview_TextChanged">
+            <TextBox x:Name="Size" Grid.Row="6" Grid.Column="1" VerticalAlignment="Center" TextChanged="Preview_TextChanged">
                 <Binding Path="ClientSettings.FontSize" UpdateSourceTrigger="PropertyChanged">
                     <Binding.ValidationRules>
                         <interface:NumericInputValidator Min="6" Max="72"/>
                     </Binding.ValidationRules>
                 </Binding>
             </TextBox>
-            <TextBox x:Name="BackgroundColor" Grid.Row="6" Grid.Column="1" VerticalAlignment="Center" TextChanged="Preview_TextChanged">
+            <TextBox x:Name="BackgroundColor" Grid.Row="8" Grid.Column="1" VerticalAlignment="Center" TextChanged="Preview_TextChanged">
                 <Binding Path="ClientSettings.BackgroundColor" UpdateSourceTrigger="LostFocus">
                     <Binding.ValidationRules>
                         <interface:NumericInputValidator IsHex="True"/>
@@ -112,7 +118,7 @@
                     </Binding.Converter>
                 </Binding>
             </TextBox>
-            <TextBox x:Name="DebugColor" Grid.Row="8" Grid.Column="1" VerticalAlignment="Center" TextChanged="Preview_TextChanged">
+            <TextBox x:Name="DebugColor" Grid.Row="10" Grid.Column="1" VerticalAlignment="Center" TextChanged="Preview_TextChanged">
                 <Binding Path="ClientSettings.DebugColor" UpdateSourceTrigger="LostFocus">
                     <Binding.ValidationRules>
                         <interface:NumericInputValidator IsHex="True"/>
@@ -122,7 +128,7 @@
                     </Binding.Converter>
                 </Binding>
             </TextBox>
-            <TextBox x:Name="InfoColor" Grid.Row="10" Grid.Column="1" VerticalAlignment="Center" TextChanged="Preview_TextChanged">
+            <TextBox x:Name="InfoColor" Grid.Row="12" Grid.Column="1" VerticalAlignment="Center" TextChanged="Preview_TextChanged">
                 <Binding Path="ClientSettings.InfoColor" UpdateSourceTrigger="LostFocus">
                     <Binding.ValidationRules>
                         <interface:NumericInputValidator IsHex="True"/>
@@ -132,7 +138,7 @@
                     </Binding.Converter>
                 </Binding>
             </TextBox>
-            <TextBox x:Name="WarnColor" Grid.Row="12" Grid.Column="1" VerticalAlignment="Center" TextChanged="Preview_TextChanged">
+            <TextBox x:Name="WarnColor" Grid.Row="14" Grid.Column="1" VerticalAlignment="Center" TextChanged="Preview_TextChanged">
                 <Binding Path="ClientSettings.WarningColor" UpdateSourceTrigger="LostFocus">
                     <Binding.ValidationRules>
                         <interface:NumericInputValidator IsHex="True"/>
@@ -142,7 +148,7 @@
                     </Binding.Converter>
                 </Binding>
             </TextBox>
-            <TextBox x:Name="ErrorColor" Grid.Row="14" Grid.Column="1" VerticalAlignment="Center" TextChanged="Preview_TextChanged">
+            <TextBox x:Name="ErrorColor" Grid.Row="16" Grid.Column="1" VerticalAlignment="Center" TextChanged="Preview_TextChanged">
                 <Binding Path="ClientSettings.ErrorColor" UpdateSourceTrigger="LostFocus">
                     <Binding.ValidationRules>
                         <interface:NumericInputValidator IsHex="True"/>
@@ -152,7 +158,7 @@
                     </Binding.Converter>
                 </Binding>
             </TextBox>
-            <TextBox x:Name="CrashColor" Grid.Row="16" Grid.Column="1" VerticalAlignment="Center" TextChanged="Preview_TextChanged">
+            <TextBox x:Name="CrashColor" Grid.Row="18" Grid.Column="1" VerticalAlignment="Center" TextChanged="Preview_TextChanged">
                 <Binding Path="ClientSettings.CrashColor" UpdateSourceTrigger="PropertyChanged">
                     <Binding.ValidationRules>
                         <interface:NumericInputValidator IsHex="True"/>

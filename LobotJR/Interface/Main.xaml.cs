@@ -1,5 +1,6 @@
 ﻿using Autofac;
 using LobotJR.Command;
+using LobotJR.Command.Controller.Player;
 using LobotJR.Data;
 using LobotJR.Interface.Settings;
 using LobotJR.Twitch;
@@ -9,6 +10,7 @@ using LobotJR.Utils;
 using NLog;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -33,7 +35,7 @@ namespace LobotJR.Interface
     /// <summary>
     /// Interaction logic for Main.xaml
     /// </summary>
-    public partial class Main : Window
+    public partial class Main : Window, INotifyPropertyChanged
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private static readonly Dictionary<ColorKeys, Brush> Colors = new Dictionary<ColorKeys, Brush>()
@@ -64,9 +66,40 @@ namespace LobotJR.Interface
         private readonly Bot Bot = new Bot();
         private CancellationTokenSource CancellationTokenSource;
 
+        private ClientData ClientData;
+        private TokenData TokenData;
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        public Visibility ShowIcons { get { return (Settings.ToolbarDisplay == ToolbarDisplay.Icons || Settings.ToolbarDisplay == ToolbarDisplay.Both) ? Visibility.Visible : Visibility.Collapsed; } }
+        public Visibility ShowText { get { return (Settings.ToolbarDisplay == ToolbarDisplay.Text || Settings.ToolbarDisplay == ToolbarDisplay.Both) ? Visibility.Visible : Visibility.Collapsed; } }
+        public bool HasClientData { get { return !string.IsNullOrWhiteSpace(ClientData?.ClientId) && !string.IsNullOrWhiteSpace(ClientData?.ClientSecret); } }
+        public bool IsAuthenticated { get; set; }
+        public bool IsConnected { get; set; }
+        public bool IsStarted { get; set; }
+        public Visibility AuthenticateEnabledVisibility { get { return HasClientData ? Visibility.Visible : Visibility.Collapsed; } }
+        public Visibility AuthenticateDisabledVisibility { get { return !HasClientData ? Visibility.Visible : Visibility.Collapsed; } }
+        public Visibility ConnectEnabledVisibility { get { return IsAuthenticated ? Visibility.Visible : Visibility.Collapsed; } }
+        public Visibility ConnectDisabledVisibility { get { return !IsAuthenticated ? Visibility.Visible : Visibility.Collapsed; } }
+        public Visibility ActivateEnabledVisibility { get { return IsConnected ? Visibility.Visible : Visibility.Collapsed; } }
+        public Visibility ActivateDisabledVisibility { get { return !IsConnected ? Visibility.Visible : Visibility.Collapsed; } }
+        public Visibility BotActionEnabledVisibility { get { return IsStarted ? Visibility.Visible : Visibility.Collapsed; } }
+        public Visibility BotActionDisabledVisibility { get { return !IsStarted ? Visibility.Visible : Visibility.Collapsed; } }
+        public bool AreAwardsEnabled { get; set; }
+        public int AwardMultiplier { get; set; } = 1;
+
         public Main()
         {
             InitializeComponent();
+            DataContext = this;
+        }
+
+        private void FireChangeEvent(params string[] names)
+        {
+            foreach (string name in names)
+            {
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+            }
         }
 
         private void AddLog(LogEventInfo info)
@@ -159,16 +192,24 @@ namespace LobotJR.Interface
             CommandInputLabel.Foreground = Colors[ColorKeys.Info];
             CommandInput.Foreground = Colors[ColorKeys.Info];
             CommandInput.CaretBrush = Colors[ColorKeys.Info];
+            FireChangeEvent("ShowText", "ShowIcons");
         }
 
         private async Task LaunchBot(ClientData clientData, TokenData tokenData)
         {
             try
             {
-                await Bot.Initialize(clientData, tokenData);
+                await Bot.PreLoad(clientData, tokenData);
+                var playerController = Bot.Scope.Resolve<PlayerController>();
+                playerController.ExperienceToggled += PlayerController_ExperienceToggled;
+                playerController.MultiplierModified += PlayerController_MultiplierModified;
                 await LoadSettings(Bot.Scope);
                 UpdateLogView();
+                await Bot.Initialize();
                 CancellationTokenSource = Bot.Start();
+                IsConnected = true;
+                IsStarted = true;
+                FireChangeEvent("IsConnected", "IsStarted", "ActivateEnabledVisibility", "ActivateDisabledVisibility", "BotActionEnabledVisibility", "BotActionDisabledVisibility");
             }
             catch (Exception ex)
             {
@@ -177,14 +218,65 @@ namespace LobotJR.Interface
             }
         }
 
+        private void PlayerController_ExperienceToggled(bool enabled)
+        {
+            AreAwardsEnabled = enabled;
+            FireChangeEvent("AreAwardsEnabled");
+        }
+
+        private void PlayerController_MultiplierModified(int value)
+        {
+            AwardMultiplier = value;
+            FireChangeEvent("AwardMultiplier");
+        }
+
         private void SendCommand(string command)
         {
             if (command[0] != '!')
             {
                 command = $"!{command}";
             }
-            var tokenData = FileUtils.ReadTokenData();
-            Bot.ProcessCommand(command, tokenData.BroadcastUser, tokenData.BroadcastId);
+            Bot.ProcessCommand(command, TokenData.BroadcastUser, TokenData.BroadcastId);
+        }
+
+        private async Task Authenticate()
+        {
+            if (!ClientData.RedirectUri.Equals(AuthCallback.RedirectUri))
+            {
+                var message = "The redirect URI saved in your client data is outdated. Please make sure your registered Twitch application has the new redirect URI (http://localhost:9000/) listed as one of its OAuth Redirect URLs.";
+                Logger.Warn(message);
+                MessageBox.Show(this, message, "Authentication Update", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ClientData.RedirectUri = AuthCallback.RedirectUri;
+                FileUtils.WriteClientData(ClientData);
+                AuthCallback.ClearTokens();
+            }
+            TokenData = await AuthCallback.LoadTokens(ClientData);
+            if (TokenData.ChatToken == null)
+            {
+                var message = "Chat user token not found. Launching Twitch login.";
+                Logger.Info(message);
+                MessageBox.Show(this, message, "Chat Authentication", MessageBoxButton.OK, MessageBoxImage.Information);
+                TokenData.ChatToken = await AuthCallback.GetChatAuthCode(ClientData);
+            }
+            if (TokenData.BroadcastToken == null)
+            {
+                var message = "Streamer user token not found. Launching Twitch login.";
+                Logger.Info(message);
+                MessageBox.Show(this, message, "Streamer Authentication", MessageBoxButton.OK, MessageBoxImage.Information);
+                TokenData.BroadcastToken = await AuthCallback.GetBroadcastAuthCode(ClientData);
+            }
+            if (await AuthCallback.ValidateAndRefresh(ClientData, TokenData))
+            {
+                IsAuthenticated = true;
+                FireChangeEvent("IsAuthenticated", "ConnectEnabledVisibility", "ConnectDisabledVisibility");
+                await LaunchBot(ClientData, TokenData);
+            }
+            else
+            {
+                var message = "Something went wrong authenticating. Please re-authenticate and try again.";
+                Logger.Error(message);
+                MessageBox.Show(this, message, "Authentication Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
@@ -198,36 +290,47 @@ namespace LobotJR.Interface
                 builder.ForLogger().FilterMinLevel(LogLevel.Debug).WriteToMethodCall(LogEvent);
             });
             Logger.Info("Launching Lobot version {major}.{minor}.{build}", version.Major, version.Minor, version.Build);
-            var clientData = FileUtils.ReadClientData();
-            if (!clientData.RedirectUri.Equals(AuthCallback.RedirectUri))
+            if (FileUtils.HasClientData())
             {
-                var message = "The redirect URI in your saved client data is outdated. Please make sure your registered Twitch application has the new redirect URI (http://localhost:9000/) listed as one of its OAuth Redirect URLs.";
-                Logger.Warn(message);
-                MessageBox.Show(message, "Authentication Update", MessageBoxButton.OK, MessageBoxImage.Warning);
-                clientData.RedirectUri = AuthCallback.RedirectUri;
+                ClientData = FileUtils.ReadClientData();
             }
-            var tokenData = await AuthCallback.LoadTokens(clientData);
-            if (tokenData.ChatToken == null)
+            if (string.IsNullOrWhiteSpace(ClientData?.ClientId) || string.IsNullOrWhiteSpace(ClientData?.ClientSecret))
             {
-                var message = "Chat user token not found. Launching Twitch login.";
-                Logger.Info(message);
-                MessageBox.Show(message, "Chat Authentication", MessageBoxButton.OK, MessageBoxImage.Information);
-                tokenData.ChatToken = await AuthCallback.GetChatAuthCode(clientData);
+                var dialog = new SettingsEditor(true)
+                {
+                    Owner = this,
+                    Topmost = true,
+                    ShowInTaskbar = false
+                };
+                ClientData = new ClientData() { RedirectUri = AuthCallback.RedirectUri };
+                dialog.ClientData = ClientData;
+                dialog.Left = Left + Width / 2 - dialog.Width / 2;
+                dialog.Top = Top + Height / 2 - dialog.Height / 2;
+                var result = dialog.ShowDialog();
+                if (result.HasValue && result.Value)
+                {
+                    ClientData.ClientId = dialog.ClientData.ClientId;
+                    ClientData.ClientSecret = dialog.ClientData.ClientSecret;
+                    FileUtils.WriteClientData(dialog.ClientData);
+                }
             }
-            if (tokenData.BroadcastToken == null)
+            if (string.IsNullOrWhiteSpace(ClientData.ClientId) || string.IsNullOrWhiteSpace(ClientData.ClientSecret))
             {
-                var message = "Streamer user token not found. Launching Twitch login.";
-                Logger.Info(message);
-                MessageBox.Show(message, "Streamer Authentication", MessageBoxButton.OK, MessageBoxImage.Information);
-                tokenData.BroadcastToken = await AuthCallback.GetBroadcastAuthCode(clientData);
+                MessageBox.Show(this, "Unable to launch without Twitch Client Data. The app will now close.", "Missing Client Data", MessageBoxButton.OK, MessageBoxImage.Error);
+                Close();
             }
-            await AuthCallback.ValidateAndRefresh(clientData, tokenData);
-            await LaunchBot(clientData, tokenData);
+            FireChangeEvent("HasClientData", "AuthenticateEnabledVisibility", "AuthenticateDisabledVisibility");
+            await Authenticate();
         }
 
         private async void Settings_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = new SettingsEditor();
+            var dialog = new SettingsEditor()
+            {
+                Owner = this,
+                Topmost = true,
+                ShowInTaskbar = false
+            };
             var connectionManager = Bot.Scope.Resolve<IConnectionManager>();
             using (var db = await connectionManager.OpenConnection())
             {
@@ -317,6 +420,11 @@ namespace LobotJR.Interface
                     }
                 }
             }
+        }
+
+        private void AuthenticateButton_Click(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

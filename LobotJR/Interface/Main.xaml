@@ -10,28 +10,154 @@
         <ToolBarPanel DockPanel.Dock="Top">
             <ToolBarTray>
                 <ToolBar>
-                    <Button>Authenticate</Button>
-                    <Button>Reconnect</Button>
-                    <Button x:Name="SettingsButton" Click="Settings_Click">Settings</Button>
+                    <Button x:Name="AuthenticateButton" ToolTip="Authenticate with Twitch" Click="AuthenticateButton_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <StackPanel Orientation="Horizontal" Visibility="{Binding Path=ShowIcons}">
+                                <Image Source="/Resources/TwitchEnabled.png" Width="28" Height="28" Visibility="{Binding Path=AuthenticateEnabledVisibility}"/>
+                                <Image Source="/Resources/TwitchDisabled.png" Width="28" Height="28" Visibility="{Binding Path=AuthenticateDisabledVisibility}"/>
+                            </StackPanel>
+                            <Label Visibility="{Binding Path=ShowText}">Authenticate</Label>
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="ConnectButton" ToolTip="Connect to Twitch IRC">
+                        <StackPanel Orientation="Horizontal">
+                            <StackPanel Orientation="Horizontal" Visibility="{Binding Path=ShowIcons}">
+                                <Image Source="/Resources/ConnectEnabled.png" Width="28" Height="28" Visibility="{Binding Path=ConnectEnabledVisibility}"/>
+                                <Image Source="/Resources/ConnectDisabled.png" Width="28" Height="28" Visibility="{Binding Path=ConnectDisabledVisibility}"/>
+                            </StackPanel>
+                            <Label Visibility="{Binding Path=ShowText}">Connect</Label>
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="StartButton" ToolTip="Activate">
+                        <StackPanel Orientation="Horizontal">
+                            <StackPanel Orientation="Horizontal" Visibility="{Binding Path=ShowIcons}">
+                                <Image Source="/Resources/ActivateEnabled.png" Width="28" Height="28" Visibility="{Binding Path=ActivateEnabledVisibility}"/>
+                                <Image Source="/Resources/ActivateDisabled.png" Width="28" Height="28" Visibility="{Binding Path=ActivateDisabledVisibility}"/>
+                            </StackPanel>
+                            <Label Visibility="{Binding Path=ShowText}">Activate</Label>
+                        </StackPanel>
+                    </Button>
                 </ToolBar>
                 <ToolBar>
-                    <Label>XP:</Label>
-                    <Button>Toggle</Button>
-                    <Button>Multiplier</Button>
-                    <Button>Interval</Button>
+                    <ToggleButton x:Name="DebugButton" ToolTip="Show Debug Logs">
+                        <StackPanel Orientation="Horizontal">
+                            <StackPanel Orientation="Horizontal" Visibility="{Binding Path=ShowIcons}">
+                                <Image Source="/Resources/DebugEnabled.png" Width="28" Height="28" Visibility="{Binding Path=BotActionEnabledVisibility}"/>
+                                <Image Source="/Resources/DebugDisabled.png" Width="28" Height="28" Visibility="{Binding Path=BotActionDisabledVisibility}"/>
+                            </StackPanel>
+                            <Label Visibility="{Binding Path=ShowText}">Debug</Label>
+                        </StackPanel>
+                    </ToggleButton>
+                    <ToggleButton x:Name="InfoButton" ToolTip="Show Info Logs">
+                        <StackPanel Orientation="Horizontal">
+                            <StackPanel Orientation="Horizontal" Visibility="{Binding Path=ShowIcons}">
+                                <Image Source="/Resources/InfoEnabled.png" Width="28" Height="28" Visibility="{Binding Path=BotActionEnabledVisibility}"/>
+                                <Image Source="/Resources/InfoDisabled.png" Width="28" Height="28" Visibility="{Binding Path=BotActionDisabledVisibility}"/>
+                            </StackPanel>
+                            <Label Visibility="{Binding Path=ShowText}">Info</Label>
+                        </StackPanel>
+                    </ToggleButton>
+                    <ToggleButton x:Name="WarningButton" ToolTip="Show Warning Logs">
+                        <StackPanel Orientation="Horizontal">
+                            <StackPanel Orientation="Horizontal" Visibility="{Binding Path=ShowIcons}">
+                                <Image Source="/Resources/WarningEnabled.png" Width="28" Height="28" Visibility="{Binding Path=BotActionEnabledVisibility}"/>
+                                <Image Source="/Resources/WarningDisabled.png" Width="28" Height="28" Visibility="{Binding Path=BotActionDisabledVisibility}"/>
+                            </StackPanel>
+                            <Label Visibility="{Binding Path=ShowText}">Warn</Label>
+                        </StackPanel>
+                    </ToggleButton>
+                    <ToggleButton x:Name="ErrorButton" ToolTip="Show Error Logs">
+                        <StackPanel Orientation="Horizontal">
+                            <StackPanel Orientation="Horizontal" Visibility="{Binding Path=ShowIcons}">
+                                <Image Source="/Resources/ErrorEnabled.png" Width="28" Height="28" Visibility="{Binding Path=BotActionEnabledVisibility}"/>
+                                <Image Source="/Resources/ErrorDisabled.png" Width="28" Height="28" Visibility="{Binding Path=BotActionDisabledVisibility}"/>
+                            </StackPanel>
+                            <Label Visibility="{Binding Path=ShowText}">Error</Label>
+                        </StackPanel>
+                    </ToggleButton>
+                    <ToggleButton x:Name="CrashButton" ToolTip="Show Crash Logs">
+                        <StackPanel Orientation="Horizontal">
+                            <StackPanel Orientation="Horizontal" Visibility="{Binding Path=ShowIcons}">
+                                <Image Source="/Resources/CrashEnabled.png" Width="28" Height="28" Visibility="{Binding Path=BotActionEnabledVisibility}"/>
+                                <Image Source="/Resources/CrashDisabled.png" Width="28" Height="28" Visibility="{Binding Path=BotActionDisabledVisibility}"/>
+                            </StackPanel>
+                            <Label Visibility="{Binding Path=ShowText}">Crash</Label>
+                        </StackPanel>
+                    </ToggleButton>
                 </ToolBar>
                 <ToolBar>
-                    <Button>Users</Button>
-                    <Button>Access</Button>
+                    <ToggleButton x:Name="AwardButton" ToolTip="Toggle Awards" IsChecked="{Binding Path=AreAwardsEnabled}">
+                        <StackPanel Orientation="Horizontal">
+                            <StackPanel Orientation="Horizontal" Visibility="{Binding Path=ShowIcons}">
+                                <Image Source="/Resources/AwardsEnabled.png" Width="28" Height="28" Visibility="{Binding Path=BotActionEnabledVisibility}"/>
+                                <Image Source="/Resources/AwardsDisabled.png" Width="28" Height="28" Visibility="{Binding Path=BotActionDisabledVisibility}"/>
+                            </StackPanel>
+                            <Label Visibility="{Binding Path=ShowText}">Awards</Label>
+                        </StackPanel>
+                    </ToggleButton>
+                    <StackPanel Orientation="Horizontal" ToolTip="Award Multiplier">
+                        <StackPanel Orientation="Horizontal" Visibility="{Binding Path=ShowIcons}">
+                            <Image Source="/Resources/MultiplierEnabled.png" Width="28" Height="28" Visibility="{Binding Path=BotActionEnabledVisibility}"/>
+                            <Image Source="/Resources/MultiplierDisabled.png" Width="28" Height="28" Visibility="{Binding Path=BotActionDisabledVisibility}"/>
+                        </StackPanel>
+                        <Label Visibility="{Binding Path=ShowText}" VerticalAlignment="Center">Multiplier</Label>
+                        <TextBox Width="32" VerticalAlignment="Center" Text="{Binding Path=AwardMultiplier}"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" ToolTip="Award Interval (minutes)">
+                        <StackPanel Orientation="Horizontal" Visibility="{Binding Path=ShowIcons}">
+                            <Image Source="/Resources/IntervalEnabled.png" Width="28" Height="28" Visibility="{Binding Path=BotActionEnabledVisibility}"/>
+                            <Image Source="/Resources/IntervalDisabled.png" Width="28" Height="28" Visibility="{Binding Path=BotActionDisabledVisibility}"/>
+                        </StackPanel>
+                        <Label Visibility="{Binding Path=ShowText}" VerticalAlignment="Center">Interval</Label>
+                        <TextBox Width="32" VerticalAlignment="Center"/>
+                    </StackPanel>
                 </ToolBar>
                 <ToolBar>
-                    <Label>Log:</Label>
-                    <Button>Info</Button>
-                    <Button>Warn</Button>
-                    <Button>Error</Button>
-                </ToolBar>
-                <ToolBar>
-                    <Button>Commands</Button>
+                    <Button x:Name="CommandButton" ToolTip="View Commands">
+                        <StackPanel Orientation="Horizontal">
+                            <StackPanel Orientation="Horizontal" Visibility="{Binding Path=ShowIcons}">
+                                <Image Source="/Resources/CommandEnabled.png" Width="28" Height="28" Visibility="{Binding Path=BotActionEnabledVisibility}"/>
+                                <Image Source="/Resources/CommandDisabled.png" Width="28" Height="28" Visibility="{Binding Path=BotActionDisabledVisibility}"/>
+                            </StackPanel>
+                            <Label Visibility="{Binding Path=ShowText}">Command</Label>
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="ContentButton" ToolTip="Edit Game Content">
+                        <StackPanel Orientation="Horizontal">
+                            <StackPanel Orientation="Horizontal" Visibility="{Binding Path=ShowIcons}">
+                                <Image Source="/Resources/ContentEnabled.png" Width="28" Height="28" Visibility="{Binding Path=BotActionEnabledVisibility}"/>
+                                <Image Source="/Resources/ContentDisabled.png" Width="28" Height="28" Visibility="{Binding Path=BotActionDisabledVisibility}"/>
+                            </StackPanel>
+                            <Label Visibility="{Binding Path=ShowText}">Content</Label>
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="PlayerButton" ToolTip="Edit Player Data">
+                        <StackPanel Orientation="Horizontal">
+                            <StackPanel Orientation="Horizontal" Visibility="{Binding Path=ShowIcons}">
+                                <Image Source="/Resources/PlayerEnabled.png" Width="28" Height="28" Visibility="{Binding Path=BotActionEnabledVisibility}"/>
+                                <Image Source="/Resources/PlayerDisabled.png" Width="28" Height="28" Visibility="{Binding Path=BotActionDisabledVisibility}"/>
+                            </StackPanel>
+                            <Label Visibility="{Binding Path=ShowText}">Players</Label>
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="AccessButton" ToolTip="Modify Access Groups">
+                        <StackPanel Orientation="Horizontal">
+                            <StackPanel Orientation="Horizontal" Visibility="{Binding Path=ShowIcons}">
+                                <Image Source="/Resources/AccessControlEnabled.png" Width="28" Height="28" Visibility="{Binding Path=BotActionEnabledVisibility}"/>
+                                <Image Source="/Resources/AccessControlDisabled.png" Width="28" Height="28" Visibility="{Binding Path=BotActionDisabledVisibility}"/>
+                            </StackPanel>
+                            <Label Visibility="{Binding Path=ShowText}">Access</Label>
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="SettingsButton" ToolTip="Edit Settings" Click="Settings_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <StackPanel Orientation="Horizontal" Visibility="{Binding Path=ShowIcons}">
+                                <Image Source="/Resources/SettingsEnabled.png" Width="28" Height="28" Visibility="{Binding Path=BotActionEnabledVisibility}"/>
+                                <Image Source="/Resources/SettingsDisabled.png" Width="28" Height="28" Visibility="{Binding Path=BotActionDisabledVisibility}"/>
+                            </StackPanel>
+                            <Label Visibility="{Binding Path=ShowText}">Settings</Label>
+                        </StackPanel>
+                    </Button>
                 </ToolBar>
             </ToolBarTray>
         </ToolBarPanel>

@@ -14,7 +14,7 @@ namespace LobotJR.Interface.Settings
     /// </summary>
     public partial class SettingsEditor : Window
     {
-        private readonly IEnumerable<UserControl> Pages = new List<UserControl>()
+        private readonly List<UserControl> Pages = new List<UserControl>()
         {
             new TwitchClientSettings(),
             new BehaviorSettings(),
@@ -40,11 +40,16 @@ namespace LobotJR.Interface.Settings
         };
 
         public IEnumerable<string> Fonts { get; set; } = Array.Empty<string>();
+        public IEnumerable<ToolbarDisplay> ToolbarDisplayEnum { get; set; } = Array.Empty<ToolbarDisplay>();
 
-        public SettingsEditor()
+        public SettingsEditor(bool clientDataOnly = false)
         {
             InitializeComponent();
             DataContext = this;
+            if (clientDataOnly)
+            {
+                Pages.RemoveRange(1, Pages.Count - 1);
+            }
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -53,15 +58,17 @@ namespace LobotJR.Interface.Settings
             {
                 Fonts = installedFonts.Families.Select(x => x.Name);
             }
+            ToolbarDisplayEnum = (IEnumerable<ToolbarDisplay>)Enum.GetValues(typeof(ToolbarDisplay));
             TreeMap = Pages.ToDictionary(x => (x as ISettingsPage).PageName, x => x);
             var categories = new Dictionary<string, TreeViewItem>();
+            TreeViewItem first = null;
             foreach (var control in Pages)
             {
                 control.DataContext = this;
                 var page = control as ISettingsPage;
                 if (categories.TryGetValue(page.Category, out var value))
                 {
-                    var newItem = new TreeViewItem() { Header = page.PageName };
+                    var newItem = new TreeViewItem() { Header = page.PageName, IsExpanded = true };
                     value.Items.Add(newItem);
                 }
                 else
@@ -77,16 +84,22 @@ namespace LobotJR.Interface.Settings
                         }
                         else
                         {
-                            var newControl = new TreeViewItem { Header = step };
+                            var newControl = new TreeViewItem { Header = step, IsExpanded = true };
                             parent.Items.Add(newControl);
                             parent = newControl;
                             categories.Add(string.Join(".", chain.Take(i + 1)), newControl);
                         }
                     }
-                    parent.Items.Add(new TreeViewItem() { Header = page.PageName });
+                    var newItem = new TreeViewItem() { Header = page.PageName, IsExpanded = true };
+                    parent.Items.Add(newItem);
+                    if (first == null)
+                    {
+                        first = newItem;
+                    }
                 }
                 TreeMap.Add($"{page.Category}.{page.PageName}", control);
             }
+            first.IsSelected = true;
         }
 
         private void CategoryView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)

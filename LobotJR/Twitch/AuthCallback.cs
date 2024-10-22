@@ -5,7 +5,6 @@ using LobotJR.Utils.Api;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -52,15 +51,19 @@ namespace LobotJR.Twitch
             }
         }
 
-        private async Task SendResponse(Stream outputStream, string header, string body)
+        private async Task SendResponse(HttpListenerResponse response, string header, string body)
         {
+            var outputStream = response.OutputStream;
             var toSend = string.Format(ResponseTemplate, header, body);
             var bytes = Encoding.UTF8.GetBytes(toSend);
+            response.ContentLength64 = bytes.Length;
+            response.ContentType = "text/html";
+            response.StatusCode = (int)HttpStatusCode.OK;
             await outputStream.WriteAsync(bytes, 0, bytes.Length);
             await outputStream.FlushAsync();
         }
 
-        private async Task<string> ProcessResponse(Stream outputStream, IDictionary<string, string> query, string expectedState)
+        private async Task<string> ProcessResponse(HttpListenerResponse response, IDictionary<string, string> query, string expectedState)
         {
             var header = "Error!";
             var body = "Unexpected error.";
@@ -89,7 +92,7 @@ namespace LobotJR.Twitch
                     code = requestCode;
                 }
             }
-            await SendResponse(outputStream, header, body);
+            await SendResponse(response, header, body);
             return code;
         }
 
@@ -111,7 +114,7 @@ namespace LobotJR.Twitch
                 var context = contextTask.Result;
                 var queryString = context.Request.QueryString;
                 var queryDict = queryString.AllKeys.Select(x => x ?? "").Where(x => !string.IsNullOrWhiteSpace(x)).ToDictionary(x => x, x => queryString.Get(x) ?? "");
-                var code = await ProcessResponse(context.Response.OutputStream, queryDict, state);
+                var code = await ProcessResponse(context.Response, queryDict, state);
                 listener.Close();
                 return code;
             }
@@ -151,6 +154,14 @@ namespace LobotJR.Twitch
             return new TokenData();
         }
 
+        public void ClearTokens()
+        {
+            if (FileUtils.HasTokenData())
+            {
+                FileUtils.WriteTokenData(new TokenData());
+            }
+        }
+
         public async Task<bool> ValidateAndRefresh(ClientData clientData, TokenData tokenData)
         {
             RestLogger.SetSensitiveData(clientData, tokenData);
@@ -166,6 +177,11 @@ namespace LobotJR.Twitch
                         validationResponse = await AuthToken.Validate(tokenData.ChatToken.AccessToken);
                         tokenData.ChatUser = validationResponse?.Login;
                         tokenData.ChatId = validationResponse?.UserId;
+                    }
+                    else if (string.IsNullOrWhiteSpace(tokenData.ChatUser) && string.IsNullOrWhiteSpace(tokenData.ChatId) && !ChatScopes.Any(x => !validationResponse.Scopes.Contains(x)))
+                    {
+                        tokenData.ChatUser = validationResponse.Login;
+                        tokenData.ChatId = validationResponse.UserId;
                     }
                     else if (!validationResponse.Login.Equals(tokenData.ChatUser) || ChatScopes.Any(x => !validationResponse.Scopes.Contains(x)))
                     {
@@ -183,12 +199,21 @@ namespace LobotJR.Twitch
                         tokenData.BroadcastUser = validationResponse?.Login;
                         tokenData.BroadcastId = validationResponse?.UserId;
                     }
+                    else if (string.IsNullOrWhiteSpace(tokenData.BroadcastUser) && string.IsNullOrWhiteSpace(tokenData.BroadcastId) && !BroadcastScopes.Any(x => !validationResponse.Scopes.Contains(x)))
+                    {
+                        tokenData.BroadcastUser = validationResponse.Login;
+                        tokenData.BroadcastId = validationResponse.UserId;
+                    }
                     else if (!validationResponse.Login.Equals(tokenData.BroadcastUser) || BroadcastScopes.Any(x => !validationResponse.Scopes.Contains(x)))
                     {
                         tokenData.BroadcastToken = null;
                     }
                 }
-                return tokenData.BroadcastToken != null && tokenData.ChatToken != null;
+                if (tokenData.BroadcastToken != null && tokenData.ChatToken != null)
+                {
+                    FileUtils.WriteTokenData(tokenData);
+                    return true;
+                }
             }
             return false;
         }

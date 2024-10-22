@@ -62,6 +62,16 @@ namespace LobotJR.Command.Controller.Player
         /// Event fired when periodic experience and currency are awarded.
         /// </summary>
         public event ExperienceToggleHandler ExperienceToggled;
+        /// <summary>
+        /// Event handler for events related to periodic awards.
+        /// </summary>
+        /// <param name="enabled">True if experience was enabled, false if it
+        /// was disabled.</param>
+        public delegate void MultiplierModifiedHandler(int value);
+        /// <summary>
+        /// Event fired when periodic experience and currency are awarded.
+        /// </summary>
+        public event MultiplierModifiedHandler MultiplierModified;
 
         /// <summary>
         /// The last time experience was awarded to viewers.
@@ -70,7 +80,7 @@ namespace LobotJR.Command.Controller.Player
         /// <summary>
         /// Multiplier applied to experience and currency awards.
         /// </summary>
-        public int CurrentMultiplier { get; set; } = 1;
+        public int CurrentMultiplier { get; private set; } = 1;
         /// <summary>
         /// Wether or not the experience is currently being awarded.
         /// </summary>
@@ -97,6 +107,17 @@ namespace LobotJR.Command.Controller.Player
             experience = Math.Max(experience, 81);
             var level = Math.Pow((experience - 50.0f) / 4.0f, (1.0f / 3.0f));
             return (int)Math.Floor(level);
+        }
+
+        /// <summary>
+        /// Changes the current multiplier applied to xp and wolfcoin awards
+        /// given to viewers.
+        /// </summary>
+        /// <param name="multiplier">The number to multiply awards by.</param>
+        public void SetMultiplier(int multiplier)
+        {
+            CurrentMultiplier = multiplier;
+            MultiplierModified?.Invoke(multiplier);
         }
 
         /// <summary>

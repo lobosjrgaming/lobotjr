@@ -30,6 +30,9 @@ namespace LobotJR
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private string LogFile = "output.log";
 
+        public delegate void BotTerminatedEvent();
+        public event BotTerminatedEvent BotTerminated;
+
         public ILifetimeScope Scope { get; private set; }
         public CancellationTokenSource CancellationTokenSource { get; private set; } = new CancellationTokenSource();
         public bool TwitchPlays { get; private set; }
@@ -259,6 +262,7 @@ namespace LobotJR
                 }
             }
             Scope.Dispose();
+            BotTerminated?.Invoke();
         }
 
         private async Task RunTwitchPlays()
@@ -267,13 +271,13 @@ namespace LobotJR
             var ircClient = Scope.Resolve<ITwitchIrcClient>();
             await new ChatController(ircClient, CancellationTokenSource).Play();
             Scope.Dispose();
+            BotTerminated?.Invoke();
         }
 
-        public async Task Initialize(ClientData clientData, TokenData tokenData)
+        public async Task PreLoad(ClientData clientData, TokenData tokenData)
         {
             RestLogger.SetSensitiveData(clientData, tokenData);
             await UpdateDatabase(clientData, tokenData);
-            bool twitchPlays = false;
             Scope = CreateApplicationScope(clientData, tokenData);
             var connectionManager = Scope.Resolve<IConnectionManager>();
             var userController = Scope.Resolve<UserController>();
@@ -282,9 +286,14 @@ namespace LobotJR
             using (await connectionManager.OpenConnection())
             {
                 var appSettings = connectionManager.CurrentConnection.AppSettings.Read().First();
-                twitchPlays = appSettings.TwitchPlays;
+                TwitchPlays = appSettings.TwitchPlays;
             }
+        }
 
+        public async Task Initialize()
+        {
+            var connectionManager = Scope.Resolve<IConnectionManager>();
+            var userController = Scope.Resolve<UserController>();
             var twitchClient = Scope.Resolve<ITwitchClient>();
             var ircClient = Scope.Resolve<ITwitchIrcClient>();
             var controllerManager = Scope.Resolve<IControllerManager>();

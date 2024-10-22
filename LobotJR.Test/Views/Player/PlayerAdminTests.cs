@@ -178,7 +178,7 @@ namespace LobotJR.Test.Views.Player
         [TestMethod]
         public void SetMultiplierSetsAwardMultiplier()
         {
-            PlayerController.CurrentMultiplier = 1;
+            PlayerController.SetMultiplier(1);
             var multiplier = 2;
             View.SetMultiplier(multiplier);
             Assert.AreEqual(multiplier, PlayerController.CurrentMultiplier);
