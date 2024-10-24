@@ -38,6 +38,7 @@ namespace LobotJR
         public bool TwitchPlays { get; private set; }
         public bool IsLive { get; private set; } = false;
         public bool HasCrashed { get; private set; } = false;
+        public bool HasTerminated { get; private set; } = false;
 
         private void CrashAlert()
         {
@@ -263,6 +264,7 @@ namespace LobotJR
             }
             Scope.Dispose();
             BotTerminated?.Invoke();
+            HasTerminated = true;
         }
 
         private async Task RunTwitchPlays()
@@ -272,6 +274,7 @@ namespace LobotJR
             await new ChatController(ircClient, CancellationTokenSource).Play();
             Scope.Dispose();
             BotTerminated?.Invoke();
+            HasTerminated = true;
         }
 
         public async Task PreLoad(ClientData clientData, TokenData tokenData)
@@ -336,6 +339,7 @@ namespace LobotJR
 
         public CancellationTokenSource Start()
         {
+            CancellationTokenSource = new CancellationTokenSource();
             if (TwitchPlays)
             {
                 Task.Factory.StartNew(RunTwitchPlays, CancellationTokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
@@ -350,6 +354,12 @@ namespace LobotJR
         public void Cancel()
         {
             CancellationTokenSource.Cancel();
+        }
+
+        public async Task CancelAsync()
+        {
+            CancellationTokenSource.Cancel();
+            while (!HasTerminated) { await Task.Delay(1); }
         }
     }
 }

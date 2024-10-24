@@ -11,9 +11,13 @@ namespace LobotJR.Twitch
     public interface ITwitchIrcClient : IDisposable
     {
         /// <summary>
-        /// Disposes and recreates the inner tcp client to allow for proper reconnects.
+        /// Gets the time elapsed since the last message was received.
         /// </summary>
-        void Restart();
+        TimeSpan IdleTime { get; }
+        /// <summary>
+        /// Disconnects the inner TCP client and reconnects to the server.
+        /// </summary>
+        void ForceReconnect();
         /// <summary>
         /// Connects the client to the twitch server, authenticates the chat
         /// user, and joins the channel of the broadcast user.

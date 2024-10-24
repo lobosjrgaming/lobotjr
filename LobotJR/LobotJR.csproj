@@ -157,6 +157,10 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Interface\CommandExplorer.xaml.cs">
+      <DependentUpon>CommandExplorer.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\InverseVisibilityConverter.cs" />
     <Compile Include="Twitch\Api\Channel\ChannelUserResponse.cs" />
     <Compile Include="Twitch\Api\Channel\Moderators.cs" />
     <Compile Include="Twitch\Api\Channel\SubscriptionResponse.cs" />
@@ -524,6 +528,10 @@
     </Resource>
   </ItemGroup>
   <ItemGroup>
+    <Page Include="Interface\CommandExplorer.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Interface\Main.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

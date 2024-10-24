@@ -46,6 +46,8 @@ namespace LobotJR.Twitch
         private readonly Queue<string> MessageQueue = new Queue<string>();
         private readonly RollingTimer Timer = new RollingTimer(TimeSpan.FromSeconds(30), 100);
 
+        public TimeSpan IdleTime { get { return DateTime.Now - LastMessage; } }
+
         /// <summary>
         /// Creates a new IRC client.
         /// </summary>
@@ -116,6 +118,15 @@ namespace LobotJR.Twitch
             }
             LastReconnect = DateTime.Now;
             return false;
+        }
+
+        /// <summary>
+        /// Disconnects the inner TCP client and reconnects to the server.
+        /// </summary>
+        public void ForceReconnect()
+        {
+            PingSent = true;
+            LastMessage = DateTime.Now - (IdleLimit + ResponseLimit);
         }
 
         private async Task Reconnect()

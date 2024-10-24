@@ -132,5 +132,10 @@ namespace LobotJR.Interface.Settings
             DialogResult = false;
             Close();
         }
+
+        private void SearchText_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            //Not yet implemented
+        }
     }
 }

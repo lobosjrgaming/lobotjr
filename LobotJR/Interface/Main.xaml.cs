@@ -16,6 +16,8 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -57,6 +59,8 @@ namespace LobotJR.Interface
         };
         private readonly ClientSettings Settings = new ClientSettings();
         private readonly AuthCallback AuthCallback = new AuthCallback();
+        private readonly GameSettings GameSettings = new GameSettings();
+        private PlayerController PlayerController;
 
         private readonly List<LogEventInfo> LogHistory = new List<LogEventInfo>();
         private readonly List<string> CommandHistory = new List<string>();
@@ -64,7 +68,6 @@ namespace LobotJR.Interface
 
         private readonly SemaphoreSlim LogSemaphore = new SemaphoreSlim(1, 1);
         private readonly Bot Bot = new Bot();
-        private CancellationTokenSource CancellationTokenSource;
 
         private ClientData ClientData;
         private TokenData TokenData;
@@ -75,23 +78,74 @@ namespace LobotJR.Interface
         public Visibility ShowText { get { return (Settings.ToolbarDisplay == ToolbarDisplay.Text || Settings.ToolbarDisplay == ToolbarDisplay.Both) ? Visibility.Visible : Visibility.Collapsed; } }
         public bool HasClientData { get { return !string.IsNullOrWhiteSpace(ClientData?.ClientId) && !string.IsNullOrWhiteSpace(ClientData?.ClientSecret); } }
         public bool IsAuthenticated { get; set; }
-        public bool IsConnected { get; set; }
         public bool IsStarted { get; set; }
-        public Visibility AuthenticateEnabledVisibility { get { return HasClientData ? Visibility.Visible : Visibility.Collapsed; } }
-        public Visibility AuthenticateDisabledVisibility { get { return !HasClientData ? Visibility.Visible : Visibility.Collapsed; } }
-        public Visibility ConnectEnabledVisibility { get { return IsAuthenticated ? Visibility.Visible : Visibility.Collapsed; } }
-        public Visibility ConnectDisabledVisibility { get { return !IsAuthenticated ? Visibility.Visible : Visibility.Collapsed; } }
-        public Visibility ActivateEnabledVisibility { get { return IsConnected ? Visibility.Visible : Visibility.Collapsed; } }
-        public Visibility ActivateDisabledVisibility { get { return !IsConnected ? Visibility.Visible : Visibility.Collapsed; } }
-        public Visibility BotActionEnabledVisibility { get { return IsStarted ? Visibility.Visible : Visibility.Collapsed; } }
-        public Visibility BotActionDisabledVisibility { get { return !IsStarted ? Visibility.Visible : Visibility.Collapsed; } }
-        public bool AreAwardsEnabled { get; set; }
-        public int AwardMultiplier { get; set; } = 1;
+        public bool IsConnected { get; set; }
+
+        private async Task SetFlag(LogFilter level, bool value)
+        {
+            if (value)
+            {
+                Settings.LogFilter |= level;
+            }
+            else
+            {
+                Settings.LogFilter &= ~level;
+            }
+            var connectionManager = Bot.Scope.Resolve<IConnectionManager>();
+            var settingsManager = Bot.Scope.Resolve<SettingsManager>();
+            using (await connectionManager.OpenConnection())
+            {
+                settingsManager.GetClientSettings().LogFilter = Settings.LogFilter;
+            }
+            UpdateLogView();
+        }
+
+        public bool ShowDebug { get { return Settings.LogFilter.HasFlag(LogFilter.Debug); } set { SetFlag(LogFilter.Debug, value); } }
+        public bool ShowInfo { get { return Settings.LogFilter.HasFlag(LogFilter.Info); } set { SetFlag(LogFilter.Info, value); } }
+        public bool ShowWarning { get { return Settings.LogFilter.HasFlag(LogFilter.Warning); } set { SetFlag(LogFilter.Warning, value); } }
+        public bool ShowError { get { return Settings.LogFilter.HasFlag(LogFilter.Error); } set { SetFlag(LogFilter.Error, value); } }
+        public bool ShowCrash { get { return Settings.LogFilter.HasFlag(LogFilter.Crash); } set { SetFlag(LogFilter.Crash, value); } }
 
         public Main()
         {
             InitializeComponent();
             DataContext = this;
+        }
+
+        private void StartUpdateTimer()
+        {
+            var timer = new System.Timers.Timer(1000);
+            timer.Elapsed += (sender, e) =>
+            {
+                try
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        if (Bot.Scope != null)
+                        {
+                            var irc = Bot.Scope.Resolve<ITwitchIrcClient>();
+                            if (irc != null)
+                            {
+                                MessageTimeStatus.Content = $"💬{irc.IdleTime:hh\\:mm\\:ss}";
+                            }
+                            if (PlayerController != null)
+                            {
+                                var timeToAward = TimeSpan.FromMinutes(GameSettings.ExperienceFrequency) - (DateTime.Now - PlayerController.LastAward);
+                                if (!PlayerController.AwardsEnabled)
+                                {
+                                    timeToAward = TimeSpan.Zero;
+                                }
+                                AwardTimeStatus.Content = $"🌟{timeToAward:hh\\:mm\\:ss}";
+                                var xpMessage = PlayerController.AwardsEnabled ? "on" : "off";
+                                var multiMessage = PlayerController.CurrentMultiplier > 1 ? $" ({PlayerController.CurrentMultiplier}x)" : "";
+                                AwardStatus.Content = $"XP is {xpMessage}{multiMessage}";
+                            }
+                        }
+                    });
+                }
+                catch { }
+            };
+            timer.Start();
         }
 
         private void FireChangeEvent(params string[] names)
@@ -178,9 +232,10 @@ namespace LobotJR.Interface
             {
                 var settingsManager = scope.Resolve<SettingsManager>();
                 Settings.CopyFrom(settingsManager.GetClientSettings());
+                GameSettings.CopyFrom(settingsManager.GetGameSettings());
             }
             Colors[ColorKeys.Background] = InterfaceUtils.BrushFromHex(Settings.BackgroundColor);
-            Colors[ColorKeys.Debug] = InterfaceUtils.BrushFromHex(Settings.BackgroundColor);
+            Colors[ColorKeys.Debug] = InterfaceUtils.BrushFromHex(Settings.DebugColor);
             Colors[ColorKeys.Info] = InterfaceUtils.BrushFromHex(Settings.InfoColor);
             Colors[ColorKeys.Warn] = InterfaceUtils.BrushFromHex(Settings.WarningColor);
             Colors[ColorKeys.Error] = InterfaceUtils.BrushFromHex(Settings.ErrorColor);
@@ -192,24 +247,30 @@ namespace LobotJR.Interface
             CommandInputLabel.Foreground = Colors[ColorKeys.Info];
             CommandInput.Foreground = Colors[ColorKeys.Info];
             CommandInput.CaretBrush = Colors[ColorKeys.Info];
-            FireChangeEvent("ShowText", "ShowIcons");
+            FireChangeEvent("ShowText", "ShowIcons", "ShowDebug", "ShowInfo", "ShowWarning", "ShowError", "ShowCrash");
         }
 
         private async Task LaunchBot(ClientData clientData, TokenData tokenData)
         {
             try
             {
+                BotStatus.Content = "Loading Bot Logic...";
                 await Bot.PreLoad(clientData, tokenData);
-                var playerController = Bot.Scope.Resolve<PlayerController>();
-                playerController.ExperienceToggled += PlayerController_ExperienceToggled;
-                playerController.MultiplierModified += PlayerController_MultiplierModified;
+                PlayerController = Bot.Scope.Resolve<PlayerController>();
+                PlayerController.ExperienceToggled += PlayerController_ExperienceToggled;
+                PlayerController.MultiplierModified += PlayerController_MultiplierModified;
+                BotStatus.Content = "Loading Settings...";
                 await LoadSettings(Bot.Scope);
-                UpdateLogView();
-                await Bot.Initialize();
-                CancellationTokenSource = Bot.Start();
-                IsConnected = true;
                 IsStarted = true;
-                FireChangeEvent("IsConnected", "IsStarted", "ActivateEnabledVisibility", "ActivateDisabledVisibility", "BotActionEnabledVisibility", "BotActionDisabledVisibility");
+                FireChangeEvent("IsStarted");
+                UpdateLogView();
+                BotStatus.Content = "Initializing Bot Runner...";
+                await Bot.Initialize();
+                BotStatus.Content = "Starting Bot Runner...";
+                Bot.Start();
+                IsConnected = true;
+                FireChangeEvent("IsConnected");
+                BotStatus.Content = "Ready";
             }
             catch (Exception ex)
             {
@@ -220,14 +281,10 @@ namespace LobotJR.Interface
 
         private void PlayerController_ExperienceToggled(bool enabled)
         {
-            AreAwardsEnabled = enabled;
-            FireChangeEvent("AreAwardsEnabled");
         }
 
         private void PlayerController_MultiplierModified(int value)
         {
-            AwardMultiplier = value;
-            FireChangeEvent("AwardMultiplier");
         }
 
         private void SendCommand(string command)
@@ -241,6 +298,7 @@ namespace LobotJR.Interface
 
         private async Task Authenticate()
         {
+            BotStatus.Content = "Authenticating...";
             if (!ClientData.RedirectUri.Equals(AuthCallback.RedirectUri))
             {
                 var message = "The redirect URI saved in your client data is outdated. Please make sure your registered Twitch application has the new redirect URI (http://localhost:9000/) listed as one of its OAuth Redirect URLs.";
@@ -268,7 +326,7 @@ namespace LobotJR.Interface
             if (await AuthCallback.ValidateAndRefresh(ClientData, TokenData))
             {
                 IsAuthenticated = true;
-                FireChangeEvent("IsAuthenticated", "ConnectEnabledVisibility", "ConnectDisabledVisibility");
+                FireChangeEvent("IsAuthenticated");
                 await LaunchBot(ClientData, TokenData);
             }
             else
@@ -281,7 +339,9 @@ namespace LobotJR.Interface
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
+            BotStatus.Content = "Initializing...";
             LogOutput.Document.Blocks.Clear();
+            StartUpdateTimer();
             var version = Assembly.GetExecutingAssembly().GetName().Version;
             Title = $"Lobot {version.Major}.{version.Minor}.{version.Build}";
             LogManager.Setup().LoadConfiguration(builder =>
@@ -290,6 +350,7 @@ namespace LobotJR.Interface
                 builder.ForLogger().FilterMinLevel(LogLevel.Debug).WriteToMethodCall(LogEvent);
             });
             Logger.Info("Launching Lobot version {major}.{minor}.{build}", version.Major, version.Minor, version.Build);
+            BotStatus.Content = "Loading Client Data...";
             if (FileUtils.HasClientData())
             {
                 ClientData = FileUtils.ReadClientData();
@@ -319,8 +380,223 @@ namespace LobotJR.Interface
                 MessageBox.Show(this, "Unable to launch without Twitch Client Data. The app will now close.", "Missing Client Data", MessageBoxButton.OK, MessageBoxImage.Error);
                 Close();
             }
-            FireChangeEvent("HasClientData", "AuthenticateEnabledVisibility", "AuthenticateDisabledVisibility");
+            FireChangeEvent("HasClientData");
             await Authenticate();
+        }
+
+        private void ClearTooltip()
+        {
+            var tt = CommandInput.ToolTip as ToolTip;
+            if (tt != null)
+            {
+                tt.IsOpen = false;
+            }
+            CommandInput.ToolTip = null;
+        }
+
+        private void SetTooltip(string value)
+        {
+            var tt = CommandInput.ToolTip as ToolTip;
+            if (tt == null)
+            {
+                tt = new ToolTip()
+                {
+                    Placement = PlacementMode.Bottom,
+                    PlacementTarget = CommandInput,
+                };
+                CommandInput.ToolTip = tt;
+            }
+            tt.IsOpen = true;
+            tt.Content = value;
+        }
+
+        private void CommandInput_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter || e.Key == Key.Return)
+            {
+                e.Handled = true;
+                if (CommandInput.Text.Length > 0)
+                {
+                    SendCommand(CommandInput.Text);
+                    CommandHistory.Insert(0, CommandInput.Text);
+                    CommandInput.Text = string.Empty;
+                    CommandIndex = 0;
+                }
+                ClearTooltip();
+            }
+            else if (e.Key == Key.Up)
+            {
+                e.Handled = true;
+                if (CommandIndex < CommandHistory.Count)
+                {
+                    CommandIndex = Math.Min(CommandIndex + 1, CommandHistory.Count);
+                    CommandInput.Text = CommandHistory.ElementAt(CommandIndex - 1);
+                    CommandInput.CaretIndex = CommandInput.Text.Length;
+                }
+                ClearTooltip();
+            }
+            else if (e.Key == Key.Down)
+            {
+                e.Handled = true;
+                if (CommandIndex >= 0)
+                {
+                    CommandIndex = Math.Max(CommandIndex - 1, 0);
+                    if (CommandIndex == 0)
+                    {
+                        CommandInput.Text = string.Empty;
+                    }
+                    else
+                    {
+                        CommandInput.Text = CommandHistory.ElementAt(CommandIndex - 1);
+                    }
+                    CommandInput.CaretIndex = CommandInput.Text.Length;
+                }
+                ClearTooltip();
+            }
+            else if (e.Key == Key.Tab)
+            {
+                e.Handled = true;
+                if (CommandInput.Text.Length > 0)
+                {
+                    var commandManager = Bot.Scope.Resolve<ICommandManager>();
+                    var hasBang = CommandInput.Text[0] == '!';
+                    var tabString = hasBang ? CommandInput.Text.Substring(1) : CommandInput.Text;
+                    var commandString = commandManager.CommandStrings.FirstOrDefault(x => x.StartsWith(tabString));
+                    if (commandString != null)
+                    {
+                        if (hasBang)
+                        {
+                            commandString = $"!{commandString}";
+                        }
+                        CommandInput.Text = commandString;
+                        CommandInput.Focus();
+                        CommandInput.CaretIndex = CommandInput.Text.Length;
+                        ClearTooltip();
+                    }
+                }
+            }
+            else if (e.Key == Key.Escape)
+            {
+                ClearTooltip();
+            }
+        }
+
+        private void CommandInput_LostFocus(object sender, RoutedEventArgs e)
+        {
+            ClearTooltip();
+        }
+
+        private void CommandInput_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            var tt = CommandInput.ToolTip as ToolTip;
+            if (CommandInput.Text.Length > 0)
+            {
+                var commandManager = Bot.Scope.Resolve<ICommandManager>();
+                var hasBang = CommandInput.Text[0] == '!';
+                var commandName = hasBang ? CommandInput.Text.Substring(1) : CommandInput.Text;
+                var spaceIndex = commandName.IndexOf(' ');
+                commandName = spaceIndex >= 0 ? commandName.Substring(0, spaceIndex) : commandName;
+                var possibleCommands = commandManager.CommandStrings.Where(x => spaceIndex >= 0 ? x.Equals(commandName) : x.StartsWith(commandName));
+                if (possibleCommands.Any())
+                {
+                    if (possibleCommands.Count() == 1)
+                    {
+                        var command = possibleCommands.First();
+                        SetTooltip($"{command} {commandManager.DescribeCommand(command)}");
+                    }
+                    else
+                    {
+                        SetTooltip(string.Join("\n", possibleCommands));
+                    }
+                }
+                else
+                {
+                    SetTooltip("*Unknown Command*");
+                }
+            }
+            else
+            {
+                ClearTooltip();
+            }
+        }
+
+        private async void AuthenticateButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (IsAuthenticated)
+            {
+                var response = MessageBox.Show("You are already authenticated. Would you like to clear your credentials and re-authenticate to Twitch? (This will also restart the bot)", "Confirm Authentication", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (response == MessageBoxResult.Yes)
+                {
+                    await Bot.CancelAsync();
+                    await Authenticate();
+                }
+            }
+            else
+            {
+                await Authenticate();
+            }
+        }
+
+        private async void StartButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (IsStarted)
+            {
+                var response = MessageBox.Show("The bot is currently running, would you like to restart it? (This will cancel any active fishing tournaments and dungeon groups)", "Confirm Restart", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (response == MessageBoxResult.Yes)
+                {
+                    await Bot.CancelAsync();
+                    await Authenticate();
+                }
+            }
+            else
+            {
+                await Authenticate();
+            }
+        }
+
+        private void ConnectButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (IsConnected)
+            {
+                var response = MessageBox.Show("You are already connected to the Twitch IRC server. Would you like to disconnect and reconnect?", "Confirm Reconnect", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (response == MessageBoxResult.Yes)
+                {
+                    var irc = Bot.Scope.Resolve<ITwitchIrcClient>();
+                    irc.ForceReconnect();
+                }
+            }
+            else
+            {
+                if (Bot != null && Bot.Scope != null)
+                {
+                    var irc = Bot.Scope.Resolve<ITwitchIrcClient>();
+                    if (irc != null)
+                    {
+                        irc.ForceReconnect();
+                    }
+                    else
+                    {
+                        MessageBox.Show("Unable to resolve IRC client. Please restart the application.", "Critical Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("Bot is not started, cannot create IRC connection", "Critical Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private void CommandButton_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new CommandExplorer(Bot.Scope.Resolve<ICommandManager>())
+            {
+                Owner = this,
+                Topmost = true,
+                ShowInTaskbar = false
+            };
+            dialog.Left = Left + Width / 2 - dialog.Width / 2;
+            dialog.Top = Top + Height / 2 - dialog.Height / 2;
+            var result = dialog.ShowDialog();
         }
 
         private async void Settings_Click(object sender, RoutedEventArgs e)
@@ -357,74 +633,6 @@ namespace LobotJR.Interface
                 await LoadSettings(Bot.Scope);
                 UpdateLogView();
             }
-        }
-
-        private void CommandInput_PreviewKeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Enter || e.Key == Key.Return)
-            {
-                e.Handled = true;
-                if (CommandInput.Text.Length > 0)
-                {
-                    SendCommand(CommandInput.Text);
-                    CommandHistory.Insert(0, CommandInput.Text);
-                    CommandInput.Text = string.Empty;
-                    CommandIndex = 0;
-                }
-            }
-            else if (e.Key == Key.Up)
-            {
-                e.Handled = true;
-                if (CommandIndex < CommandHistory.Count)
-                {
-                    CommandIndex = Math.Min(CommandIndex + 1, CommandHistory.Count);
-                    CommandInput.Text = CommandHistory.ElementAt(CommandIndex - 1);
-                    CommandInput.CaretIndex = CommandInput.Text.Length;
-                }
-            }
-            else if (e.Key == Key.Down)
-            {
-                e.Handled = true;
-                if (CommandIndex >= 0)
-                {
-                    CommandIndex = Math.Max(CommandIndex - 1, 0);
-                    if (CommandIndex == 0)
-                    {
-                        CommandInput.Text = string.Empty;
-                    }
-                    else
-                    {
-                        CommandInput.Text = CommandHistory.ElementAt(CommandIndex - 1);
-                    }
-                    CommandInput.CaretIndex = CommandInput.Text.Length;
-                }
-            }
-            else if (e.Key == Key.Tab)
-            {
-                e.Handled = true;
-                if (CommandInput.Text.Length > 0)
-                {
-                    var commandManager = Bot.Scope.Resolve<ICommandManager>();
-                    var hasBang = CommandInput.Text[0] == '!';
-                    var tabString = hasBang ? CommandInput.Text.Substring(1) : CommandInput.Text;
-                    var commandString = commandManager.CommandStrings.FirstOrDefault(x => x.StartsWith(tabString));
-                    if (commandString != null)
-                    {
-                        if (hasBang)
-                        {
-                            commandString = $"!{commandString}";
-                        }
-                        CommandInput.Text = commandString;
-                        CommandInput.Focus();
-                        CommandInput.CaretIndex = CommandInput.Text.Length;
-                    }
-                }
-            }
-        }
-
-        private void AuthenticateButton_Click(object sender, RoutedEventArgs e)
-        {
-
         }
     }
 }

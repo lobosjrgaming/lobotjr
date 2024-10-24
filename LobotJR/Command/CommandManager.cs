@@ -26,6 +26,7 @@ namespace LobotJR.Command
         private readonly Dictionary<string, string> commandStringToIdMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, CommandExecutor> commandIdToExecutorMap = new Dictionary<string, CommandExecutor>();
         private readonly Dictionary<string, CompactExecutor> compactIdToExecutorMap = new Dictionary<string, CompactExecutor>();
+        private readonly Dictionary<string, IEnumerable<string>> commandIdAliases = new Dictionary<string, IEnumerable<string>>();
         private readonly List<string> whisperOnlyCommands = new List<string>();
         private readonly List<string> timeoutCommands = new List<string>();
         private readonly Dictionary<string, Regex> commandStringRegexMap = new Dictionary<string, Regex>();
@@ -93,6 +94,7 @@ namespace LobotJR.Command
                     timeoutCommands.Add(commandId);
                 }
             }
+            commandIdAliases.Add(commandId, command.CommandStrings);
             var exceptions = new List<Exception>();
             foreach (var commandString in command.CommandStrings)
             {
@@ -217,6 +219,38 @@ namespace LobotJR.Command
                 return Commands.Any(x => commandRegex.IsMatch(x));
             }
             return Commands.Any(x => x.Equals(commandId));
+        }
+
+        /// <summary>
+        /// Describes the parameters for a command.
+        /// </summary>
+        /// <param name="commandName">The name of the command to check.</param>
+        /// <returns>A string containing the parameter names and types for the
+        /// command.</returns>
+        public string DescribeCommand(string commandName)
+        {
+            if (commandStringToIdMap.TryGetValue(commandName, out var id))
+            {
+                if (commandIdToExecutorMap.TryGetValue(id, out var executor))
+                {
+                    return executor.DescribeParameters();
+                }
+            }
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// Gets all aliases for a given command id.
+        /// </summary>
+        /// <param name="commandId">The id of a command.</param>
+        /// <returns>A list of aliases that can be used to execute the command.</returns>
+        public IEnumerable<string> GetAliases(string commandId)
+        {
+            if (commandIdAliases.TryGetValue(commandId, out var aliases))
+            {
+                return aliases;
+            }
+            return Enumerable.Empty<string>();
         }
 
         private CommandResult PrepareCompactResponse(CommandRequest request, User user, ICompactResponse response)
