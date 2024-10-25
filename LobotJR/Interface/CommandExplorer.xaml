@@ -5,11 +5,11 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:LobotJR.Interface"
         mc:Ignorable="d"
-        Title="Command Explorer" Height="350" Width="600" Loaded="Window_Loaded">
+        Title="Command Explorer" Height="350" Width="575" Loaded="Window_Loaded">
     <Grid Margin="10,10,10,10">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="2*"/>
+            <ColumnDefinition Width="3*"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -20,11 +20,14 @@
         <Button x:Name="SearchButton" Content="🔍" Width="20" HorizontalAlignment="Right"/>
         <TreeView x:Name="CategoryView" Grid.Row="1" Margin="0,5,0,0" SelectedItemChanged="CategoryView_SelectedItemChanged">
         </TreeView>
-        <ScrollViewer Margin="5,0,0,0" Grid.RowSpan="2" Grid.Column="2" VerticalScrollBarVisibility="Auto">
-            <StackPanel x:Name="SettingsContainer" Margin="0,0,5,0">
+        <ScrollViewer Margin="5,0,0,0" Grid.RowSpan="2" Grid.Column="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+            <StackPanel Margin="0,0,5,0" Orientation="Vertical">
+                <Label>Command Signature:</Label>
+                <TextBlock Margin="20,0,0,0" x:Name="CommandSignature"></TextBlock>
+                <Label>Aliases:</Label>
+                <TextBlock Margin="20,0,0,0" x:Name="AliasList"></TextBlock>
             </StackPanel>
         </ScrollViewer>
-        <Button x:Name="Ok" Content="Ok" Margin="0,5,80,0" Width="75" Grid.Row="4" Grid.ColumnSpan="3" HorizontalAlignment="Right" VerticalAlignment="Bottom" Click="Ok_Click"/>
-        <Button x:Name="Cancel" Content="Cancel" Width="75" Grid.Row="4" Grid.ColumnSpan="3" HorizontalAlignment="Right" VerticalAlignment="Bottom" Click="Cancel_Click"/>
+        <Button x:Name="Ok" Content="Ok" Width="75" Grid.Row="4" Grid.ColumnSpan="3" HorizontalAlignment="Right" VerticalAlignment="Bottom" Click="Ok_Click"/>
     </Grid>
 </Window>

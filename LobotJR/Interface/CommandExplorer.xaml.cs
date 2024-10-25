@@ -15,7 +15,6 @@ namespace LobotJR.Interface
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private readonly ICommandManager CommandManager;
         private readonly Dictionary<string, List<string>> Aliases = new Dictionary<string, List<string>>();
-        private ItemsControl CachedView;
 
         public CommandExplorer(ICommandManager commandManager)
         {
@@ -26,12 +25,11 @@ namespace LobotJR.Interface
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             var categories = new Dictionary<string, TreeViewItem>();
-            CachedView = new TreeView();
             var commands = CommandManager.Commands;
             foreach (var command in commands)
             {
                 var parts = command.Split('.');
-                ItemsControl parent = CachedView;
+                ItemsControl parent = CategoryView;
                 var parentChain = new List<TreeViewItem>();
                 for (var i = 0; i < parts.Length - 1; i++)
                 {
@@ -55,34 +53,46 @@ namespace LobotJR.Interface
                 Aliases.Add(command, aliases);
                 for (var i = 0; i < parentChain.Count; i++)
                 {
-                    var id = string.Join(".", parentChain.Take(i + 1));
+                    var id = string.Join(".", parentChain.Take(i + 1).Select(x => x.Header));
                     if (Aliases.TryGetValue(id, out var aliasList))
                     {
                         aliasList.AddRange(aliases);
                     }
                     else
                     {
-                        Aliases.Add(id, aliases);
+                        Aliases.Add(id, new List<string>(aliases));
                     }
                 }
             }
         }
 
-        private void FilterTree(string query)
-        {
-        }
-
         private void CategoryView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             var item = CategoryView.SelectedItem as TreeViewItem;
-            var chain = new List<TreeViewItem>() { item };
-            for (var node = item.Parent as TreeViewItem; node != null; node = node.Parent as TreeViewItem)
+            if (!item.HasItems)
             {
-                chain.Insert(0, node);
+                var chain = new List<TreeViewItem>() { item };
+                for (var node = item.Parent as TreeViewItem; node != null; node = node.Parent as TreeViewItem)
+                {
+                    chain.Insert(0, node);
+                }
+                var name = string.Join(".", chain.Select(x => x.Header));
+                var aliases = CommandManager.GetAliases(name);
+                CommandSignature.Text = $"!{aliases.First()} {CommandManager.DescribeCommand(aliases.First())}";
+                if (aliases.Count() == 1)
+                {
+                    AliasList.Text = "None";
+                }
+                else
+                {
+                    AliasList.Text = string.Join("\n", aliases.Skip(1).Select(x => $"!{x}"));
+                }
             }
-            var name = string.Join(".", chain.Select(x => x.Header));
-            CommandManager.DescribeCommand(name);
-            CommandManager.GetAliases(name);
+            else
+            {
+                CommandSignature.Text = string.Empty;
+                AliasList.Text = string.Empty;
+            }
         }
 
         private void Ok_Click(object sender, RoutedEventArgs e)
@@ -91,33 +101,38 @@ namespace LobotJR.Interface
             Close();
         }
 
-        private void Cancel_Click(object sender, RoutedEventArgs e)
-        {
-            DialogResult = false;
-            Close();
-        }
-
-        private bool Filter(object sender)
+        private bool Filter(TreeViewItem node, string parentName = "")
         {
             if (!string.IsNullOrWhiteSpace(SearchText.Text))
             {
-                var item = sender as TreeViewItem;
-                if (item != null)
+                if (Aliases.TryGetValue($"{parentName}{node.Header}", out var aliases))
                 {
-                    if (Aliases.TryGetValue(item.Header.ToString(), out var aliases))
+                    var show = aliases.Any(x => x.Contains(SearchText.Text));
+                    foreach (var child in node.Items)
                     {
-                        Logger.Debug("Checking {filter} against {item} ({aliases})", SearchText.Text, item.Header, string.Join(", ", aliases));
-                        return aliases.Any(x => x.Contains(SearchText.Text));
+                        var showChild = Filter(child as TreeViewItem, $"{parentName}{node.Header}.");
+                        show = showChild || show;
                     }
+                    node.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+                    if (node.HasItems && show)
+                    {
+                        node.IsExpanded = true;
+                    }
+                    return show;
                 }
+                node.Visibility = Visibility.Collapsed;
                 return false;
             }
+            node.Visibility = Visibility.Visible;
             return true;
         }
 
         private void SearchText_TextChanged(object sender, TextChangedEventArgs e)
         {
-            CategoryView.Items.Filter = Filter;
+            foreach (var node in CategoryView.Items)
+            {
+                Filter(node as TreeViewItem);
+            }
         }
     }
 }
