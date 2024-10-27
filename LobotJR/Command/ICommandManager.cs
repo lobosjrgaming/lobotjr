@@ -35,6 +35,13 @@ namespace LobotJR.Command
         /// <returns>Whether or not the command id is valid.</returns>
         bool IsValidCommand(string commandId);
         /// <summary>
+        /// Finds all commands with ids that match the given pattern.
+        /// </summary>
+        /// <param name="pattern">A command pattern containing one or more
+        /// wildcard (*) characters.</param>
+        /// <returns>A collection of matching command ids.</returns>
+        IEnumerable<string> GetMatchingCommands(string pattern);
+        /// <summary>
         /// Describes the parameters for a command.
         /// </summary>
         /// <param name="commandName">The name of the command to check.</param>

@@ -113,6 +113,21 @@ namespace LobotJR.Data
             return dbSet;
         }
 
+        public IEnumerable<TEntity> ReadWith<TProperty>(Expression<Func<TEntity, TProperty>> includeFilter)
+        {
+            return dbSet.Include(includeFilter);
+        }
+
+        public IEnumerable<TEntity> ReadWith<TProperty, TProperty2>(Expression<Func<TEntity, TProperty>> includeFilter, Expression<Func<TEntity, TProperty2>> includeFilter2)
+        {
+            return dbSet.Include(includeFilter).Include(includeFilter2);
+        }
+
+        public IEnumerable<TEntity> ReadWith<TProperty, TProperty2, TProperty3>(Expression<Func<TEntity, TProperty>> includeFilter, Expression<Func<TEntity, TProperty2>> includeFilter2, Expression<Func<TEntity, TProperty3>> includeFilter3)
+        {
+            return dbSet.Include(includeFilter).Include(includeFilter2).Include(includeFilter3);
+        }
+
         public IEnumerable<TEntity> Read(Expression<Func<TEntity, bool>> filter)
         {
             return dbSet.Where(filter);

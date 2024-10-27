@@ -28,6 +28,6 @@
                 <TextBlock Margin="20,0,0,0" x:Name="AliasList"></TextBlock>
             </StackPanel>
         </ScrollViewer>
-        <Button x:Name="Ok" Content="Ok" Width="75" Grid.Row="4" Grid.ColumnSpan="3" HorizontalAlignment="Right" VerticalAlignment="Bottom" Click="Ok_Click"/>
+        <Button x:Name="Ok" Content="Close" Width="75" Grid.Row="4" Grid.ColumnSpan="3" HorizontalAlignment="Right" VerticalAlignment="Bottom" Click="Ok_Click"/>
     </Grid>
 </Window>

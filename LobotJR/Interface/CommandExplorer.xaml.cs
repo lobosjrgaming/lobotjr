@@ -1,5 +1,4 @@
 ﻿using LobotJR.Command;
-using NLog;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -12,7 +11,6 @@ namespace LobotJR.Interface
     /// </summary>
     public partial class CommandExplorer : Window
     {
-        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private readonly ICommandManager CommandManager;
         private readonly Dictionary<string, List<string>> Aliases = new Dictionary<string, List<string>>();
 

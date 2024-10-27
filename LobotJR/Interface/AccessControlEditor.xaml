@@ -1,0 +1,92 @@
+﻿<Window x:Class="LobotJR.Interface.AccessControlEditor"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:LobotJR.Interface"
+        mc:Ignorable="d"
+        Title="Access Control" Height="350" Width="600" Loaded="Window_Loaded">
+    <Grid Margin="10,10,10,10">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Label Content="Access Groups" />
+        <ListBox x:Name="AccessGroupList" Grid.Row="1" Grid.RowSpan="2" SelectionChanged="AccessGroupList_SelectionChanged"/>
+        <Label Content="Users" Margin="5,0,0,0" Grid.Column="1"/>
+        <Grid Margin="5,0,0,5" Grid.Row="1" Grid.Column="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Label Content="Admin" HorizontalAlignment="Center"/>
+            <Label Content="Mods" HorizontalAlignment="Center" Grid.Column="1"/>
+            <Label Content="Vips" HorizontalAlignment="Center" Grid.Column="2"/>
+            <Label Content="Subs" HorizontalAlignment="Center" Grid.Column="3"/>
+            <CheckBox x:Name="IncludeAdmin" HorizontalAlignment="Center" Grid.Row="1" IsChecked="{Binding Path=CurrentGroup.IncludeAdmins}"/>
+            <CheckBox x:Name="IncludeMods" HorizontalAlignment="Center" Grid.Row="1" Grid.Column="1" IsChecked="{Binding Path=CurrentGroup.IncludeMods}"/>
+            <CheckBox x:Name="IncludeVips" HorizontalAlignment="Center" Grid.Row="1" Grid.Column="2" IsChecked="{Binding Path=CurrentGroup.IncludeVips}"/>
+            <CheckBox x:Name="IncludeSubs" HorizontalAlignment="Center" Grid.Row="1" Grid.Column="3" IsChecked="{Binding Path=CurrentGroup.IncludeSubs}"/>
+        </Grid>
+        <ListBox x:Name="UserList" Margin="5,0,0,0" Grid.Row="2" Grid.Column="1" SelectionChanged="UserList_SelectionChanged"/>
+        <Label Content="Commands" Margin="5,0,0,0" Grid.Column="2"/>
+        <ListBox x:Name="CommandList" Margin="5,0,0,0" Grid.Row="1" Grid.RowSpan="2" Grid.Column="2" SelectionChanged="CommandList_SelectionChanged"/>
+        <Grid Grid.Row="3">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="GroupToAdd" VerticalAlignment="Center" PreviewKeyDown="GroupToAdd_PreviewKeyDown"/>
+            <Button x:Name="AddAccessGroup" Grid.Column="1" Margin="5,5,0,5" Content="➕" Click="AddAccessGroup_Click"/>
+            <Button x:Name="DeleteAccessGroup" Grid.Column="2" Margin="5,5,0,5" Content="➖" Click="DeleteAccessGroup_Click" IsEnabled="{Binding Path=IsGroupSelected}"/>
+        </Grid>
+        <Grid Grid.Row="3" Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="UserToAdd" Margin="5,0,0,0" VerticalAlignment="Center" IsEnabled="{Binding Path=IsGroupSelected}" PreviewKeyDown="UserToAdd_PreviewKeyDown"/>
+            <Button x:Name="AddUser" Grid.Column="1" Margin="5,5,0,5" Content="➕" Click="AddUser_Click" IsEnabled="{Binding Path=IsGroupSelected}"/>
+            <Button x:Name="DeleteUser" Grid.Column="2" Margin="5,5,0,5" Content="➖" Click="DeleteUser_Click" IsEnabled="{Binding Path=IsUserSelected}"/>
+        </Grid>
+        <Grid Grid.Row="3" Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="CommandToAdd" Margin="5,0,0,0" VerticalAlignment="Center" IsEnabled="{Binding Path=IsGroupSelected}" PreviewKeyDown="CommandToAdd_PreviewKeyDown" TextChanged="CommandToAdd_TextChanged"/>
+            <Button x:Name="AddCommand" Grid.Column="1" Margin="5,5,0,5" Content="➕" Click="AddCommand_Click" IsEnabled="{Binding Path=IsGroupSelected}"/>
+            <Button x:Name="DeleteCommand" Grid.Column="2" Margin="5,5,0,5" Content="➖" Click="DeleteCommand_Click" IsEnabled="{Binding Path=IsCommandSelected}"/>
+        </Grid>
+        <StackPanel Orientation="Horizontal" Grid.Row="4" Grid.ColumnSpan="3" HorizontalAlignment="Right">
+            <Button x:Name="Ok" Margin="5,0,0,0" Content="Ok" Width="75" Click="Ok_Click"/>
+            <Button x:Name="Cancel" Margin="5,0,0,0" Content="Cancel" Width="75" Click="Cancel_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

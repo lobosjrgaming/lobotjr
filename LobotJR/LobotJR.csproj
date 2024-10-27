@@ -157,6 +157,9 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Interface\AccessControlEditor.xaml.cs">
+      <DependentUpon>AccessControlEditor.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Interface\CommandExplorer.xaml.cs">
       <DependentUpon>CommandExplorer.xaml</DependentUpon>
     </Compile>
@@ -528,6 +531,10 @@
     </Resource>
   </ItemGroup>
   <ItemGroup>
+    <Page Include="Interface\AccessControlEditor.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Interface\CommandExplorer.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

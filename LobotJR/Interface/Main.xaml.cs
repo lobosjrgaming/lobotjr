@@ -1,6 +1,8 @@
 ﻿using Autofac;
 using LobotJR.Command;
 using LobotJR.Command.Controller.Player;
+using LobotJR.Command.Controller.Twitch;
+using LobotJR.Command.Model.AccessControl;
 using LobotJR.Data;
 using LobotJR.Interface.Settings;
 using LobotJR.Twitch;
@@ -100,11 +102,11 @@ namespace LobotJR.Interface
             UpdateLogView();
         }
 
-        public bool ShowDebug { get { return Settings.LogFilter.HasFlag(LogFilter.Debug); } set { SetFlag(LogFilter.Debug, value); } }
-        public bool ShowInfo { get { return Settings.LogFilter.HasFlag(LogFilter.Info); } set { SetFlag(LogFilter.Info, value); } }
-        public bool ShowWarning { get { return Settings.LogFilter.HasFlag(LogFilter.Warning); } set { SetFlag(LogFilter.Warning, value); } }
-        public bool ShowError { get { return Settings.LogFilter.HasFlag(LogFilter.Error); } set { SetFlag(LogFilter.Error, value); } }
-        public bool ShowCrash { get { return Settings.LogFilter.HasFlag(LogFilter.Crash); } set { SetFlag(LogFilter.Crash, value); } }
+        public bool ShowDebug { get { return Settings.LogFilter.HasFlag(LogFilter.Debug); } set { SetFlag(LogFilter.Debug, value).Wait(); } }
+        public bool ShowInfo { get { return Settings.LogFilter.HasFlag(LogFilter.Info); } set { SetFlag(LogFilter.Info, value).Wait(); } }
+        public bool ShowWarning { get { return Settings.LogFilter.HasFlag(LogFilter.Warning); } set { SetFlag(LogFilter.Warning, value).Wait(); } }
+        public bool ShowError { get { return Settings.LogFilter.HasFlag(LogFilter.Error); } set { SetFlag(LogFilter.Error, value).Wait(); } }
+        public bool ShowCrash { get { return Settings.LogFilter.HasFlag(LogFilter.Crash); } set { SetFlag(LogFilter.Crash, value).Wait(); } }
 
         public Main()
         {
@@ -146,14 +148,6 @@ namespace LobotJR.Interface
                 catch { }
             };
             timer.Start();
-        }
-
-        private void FireChangeEvent(params string[] names)
-        {
-            foreach (string name in names)
-            {
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-            }
         }
 
         private void AddLog(LogEventInfo info)
@@ -247,7 +241,7 @@ namespace LobotJR.Interface
             CommandInputLabel.Foreground = Colors[ColorKeys.Info];
             CommandInput.Foreground = Colors[ColorKeys.Info];
             CommandInput.CaretBrush = Colors[ColorKeys.Info];
-            FireChangeEvent("ShowText", "ShowIcons", "ShowDebug", "ShowInfo", "ShowWarning", "ShowError", "ShowCrash");
+            InterfaceUtils.FireChangeEvent(this, PropertyChanged, nameof(ShowText), nameof(ShowIcons), nameof(ShowDebug), nameof(ShowInfo), nameof(ShowWarning), nameof(ShowError), nameof(ShowCrash));
         }
 
         private async Task LaunchBot(ClientData clientData, TokenData tokenData)
@@ -262,14 +256,14 @@ namespace LobotJR.Interface
                 BotStatus.Content = "Loading Settings...";
                 await LoadSettings(Bot.Scope);
                 IsStarted = true;
-                FireChangeEvent("IsStarted");
+                InterfaceUtils.FireChangeEvent(this, PropertyChanged, nameof(IsStarted));
                 UpdateLogView();
                 BotStatus.Content = "Initializing Bot Runner...";
                 await Bot.Initialize();
                 BotStatus.Content = "Starting Bot Runner...";
                 Bot.Start();
                 IsConnected = true;
-                FireChangeEvent("IsConnected");
+                InterfaceUtils.FireChangeEvent(this, PropertyChanged, nameof(IsConnected));
                 BotStatus.Content = "Ready";
             }
             catch (Exception ex)
@@ -326,7 +320,7 @@ namespace LobotJR.Interface
             if (await AuthCallback.ValidateAndRefresh(ClientData, TokenData))
             {
                 IsAuthenticated = true;
-                FireChangeEvent("IsAuthenticated");
+                InterfaceUtils.FireChangeEvent(this, PropertyChanged, nameof(IsAuthenticated));
                 await LaunchBot(ClientData, TokenData);
             }
             else
@@ -380,14 +374,13 @@ namespace LobotJR.Interface
                 MessageBox.Show(this, "Unable to launch without Twitch Client Data. The app will now close.", "Missing Client Data", MessageBoxButton.OK, MessageBoxImage.Error);
                 Close();
             }
-            FireChangeEvent("HasClientData");
+            InterfaceUtils.FireChangeEvent(this, PropertyChanged, nameof(HasClientData));
             await Authenticate();
         }
 
         private void ClearTooltip()
         {
-            var tt = CommandInput.ToolTip as ToolTip;
-            if (tt != null)
+            if (CommandInput.ToolTip is ToolTip tt)
             {
                 tt.IsOpen = false;
             }
@@ -396,8 +389,7 @@ namespace LobotJR.Interface
 
         private void SetTooltip(string value)
         {
-            var tt = CommandInput.ToolTip as ToolTip;
-            if (tt == null)
+            if (!(CommandInput.ToolTip is ToolTip tt))
             {
                 tt = new ToolTip()
                 {
@@ -488,7 +480,6 @@ namespace LobotJR.Interface
 
         private void CommandInput_TextChanged(object sender, TextChangedEventArgs e)
         {
-            var tt = CommandInput.ToolTip as ToolTip;
             if (CommandInput.Text.Length > 0)
             {
                 var commandManager = Bot.Scope.Resolve<ICommandManager>();
@@ -506,6 +497,11 @@ namespace LobotJR.Interface
                     }
                     else
                     {
+                        if (possibleCommands.Count() > 10)
+                        {
+                            var final = $"and {possibleCommands.Count() - 9} others";
+                            possibleCommands = possibleCommands.Take(9).Concat(new string[] { final });
+                        }
                         SetTooltip(string.Join("\n", possibleCommands));
                     }
                 }
@@ -597,6 +593,86 @@ namespace LobotJR.Interface
             dialog.Left = Left + Width / 2 - dialog.Width / 2;
             dialog.Top = Top + Height / 2 - dialog.Height / 2;
             dialog.ShowDialog();
+        }
+
+        private void ContentButton_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void PlayerButton_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private async void AccessButton_Click(object sender, RoutedEventArgs e)
+        {
+            var connectionManager = Bot.Scope.Resolve<IConnectionManager>();
+            var dialog = new AccessControlEditor(connectionManager, Bot.Scope.Resolve<ICommandManager>(), Bot.Scope.Resolve<UserController>())
+            {
+                Owner = this,
+                Topmost = true,
+                ShowInTaskbar = false
+            };
+            dialog.Left = Left + Width / 2 - dialog.Width / 2;
+            dialog.Top = Top + Height / 2 - dialog.Height / 2;
+            var result = dialog.ShowDialog();
+            if (result.HasValue && result.Value)
+            {
+                using (var db = await connectionManager.OpenConnection())
+                {
+                    var groups = dialog.AccessGroups;
+                    var groupNames = groups.Select(x => x.Name).ToList();
+                    var allGroups = db.AccessGroups.ReadWith(x => x.Enrollments, x => x.Restrictions).ToList();
+                    var groupsToDelete = allGroups.Where(x => !groupNames.Contains(x.Name));
+                    foreach (var group in groups)
+                    {
+                        if (group.Id > 0)
+                        {
+                            var dbGroup = db.AccessGroups.ReadWith(x => x.Enrollments, x => x.Restrictions).FirstOrDefault(x => x.Id == group.Id);
+                            dbGroup.IncludeAdmins = group.IncludeAdmins;
+                            dbGroup.IncludeMods = group.IncludeMods;
+                            dbGroup.IncludeVips = group.IncludeVips;
+                            dbGroup.IncludeSubs = group.IncludeSubs;
+                            dbGroup.Name = group.Name;
+                            var enrollmentNames = group.Enrollments.Select(x => x.UserId);
+                            var dbEnrollmentNames = dbGroup.Enrollments.Select(x => x.UserId);
+                            var enrollmentsToDelete = dbGroup.Enrollments.Where(x => !enrollmentNames.Contains(x.UserId)).ToList();
+                            var enrollmentsToAdd = group.Enrollments.Where(x => !dbEnrollmentNames.Contains(x.UserId));
+                            foreach (var toDelete in enrollmentsToDelete)
+                            {
+                                db.Enrollments.Delete(toDelete);
+                            }
+                            foreach (var toAdd in enrollmentsToAdd)
+                            {
+                                db.Enrollments.Create(new Enrollment(dbGroup, toAdd.UserId));
+                            }
+                            var restrictionNames = group.Restrictions.Select(x => x.Command);
+                            var dbRestrictionNames = dbGroup.Restrictions.Select(x => x.Command);
+                            var restrictionsToDelete = dbGroup.Restrictions.Where(x => !restrictionNames.Contains(x.Command)).ToList();
+                            var restrictionsToAdd = group.Restrictions.Where(x => !dbRestrictionNames.Contains(x.Command));
+                            foreach (var toDelete in restrictionsToDelete)
+                            {
+                                db.Restrictions.Delete(toDelete);
+                            }
+                            foreach (var toAdd in restrictionsToAdd)
+                            {
+                                db.Restrictions.Create(new Restriction(dbGroup, toAdd.Command));
+                            }
+                        }
+                        else
+                        {
+                            db.AccessGroups.Create(group);
+                        }
+                    }
+                    foreach (var group in groupsToDelete)
+                    {
+                        db.Enrollments.DeleteRange(db.Enrollments.Read(x => x.GroupId == group.Id));
+                        db.Restrictions.DeleteRange(db.Restrictions.Read(x => x.GroupId == group.Id));
+                        db.AccessGroups.Delete(group);
+                    }
+                }
+            }
         }
 
         private async void Settings_Click(object sender, RoutedEventArgs e)

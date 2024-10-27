@@ -1,4 +1,5 @@
-﻿using System.Windows.Media;
+﻿using System.ComponentModel;
+using System.Windows.Media;
 
 namespace LobotJR.Utils
 {
@@ -18,6 +19,21 @@ namespace LobotJR.Utils
                 (byte)((hex & 0x00FF00) >> 8),
                 (byte)(hex & 0x0000FF));
             return new SolidColorBrush(color);
+        }
+
+        /// <summary>
+        /// Fires a property change event for any number of properties.
+        /// </summary>
+        /// <param name="notifier">The object invoking the changes.</param>
+        /// <param name="handler">The event handler.</param>
+        /// <param name="names">A collection of names of parameters that have
+        /// changed.</param>
+        public static void FireChangeEvent(INotifyPropertyChanged notifier, PropertyChangedEventHandler handler, params string[] names)
+        {
+            foreach (string name in names)
+            {
+                handler?.Invoke(notifier, new PropertyChangedEventArgs(name));
+            }
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using LobotJR.Data;
+using System.Collections.Generic;
 
 namespace LobotJR.Command.Model.AccessControl
 {
@@ -35,8 +36,13 @@ namespace LobotJR.Command.Model.AccessControl
         /// </summary>
         public bool IncludeSubs { get; set; }
         /// <summary>
-        /// A comma-delimited list of user ids.
+        /// Collection of all commands restricted to this group.
         /// </summary>
+        public virtual List<Restriction> Restrictions { get; set; }
+        /// <summary>
+        /// Collection of all users enrolled in this group.
+        /// </summary>
+        public virtual List<Enrollment> Enrollments { get; set; }
 
         /// <summary>
         /// Creates an empty access group.

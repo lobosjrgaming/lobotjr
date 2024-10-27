@@ -14,6 +14,9 @@ namespace LobotJR.Data
         IEnumerable<TEntity> Read();
         IEnumerable<TEntity> Read(Expression<Func<TEntity, bool>> filter);
         TEntity Read(TEntity entry);
+        IEnumerable<TEntity> ReadWith<TProperty>(Expression<Func<TEntity, TProperty>> includeFilter);
+        IEnumerable<TEntity> ReadWith<TProperty, TProperty2>(Expression<Func<TEntity, TProperty>> includeFilter, Expression<Func<TEntity, TProperty2>> includeFilter2);
+        IEnumerable<TEntity> ReadWith<TProperty, TProperty2, TProperty3>(Expression<Func<TEntity, TProperty>> includeFilter, Expression<Func<TEntity, TProperty2>> includeFilter2, Expression<Func<TEntity, TProperty3>> includeFilter3);
         TEntity First(Expression<Func<TEntity, bool>> filter);
         TEntity FirstOrDefault(Expression<Func<TEntity, bool>> filter);
         bool Any(Expression<Func<TEntity, bool>> filter);

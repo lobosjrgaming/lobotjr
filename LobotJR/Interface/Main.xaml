@@ -99,7 +99,7 @@
                             <Label Visibility="{Binding Path=ShowText}">Command</Label>
                         </StackPanel>
                     </Button>
-                    <Button x:Name="ContentButton" ToolTip="Edit Game Content" IsEnabled="{Binding IsStarted}">
+                    <Button x:Name="ContentButton" ToolTip="Edit Game Content" IsEnabled="{Binding IsStarted}" Click="ContentButton_Click">
                         <StackPanel Orientation="Horizontal">
                             <StackPanel Orientation="Horizontal" Visibility="{Binding Path=ShowIcons}">
                                 <Image Source="/Resources/ContentEnabled.png" Width="28" Height="28" Visibility="{Binding Path=IsStarted, Converter={StaticResource BoolToVis}}"/>
@@ -108,7 +108,7 @@
                             <Label Visibility="{Binding Path=ShowText}">Content</Label>
                         </StackPanel>
                     </Button>
-                    <Button x:Name="PlayerButton" ToolTip="Edit Player Data" IsEnabled="{Binding IsStarted}">
+                    <Button x:Name="PlayerButton" ToolTip="Edit Player Data" IsEnabled="{Binding IsStarted}" Click="PlayerButton_Click">
                         <StackPanel Orientation="Horizontal">
                             <StackPanel Orientation="Horizontal" Visibility="{Binding Path=ShowIcons}">
                                 <Image Source="/Resources/PlayerEnabled.png" Width="28" Height="28" Visibility="{Binding Path=IsStarted, Converter={StaticResource BoolToVis}}"/>
@@ -117,7 +117,7 @@
                             <Label Visibility="{Binding Path=ShowText}">Players</Label>
                         </StackPanel>
                     </Button>
-                    <Button x:Name="AccessButton" ToolTip="Modify Access Groups" IsEnabled="{Binding IsStarted}">
+                    <Button x:Name="AccessButton" ToolTip="Modify Access Groups" IsEnabled="{Binding IsStarted}" Click="AccessButton_Click">
                         <StackPanel Orientation="Horizontal">
                             <StackPanel Orientation="Horizontal" Visibility="{Binding Path=ShowIcons}">
                                 <Image Source="/Resources/AccessControlEnabled.png" Width="28" Height="28" Visibility="{Binding Path=IsStarted, Converter={StaticResource BoolToVis}}"/>
