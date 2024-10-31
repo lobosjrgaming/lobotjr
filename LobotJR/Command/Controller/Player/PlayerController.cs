@@ -97,12 +97,12 @@ namespace LobotJR.Command.Controller.Player
             UserController = userController;
         }
 
-        private int ExperienceForLevel(int level)
+        public static int ExperienceForLevel(int level)
         {
             return (int)(4 * Math.Pow(level, 3) + 50);
         }
 
-        private int LevelFromExperience(int experience)
+        public static int LevelFromExperience(int experience)
         {
             experience = Math.Max(experience, 81);
             var level = Math.Pow((experience - 50.0f) / 4.0f, (1.0f / 3.0f));

@@ -67,7 +67,7 @@ namespace LobotJR.Command.Controller.Equipment
         /// the user doesn't have the item in their inventory.</returns>
         public Inventory GetInventoryRecord(User user, Item item)
         {
-            return ConnectionManager.CurrentConnection.Inventories.FirstOrDefault(x => x.UserId.Equals(user.TwitchId) && x.Item.Equals(item));
+            return ConnectionManager.CurrentConnection.Inventories.FirstOrDefault(x => x.UserId.Equals(user.TwitchId) && x.ItemId == item.Id);
         }
 
         /// <summary>

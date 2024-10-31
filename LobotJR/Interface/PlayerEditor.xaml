@@ -5,7 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:LobotJR.Interface"
         mc:Ignorable="d"
-        Title="Player Editor" Height="350" Width="600">
+        Title="Player Editor" Height="350" Width="600" ResizeMode="NoResize" Loaded="Window_Loaded" Closing="Window_Closing">
+    <Window.Resources>
+        <local:InverseBooleanConverter x:Key="Not"/>
+    </Window.Resources>
     <Grid Margin="5,5,5,5">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -24,49 +27,50 @@
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="2*"/>
-            <ColumnDefinition Width="2*"/>
-            <ColumnDefinition Width="2*"/>
-            <ColumnDefinition Width="2*"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="5*"/>
             <ColumnDefinition Width="5*"/>
         </Grid.ColumnDefinitions>
-        <TextBox x:Name="SearchText" Grid.ColumnSpan="5"/>
-        <Button x:Name="SearchButton" Grid.Column="5" Margin="5,0,0,0" Content="Search"/>
+        <TextBox x:Name="SearchText" Grid.ColumnSpan="4" PreviewKeyDown="SearchText_PreviewKeyDown" IsEnabled="{Binding Path=IsEditing, Converter={StaticResource Not}}"/>
+        <Button x:Name="SearchButton" Grid.Column="4" Margin="5,0,0,0" Content="Search" Click="SearchButton_Click" IsEnabled="{Binding Path=IsEditing, Converter={StaticResource Not}}"/>
+        <Button x:Name="EditButton" Grid.Column="5" Margin="5,0,0,0" Content="Edit" IsEnabled="{Binding Path=CanEdit}" Click="EditButton_Click"/>
         <Label Grid.Row="1" Content="Username" HorizontalAlignment="Right"/>
-        <TextBox x:Name="Username" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" VerticalAlignment="Center"/>
+        <TextBox x:Name="Username" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" VerticalAlignment="Center" IsEnabled="False" Text="{Binding Path=User.Username}"/>
         <Label Grid.Row="2" Content="Twitch ID" HorizontalAlignment="Right"/>
-        <TextBox x:Name="TwitchId" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3" VerticalAlignment="Center"/>
+        <TextBox x:Name="TwitchId" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3" VerticalAlignment="Center" IsEnabled="False" Text="{Binding Path=User.TwitchId}"/>
         <Label Grid.Row="3" Content="Admin" HorizontalAlignment="Center"/>
-        <CheckBox x:Name="IsAdmin" Grid.Row="4" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+        <CheckBox x:Name="IsAdmin" Grid.Row="4" VerticalAlignment="Center" HorizontalAlignment="Center" IsEnabled="False" IsChecked="{Binding Path=User.IsAdmin}"/>
         <Label Grid.Row="3" Grid.Column="1" Content="Mod" HorizontalAlignment="Center"/>
-        <CheckBox x:Name="IsMod" Grid.Row="4" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+        <CheckBox x:Name="IsMod" Grid.Row="4" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" IsEnabled="False" IsChecked="{Binding Path=User.IsMod}"/>
         <Label Grid.Row="3" Grid.Column="2" Content="VIP" HorizontalAlignment="Center"/>
-        <CheckBox x:Name="IsVip" Grid.Row="4" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+        <CheckBox x:Name="IsVip" Grid.Row="4" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Center" IsEnabled="False" IsChecked="{Binding Path=User.IsVip}"/>
         <Label Grid.Row="3" Grid.Column="3" Content="Sub" HorizontalAlignment="Center"/>
-        <CheckBox x:Name="IsSub" Grid.Row="4" Grid.Column="3" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+        <CheckBox x:Name="IsSub" Grid.Row="4" Grid.Column="3" VerticalAlignment="Center" HorizontalAlignment="Center" IsEnabled="False" IsChecked="{Binding Path=User.IsSub}"/>
         <Label Grid.Row="5" Content="Class" HorizontalAlignment="Right"/>
-        <ComboBox x:Name="CharacterClass" Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="3" VerticalAlignment="Center"/>
+        <ComboBox x:Name="CharacterClass" Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="3" VerticalAlignment="Center" IsEnabled="{Binding Path=IsEditing}" SelectedItem="{Binding Path=Player.CharacterClass}"/>
         <Label Grid.Row="6" Content="Level" HorizontalAlignment="Right"/>
-        <TextBox x:Name="Level" Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="3" VerticalAlignment="Center"/>
+        <TextBox x:Name="Level" Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="3" VerticalAlignment="Center" IsEnabled="{Binding Path=IsEditing}" Text="{Binding Path=Player.Level}"/>
         <Label Grid.Row="7" Content="Prestige" HorizontalAlignment="Right"/>
-        <TextBox x:Name="Prestige" Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="3" VerticalAlignment="Center"/>
+        <TextBox x:Name="Prestige" Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="3" VerticalAlignment="Center" IsEnabled="{Binding Path=IsEditing}" Text="{Binding Path=Player.Prestige}"/>
         <Label Grid.Row="8" Content="XP" HorizontalAlignment="Right"/>
-        <TextBox x:Name="Experience" Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="3" VerticalAlignment="Center"/>
+        <TextBox x:Name="Experience" Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="3" VerticalAlignment="Center" IsEnabled="{Binding Path=IsEditing}" Text="{Binding Path=Player.Experience}"/>
         <Label Grid.Row="9" Content="Wolfcoins" HorizontalAlignment="Right"/>
-        <TextBox x:Name="Wolfcoins" Grid.Row="9" Grid.Column="1" Grid.ColumnSpan="3" VerticalAlignment="Center"/>
+        <TextBox x:Name="Wolfcoins" Grid.Row="9" Grid.Column="1" Grid.ColumnSpan="3" VerticalAlignment="Center" IsEnabled="{Binding Path=IsEditing}" Text="{Binding Path=Player.Currency}"/>
         <Label Grid.Row="1" Margin="5,0,0,0" Grid.Column="4" Content="Inventory"/>
         <Label Grid.Row="1" Margin="5,0,0,0" Grid.Column="5" Content="Pets"/>
-        <ListBox x:Name="EquipList" Margin="5,0,0,0" Grid.Row="2" Grid.RowSpan="8" Grid.Column="4"/>
-        <ListBox x:Name="PetList" Margin="5,0,0,0" Grid.Row="2" Grid.RowSpan="8" Grid.Column="5"/>
+        <ListBox x:Name="EquipList" Margin="5,0,0,0" Grid.Row="2" Grid.RowSpan="8" Grid.Column="4" SelectionChanged="EquipList_SelectionChanged"/>
+        <ListBox x:Name="PetList" Margin="5,0,0,0" Grid.Row="2" Grid.RowSpan="8" Grid.Column="5" SelectionChanged="PetList_SelectionChanged"/>
         <Grid Margin="5,5,0,5" Grid.Row="10" Grid.Column="4">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <ComboBox x:Name="ItemToAdd" VerticalAlignment="Center"/>
-            <Button x:Name="AddItem" Margin="5,0,0,0" VerticalAlignment="Center" Grid.Column="1" Content="➕"/>
-            <Button x:Name="RemoveItem" Margin="5,0,0,0" VerticalAlignment="Center" Grid.Column="2" Content="➖"/>
+            <ComboBox x:Name="ItemToAdd" VerticalAlignment="Center" IsEnabled="{Binding Path=IsEditing}"/>
+            <Button x:Name="AddItem" Margin="5,0,0,1" VerticalAlignment="Bottom" Grid.Column="1" Content="➕" IsEnabled="{Binding Path=IsEditing}" Click="AddItem_Click"/>
+            <Button x:Name="RemoveItem" Margin="5,0,0,0" VerticalAlignment="Center" Grid.Column="2" Content="➖" IsEnabled="{Binding Path=IsItemSelected}" Click="RemoveItem_Click"/>
         </Grid>
         <Grid Margin="5,5,0,5" Grid.Row="10" Grid.Column="5">
             <Grid.ColumnDefinitions>
@@ -74,13 +78,14 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <ComboBox x:Name="PetToAdd" VerticalAlignment="Center"/>
-            <Button x:Name="AddPet" Margin="5,0,0,0" VerticalAlignment="Center" Grid.Column="1" Content="➕"/>
-            <Button x:Name="RemovePet" Margin="5,0,0,0" VerticalAlignment="Center" Grid.Column="2" Content="➖"/>
+            <ComboBox x:Name="PetToAdd" VerticalAlignment="Center" IsEnabled="{Binding Path=IsEditing}"/>
+            <Button x:Name="AddPet" Margin="5,0,0,0" VerticalAlignment="Center" Grid.Column="1" Content="➕" IsEnabled="{Binding Path=IsEditing}" Click="AddPet_Click"/>
+            <Button x:Name="RemovePet" Margin="5,0,0,0" VerticalAlignment="Center" Grid.Column="2" Content="➖" IsEnabled="{Binding Path=IsPetSelected}" Click="RemovePet_Click"/>
         </Grid>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Row="12" Grid.Column="4" Grid.ColumnSpan="2">
-            <Button x:Name="EditButton" Content="Edit" Width="75"/>
-            <Button x:Name="CloseButton" Margin="5,0,0,0" Content="Close" Width="75"/>
+            <Button x:Name="SaveButton" Content="Save" Width="75" IsEnabled="{Binding Path=IsEditing}" Click="SaveButton_Click"/>
+            <Button x:Name="CancelButton" Margin="5,0,0,0" Content="Cancel" Width="75" IsEnabled="{Binding Path=IsEditing}" Click="CancelButton_Click"/>
+            <Button x:Name="CloseButton" Margin="5,0,0,0" Content="Close" Width="75" Click="CloseButton_Click"/>
         </StackPanel>
     </Grid>
 </Window>

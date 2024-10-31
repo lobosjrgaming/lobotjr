@@ -1,5 +1,7 @@
 ﻿using Autofac;
 using LobotJR.Command;
+using LobotJR.Command.Controller.Equipment;
+using LobotJR.Command.Controller.Pets;
 using LobotJR.Command.Controller.Player;
 using LobotJR.Command.Controller.Twitch;
 using LobotJR.Command.Model.AccessControl;
@@ -602,7 +604,16 @@ namespace LobotJR.Interface
 
         private void PlayerButton_Click(object sender, RoutedEventArgs e)
         {
-
+            var connectionManager = Bot.Scope.Resolve<IConnectionManager>();
+            var dialog = new PlayerEditor(connectionManager, Bot.Scope.Resolve<UserController>(), Bot.Scope.Resolve<PlayerController>(), Bot.Scope.Resolve<EquipmentController>(), Bot.Scope.Resolve<PetController>())
+            {
+                Owner = this,
+                Topmost = true,
+                ShowInTaskbar = false
+            };
+            dialog.Left = Left + Width / 2 - dialog.Width / 2;
+            dialog.Top = Top + Height / 2 - dialog.Height / 2;
+            var result = dialog.ShowDialog();
         }
 
         private async void AccessButton_Click(object sender, RoutedEventArgs e)

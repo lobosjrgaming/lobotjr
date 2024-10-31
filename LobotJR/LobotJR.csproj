@@ -163,7 +163,11 @@
     <Compile Include="Interface\CommandExplorer.xaml.cs">
       <DependentUpon>CommandExplorer.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Interface\InverseBooleanConverter.cs" />
     <Compile Include="Interface\InverseVisibilityConverter.cs" />
+    <Compile Include="Interface\PlayerEditor.xaml.cs">
+      <DependentUpon>PlayerEditor.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Twitch\Api\Channel\ChannelUserResponse.cs" />
     <Compile Include="Twitch\Api\Channel\Moderators.cs" />
     <Compile Include="Twitch\Api\Channel\SubscriptionResponse.cs" />
@@ -542,6 +546,10 @@
     <Page Include="Interface\Main.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Interface\PlayerEditor.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Interface\Settings\DungeonSettings.xaml">
       <Generator>MSBuild:Compile</Generator>
