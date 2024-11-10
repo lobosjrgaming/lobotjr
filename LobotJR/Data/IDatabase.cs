@@ -41,6 +41,8 @@ namespace LobotJR.Data
         // Game Content Data
         IRepository<GameSettings> GameSettings { get; }
         IRepository<Fish> FishData { get; }
+        IRepository<FishRarity> FishRarityData { get; }
+        IRepository<FishSize> FishSizeData { get; }
         IRepository<Item> ItemData { get; }
         IRepository<ItemType> ItemTypeData { get; }
         IRepository<ItemSlot> ItemSlotData { get; }

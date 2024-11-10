@@ -47,6 +47,8 @@ namespace LobotJR.Data
 
         /** Content data */
         public DbSet<Fish> FishData { get; set; }
+        public DbSet<FishRarity> FishRarityData { get; set; }
+        public DbSet<FishSize> FishSizeData { get; set; }
         public DbSet<Item> ItemData { get; set; }
         public DbSet<ItemType> ItemTypeData { get; set; }
         public DbSet<ItemSlot> ItemSlotData { get; set; }

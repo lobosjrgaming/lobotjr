@@ -3,7 +3,7 @@ using LobotJR.Twitch.Model;
 
 namespace LobotJR.Test.Mocks
 {
-    public static class DataUtils
+    public static class MockUtils
     {
 
         /// <summary>

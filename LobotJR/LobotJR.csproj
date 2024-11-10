@@ -163,6 +163,14 @@
     <Compile Include="Interface\CommandExplorer.xaml.cs">
       <DependentUpon>CommandExplorer.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Interface\Content\PreviewTreeView.xaml.cs">
+      <DependentUpon>PreviewTreeView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\Content\ContentEditor.xaml.cs">
+      <DependentUpon>ContentEditor.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\Content\FishingTable.cs" />
+    <Compile Include="Interface\Content\IContentTable.cs" />
     <Compile Include="Interface\InverseBooleanConverter.cs" />
     <Compile Include="Interface\InverseVisibilityConverter.cs" />
     <Compile Include="Interface\PlayerEditor.xaml.cs">
@@ -319,6 +327,7 @@
     <Compile Include="Twitch\Api\Authentication\TokenData.cs" />
     <Compile Include="Twitch\Api\Authentication\TokenResponse.cs" />
     <Compile Include="Twitch\Api\Authentication\ValidationResponse.cs" />
+    <Compile Include="Utils\DataUtils.cs" />
     <Compile Include="Utils\FileUtils.cs" />
     <Compile Include="Utils\InterfaceUtils.cs" />
     <Compile Include="Utils\Api\NewtonsoftDeserializer.cs" />
@@ -540,6 +549,14 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Interface\CommandExplorer.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Interface\Content\PreviewTreeView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Interface\Content\ContentEditor.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

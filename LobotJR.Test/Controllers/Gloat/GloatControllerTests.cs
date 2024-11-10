@@ -134,7 +134,7 @@ namespace LobotJR.Test.Controllers.Gloat
         {
             var db = ConnectionManager.CurrentConnection;
             var user = db.Users.Read().First();
-            DataUtils.ClearFisherRecords(db, user);
+            MockUtils.ClearFisherRecords(db, user);
             var cost = SettingsManager.GetGameSettings().FishingGloatCost;
             var player = PlayerController.GetPlayerByUser(user);
             player.Currency = cost;

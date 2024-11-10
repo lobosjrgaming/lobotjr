@@ -251,35 +251,33 @@
                     </RichTextBox>
                 </StackPanel>
                 <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch"/>
-                <StackPanel Grid.Row="2" Background="Black">
-                    <Label Foreground="White">Last Group Formed: 2:00</Label>
-                    <RichTextBox Background="Black" Foreground="White" BorderBrush="{x:Null}" IsReadOnly="True">
-                        <FlowDocument>
-                            <Paragraph TextIndent="-12" Margin="12,0,0,0">
-                                <Run>1. 🔍Forming</Run>
-                                <LineBreak />
-                                <Run>🗡Lv.3 User</Run>
-                                <LineBreak />
-                                <Run>⚕Lv.12 Other</Run>
-                                <LineBreak />
-                                <Run>🏹Lv.8 Third</Run>
-                            </Paragraph>
-                        </FlowDocument>
-                    </RichTextBox>
-                    <RichTextBox Background="Black" Foreground="White" BorderBrush="{x:Null}" IsReadOnly="True">
-                        <FlowDocument>
-                            <Paragraph TextIndent="-12" Margin="12,0,0,0">
-                                <Run>2. Running Darkdelve</Run>
-                                <LineBreak />
-                                <Run>👟Lv.2 User</Run>
-                                <LineBreak />
-                                <Run>🧙‍Lv.9 Other</Run>
-                                <LineBreak />
-                                <Run>🧙‍Lv.16 Third</Run>
-                            </Paragraph>
-                        </FlowDocument>
-                    </RichTextBox>
-                </StackPanel>
+                <ScrollViewer Grid.Row="2" Background="Black">
+                    <StackPanel>
+                        <Label x:Name="DungeonLastGroup" Foreground="White">Last Group Formed: 2:00</Label>
+                        <RichTextBox x:Name="DungeonDetails" Background="Black" Foreground="White" BorderBrush="{x:Null}" IsReadOnly="True">
+                            <FlowDocument>
+                                <Paragraph TextIndent="-12" Margin="12,0,0,0">
+                                    <Run>1. 🔍Forming</Run>
+                                    <LineBreak />
+                                    <Run>🗡Lv.3 User</Run>
+                                    <LineBreak />
+                                    <Run>⚕Lv.12 Other</Run>
+                                    <LineBreak />
+                                    <Run>🏹Lv.8 Third</Run>
+                                </Paragraph>
+                                <Paragraph TextIndent="-12" Margin="12,0,0,0">
+                                    <Run>2. Running Darkdelve</Run>
+                                    <LineBreak />
+                                    <Run>👟Lv.2 User</Run>
+                                    <LineBreak />
+                                    <Run>🧙‍Lv.9 Other</Run>
+                                    <LineBreak />
+                                    <Run>🧙‍Lv.16 Third</Run>
+                                </Paragraph>
+                            </FlowDocument>
+                        </RichTextBox>
+                    </StackPanel>
+                </ScrollViewer>
             </Grid>
         </Grid>
     </DockPanel>

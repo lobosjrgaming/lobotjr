@@ -59,6 +59,11 @@ namespace LobotJR.Command.Model.Fishing
         /// The relative weight of this rarity.
         /// </summary>
         public float Weight { get; set; }
+
+        public override string ToString()
+        {
+            return $"{Id} ({Name})";
+        }
     }
 
     public class FishSize : TableObject
@@ -71,14 +76,10 @@ namespace LobotJR.Command.Model.Fishing
         /// Message given to user when a fish of this size is hooked.
         /// </summary>
         public string Message { get; set; }
+
+        public override string ToString()
+        {
+            return $"{Id} ({Name})";
+        }
     }
 }
-
-/**
-* TODO: seed the database with these sizes
-Tiny: "You feel a light tug at your line! Type !catch to reel it in!"
-Small: "Something nibbles at your bait! Type !catch to reel it in!"
-Medium: "A strong tug snags your bait! Type !catch to reel it in!"
-Large: "Whoa! Something big grabs your line! Type !catch to reel it in!"
-Huge: "You're almost pulled into the water! Something HUGE is hooked! Type !catch to reel it in!"
-*/

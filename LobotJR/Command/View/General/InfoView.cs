@@ -35,7 +35,7 @@ namespace LobotJR.Command.View.General
                 new CommandHandler("Help", this, CommandMethod.GetInfo(Help), "help", "faq"),
                 new CommandHandler("WolfcoinInfo", this, CommandMethod.GetInfo(WolfcoinInfo), "1"),
                 new CommandHandler("LevelInfo", this, CommandMethod.GetInfo(LevelInfo), "2"),
-                new CommandHandler("PetInfo", this, CommandMethod.GetInfo(LevelInfo), "3", "pethelp"),
+                new CommandHandler("PetInfo", this, CommandMethod.GetInfo(PetInfo), "3", "pethelp"),
                 new CommandHandler("ShopInfo", this, CommandMethod.GetInfo(ShopInfo), "shop"),
                 new CommandHandler("BugReport", new CommandExecutor(this,CommandMethod.GetInfo<string>(ReportBug), true), "bug")
             };

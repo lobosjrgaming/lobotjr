@@ -124,7 +124,7 @@
     <Compile Include="Controllers\Player\PlayerControllerTests.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="Mocks\AutofacMockSetup.cs" />
-    <Compile Include="Mocks\DataUtils.cs" />
+    <Compile Include="Mocks\MockUtils.cs" />
     <Compile Include="Mocks\MockCommandView.cs" />
     <Compile Include="Mocks\MockConnectionManager.cs" />
     <Compile Include="Mocks\MockInitializer.cs" />

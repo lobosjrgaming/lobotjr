@@ -6,6 +6,7 @@ using LobotJR.Command.Controller.Player;
 using LobotJR.Command.Controller.Twitch;
 using LobotJR.Command.Model.AccessControl;
 using LobotJR.Data;
+using LobotJR.Interface.Content;
 using LobotJR.Interface.Settings;
 using LobotJR.Twitch;
 using LobotJR.Twitch.Api.Authentication;
@@ -599,7 +600,16 @@ namespace LobotJR.Interface
 
         private void ContentButton_Click(object sender, RoutedEventArgs e)
         {
-
+            var connectionManager = Bot.Scope.Resolve<IConnectionManager>();
+            var dialog = new ContentEditor(connectionManager)
+            {
+                Owner = this,
+                Topmost = true,
+                ShowInTaskbar = false
+            };
+            dialog.Left = Left + Width / 2 - dialog.Width / 2;
+            dialog.Top = Top + Height / 2 - dialog.Height / 2;
+            dialog.ShowDialog();
         }
 
         private void PlayerButton_Click(object sender, RoutedEventArgs e)

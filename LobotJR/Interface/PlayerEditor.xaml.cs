@@ -8,6 +8,7 @@ using LobotJR.Command.Model.Player;
 using LobotJR.Data;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -177,8 +178,7 @@ namespace LobotJR.Interface
 
         private void RemoveItem_Click(object sender, RoutedEventArgs e)
         {
-            var selected = EquipList.SelectedItem as Inventory;
-            if (selected != null)
+            if (EquipList.SelectedItem is Inventory selected)
             {
                 EquipList.Items.Remove(selected);
                 if (selected.Id > 0)
@@ -224,8 +224,7 @@ namespace LobotJR.Interface
 
         private void RemovePet_Click(object sender, RoutedEventArgs e)
         {
-            var selected = PetList.SelectedItem as Stable;
-            if (selected != null)
+            if (PetList.SelectedItem is Stable selected)
             {
                 PetList.Items.Remove(selected);
                 if (selected.Id > 0)
@@ -241,6 +240,7 @@ namespace LobotJR.Interface
             {
                 var dbPlayer = db.PlayerCharacters.FirstOrDefault(x => x.UserId == Player.UserId);
                 var levelFromXp = PlayerController.LevelFromExperience(Player.Experience);
+                Player.Level = Math.Min(Player.Level, PlayerController.MaxLevel);
                 if (Player.Level != levelFromXp)
                 {
                     var result = MessageBox.Show("The Level and XP values do not match. Would you like to keep the level and update the XP value (yes) or update the level to match the XP (no)", "Experience Level Conflict", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
