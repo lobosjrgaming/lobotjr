@@ -163,13 +163,29 @@
     <Compile Include="Interface\CommandExplorer.xaml.cs">
       <DependentUpon>CommandExplorer.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Interface\Content\CharacterClassTable.cs" />
+    <Compile Include="Interface\Content\DungeonModeTable.cs" />
+    <Compile Include="Interface\Content\DungeonTable.cs" />
+    <Compile Include="Interface\Content\EncounterLevelTable.cs" />
+    <Compile Include="Interface\Content\EncounterTable.cs" />
+    <Compile Include="Interface\Content\EquippablesTable.cs" />
+    <Compile Include="Interface\Content\FishRarityTable.cs" />
+    <Compile Include="Interface\Content\FishSizeTable.cs" />
+    <Compile Include="Interface\Content\ItemQualityTable.cs" />
+    <Compile Include="Interface\Content\ItemSlotTable.cs" />
+    <Compile Include="Interface\Content\ItemTable.cs" />
+    <Compile Include="Interface\Content\ItemTypeTable.cs" />
+    <Compile Include="Interface\Content\LevelRangeTable.cs" />
+    <Compile Include="Interface\Content\LootTable.cs" />
+    <Compile Include="Interface\Content\PetRarityTable.cs" />
+    <Compile Include="Interface\Content\PetTable.cs" />
     <Compile Include="Interface\Content\PreviewTreeView.xaml.cs">
       <DependentUpon>PreviewTreeView.xaml</DependentUpon>
     </Compile>
     <Compile Include="Interface\Content\ContentEditor.xaml.cs">
       <DependentUpon>ContentEditor.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Interface\Content\FishingTable.cs" />
+    <Compile Include="Interface\Content\FishTable.cs" />
     <Compile Include="Interface\Content\IContentTable.cs" />
     <Compile Include="Interface\InverseBooleanConverter.cs" />
     <Compile Include="Interface\InverseVisibilityConverter.cs" />

@@ -15,5 +15,10 @@ namespace LobotJR.Command.Model.Equipment
         /// How many of items a player can equip in this slot.
         /// </summary>
         public int MaxEquipped { get; set; } = 1;
+
+        public override string ToString()
+        {
+            return $"{Id} ({Name})";
+        }
     }
 }

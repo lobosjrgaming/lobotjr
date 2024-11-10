@@ -15,5 +15,10 @@ namespace LobotJR.Command.Model.Equipment
         /// The base drop rate for items of this quality.
         /// </summary>
         public int DropRatePenalty { get; set; }
+
+        public override string ToString()
+        {
+            return $"{Id} ({Name})";
+        }
     }
 }

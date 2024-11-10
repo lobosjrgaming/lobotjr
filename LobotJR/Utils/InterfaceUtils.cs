@@ -71,6 +71,17 @@ namespace LobotJR.Utils
         }
 
         /// <summary>
+        /// Creates a data grid text column from a property name.
+        /// </summary>
+        /// <param name="propertyName">The name of the property.</param>
+        /// <param name="isReadOnly">True if the column should be read-only.</param>
+        /// <returns>A DataGridColumn that binds the given property.</returns>
+        public static DataGridColumn CreateColumnCheckBox(string propertyName)
+        {
+            return new DataGridCheckBoxColumn() { Header = PascalToReadable(propertyName), Binding = new Binding(propertyName) };
+        }
+
+        /// <summary>
         /// Creates a data grid combo box column from a property name, with
         /// options for the combo box.
         /// </summary>

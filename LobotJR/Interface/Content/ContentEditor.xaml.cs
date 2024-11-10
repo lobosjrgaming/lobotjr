@@ -1,5 +1,6 @@
 ﻿using LobotJR.Data;
 using LobotJR.Utils;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -20,44 +21,44 @@ namespace LobotJR.Interface.Content
 
         private readonly Dictionary<string, List<IContentTable>> Tables = new Dictionary<string, List<IContentTable>>()
         {
-/*
             {
                 "Dungeon",
-                new List<Type>() {
-                    typeof(Dungeon),
-                    typeof(DungeonMode),
-                    typeof(Encounter),
-                    typeof(LevelRange),
-                    typeof(Loot),
+                new List<IContentTable>()
+                {
+                    new DungeonTable(),
+                    new DungeonModeTable(),
+                    new EncounterTable(),
+                    new EncounterLevelTable(),
+                    new LevelRangeTable(),
+                    new LootTable(),
                 }
             },
             {
                 "Player",
-                new List<Type>()
+                new List<IContentTable>()
                 {
-                    typeof(CharacterClass),
-                    typeof(Equippables),
+                    new CharacterClassTable(),
+                    new EquippablesTable(),
                 }
             },
             {
                 "Item",
-                new List<Type>()
+                new List<IContentTable>()
                 {
-                    typeof(Item),
-                    typeof(ItemQuality),
-                    typeof(ItemSlot),
-                    typeof(ItemType),
+                    new ItemTable(),
+                    new ItemQualityTable(),
+                    new ItemSlotTable(),
+                    new ItemTypeTable(),
                 }
             },
             {
                 "Pet",
-                new List<Type>()
+                new List<IContentTable>()
                 {
-                    typeof(Pet),
-                    typeof(PetRarity),
+                    new PetTable(),
+                    new PetRarityTable()
                 }
             },
-*/
             {
                 "Fish",
                 new List<IContentTable>()
@@ -71,7 +72,7 @@ namespace LobotJR.Interface.Content
         private Dictionary<string, IContentTable> TableMap = new Dictionary<string, IContentTable>();
         private readonly IConnectionManager ConnectionManager;
         private IContentTable CurrentTable;
-        private bool IsReverting;
+        private ObservableCollection<TableObject> CurrentSource;
         private TreeViewItem SelectedItem;
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -142,9 +143,9 @@ namespace LobotJR.Interface.Content
                             {
                                 EditorTable.Columns.Add(column);
                             }
-                            var source = new ObservableCollection<TableObject>(CurrentTable.GetSource(db));
-                            source.CollectionChanged += Source_CollectionChanged;
-                            EditorTable.ItemsSource = source;
+                            CurrentSource = new ObservableCollection<TableObject>(CurrentTable.GetSource(db).ToList());
+                            CurrentSource.CollectionChanged += Source_CollectionChanged;
+                            EditorTable.ItemsSource = CurrentSource;
                         }
                     }
                 }
@@ -203,6 +204,19 @@ namespace LobotJR.Interface.Content
         private void EditorTable_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
         {
             DirtyForm();
+        }
+
+        private void AddRow_Click(object sender, RoutedEventArgs e)
+        {
+            CurrentSource.Add(CurrentTable.ContentType.GetConstructor(Array.Empty<Type>()).Invoke(Array.Empty<object>()) as TableObject);
+        }
+
+        private void DeleteRow_Click(object sender, RoutedEventArgs e)
+        {
+            while (EditorTable.SelectedItems.Count > 0)
+            {
+                CurrentSource.Remove(EditorTable.SelectedItems[0] as TableObject);
+            }
         }
     }
 }

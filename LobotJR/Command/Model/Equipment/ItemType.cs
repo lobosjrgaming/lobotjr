@@ -11,5 +11,10 @@ namespace LobotJR.Command.Model.Equipment
         /// The name for the type or category of item.
         /// </summary>
         public string Name { get; set; }
+
+        public override string ToString()
+        {
+            return $"{Id} ({Name})";
+        }
     }
 }

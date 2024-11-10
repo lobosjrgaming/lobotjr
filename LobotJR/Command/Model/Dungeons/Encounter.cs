@@ -36,5 +36,10 @@ namespace LobotJR.Command.Model.Dungeons
         /// cleared.
         /// </summary>
         public string CompleteText { get; set; }
+
+        public override string ToString()
+        {
+            return $"{Id} ({Enemy})";
+        }
     }
 }

@@ -71,5 +71,10 @@ namespace LobotJR.Command.Model.Equipment
         /// The chance for a player to avoid death after failing a dungeon.
         /// </summary>
         public float PreventDeathBonus { get; set; }
+
+        public override string ToString()
+        {
+            return $"{Id} ({Name})";
+        }
     }
 }

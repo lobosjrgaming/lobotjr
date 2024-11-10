@@ -36,5 +36,10 @@ namespace LobotJR.Command.Model.Dungeons
         /// The collection of encounters in this dungeon.
         /// </summary>
         public virtual List<Encounter> Encounters { get; set; }
+
+        public override string ToString()
+        {
+            return $"{Id} ({Name})";
+        }
     }
 }

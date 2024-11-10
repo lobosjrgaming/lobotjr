@@ -218,67 +218,11 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="4*"/>
-                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <RichTextBox x:Name="LogOutput" FontFamily="Consolas" Background="Black" Foreground="White" BorderBrush="{x:Null}" VerticalScrollBarVisibility="Auto" IsReadOnly="True">
                 <FlowDocument LineHeight="1"/>
             </RichTextBox>
-            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch"/>
-            <Grid Grid.Column="2">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <StackPanel Grid.Row="0" Background="Black">
-                    <Label Foreground="White">Tournament: Active</Label>
-                    <Label Foreground="White" HorizontalAlignment="Right">Time remaining: 15:00</Label>
-                    <RichTextBox Background="Black" Foreground="White" BorderBrush="{x:Null}" IsReadOnly="True">
-                        <FlowDocument>
-                            <Paragraph TextIndent="-12" Margin="12,0,0,0">
-                                <Run>2 participants</Run>
-                                <LineBreak />
-                                <Run>1. User (10 points)</Run>
-                                <LineBreak />
-                                <Run>2. Other (5 points)</Run>
-                            </Paragraph>
-                        </FlowDocument>
-                    </RichTextBox>
-                </StackPanel>
-                <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch"/>
-                <ScrollViewer Grid.Row="2" Background="Black">
-                    <StackPanel>
-                        <Label x:Name="DungeonLastGroup" Foreground="White">Last Group Formed: 2:00</Label>
-                        <RichTextBox x:Name="DungeonDetails" Background="Black" Foreground="White" BorderBrush="{x:Null}" IsReadOnly="True">
-                            <FlowDocument>
-                                <Paragraph TextIndent="-12" Margin="12,0,0,0">
-                                    <Run>1. 🔍Forming</Run>
-                                    <LineBreak />
-                                    <Run>🗡Lv.3 User</Run>
-                                    <LineBreak />
-                                    <Run>⚕Lv.12 Other</Run>
-                                    <LineBreak />
-                                    <Run>🏹Lv.8 Third</Run>
-                                </Paragraph>
-                                <Paragraph TextIndent="-12" Margin="12,0,0,0">
-                                    <Run>2. Running Darkdelve</Run>
-                                    <LineBreak />
-                                    <Run>👟Lv.2 User</Run>
-                                    <LineBreak />
-                                    <Run>🧙‍Lv.9 Other</Run>
-                                    <LineBreak />
-                                    <Run>🧙‍Lv.16 Third</Run>
-                                </Paragraph>
-                            </FlowDocument>
-                        </RichTextBox>
-                    </StackPanel>
-                </ScrollViewer>
-            </Grid>
         </Grid>
     </DockPanel>
 </Window>

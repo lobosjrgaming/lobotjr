@@ -24,6 +24,7 @@ namespace LobotJR.Interface.Content
 
         public event PreviewRoutedPropertyChangedEventHandler<object> PreviewSelectedItemChanged;
         private bool IsReverting = false;
+        private object CurrentSelection;
 
         public PreviewTreeView() : base() { }
 
@@ -36,6 +37,7 @@ namespace LobotJR.Interface.Content
                 if (!preview.Cancel)
                 {
                     base.OnSelectedItemChanged(e);
+                    CurrentSelection = e.NewValue;
                 }
                 else
                 {
@@ -45,7 +47,10 @@ namespace LobotJR.Interface.Content
             }
             else
             {
-                IsReverting = false;
+                if (e.OldValue == CurrentSelection)
+                {
+                    IsReverting = false;
+                }
             }
         }
     }

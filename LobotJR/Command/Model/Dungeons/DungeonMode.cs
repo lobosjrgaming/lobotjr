@@ -22,5 +22,10 @@ namespace LobotJR.Command.Model.Dungeons
         /// is specified.
         /// </summary>
         public bool IsDefault { get; set; }
+
+        public override string ToString()
+        {
+            return $"{Id} ({Name})";
+        }
     }
 }
