@@ -1,5 +1,5 @@
-﻿using LobotJR.Shared.Channel;
-using LobotJR.Shared.User;
+﻿using LobotJR.Twitch.Api.Channel;
+using LobotJR.Twitch.Api.User;
 using LobotJR.Twitch.Model;
 using System;
 using System.Collections.Generic;

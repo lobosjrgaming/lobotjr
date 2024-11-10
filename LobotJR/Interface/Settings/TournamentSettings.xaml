@@ -1,0 +1,65 @@
+﻿<UserControl x:Class="LobotJR.Interface.Settings.TournamentSettings"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:LobotJR.Interface.Settings"
+             xmlns:interface="clr-namespace:LobotJR.Interface"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Label Content="Duration" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="1" Grid.Column="1" TextWrapping="Wrap">The duration (in minutes) of a fishing tournament.</TextBlock>
+        <Label Content="Interval" Grid.Row="2" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="3" Grid.Column="1" TextWrapping="Wrap">How long to wait (in minutes) after a tournament finishes before starting the next one.</TextBlock>
+        <Label Content="Cast Time (Min)" Grid.Row="4"  HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="5" Grid.Column="1" TextWrapping="Wrap">The minimum time (in seconds) it takes after casting to hook a fish during a tournament.</TextBlock>
+        <Label Content="Cast Time (Max)" Grid.Row="6" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="7" Grid.Column="1" TextWrapping="Wrap">The maximum time (in seconds) it takes after casting to hook a fish during a tournament.</TextBlock>
+        <TextBox x:Name="Duration" Grid.Column="1" VerticalAlignment="Center">
+            <Binding Path="GameSettings.FishingTournamentDuration">
+                <Binding.ValidationRules>
+                    <interface:NumericInputValidator IsReal="False" IsNegative="False"/>
+                </Binding.ValidationRules>
+            </Binding>
+        </TextBox>
+        <TextBox x:Name="Interval" Grid.Row="2" Grid.Column="1" VerticalAlignment="Center">
+            <Binding Path="GameSettings.FishingTournamentInterval">
+                <Binding.ValidationRules>
+                    <interface:NumericInputValidator IsReal="False" IsNegative="False"/>
+                </Binding.ValidationRules>
+            </Binding>
+        </TextBox>
+        <TextBox x:Name="CastTimeMin" Grid.Row="4" Grid.Column="1" VerticalAlignment="Center">
+            <Binding Path="GameSettings.FishingTournamentCastMinimum">
+                <Binding.ValidationRules>
+                    <interface:NumericInputValidator IsReal="False" IsNegative="False"/>
+                </Binding.ValidationRules>
+            </Binding>
+        </TextBox>
+        <TextBox x:Name="CastTimeMax" Grid.Row="6" Grid.Column="1" VerticalAlignment="Center">
+            <Binding Path="GameSettings.FishingTournamentCastMaximum">
+                <Binding.ValidationRules>
+                    <interface:NumericInputValidator IsReal="False" IsNegative="False"/>
+                </Binding.ValidationRules>
+            </Binding>
+        </TextBox>
+    </Grid>
+</UserControl>

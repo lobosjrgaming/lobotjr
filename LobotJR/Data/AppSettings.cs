@@ -39,5 +39,16 @@
         /// Whether or not to enable Twitch Plays instead of the normal bot.
         /// </summary>
         public bool TwitchPlays { get; set; } = false;
+
+        public void CopyFrom(AppSettings other)
+        {
+            UserDatabaseUpdateTime = other.UserDatabaseUpdateTime;
+            UserLookupBatchTime = other.UserLookupBatchTime;
+            MaxWhisperRecipients = other.MaxWhisperRecipients;
+            LoggingFile = other.LoggingFile;
+            LoggingMaxSize = other.LoggingMaxSize;
+            LoggingMaxArchives = other.LoggingMaxArchives;
+            TwitchPlays = other.TwitchPlays;
+        }
     }
 }

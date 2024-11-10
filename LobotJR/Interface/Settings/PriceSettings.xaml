@@ -1,0 +1,107 @@
+﻿<UserControl x:Class="LobotJR.Interface.Settings.PriceSettings"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:LobotJR.Interface.Settings"
+             xmlns:interface="clr-namespace:LobotJR.Interface"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Label Content="Respec" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="1" Grid.Column="1" TextWrapping="Wrap">Cost to respec a player's class.</TextBlock>
+        <Label Content="Pry" Grid.Row="2" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="3" Grid.Column="1" TextWrapping="Wrap">Cost to get the stats of another player.</TextBlock>
+        <Label Content="Feed Pet" Grid.Row="4" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="5" Grid.Column="1" TextWrapping="Wrap">Cost to feed a pet.</TextBlock>
+        <Label Content="Dungeon (Base)" Grid.Row="6" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="7" Grid.Column="1" TextWrapping="Wrap">Base cost to run a dungeon.</TextBlock>
+        <Label Content="Dungeon (Per Level)" Grid.Row="8" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="9" Grid.Column="1" TextWrapping="Wrap">Additional cost to run a dungeon, multiplied by the player's level.</TextBlock>
+        <Label Content="Gloat (Level)" Grid.Row="10" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="11" Grid.Column="1" TextWrapping="Wrap">Cost to gloat about the player's level.</TextBlock>
+        <Label Content="Gloat (Pet)" Grid.Row="12" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="13" Grid.Column="1" TextWrapping="Wrap">Cost to gloat about the player's active pet.</TextBlock>
+        <Label Content="Gloat (Fish)" Grid.Row="14" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="15" Grid.Column="1" TextWrapping="Wrap">Cost to gloat about a player's fishing record.</TextBlock>
+        <TextBox x:Name="RespecCost" Grid.Column="1" VerticalAlignment="Center">
+            <Binding Path="GameSettings.RespecCost">
+                <Binding.ValidationRules>
+                    <interface:NumericInputValidator IsReal="False" IsNegative="False"/>
+                </Binding.ValidationRules>
+            </Binding>
+        </TextBox>
+        <TextBox x:Name="PryCost" Grid.Row="2" Grid.Column="1" VerticalAlignment="Center">
+            <Binding Path="GameSettings.PryCost">
+                <Binding.ValidationRules>
+                    <interface:NumericInputValidator IsReal="False" IsNegative="False"/>
+                </Binding.ValidationRules>
+            </Binding>
+        </TextBox>
+        <TextBox x:Name="FeedPetCost" Grid.Row="4" Grid.Column="1" VerticalAlignment="Center">
+            <Binding Path="GameSettings.PetFeedingCost">
+                <Binding.ValidationRules>
+                    <interface:NumericInputValidator IsReal="False" IsNegative="False"/>
+                </Binding.ValidationRules>
+            </Binding>
+        </TextBox>
+        <TextBox x:Name="BaseDungeonCost" Grid.Row="6" Grid.Column="1" VerticalAlignment="Center">
+            <Binding Path="GameSettings.DungeonBaseCost">
+                <Binding.ValidationRules>
+                    <interface:NumericInputValidator IsReal="False" IsNegative="False"/>
+                </Binding.ValidationRules>
+            </Binding>
+        </TextBox>
+        <TextBox x:Name="LevelDungeonCost" Grid.Row="8" Grid.Column="1" VerticalAlignment="Center">
+            <Binding Path="GameSettings.DungeonLevelCost">
+                <Binding.ValidationRules>
+                    <interface:NumericInputValidator IsReal="False" IsNegative="False"/>
+                </Binding.ValidationRules>
+            </Binding>
+        </TextBox>
+        <TextBox x:Name="GloatLevelCost" Grid.Row="10" Grid.Column="1" VerticalAlignment="Center">
+            <Binding Path="GameSettings.LevelGloatCost">
+                <Binding.ValidationRules>
+                    <interface:NumericInputValidator IsReal="False" IsNegative="False"/>
+                </Binding.ValidationRules>
+            </Binding>
+        </TextBox>
+        <TextBox x:Name="GloatPetCost" Grid.Row="12" Grid.Column="1" VerticalAlignment="Center">
+            <Binding Path="GameSettings.PetGloatCost">
+                <Binding.ValidationRules>
+                    <interface:NumericInputValidator IsReal="False" IsNegative="False"/>
+                </Binding.ValidationRules>
+            </Binding>
+        </TextBox>
+        <TextBox x:Name="GloatFishCost" Grid.Row="14" Grid.Column="1" VerticalAlignment="Center">
+            <Binding Path="GameSettings.FishingGloatCost">
+                <Binding.ValidationRules>
+                    <interface:NumericInputValidator IsReal="False" IsNegative="False"/>
+                </Binding.ValidationRules>
+            </Binding>
+        </TextBox>
+    </Grid>
+</UserControl>

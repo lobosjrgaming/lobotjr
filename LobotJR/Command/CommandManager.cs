@@ -26,6 +26,7 @@ namespace LobotJR.Command
         private readonly Dictionary<string, string> commandStringToIdMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, CommandExecutor> commandIdToExecutorMap = new Dictionary<string, CommandExecutor>();
         private readonly Dictionary<string, CompactExecutor> compactIdToExecutorMap = new Dictionary<string, CompactExecutor>();
+        private readonly Dictionary<string, IEnumerable<string>> commandIdAliases = new Dictionary<string, IEnumerable<string>>();
         private readonly List<string> whisperOnlyCommands = new List<string>();
         private readonly List<string> timeoutCommands = new List<string>();
         private readonly Dictionary<string, Regex> commandStringRegexMap = new Dictionary<string, Regex>();
@@ -50,6 +51,17 @@ namespace LobotJR.Command
                 return commandIdToExecutorMap.Keys
                     .Union(compactIdToExecutorMap.Keys)
                     .ToArray();
+            }
+        }
+
+        /// <summary>
+        /// List of command strings and aliases for registered commands.
+        /// </summary>
+        public IEnumerable<string> CommandStrings
+        {
+            get
+            {
+                return commandStringToIdMap.Keys.ToList();
             }
         }
 
@@ -82,6 +94,7 @@ namespace LobotJR.Command
                     timeoutCommands.Add(commandId);
                 }
             }
+            commandIdAliases.Add(commandId, command.CommandStrings);
             var exceptions = new List<Exception>();
             foreach (var commandString in command.CommandStrings)
             {
@@ -126,9 +139,9 @@ namespace LobotJR.Command
             }
         }
 
-        private void View_PushNotification(User user, CommandResult commandResult)
+        private async Task View_PushNotification(User user, CommandResult commandResult)
         {
-            PushNotifications?.Invoke(user, commandResult);
+            await PushNotifications?.Invoke(user, commandResult);
         }
 
         private bool CanUserExecute(string commandId, User user)
@@ -206,6 +219,51 @@ namespace LobotJR.Command
                 return Commands.Any(x => commandRegex.IsMatch(x));
             }
             return Commands.Any(x => x.Equals(commandId));
+        }
+
+        /// <summary>
+        /// Finds all commands with ids that match the given pattern.
+        /// </summary>
+        /// <param name="pattern">A command pattern containing one or more
+        /// wildcard (*) characters.</param>
+        /// <returns>A collection of matching command ids.</returns>
+        public IEnumerable<string> GetMatchingCommands(string pattern)
+        {
+            pattern = pattern.Replace(".", "\\.").Replace("*", ".*");
+            var regex = new Regex($"^{pattern}$");
+            return Commands.Where(x => regex.IsMatch(x));
+        }
+
+        /// <summary>
+        /// Describes the parameters for a command.
+        /// </summary>
+        /// <param name="commandName">The name of the command to check.</param>
+        /// <returns>A string containing the parameter names and types for the
+        /// command.</returns>
+        public string DescribeCommand(string commandName)
+        {
+            if (commandStringToIdMap.TryGetValue(commandName, out var id))
+            {
+                if (commandIdToExecutorMap.TryGetValue(id, out var executor))
+                {
+                    return executor.DescribeParameters();
+                }
+            }
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// Gets all aliases for a given command id.
+        /// </summary>
+        /// <param name="commandId">The id of a command.</param>
+        /// <returns>A list of aliases that can be used to execute the command.</returns>
+        public IEnumerable<string> GetAliases(string commandId)
+        {
+            if (commandIdAliases.TryGetValue(commandId, out var aliases))
+            {
+                return aliases;
+            }
+            return Enumerable.Empty<string>();
         }
 
         private CommandResult PrepareCompactResponse(CommandRequest request, User user, ICompactResponse response)
@@ -339,17 +397,36 @@ namespace LobotJR.Command
         /// <param name="result">The command result object.</param>
         /// <param name="irc">The twitch irc client to send messages through.</param>
         /// <param name="twitchClient">The twitch API client to send whispers through.</param>
-        public async Task HandleResult(string whisperMessage, CommandResult result, ITwitchIrcClient irc, ITwitchClient twitchClient)
+        /// <param name="isInternal">Whether this was an internal command
+        /// invoked through the UI, or a normal message sent through Twitch.</param>
+        public async Task HandleResult(string whisperMessage, CommandResult result, ITwitchIrcClient irc, ITwitchClient twitchClient, bool isInternal = false)
         {
             if (result.TimeoutSender)
             {
-                await twitchClient.TimeoutAsync(result.Sender, 1, result.TimeoutMessage);
+                if (isInternal)
+                {
+                    Logger.Warn("This command would have attempted to time you out if sent through Twitch.");
+                }
+                else
+                {
+                    await twitchClient.TimeoutAsync(result.Sender, 1, result.TimeoutMessage);
+                }
             }
             if (result.Responses?.Count > 0)
             {
-                foreach (var response in result.Responses)
+                if (isInternal)
                 {
-                    twitchClient.QueueWhisper(result.Sender, response);
+                    foreach (var response in result.Responses)
+                    {
+                        Logger.Info(response);
+                    }
+                }
+                else
+                {
+                    foreach (var response in result.Responses)
+                    {
+                        twitchClient.QueueWhisper(result.Sender, response);
+                    }
                 }
             }
             if (result.Messages?.Count > 0)
@@ -357,6 +434,13 @@ namespace LobotJR.Command
                 foreach (var broadcastMessage in result.Messages)
                 {
                     irc.QueueMessage(broadcastMessage);
+                }
+                if (isInternal)
+                {
+                    foreach (var message in result.Messages)
+                    {
+                        Logger.Info(message);
+                    }
                 }
             }
             if (result.Errors?.Count > 0)

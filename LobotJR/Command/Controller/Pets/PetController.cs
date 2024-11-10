@@ -131,6 +131,34 @@ namespace LobotJR.Command.Controller.Pets
             return active;
         }
 
+        private Stable CreateStable(User user, Pet pet, bool isSparkly)
+        {
+            var max = SettingsManager.GetGameSettings().PetHungerMax;
+            return new Stable()
+            {
+                Name = pet.Name,
+                UserId = user.TwitchId,
+                Pet = pet,
+                IsSparkly = isSparkly,
+                Hunger = max,
+                Level = 1
+            };
+        }
+
+        /// <summary>
+        /// Creates a new stable record and adds it to the database.
+        /// </summary>
+        /// <param name="user">The user to add the record for.</param>
+        /// <param name="pet">The pet to add.</param>
+        /// <param name="isSparkly">Whether the pet is sparkly.</param>
+        /// <returns>The stable record that was added.</returns>
+        public Stable AddStableRecord(User user, Pet pet, bool isSparkly = false)
+        {
+            var stable = CreateStable(user, pet, isSparkly);
+            ConnectionManager.CurrentConnection.Stables.Create(stable);
+            return stable;
+        }
+
         /// <summary>
         /// Deletes a pet, permanently removing it from a player's stable.
         /// </summary>
@@ -287,18 +315,14 @@ namespace LobotJR.Command.Controller.Pets
         public Stable GrantPet(User user, PetRarity rarity)
         {
             var availablePets = ConnectionManager.CurrentConnection.PetData.Read(x => x.Rarity.Equals(rarity)).ToList();
-            var stable = GetStableForUser(user).Select(x => x.Pet).ToList();
+            var isSparkly = Random.NextDouble() < 0.01f;
+            var stable = GetStableForUser(user).Where(x => x.IsSparkly == isSparkly).Select(x => x.Pet).ToList();
             var unownedPets = availablePets.Except(stable);
+            var max = SettingsManager.GetGameSettings().PetHungerMax;
             if (unownedPets.Any())
             {
                 var toGrant = unownedPets.ElementAt(Random.Next(0, unownedPets.Count()));
-                var toAdd = new Stable()
-                {
-                    Name = toGrant.Name,
-                    UserId = user.TwitchId,
-                    Pet = toGrant,
-                    IsSparkly = Random.NextDouble() < 0.01f
-                };
+                var toAdd = CreateStable(user, toGrant, isSparkly);
                 ConnectionManager.CurrentConnection.Stables.Create(toAdd);
                 PetFound?.Invoke(user, toAdd);
                 return toAdd;

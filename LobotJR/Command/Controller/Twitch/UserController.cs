@@ -1,8 +1,8 @@
 ﻿using LobotJR.Command.Model.Twitch;
 using LobotJR.Data;
-using LobotJR.Shared.Channel;
-using LobotJR.Shared.User;
 using LobotJR.Twitch;
+using LobotJR.Twitch.Api.Channel;
+using LobotJR.Twitch.Api.User;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using NLog;
@@ -59,7 +59,7 @@ namespace LobotJR.Command.Controller.Twitch
         /// none exists.</returns>
         public User GetUserByName(string username)
         {
-            return ConnectionManager.CurrentConnection.Users.Read(x => x.Username.Equals(username, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            return ConnectionManager.CurrentConnection.Users.FirstOrDefault(x => x.Username.ToLower().Equals(username));
         }
 
         /// <summary>
@@ -386,15 +386,17 @@ namespace LobotJR.Command.Controller.Twitch
             var chatters = await TwitchClient.GetChatterListAsync();
             if (chatters.Any())
             {
-                var databaseUsers = ConnectionManager.CurrentConnection.Users.Read();
-                var databaseUserDict = databaseUsers.ToDictionary(x => x.TwitchId, x => x);
-                var userDict = chatters.ToDictionary(x => x.UserId, x => x.UserName);
-                var foundIds = userDict.Keys.Intersect(databaseUserDict.Keys).ToList();
-                var newIds = userDict.Keys.Except(databaseUserDict.Keys).ToList();
-                var newUsers = newIds.Select(x => new User(userDict[x], x)).ToList();
-                ConnectionManager.CurrentConnection.Users.BatchCreate(newUsers, newUsers.Count, Logger, "User");
-                ConnectionManager.CurrentConnection.Commit();
-                return foundIds.Select(x => databaseUserDict[x]).Concat(newUsers);
+                var ids = chatters.Select(x => x.UserId);
+                var existingUsers = ConnectionManager.CurrentConnection.Users.Read(x => ids.Contains(x.TwitchId)).ToList();
+                var existingIds = existingUsers.Select(x => x.TwitchId);
+                var missingUsers = chatters.Where(x => !existingIds.Contains(x.UserId));
+                if (missingUsers.Any())
+                {
+                    var newUsers = missingUsers.Select(x => new User(x.UserName, x.UserId));
+                    newUsers = ConnectionManager.CurrentConnection.Users.BatchCreate(newUsers, newUsers.Count(), Logger, "User");
+                    existingUsers = existingUsers.Concat(newUsers).ToList();
+                }
+                return existingUsers;
             }
             return Array.Empty<User>();
         }

@@ -35,5 +35,10 @@ namespace LobotJR.Command.Model.Equipment
         /// The datetime for when the inventory record was created.
         /// </summary>
         public DateTime TimeAdded { get; set; }
+
+        public override string ToString()
+        {
+            return $"{Item.Name}{(IsEquipped ? " (Equipped)" : "")}";
+        }
     }
 }

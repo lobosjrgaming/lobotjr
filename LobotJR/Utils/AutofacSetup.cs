@@ -22,11 +22,11 @@ using LobotJR.Command.View.Player;
 using LobotJR.Command.View.Twitch;
 using LobotJR.Data;
 using LobotJR.Data.Migration;
-using LobotJR.Shared.Authentication;
-using LobotJR.Shared.Client;
 using LobotJR.Trigger;
 using LobotJR.Trigger.Responder;
 using LobotJR.Twitch;
+using LobotJR.Twitch.Api.Authentication;
+using LobotJR.Twitch.Api.Client;
 
 namespace LobotJR.Utils
 {
@@ -47,6 +47,7 @@ namespace LobotJR.Utils
             builder.RegisterType<DatabaseUpdate_1_0_6_1_0_7>().As<IDatabaseUpdate>().InstancePerLifetimeScope();
             builder.RegisterType<DatabaseUpdate_1_0_7_1_1_0>().As<IDatabaseUpdate>().InstancePerLifetimeScope();
             builder.RegisterType<DatabaseUpdate_1_1_0_1_1_6>().As<IDatabaseUpdate>().InstancePerLifetimeScope();
+            builder.RegisterType<DatabaseUpdate_1_1_6_1_2_0>().As<IDatabaseUpdate>().InstancePerLifetimeScope();
 
             builder.RegisterType<SqliteDatabaseUpdater>().AsSelf().InstancePerLifetimeScope();
 

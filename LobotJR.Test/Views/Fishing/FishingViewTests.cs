@@ -120,7 +120,7 @@ namespace LobotJR.Test.Views.Fishing
             var user = db.Users.Read().First();
             var fisher = FishingController.GetFisherByUser(user);
             TournamentController.StartTournament();
-            DataUtils.ClearFisherRecords(db, user);
+            MockUtils.ClearFisherRecords(db, user);
             fisher.IsFishing = true;
             fisher.HookedTime = DateTime.Now;
             fisher.HookedId = db.FishData.Read().First().Id;
@@ -144,7 +144,7 @@ namespace LobotJR.Test.Views.Fishing
             var user = db.Users.Read().First();
             var fisher = FishingController.GetFisherByUser(user);
             TournamentController.StartTournament();
-            DataUtils.ClearFisherRecords(db, user);
+            MockUtils.ClearFisherRecords(db, user);
             fisher.IsFishing = false;
             fisher.HookedId = -1;
             var response = FishingView.CatchFish(user);
@@ -164,7 +164,7 @@ namespace LobotJR.Test.Views.Fishing
             var user = db.Users.Read().First();
             var fisher = FishingController.GetFisherByUser(user);
             TournamentController.StartTournament();
-            DataUtils.ClearFisherRecords(db, user);
+            MockUtils.ClearFisherRecords(db, user);
             fisher.IsFishing = true;
             fisher.HookedTime = DateTime.Now;
             fisher.HookedId = -1;

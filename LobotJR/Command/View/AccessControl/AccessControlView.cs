@@ -38,6 +38,22 @@ namespace LobotJR.Command.View.AccessControl
             {
                 var groupIds = ConnectionManager.CurrentConnection.Enrollments.Read(x => x.UserId.Equals(user.TwitchId, StringComparison.OrdinalIgnoreCase)).Select(x => x.GroupId).ToList();
                 var groups = ConnectionManager.CurrentConnection.AccessGroups.Read(x => groupIds.Contains(x.Id));
+                if (user.IsSub)
+                {
+                    groups = groups.Concat(ConnectionManager.CurrentConnection.AccessGroups.Read(x => x.IncludeSubs));
+                }
+                if (user.IsVip)
+                {
+                    groups = groups.Concat(ConnectionManager.CurrentConnection.AccessGroups.Read(x => x.IncludeVips));
+                }
+                if (user.IsMod)
+                {
+                    groups = groups.Concat(ConnectionManager.CurrentConnection.AccessGroups.Read(x => x.IncludeMods));
+                }
+                if (user.IsAdmin)
+                {
+                    groups = groups.Concat(ConnectionManager.CurrentConnection.AccessGroups.Read(x => x.IncludeAdmins));
+                }
                 if (groups.Any())
                 {
                     var count = groups.Count();
@@ -55,7 +71,9 @@ namespace LobotJR.Command.View.AccessControl
                 return new CommandResult($"Error: No group with name \"{groupName}\" was found.");
             }
 
-            var access = ConnectionManager.CurrentConnection.Enrollments.Read(x => x.GroupId == group.Id && x.UserId.Equals(user.TwitchId, StringComparison.OrdinalIgnoreCase)).Any() ? "are" : "are not";
+            var flagAccess = (group.IncludeSubs && user.IsSub) || (group.IncludeVips && user.IsVip) || (group.IncludeMods && user.IsMod) || (group.IncludeAdmins && user.IsAdmin);
+            var enrollAccess = ConnectionManager.CurrentConnection.Enrollments.Read(x => x.GroupId == group.Id && x.UserId.Equals(user.TwitchId, StringComparison.OrdinalIgnoreCase)).Any();
+            var access = (enrollAccess || flagAccess) ? "are" : "are not";
             return new CommandResult($"You {access} a member of \"{group.Name}\"!");
         }
     }

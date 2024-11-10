@@ -50,5 +50,10 @@ namespace LobotJR.Command.Model.Player
             XpBonus = xpBonus;
             PreventDeathBonus = preventDeathBonus;
         }
+
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 }

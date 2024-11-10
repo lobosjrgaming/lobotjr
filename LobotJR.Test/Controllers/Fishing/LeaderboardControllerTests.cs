@@ -110,7 +110,7 @@ namespace LobotJR.Test.Controllers.Fishing
             var user = db.Users.Read(x => x.TwitchId.Equals(existing.UserId)).First();
             var fish = existing.Fish;
             var records = db.Catches.Read(x => x.UserId.Equals(user));
-            DataUtils.ClearFisherRecords(db, user);
+            MockUtils.ClearFisherRecords(db, user);
             var catchData = new Catch()
             {
                 Fish = fish,

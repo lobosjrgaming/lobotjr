@@ -21,6 +21,7 @@ namespace LobotJR.Data
         public DbSet<Metadata> Metadata { get; set; }
         public DbSet<AppSettings> AppSettings { get; set; }
         public DbSet<GameSettings> GameSettings { get; set; }
+        public DbSet<ClientSettings> ClientSettings { get; set; }
         public DbSet<BugReport> BugReports { get; set; }
         public DbSet<DataTimer> DataTimers { get; set; }
 
@@ -46,6 +47,8 @@ namespace LobotJR.Data
 
         /** Content data */
         public DbSet<Fish> FishData { get; set; }
+        public DbSet<FishRarity> FishRarityData { get; set; }
+        public DbSet<FishSize> FishSizeData { get; set; }
         public DbSet<Item> ItemData { get; set; }
         public DbSet<ItemType> ItemTypeData { get; set; }
         public DbSet<ItemSlot> ItemSlotData { get; set; }

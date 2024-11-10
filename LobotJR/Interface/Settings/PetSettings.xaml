@@ -1,0 +1,63 @@
+﻿<UserControl x:Class="LobotJR.Interface.Settings.PetSettings"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:LobotJR.Interface.Settings"
+             xmlns:interface="clr-namespace:LobotJR.Interface"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Label Content="Experience per Level" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="1" Grid.Column="1" TextWrapping="Wrap">Experience needed for a pet to gain a level.</TextBlock>
+        <Label Content="Max Level" Grid.Row="2" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="3" Grid.Column="1" TextWrapping="Wrap">Max level for pets.</TextBlock>
+        <Label Content="Feeding Affection" Grid.Row="4" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="5" Grid.Column="1" TextWrapping="Wrap">Amount of affection gained when feeding a pet.</TextBlock>
+        <Label Content="Max Hunger" Grid.Row="6" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="7" Grid.Column="1" TextWrapping="Wrap">Value hunger is set to when feeding a pet.</TextBlock>
+        <TextBox x:Name="LevelExperience" Grid.Column="1" VerticalAlignment="Center">
+            <Binding Path="GameSettings.PetExperienceToLevel">
+                <Binding.ValidationRules>
+                    <interface:NumericInputValidator IsReal="False" IsNegative="False"/>
+                </Binding.ValidationRules>
+            </Binding>
+        </TextBox>
+        <TextBox x:Name="MaxLevel" Grid.Row="2" Grid.Column="1" VerticalAlignment="Center">
+            <Binding Path="GameSettings.PetLevelMax">
+                <Binding.ValidationRules>
+                    <interface:NumericInputValidator IsReal="False" IsNegative="False"/>
+                </Binding.ValidationRules>
+            </Binding>
+        </TextBox>
+        <TextBox x:Name="Affection" Grid.Row="4" Grid.Column="1" VerticalAlignment="Center">
+            <Binding Path="GameSettings.PetFeedingAffection">
+                <Binding.ValidationRules>
+                    <interface:NumericInputValidator IsReal="False" IsNegative="False"/>
+                </Binding.ValidationRules>
+            </Binding>
+        </TextBox>
+        <TextBox x:Name="MaxHunger" Grid.Row="6" Grid.Column="1" VerticalAlignment="Center">
+            <Binding Path="GameSettings.PetHungerMax">
+                <Binding.ValidationRules>
+                    <interface:NumericInputValidator IsReal="False" IsNegative="False"/>
+                </Binding.ValidationRules>
+            </Binding>
+        </TextBox>
+    </Grid>
+</UserControl>

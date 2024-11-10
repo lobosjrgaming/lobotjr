@@ -219,7 +219,7 @@ namespace LobotJR.Test.Views.Gloat
             var db = ConnectionManager.CurrentConnection;
             var user = db.Users.Read().First();
             PlayerController.GetPlayerByUser(user).Currency = SettingsManager.GetGameSettings().FishingGloatCost;
-            DataUtils.ClearFisherRecords(db, user);
+            MockUtils.ClearFisherRecords(db, user);
             var response = GloatView.GloatFish(user, 1);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);
@@ -235,7 +235,7 @@ namespace LobotJR.Test.Views.Gloat
             var db = ConnectionManager.CurrentConnection;
             var user = db.Users.Read().First();
             PlayerController.GetPlayerByUser(user).Currency = SettingsManager.GetGameSettings().PetGloatCost;
-            DataUtils.ClearPetRecords(db, user);
+            MockUtils.ClearPetRecords(db, user);
             var response = GloatView.GloatPet(user);
             var responses = response.Responses;
             Assert.IsTrue(response.Processed);

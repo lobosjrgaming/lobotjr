@@ -154,7 +154,7 @@ namespace LobotJR.Command.Controller.Fishing
                 var lengthVariance = Random.NextDouble() * lengthRange;
 
                 var size = Random.NextDouble() * 100;
-                var category = Chances.Where(x => size > x).Count();
+                var category = Chances.Where(x => size >= x).Count();
                 catchData.Length = (float)Math.Round(fish.MinimumLength + lengthRange * category + lengthVariance, 2);
                 catchData.Weight = (float)Math.Round(fish.MinimumWeight + weightRange * category + weightVariance, 2);
                 catchData.Points = (int)Math.Max(Math.Round(size), 1);

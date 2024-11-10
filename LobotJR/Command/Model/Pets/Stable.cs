@@ -1,4 +1,5 @@
-﻿using LobotJR.Data;
+﻿using LobotJR.Command.View.Pets;
+using LobotJR.Data;
 
 namespace LobotJR.Command.Model.Pets
 {
@@ -47,5 +48,10 @@ namespace LobotJR.Command.Model.Pets
         /// Whether or not this pet is currently active.
         /// </summary>
         public bool IsActive { get; set; }
+
+        public override string ToString()
+        {
+            return $"{Name} the level {Level} {PetView.GetPetName(this)}";
+        }
     }
 }

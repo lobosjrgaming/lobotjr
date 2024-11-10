@@ -1,10 +1,11 @@
-﻿using LobotJR.Shared.Authentication;
+﻿using LobotJR.Twitch.Api.Authentication;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using NLog;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Text;
@@ -33,17 +34,19 @@ namespace LobotJR.Twitch
         private readonly TokenData TokenData;
         private readonly ITwitchClient TwitchClient;
         private bool IsSecure;
-
-        private CancellationTokenSource CancellationTokenSource;
+        private readonly List<IrcMessage> InjectionMessages = new List<IrcMessage>();
+        private readonly SemaphoreSlim InjectSemaphore = new SemaphoreSlim(1, 1);
 
         private DateTime? LastReconnect;
         private TimeSpan ReconnectTimer = ReconnectTimerBase;
 
-        private DateTime LastMessage;
+        public DateTime LastMessage { get; private set; }
         private bool PingSent;
 
         private readonly Queue<string> MessageQueue = new Queue<string>();
         private readonly RollingTimer Timer = new RollingTimer(TimeSpan.FromSeconds(30), 100);
+
+        public TimeSpan IdleTime { get { return DateTime.Now - LastMessage; } }
 
         /// <summary>
         /// Creates a new IRC client.
@@ -63,7 +66,7 @@ namespace LobotJR.Twitch
         /// </summary>
         public void Restart()
         {
-            this.Dispose();
+            Dispose();
             Client = new TcpClient();
         }
 
@@ -95,11 +98,11 @@ namespace LobotJR.Twitch
                         AutoFlush = false
                     };
 
+                    ExpectResponse();
                     await WriteLines("CAP REQ :twitch.tv/tags twitch.tv/commands",
                         $"PASS oauth:{TokenData.ChatToken.AccessToken}",
                         $"NICK {TokenData.ChatUser.ToLower()}",
                         $"JOIN #{TokenData.BroadcastUser}");
-                    ExpectResponse();
                     Logger.Info("Logged in to Twitch IRC server as {user}", TokenData.ChatUser);
                     LastReconnect = null;
                     return true;
@@ -115,6 +118,15 @@ namespace LobotJR.Twitch
             }
             LastReconnect = DateTime.Now;
             return false;
+        }
+
+        /// <summary>
+        /// Disconnects the inner TCP client and reconnects to the server.
+        /// </summary>
+        public void ForceReconnect()
+        {
+            PingSent = true;
+            LastMessage = DateTime.Now - (IdleLimit + ResponseLimit);
         }
 
         private async Task Reconnect()
@@ -137,13 +149,24 @@ namespace LobotJR.Twitch
         private void ExpectResponse()
         {
             LastMessage = DateTime.Now - IdleLimit;
-            PingSent = true;
         }
 
-        private async Task WriteLine(string line)
+        private async Task<bool> WriteLine(string line)
         {
-            await OutputStream.WriteLineAsync(line);
-            await OutputStream.FlushAsync();
+            try
+            {
+                await OutputStream.WriteLineAsync(line);
+                await OutputStream.FlushAsync();
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e);
+                Logger.Error("Encountered an error sending data to IRC. Reconnecting.");
+                Dispose();
+                LastReconnect = DateTime.Now;
+                return false;
+            }
+            return true;
         }
 
         private async Task WriteLines(params string[] lines)
@@ -165,28 +188,20 @@ namespace LobotJR.Twitch
             return null;
         }
 
-        /// <summary>
-        /// Starts a thread that listens for messages and sends message events.
-        /// </summary>
-        /// <returns>The cancellation token source used to cancel the thread.</returns>
-        public CancellationTokenSource Start()
+        private async Task<IEnumerable<IrcMessage>> GetAndClearInjections()
         {
-            CancellationTokenSource = new CancellationTokenSource();
-            var task = Task.Factory.StartNew(Run, CancellationTokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
-            return CancellationTokenSource;
-        }
-
-        private async Task Run()
-        {
-            while (!CancellationTokenSource.IsCancellationRequested)
+            List<IrcMessage> output;
+            await InjectSemaphore.WaitAsync();
+            try
             {
-                await Process();
-                Thread.Sleep(100);
+                output = InjectionMessages.ToList();
+                InjectionMessages.Clear();
             }
-            if (Client.Connected)
+            finally
             {
-                Client.Dispose();
+                InjectSemaphore.Release();
             }
+            return output;
         }
 
         /// <summary>
@@ -197,16 +212,27 @@ namespace LobotJR.Twitch
         public async Task<IEnumerable<IrcMessage>> Process()
         {
             var output = new List<IrcMessage>();
+            output.AddRange(await GetAndClearInjections());
             if (Client.Connected)
             {
-                if (this.MessageQueue.Count > 0)
+                if (MessageQueue.Count > 0)
                 {
-                    var toSend = this.MessageQueue.Dequeue();
+                    var toSend = MessageQueue.Peek();
                     if (toSend != null && Timer.AvailableOccurrences() > 0)
                     {
-                        await WriteLine($"PRIVMSG #{TokenData.BroadcastUser} :{toSend}");
-                        Timer.AddOccurrence(DateTime.Now);
-                        ExpectResponse();
+                        var success = await WriteLine($"PRIVMSG #{TokenData.BroadcastUser} :{toSend}");
+                        if (success)
+                        {
+                            MessageQueue.Dequeue();
+                            Timer.AddOccurrence(DateTime.Now);
+                            //ExpectResponse();
+                        }
+                        else
+                        {
+                            //If write fails, the client is disconnected
+                            //abort the process so it can reconnect
+                            return output;
+                        }
                     }
                 }
 
@@ -270,7 +296,28 @@ namespace LobotJR.Twitch
         /// <param name="message">The message to send.</param>
         public void QueueMessage(string message)
         {
-            this.MessageQueue.Enqueue(message);
+            MessageQueue.Enqueue(message);
+        }
+
+        /// <summary>
+        /// Injects a message into the incoming message stream. Used to allow
+        /// the bot UI to send commands without going through the IRC
+        /// connection.
+        /// </summary>
+        /// <param name="message">The text message to inject.</param>
+        /// <param name="username">The Username to send from.</param>
+        /// <param name="userid">The Twitch ID of the user to send from.</param>
+        public void InjectMessage(string message, string username, string userid)
+        {
+            InjectSemaphore.Wait();
+            try
+            {
+                InjectionMessages.Add(IrcMessage.Create(message, username, userid));
+            }
+            finally
+            {
+                InjectSemaphore.Release();
+            }
         }
 
         public void Dispose()

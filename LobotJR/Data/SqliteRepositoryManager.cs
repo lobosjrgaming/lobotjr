@@ -9,6 +9,7 @@ using LobotJR.Command.Model.Player;
 using LobotJR.Twitch;
 using LobotJR.Twitch.Model;
 using System.Data.Entity;
+using System.Threading;
 
 namespace LobotJR.Data
 {
@@ -18,10 +19,12 @@ namespace LobotJR.Data
     public class SqliteRepositoryManager : IDatabase
     {
         private DbContext context;
+        private readonly SemaphoreSlim Semaphore;
 
         public IRepository<Metadata> Metadata { get; private set; }
         public IRepository<AppSettings> AppSettings { get; private set; }
         public IRepository<GameSettings> GameSettings { get; private set; }
+        public IRepository<ClientSettings> ClientSettings { get; private set; }
         public IRepository<BugReport> BugReports { get; private set; }
         public IRepository<DataTimer> DataTimers { get; private set; }
         public IRepository<User> Users { get; private set; }
@@ -40,6 +43,8 @@ namespace LobotJR.Data
         public IRepository<DungeonParticipant> DungeonParticipants { get; private set; }
 
         public IRepository<Fish> FishData { get; private set; }
+        public IRepository<FishRarity> FishRarityData { get; private set; }
+        public IRepository<FishSize> FishSizeData { get; private set; }
         public IRepository<Item> ItemData { get; private set; }
         public IRepository<ItemType> ItemTypeData { get; private set; }
         public IRepository<ItemSlot> ItemSlotData { get; private set; }
@@ -56,13 +61,16 @@ namespace LobotJR.Data
         public IRepository<CharacterClass> CharacterClassData { get; private set; }
         public IRepository<Equippables> EquippableData { get; private set; }
 
-        public SqliteRepositoryManager(DbContext context)
+        public SqliteRepositoryManager(DbContext context, SemaphoreSlim semaphore)
         {
+            Semaphore = semaphore;
             SetContext(context);
         }
 
         public SqliteRepositoryManager()
         {
+            Semaphore = new SemaphoreSlim(1, 1);
+            Semaphore.Wait();
             SetContext(new SqliteContext());
         }
 
@@ -72,6 +80,7 @@ namespace LobotJR.Data
             Metadata = new SqliteRepository<Metadata>(context);
             AppSettings = new SqliteRepository<AppSettings>(context);
             GameSettings = new SqliteRepository<GameSettings>(context);
+            ClientSettings = new SqliteRepository<ClientSettings>(context);
             BugReports = new SqliteRepository<BugReport>(context);
             DataTimers = new SqliteRepository<DataTimer>(context);
             Users = new SqliteRepository<User>(context);
@@ -90,6 +99,8 @@ namespace LobotJR.Data
             DungeonParticipants = new SqliteRepository<DungeonParticipant>(context);
 
             FishData = new SqliteRepository<Fish>(context);
+            FishRarityData = new SqliteRepository<FishRarity>(context);
+            FishSizeData = new SqliteRepository<FishSize>(context);
             ItemData = new SqliteRepository<Item>(context);
             ItemTypeData = new SqliteRepository<ItemType>(context);
             ItemSlotData = new SqliteRepository<ItemSlot>(context);
@@ -117,6 +128,7 @@ namespace LobotJR.Data
             context.SaveChanges();
             context.Database.Connection.Close();
             context.Dispose();
+            Semaphore.Release();
         }
     }
 }

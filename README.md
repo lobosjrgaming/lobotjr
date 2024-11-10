@@ -40,6 +40,10 @@ In addition, we use the following libraries for unit testing
 - [MSTest](https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-mstest-intro)
 - [Moq](https://github.com/devlooped/moq)
 
+UI Icons provided by
+
+- [Game-icons.net](https://game-icons.net/)
+
 ## IDE and Extensions
 
 We recommend using [Visual Studio 2022 Community Edition](https://visualstudio.microsoft.com/vs/)

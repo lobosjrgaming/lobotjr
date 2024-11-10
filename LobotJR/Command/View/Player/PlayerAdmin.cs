@@ -196,7 +196,7 @@ namespace LobotJR.Command.View.Player
 
         public CommandResult SetMultiplier(int multiplier)
         {
-            PlayerController.CurrentMultiplier = multiplier;
+            PlayerController.SetMultiplier(multiplier);
             return new CommandResult(true, $"{multiplier}x XP & Coins will now be awarded.");
         }
 

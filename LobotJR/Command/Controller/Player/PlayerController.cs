@@ -62,6 +62,16 @@ namespace LobotJR.Command.Controller.Player
         /// Event fired when periodic experience and currency are awarded.
         /// </summary>
         public event ExperienceToggleHandler ExperienceToggled;
+        /// <summary>
+        /// Event handler for events related to periodic awards.
+        /// </summary>
+        /// <param name="enabled">True if experience was enabled, false if it
+        /// was disabled.</param>
+        public delegate void MultiplierModifiedHandler(int value);
+        /// <summary>
+        /// Event fired when periodic experience and currency are awarded.
+        /// </summary>
+        public event MultiplierModifiedHandler MultiplierModified;
 
         /// <summary>
         /// The last time experience was awarded to viewers.
@@ -70,7 +80,7 @@ namespace LobotJR.Command.Controller.Player
         /// <summary>
         /// Multiplier applied to experience and currency awards.
         /// </summary>
-        public int CurrentMultiplier { get; set; } = 1;
+        public int CurrentMultiplier { get; private set; } = 1;
         /// <summary>
         /// Wether or not the experience is currently being awarded.
         /// </summary>
@@ -87,16 +97,27 @@ namespace LobotJR.Command.Controller.Player
             UserController = userController;
         }
 
-        private int ExperienceForLevel(int level)
+        public static int ExperienceForLevel(int level)
         {
             return (int)(4 * Math.Pow(level, 3) + 50);
         }
 
-        private int LevelFromExperience(int experience)
+        public static int LevelFromExperience(int experience)
         {
             experience = Math.Max(experience, 81);
             var level = Math.Pow((experience - 50.0f) / 4.0f, (1.0f / 3.0f));
             return (int)Math.Floor(level);
+        }
+
+        /// <summary>
+        /// Changes the current multiplier applied to xp and wolfcoin awards
+        /// given to viewers.
+        /// </summary>
+        /// <param name="multiplier">The number to multiply awards by.</param>
+        public void SetMultiplier(int multiplier)
+        {
+            CurrentMultiplier = multiplier;
+            MultiplierModified?.Invoke(multiplier);
         }
 
         /// <summary>
@@ -181,6 +202,28 @@ namespace LobotJR.Command.Controller.Player
         public PlayerCharacter GetPlayerByUser(User user)
         {
             return GetPlayerByUserId(user.TwitchId);
+        }
+
+        /// <summary>
+        /// Gets a collection of players from a collection of users, optimized
+        /// for bulk processing.
+        /// </summary>
+        /// <param name="users">A collection of user objects.</param>
+        /// <returns>A collection of player character objects for each user.</returns>
+        public IEnumerable<PlayerCharacter> GetPlayersByUsers(IEnumerable<User> users)
+        {
+            var newClass = ConnectionManager.CurrentConnection.CharacterClassData.First(x => !x.CanPlay);
+            var userIds = users.Select(x => x.TwitchId).ToList();
+            var existingPlayers = ConnectionManager.CurrentConnection.PlayerCharacters.Read(x => userIds.Contains(x.UserId)).ToList();
+            var existingIds = existingPlayers.Select(x => x.UserId);
+            var missingUsers = userIds.Except(existingIds);
+            if (missingUsers.Any())
+            {
+                var newPlayers = missingUsers.Select(x => new PlayerCharacter() { UserId = x, CharacterClassId = newClass.Id });
+                newPlayers = ConnectionManager.CurrentConnection.PlayerCharacters.BatchCreate(newPlayers, newPlayers.Count(), Logger, "Players");
+                existingPlayers = existingPlayers.Concat(newPlayers).ToList();
+            }
+            return existingPlayers;
         }
 
         /// <summary>
@@ -594,13 +637,16 @@ namespace LobotJR.Command.Controller.Player
                 {
                     LastAward = DateTime.Now;
                     var chatters = await UserController.GetViewerList();
+                    var chatterDict = chatters.ToDictionary(x => x.TwitchId, x => x);
                     var xpToAward = settings.ExperienceValue * CurrentMultiplier;
                     var coinsToAward = settings.CoinValue * CurrentMultiplier;
                     var subMultiplier = settings.SubRewardMultiplier;
                     Logger.Info("{coins} wolfcoins and {xp} experience awarded to {count} viewers.", coinsToAward, xpToAward, chatters.Count());
-                    foreach (var chatter in chatters)
+                    var players = GetPlayersByUsers(chatters);
+                    ConnectionManager.CurrentConnection.PlayerCharacters.BeginTransaction();
+                    foreach (var player in players)
                     {
-                        var player = GetPlayerByUser(chatter);
+                        var chatter = chatterDict[player.UserId];
                         if (chatter.IsSub)
                         {
                             GainExperience(chatter, player, xpToAward * subMultiplier);
@@ -612,7 +658,9 @@ namespace LobotJR.Command.Controller.Player
                             player.Currency += coinsToAward;
                         }
                     }
+                    ConnectionManager.CurrentConnection.PlayerCharacters.Commit();
                     ExperienceAwarded?.Invoke(xpToAward, coinsToAward, subMultiplier);
+                    Logger.Info("Experience awarded to {count} users in {time}.", chatters.Count(), DateTime.Now - LastAward);
                 }
             }
         }

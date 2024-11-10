@@ -1,6 +1,7 @@
 ﻿using NLog;
 using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 
 namespace LobotJR.Data
 {
@@ -11,11 +12,14 @@ namespace LobotJR.Data
         IEnumerable<TEntity> Create(IEnumerable<TEntity> entries);
         IEnumerable<TEntity> BatchCreate(IEnumerable<TEntity> entries, int batchSize, Logger logger, string name);
         IEnumerable<TEntity> Read();
-        IEnumerable<TEntity> Read(Func<TEntity, bool> filter);
+        IEnumerable<TEntity> Read(Expression<Func<TEntity, bool>> filter);
         TEntity Read(TEntity entry);
-        TEntity First(Func<TEntity, bool> filter);
-        TEntity FirstOrDefault(Func<TEntity, bool> filter);
-        bool Any(Func<TEntity, bool> filter);
+        IEnumerable<TEntity> ReadWith<TProperty>(Expression<Func<TEntity, TProperty>> includeFilter);
+        IEnumerable<TEntity> ReadWith<TProperty, TProperty2>(Expression<Func<TEntity, TProperty>> includeFilter, Expression<Func<TEntity, TProperty2>> includeFilter2);
+        IEnumerable<TEntity> ReadWith<TProperty, TProperty2, TProperty3>(Expression<Func<TEntity, TProperty>> includeFilter, Expression<Func<TEntity, TProperty2>> includeFilter2, Expression<Func<TEntity, TProperty3>> includeFilter3);
+        TEntity First(Expression<Func<TEntity, bool>> filter);
+        TEntity FirstOrDefault(Expression<Func<TEntity, bool>> filter);
+        bool Any(Expression<Func<TEntity, bool>> filter);
         TEntity ReadById(int id);
         /// <summary>
         /// Attaches an object to the database context and flags it to be

@@ -1,0 +1,85 @@
+﻿<UserControl x:Class="LobotJR.Interface.Settings.BehaviorSettings"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:LobotJR.Interface.Settings"
+             xmlns:interface="clr-namespace:LobotJR.Interface"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="5"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Label Content="Logging File" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="1" Grid.Column="3" TextWrapping="Wrap">The name of the file to write to when logging data. This is a relative path from the root directory of the application.</TextBlock>
+        <Label Content="Max Log Size" Grid.Row="2" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="3" Grid.Column="3" TextWrapping="Wrap">The max size (in MB) of the log file. Once reached, the contents of the log will be saved in an archive file and the log will be cleared.</TextBlock>
+        <Label Content="Log Archives" Grid.Row="4" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="5" Grid.Column="3" TextWrapping="Wrap">The number of log archives to keep.</TextBlock>
+        <Label Content="Max Whisper Targets" Grid.Row="6" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="7" Grid.Column="3" TextWrapping="Wrap">The maximum number of unique users the app can send whispers to each day. If we receive a rate limit response from Twitch, this value will be updated to the count at that time.</TextBlock>
+        <Label Content="Sync Frequency" Grid.Row="8" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="9" Grid.Column="3" TextWrapping="Wrap">The frequency (in minutes) that the user roles in the database will be synced with Twitch.</TextBlock>
+        <Label Content="User Lookup Delay" Grid.Row="10" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="11" Grid.Column="3" TextWrapping="Wrap">How long to wait (in seconds) after a username lookup request is triggered before executing the request. This is to allow time for batching requests as per the Twitch API guidelines.</TextBlock>
+        <Label Content="Twitch Plays" Grid.Row="12" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Row="13" Grid.Column="3" TextWrapping="Wrap">Toggles Twitch Plays Dark Souls functionality (requires restart).</TextBlock>
+        <TextBox x:Name="LogFile" Grid.Column="2" VerticalAlignment="Center" Text="{Binding AppSettings.LoggingFile}"/>
+        <TextBox x:Name="LogSize" Grid.Row="2" Grid.Column="2" VerticalAlignment="Center">
+            <Binding Path="AppSettings.LoggingMaxSize">
+                <Binding.ValidationRules>
+                    <interface:NumericInputValidator IsReal="False" IsNegative="False"></interface:NumericInputValidator>
+                </Binding.ValidationRules>
+            </Binding>
+        </TextBox>
+        <TextBox x:Name="ArchiveCount" Grid.Row="4" Grid.Column="2" VerticalAlignment="Center">
+            <Binding Path="AppSettings.LoggingMaxArchives">
+                <Binding.ValidationRules>
+                    <interface:NumericInputValidator IsReal="False" IsNegative="False"></interface:NumericInputValidator>
+                </Binding.ValidationRules>
+            </Binding>
+        </TextBox>
+        <TextBox x:Name="MaxRecipients" Grid.Row="6" Grid.Column="2" VerticalAlignment="Center">
+            <Binding Path="AppSettings.MaxWhisperRecipients">
+                <Binding.ValidationRules>
+                    <interface:NumericInputValidator IsReal="False" IsNegative="False"></interface:NumericInputValidator>
+                </Binding.ValidationRules>
+            </Binding>
+        </TextBox>
+        <TextBox x:Name="UpdateFrequency" Grid.Row="8" Grid.Column="2" VerticalAlignment="Center">
+            <Binding Path="AppSettings.UserDatabaseUpdateTime">
+                <Binding.ValidationRules>
+                    <interface:NumericInputValidator IsReal="False" IsNegative="False"></interface:NumericInputValidator>
+                </Binding.ValidationRules>
+            </Binding>
+        </TextBox>
+        <TextBox x:Name="LookupDelay" Grid.Row="10" Grid.Column="2" VerticalAlignment="Center">
+            <Binding Path="AppSettings.UserLookupBatchTime">
+                <Binding.ValidationRules>
+                    <interface:NumericInputValidator IsReal="False" IsNegative="False"></interface:NumericInputValidator>
+                </Binding.ValidationRules>
+            </Binding>
+        </TextBox>
+        <CheckBox x:Name="TwitchPlays" Grid.Row="12" Grid.Column="2" VerticalAlignment="Center" IsChecked="{Binding AppSettings.TwitchPlays}"/>
+    </Grid>
+</UserControl>

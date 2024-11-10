@@ -1,4 +1,6 @@
 ﻿using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace LobotJR.Data
 {
@@ -7,6 +9,8 @@ namespace LobotJR.Data
     /// </summary>
     public class ConnectionManager : IConnectionManager
     {
+        private readonly SemaphoreSlim Semaphore = new SemaphoreSlim(1, 1);
+
         /// <summary>
         /// The current active connection to the database. If no connection has
         /// been opened, it will return null instead.
@@ -19,11 +23,12 @@ namespace LobotJR.Data
         /// block, with all changes saved just before the context is disposed.
         /// </summary>
         /// <returns>A new connection to the database.</returns>
-        public IDatabase OpenConnection()
+        public async Task<IDatabase> OpenConnection()
         {
+            await Semaphore.WaitAsync();
             var context = new SqliteContext();
             context.Initialize();
-            CurrentConnection = new SqliteRepositoryManager(context);
+            CurrentConnection = new SqliteRepositoryManager(context, Semaphore);
             return CurrentConnection;
         }
 
@@ -44,6 +49,10 @@ namespace LobotJR.Data
             if (!CurrentConnection.GameSettings.Read().Any())
             {
                 CurrentConnection.GameSettings.Create(new GameSettings());
+            }
+            if (!CurrentConnection.ClientSettings.Read().Any())
+            {
+                CurrentConnection.ClientSettings.Create(new ClientSettings());
             }
         }
     }

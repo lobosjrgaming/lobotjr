@@ -199,7 +199,16 @@ namespace LobotJR.Utils
             { "dd", new KeyPress('F') }
         };
 
-        public async Task Play(ITwitchIrcClient irc)
+        private readonly ITwitchIrcClient IrcClient;
+        private readonly CancellationTokenSource CancellationTokenSource;
+
+        public ChatController(ITwitchIrcClient irc, CancellationTokenSource cancellationTokenSource)
+        {
+            IrcClient = irc;
+            CancellationTokenSource = cancellationTokenSource;
+        }
+
+        public async Task Play()
         {
             Process[] p = Process.GetProcessesByName("DARKSOULS");
             IntPtr h = (IntPtr)0;
@@ -209,10 +218,10 @@ namespace LobotJR.Utils
                 SetForegroundWindow(h);
             }
 
-            while (true)
+            while (!CancellationTokenSource.IsCancellationRequested)
             {
                 // message[0] has username, message[1] has message
-                IEnumerable<IrcMessage> messages = irc.Process().GetAwaiter().GetResult();
+                IEnumerable<IrcMessage> messages = IrcClient.Process().GetAwaiter().GetResult();
                 foreach (var message in messages.Where(x => !string.IsNullOrWhiteSpace(x.Message)))
                 {
                     var command = message.Message.Split(' ')[0].ToLower();

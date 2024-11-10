@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
+using System.Linq.Expressions;
 
 namespace LobotJR.Data
 {
@@ -112,7 +113,22 @@ namespace LobotJR.Data
             return dbSet;
         }
 
-        public IEnumerable<TEntity> Read(Func<TEntity, bool> filter)
+        public IEnumerable<TEntity> ReadWith<TProperty>(Expression<Func<TEntity, TProperty>> includeFilter)
+        {
+            return dbSet.Include(includeFilter);
+        }
+
+        public IEnumerable<TEntity> ReadWith<TProperty, TProperty2>(Expression<Func<TEntity, TProperty>> includeFilter, Expression<Func<TEntity, TProperty2>> includeFilter2)
+        {
+            return dbSet.Include(includeFilter).Include(includeFilter2);
+        }
+
+        public IEnumerable<TEntity> ReadWith<TProperty, TProperty2, TProperty3>(Expression<Func<TEntity, TProperty>> includeFilter, Expression<Func<TEntity, TProperty2>> includeFilter2, Expression<Func<TEntity, TProperty3>> includeFilter3)
+        {
+            return dbSet.Include(includeFilter).Include(includeFilter2).Include(includeFilter3);
+        }
+
+        public IEnumerable<TEntity> Read(Expression<Func<TEntity, bool>> filter)
         {
             return dbSet.Where(filter);
         }
@@ -122,17 +138,17 @@ namespace LobotJR.Data
             return dbSet.Where(x => x.Equals(entry)).FirstOrDefault();
         }
 
-        public TEntity First(Func<TEntity, bool> filter)
+        public TEntity First(Expression<Func<TEntity, bool>> filter)
         {
             return dbSet.First(filter);
         }
 
-        public TEntity FirstOrDefault(Func<TEntity, bool> filter)
+        public TEntity FirstOrDefault(Expression<Func<TEntity, bool>> filter)
         {
             return dbSet.FirstOrDefault(filter);
         }
 
-        public bool Any(Func<TEntity, bool> filter)
+        public bool Any(Expression<Func<TEntity, bool>> filter)
         {
             return dbSet.Any(filter);
         }

@@ -392,7 +392,7 @@ namespace LobotJR.Test.Controllers.Player
             var settings = SettingsManager.GetGameSettings();
             var listener = new Mock<PlayerController.ExperienceAwardHandler>();
             PlayerController.ExperienceAwarded += listener.Object;
-            PlayerController.CurrentMultiplier = 1;
+            PlayerController.SetMultiplier(1);
             var user = db.Users.Read(x => !x.IsSub).First();
             var sub = db.Users.Read(x => x.IsSub).First();
             var player = PlayerController.GetPlayerByUser(user);
@@ -418,7 +418,7 @@ namespace LobotJR.Test.Controllers.Player
             var settings = SettingsManager.GetGameSettings();
             var listener = new Mock<PlayerController.ExperienceAwardHandler>();
             PlayerController.ExperienceAwarded += listener.Object;
-            PlayerController.CurrentMultiplier = 1;
+            PlayerController.SetMultiplier(1);
             var user = db.Users.Read(x => !x.IsSub).First();
             var sub = db.Users.Read(x => x.IsSub).First();
             var player = PlayerController.GetPlayerByUser(user);
@@ -444,7 +444,7 @@ namespace LobotJR.Test.Controllers.Player
             var settings = SettingsManager.GetGameSettings();
             var listener = new Mock<PlayerController.ExperienceAwardHandler>();
             PlayerController.ExperienceAwarded += listener.Object;
-            PlayerController.CurrentMultiplier = 1;
+            PlayerController.SetMultiplier(1);
             var user = db.Users.Read(x => !x.IsSub).First();
             var sub = db.Users.Read(x => x.IsSub).First();
             var player = PlayerController.GetPlayerByUser(user);
@@ -471,7 +471,7 @@ namespace LobotJR.Test.Controllers.Player
             var settings = SettingsManager.GetGameSettings();
             var listener = new Mock<PlayerController.ExperienceAwardHandler>();
             PlayerController.ExperienceAwarded += listener.Object;
-            PlayerController.CurrentMultiplier = 2;
+            PlayerController.SetMultiplier(2);
             var user = db.Users.Read(x => !x.IsSub).First();
             var sub = db.Users.Read(x => x.IsSub).First();
             var player = PlayerController.GetPlayerByUser(user);

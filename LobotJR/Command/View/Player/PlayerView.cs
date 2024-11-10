@@ -207,7 +207,7 @@ namespace LobotJR.Command.View.Player
             var total = distribution.Select(x => x.Value).Sum();
             foreach (var pair in distribution)
             {
-                messages.Add($"{pair.Key.Name}s: {Math.Round((pair.Value / total) * 100d, 1)}%");
+                messages.Add($"{pair.Key.Name}s: {Math.Round(pair.Value / (float)total * 100d, 1)}%");
             }
             return new CommandResult(messages.ToArray());
         }

@@ -185,7 +185,7 @@ namespace LobotJR.Command
 
         public string DescribeParameters()
         {
-            return string.Join(", ", MethodInfo.GetParameters().Where(x => x.ParameterType != typeof(User)).Select(x => $"{{{(x.HasDefaultValue ? "[optional]" : "")}{SimplifyType(x.ParameterType)}{x.Name}}}"));
+            return string.Join(" ", MethodInfo.GetParameters().Where(x => x.ParameterType != typeof(User)).Select(x => $"{{{(x.HasDefaultValue ? "[optional]" : "")}{SimplifyType(x.ParameterType)}{x.Name}}}"));
         }
 
         public T Execute(User user, string parameterString)

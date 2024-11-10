@@ -88,7 +88,11 @@ namespace LobotJR.Command.View.Dungeons
                             var cost = DungeonController.GetDungeonCost(player);
                             if (player.Currency >= cost)
                             {
-                                var dungeons = dungeonIds.Split(',').Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => DungeonController.ParseDungeonId(x.Trim()));
+                                var dungeons = dungeonIds.Split(',')
+                                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                                    .Select(x => DungeonController.ParseDungeonId(x.Trim()))
+                                    .Where(x => x != null);
+                                var list = dungeons.ToList();
                                 if (!dungeons.Any())
                                 {
                                     dungeons = DungeonController.GetEligibleDungeons(player);

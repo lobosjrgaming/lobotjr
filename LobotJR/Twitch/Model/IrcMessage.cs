@@ -10,6 +10,7 @@ namespace LobotJR.Twitch.Model
     /// </summary>
     public class IrcMessage
     {
+        public static string InternalMessageId { get; private set; } = new Guid().ToString();
         private static readonly Regex MessagePattern = new Regex("^(?<tags>(?:[^=]+=[^;]*;)*(?:[^=]+=[^;]*))?:(?:(?<user>[^.!]+)(?:!\\k<user>@\\k<user>\\.|\\.)?)?tmi\\.twitch\\.tv (?<command>[^:#]+?)(?: #?(?<channel>[^ :]+))?(?: :(?<message>.*))?$");
         // private static readonly Regex MessagePattern = new Regex("^(?<tags>.*):(?<user>[^!]+)!\\k<user>@\\k<user>\\.tmi\\.twitch\\.tv (?<command>[A-Z]+) #?(?<channel>[^ ]+)(?: :(?<message>.*))?$");
         private static readonly Regex PingPattern = new Regex("^(?<command>PING|PONG) :(?<message>.*)$");
@@ -66,6 +67,11 @@ namespace LobotJR.Twitch.Model
         /// channel the message was sent to.
         /// </summary>
         public bool IsSub { get { if (Tags.TryGetValue("subscriber", out var value)) { return value == "1"; } return false; } }
+        /// <summary>
+        /// True if this message was sent directly through the UI, instead of
+        /// going through Twitch.
+        /// </summary>
+        public bool IsInternal { get { if (Tags.TryGetValue("internal", out var value)) { return value.Equals(InternalMessageId); } return false; } }
 
         public static IrcMessage Parse(string message)
         {
@@ -102,6 +108,19 @@ namespace LobotJR.Twitch.Model
                 }
             }
             return null;
+        }
+
+        public static IrcMessage Create(string message, string username, string userid)
+        {
+            return new IrcMessage
+            {
+                Message = message,
+                UserName = username,
+                UserId = userid,
+                Command = "whisper",
+                Channel = username,
+                Tags = new Dictionary<string, string>() { { "internal", InternalMessageId } }
+            };
         }
     }
 }

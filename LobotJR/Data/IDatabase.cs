@@ -20,6 +20,7 @@ namespace LobotJR.Data
         // Application Data
         IRepository<Metadata> Metadata { get; }
         IRepository<AppSettings> AppSettings { get; }
+        IRepository<ClientSettings> ClientSettings { get; }
         IRepository<BugReport> BugReports { get; }
         IRepository<DataTimer> DataTimers { get; }
         IRepository<User> Users { get; }
@@ -40,6 +41,8 @@ namespace LobotJR.Data
         // Game Content Data
         IRepository<GameSettings> GameSettings { get; }
         IRepository<Fish> FishData { get; }
+        IRepository<FishRarity> FishRarityData { get; }
+        IRepository<FishSize> FishSizeData { get; }
         IRepository<Item> ItemData { get; }
         IRepository<ItemType> ItemTypeData { get; }
         IRepository<ItemSlot> ItemSlotData { get; }

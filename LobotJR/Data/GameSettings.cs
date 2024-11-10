@@ -149,5 +149,40 @@
         /// tournament. Default is 30 seconds.
         /// </summary>        
         public int FishingTournamentCastMaximum { get; set; } = 30;
+
+        public void CopyFrom(GameSettings other)
+        {
+            ExperienceFrequency = other.ExperienceFrequency;
+            ExperienceValue = other.ExperienceValue;
+            CoinValue = other.CoinValue;
+            SubRewardMultiplier = other.SubRewardMultiplier;
+            RespecCost = other.RespecCost;
+            PryCost = other.PryCost;
+            LevelGloatCost = other.LevelGloatCost;
+            PetGloatCost = other.PetGloatCost;
+            PetExperienceToLevel = other.PetExperienceToLevel;
+            PetLevelMax = other.PetLevelMax;
+            PetFeedingAffection = other.PetFeedingAffection;
+            PetFeedingCost = other.PetFeedingCost;
+            PetHungerMax = other.PetHungerMax;
+            DungeonPartySize = other.DungeonPartySize;
+            DungeonBaseCost = other.DungeonBaseCost;
+            DungeonLevelCost = other.DungeonLevelCost;
+            DungeonStepTime = other.DungeonStepTime;
+            DungeonDeathChance = other.DungeonDeathChance;
+            DungeonCritChance = other.DungeonCritChance;
+            DungeonCritBonus = other.DungeonCritBonus;
+            DungeonLevelRestrictions = other.DungeonLevelRestrictions;
+            FishingCastMinimum = other.FishingCastMinimum;
+            FishingCastMaximum = other.FishingCastMaximum;
+            FishingHookLength = other.FishingHookLength;
+            FishingUseNormalRarity = other.FishingUseNormalRarity;
+            FishingUseNormalSizes = other.FishingUseNormalSizes;
+            FishingGloatCost = other.FishingGloatCost;
+            FishingTournamentDuration = other.FishingTournamentDuration;
+            FishingTournamentInterval = other.FishingTournamentInterval;
+            FishingTournamentCastMinimum = other.FishingTournamentCastMinimum;
+            FishingTournamentCastMaximum = other.FishingTournamentCastMaximum;
+        }
     }
 }

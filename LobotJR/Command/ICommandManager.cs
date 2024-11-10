@@ -19,6 +19,10 @@ namespace LobotJR.Command
         /// List of ids for registered commands.
         /// </summary>
         IEnumerable<string> Commands { get; }
+        /// <summary>
+        /// List of command strings and aliases for registered commands.
+        /// </summary>
+        IEnumerable<string> CommandStrings { get; }
 
         /// <summary>
         /// Initializes all registered command views.
@@ -30,6 +34,26 @@ namespace LobotJR.Command
         /// <param name="commandId">The command id to validate.</param>
         /// <returns>Whether or not the command id is valid.</returns>
         bool IsValidCommand(string commandId);
+        /// <summary>
+        /// Finds all commands with ids that match the given pattern.
+        /// </summary>
+        /// <param name="pattern">A command pattern containing one or more
+        /// wildcard (*) characters.</param>
+        /// <returns>A collection of matching command ids.</returns>
+        IEnumerable<string> GetMatchingCommands(string pattern);
+        /// <summary>
+        /// Describes the parameters for a command.
+        /// </summary>
+        /// <param name="commandName">The name of the command to check.</param>
+        /// <returns>A string containing the parameter names and types for the
+        /// command.</returns>
+        string DescribeCommand(string commandName);
+        /// <summary>
+        /// Gets all aliases for a given command id.
+        /// </summary>
+        /// <param name="commandId">The id of a command.</param>
+        /// <returns>A list of aliases that can be used to execute the command.</returns>
+        IEnumerable<string> GetAliases(string commandId);
         /// <summary>
         /// Processes a message from a user to check for and execute a command.
         /// </summary>
@@ -46,6 +70,8 @@ namespace LobotJR.Command
         /// <param name="result">The command result object.</param>
         /// <param name="irc">The twitch irc client to send messages through.</param>
         /// <param name="twitchClient">The twitch API client to send whispers through.</param>
-        Task HandleResult(string whisperMessage, CommandResult result, ITwitchIrcClient irc, ITwitchClient twitchClient);
+        /// <param name="isInternal">Whether this was an internal command
+        /// invoked through the UI, or a normal message sent through Twitch.</param>
+        Task HandleResult(string whisperMessage, CommandResult result, ITwitchIrcClient irc, ITwitchClient twitchClient, bool isInternal = false);
     }
 }

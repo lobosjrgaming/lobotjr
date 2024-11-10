@@ -154,7 +154,10 @@ namespace LobotJR.Command.Controller.Dungeons
             if (int.TryParse(id, out var idNumber) && mode != null)
             {
                 var dungeon = ConnectionManager.CurrentConnection.DungeonData.ReadById(idNumber);
-                return new DungeonRun(dungeon, mode);
+                if (dungeon != null)
+                {
+                    return new DungeonRun(dungeon, mode);
+                }
             }
             return null;
         }
