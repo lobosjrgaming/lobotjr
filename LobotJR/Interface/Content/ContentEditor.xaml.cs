@@ -218,5 +218,26 @@ namespace LobotJR.Interface.Content
                 CurrentSource.Remove(EditorTable.SelectedItems[0] as TableObject);
             }
         }
+
+        private async void Window_Closing(object sender, CancelEventArgs e)
+        {
+            if (HasChanges)
+            {
+                var result = MessageBox.Show("Save changes to current table?", "Unsaved Changes", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+                if (result == MessageBoxResult.Yes)
+                {
+                    await SaveChanges();
+                    CleanForm();
+                }
+                else if (result == MessageBoxResult.No)
+                {
+                    CleanForm();
+                }
+                else if (result == MessageBoxResult.Cancel)
+                {
+                    e.Cancel = true;
+                }
+            }
+        }
     }
 }
