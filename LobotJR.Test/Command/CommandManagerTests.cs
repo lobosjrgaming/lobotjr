@@ -146,7 +146,7 @@ namespace LobotJR.Test.Command
             db.Commit();
 
             var otherGroup = db.AccessGroups.Read(x => x.Name.Equals("TestGroup")).First();
-            var otherRestriction = db.Restrictions.Read(x => x.Group.Equals(otherGroup)).First();
+            var otherRestriction = db.Restrictions.Read(x => x.GroupId.Equals(otherGroup.Id)).First();
             var old = otherRestriction.Command;
             otherRestriction.Command = "CommandMock.*";
 

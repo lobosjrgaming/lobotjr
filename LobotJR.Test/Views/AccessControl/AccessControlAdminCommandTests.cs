@@ -45,8 +45,8 @@ namespace LobotJR.Test.Views.AccessControl
             Assert.AreEqual(1, result.Responses.Count());
             Assert.IsTrue(result.Responses.Any(x => x.Contains("success", StringComparison.OrdinalIgnoreCase)));
             Assert.AreEqual(baseCount + 1, restrictions.Count());
-            Assert.IsTrue(restrictions.Any(x => x.Group.Equals(testGroup) && x.Command.Equals("CommandMock.Unrestricted")));
-            var newRestriction = db.Restrictions.Read(x => x.Group.Equals(testGroup) && x.Command.Equals("CommandMock.Unrestricted")).FirstOrDefault();
+            Assert.IsTrue(restrictions.Any(x => x.GroupId.Equals(testGroup.Id) && x.Command.Equals("CommandMock.Unrestricted")));
+            var newRestriction = db.Restrictions.Read(x => x.GroupId.Equals(testGroup.Id) && x.Command.Equals("CommandMock.Unrestricted")).FirstOrDefault();
         }
 
         [TestMethod]

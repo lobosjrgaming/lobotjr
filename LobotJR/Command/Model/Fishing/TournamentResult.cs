@@ -67,7 +67,7 @@ namespace LobotJR.Command.Model.Fishing
         /// participate.</returns>
         public TournamentEntry GetEntryByUser(User user)
         {
-            return Entries.Where(x => x.UserId.Equals(user.TwitchId, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            return Entries.Where(x => x.UserId.Equals(user.TwitchId)).FirstOrDefault();
         }
 
         /// <summary>

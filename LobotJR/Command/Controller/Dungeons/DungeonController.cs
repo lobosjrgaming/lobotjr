@@ -489,7 +489,7 @@ namespace LobotJR.Command.Controller.Dungeons
                 member.Currency += coins;
 
                 var loot = ConnectionManager.CurrentConnection.LootData.Read(x => x.Dungeon.Id == party.DungeonId && x.Mode.Id == party.ModeId);
-                var lootFilter = ConnectionManager.CurrentConnection.EquippableData.Read(x => x.CharacterClass.Equals(member.CharacterClass));
+                var lootFilter = ConnectionManager.CurrentConnection.EquippableData.Read(x => x.CharacterClass.Id.Equals(member.CharacterClass.Id));
                 var currentLoot = EquipmentController.GetInventoryByPlayer(member);
 
                 var filterTypes = lootFilter.Select(x => x.ItemType).ToList();

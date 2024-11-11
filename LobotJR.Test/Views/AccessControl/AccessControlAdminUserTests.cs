@@ -50,7 +50,7 @@ namespace LobotJR.Test.Views.AccessControl
             enrollments = db.Enrollments.Read(x => x.GroupId == group.Id);
             Assert.AreEqual(baseEnrollmentCount + 1, enrollments.Count());
             var notAuth = UserController.GetUserByName("NotAuth");
-            Assert.IsTrue(db.Enrollments.Read(x => x.Group.Equals(group) && x.UserId.Equals(notAuth.TwitchId)).Any());
+            Assert.IsTrue(db.Enrollments.Read(x => x.GroupId.Equals(group.Id) && x.UserId.Equals(notAuth.TwitchId)).Any());
         }
 
         [TestMethod]

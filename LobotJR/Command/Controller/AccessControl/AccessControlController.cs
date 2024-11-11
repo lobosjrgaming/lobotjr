@@ -117,7 +117,7 @@ namespace LobotJR.Command.Controller.AccessControl
         /// user was already enrolled in the group.</returns>
         public bool EnrollUserInGroup(AccessGroup accessGroup, User user)
         {
-            if (!ConnectionManager.CurrentConnection.Enrollments.Read(x => x.Group.Equals(accessGroup) && x.UserId.Equals(user.TwitchId)).Any())
+            if (!ConnectionManager.CurrentConnection.Enrollments.Read(x => x.GroupId.Equals(accessGroup.Id) && x.UserId.Equals(user.TwitchId)).Any())
             {
                 var enrollment = new Enrollment(accessGroup, user.TwitchId);
                 ConnectionManager.CurrentConnection.Enrollments.Create(enrollment);
@@ -135,7 +135,7 @@ namespace LobotJR.Command.Controller.AccessControl
         /// the user was not enrolled in the group.</returns>
         public bool UnenrollUserFromGroup(AccessGroup accessGroup, User user)
         {
-            var enrollment = ConnectionManager.CurrentConnection.Enrollments.Read(x => x.Group.Equals(accessGroup) && x.UserId.Equals(user.TwitchId)).FirstOrDefault();
+            var enrollment = ConnectionManager.CurrentConnection.Enrollments.Read(x => x.GroupId.Equals(accessGroup.Id) && x.UserId.Equals(user.TwitchId)).FirstOrDefault();
             if (enrollment != null)
             {
                 ConnectionManager.CurrentConnection.Enrollments.Delete(enrollment);
@@ -154,7 +154,7 @@ namespace LobotJR.Command.Controller.AccessControl
         /// command string.</returns>
         public bool RestrictCommandToGroup(AccessGroup accessGroup, string command)
         {
-            if (!ConnectionManager.CurrentConnection.Restrictions.Read(x => x.Group.Equals(accessGroup) && x.Command.Equals(command)).Any())
+            if (!ConnectionManager.CurrentConnection.Restrictions.Read(x => x.GroupId.Equals(accessGroup.Id) && x.Command.Equals(command)).Any())
             {
                 if (CommandManager.IsValidCommand(command))
                 {
@@ -175,7 +175,7 @@ namespace LobotJR.Command.Controller.AccessControl
         /// False if the command was not restricted to the group.</returns>
         public bool UnrestrictCommandFromGroup(AccessGroup accessGroup, string command)
         {
-            var restriction = ConnectionManager.CurrentConnection.Restrictions.Read(x => x.Group.Equals(accessGroup) && x.Command.Equals(command)).FirstOrDefault();
+            var restriction = ConnectionManager.CurrentConnection.Restrictions.Read(x => x.GroupId.Equals(accessGroup.Id) && x.Command.Equals(command)).FirstOrDefault();
             if (restriction != null)
             {
                 ConnectionManager.CurrentConnection.Restrictions.Delete(restriction);
