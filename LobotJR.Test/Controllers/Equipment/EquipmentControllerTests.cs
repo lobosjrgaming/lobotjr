@@ -197,7 +197,8 @@ namespace LobotJR.Test.Controllers.Equipment
         {
             var db = ConnectionManager.CurrentConnection;
             var user = db.Users.Read().First();
-            var items = db.ItemData.Read(x => x.Slot.Equals(db.ItemSlotData.Read().First()));
+            var slot = db.ItemSlotData.Read().First();
+            var items = db.ItemData.Read(x => x.SlotId.Equals(slot.Id));
             var inventory = new Inventory()
             {
                 Item = items.First(),
@@ -214,7 +215,9 @@ namespace LobotJR.Test.Controllers.Equipment
             db.Inventories.Create(inventory2);
             db.Commit();
             var unequipped = Controller.UnequipDuplicates();
-            var equipped = Controller.GetEquippedGear(db.PlayerCharacters.Read(x => x.UserId.Equals(user.TwitchId)).First());
+            db.Commit();
+            var player = db.PlayerCharacters.Read(x => x.UserId.Equals(user.TwitchId)).First();
+            var equipped = Controller.GetEquippedGear(player).ToList();
             Assert.AreEqual(1, unequipped.Count());
             Assert.AreEqual(1, equipped.Count());
         }
@@ -226,7 +229,7 @@ namespace LobotJR.Test.Controllers.Equipment
             var user = db.Users.Read().First();
             var slot = db.ItemSlotData.Read().First();
             slot.MaxEquipped = 2;
-            var items = db.ItemData.Read(x => x.Slot.Equals(slot));
+            var items = db.ItemData.Read(x => x.SlotId.Equals(slot.Id));
             var inventory = new Inventory()
             {
                 Item = items.First(),

@@ -100,6 +100,7 @@ namespace LobotJR.Test.Views.Gloat
             var stables = PetController.GetStableForUser(user);
             stables.First().IsActive = true;
             stables.First().Name = "TestName";
+            db.Commit();
             var record = PetController.GetActivePet(user);
             var response = GloatView.GloatPet(user);
             var responses = response.Responses;

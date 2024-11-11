@@ -99,7 +99,8 @@ namespace LobotJR.Command.Controller.Fishing
         /// <returns>An enumerable collection of all tournament results where that user participated.</returns>
         public IEnumerable<TournamentResult> GetResultsForUser(User user)
         {
-            return ConnectionManager.CurrentConnection.TournamentResults.Read(x => x.GetEntryByUser(user) != null);
+            var entries = ConnectionManager.CurrentConnection.TournamentEntries.Read(x => x.UserId.Equals(user.TwitchId)).Select(x => x.ResultId).ToList();
+            return ConnectionManager.CurrentConnection.TournamentResults.Read(x => entries.Contains(x.Id));
         }
 
         /// <summary>

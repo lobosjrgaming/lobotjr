@@ -59,7 +59,7 @@ namespace LobotJR.Command.Controller.Twitch
         /// none exists.</returns>
         public User GetUserByName(string username)
         {
-            return ConnectionManager.CurrentConnection.Users.FirstOrDefault(x => x.Username.ToLower().Equals(username));
+            return ConnectionManager.CurrentConnection.Users.FirstOrDefault(x => x.Username.ToLower().Equals(username.ToLower()));
         }
 
         /// <summary>

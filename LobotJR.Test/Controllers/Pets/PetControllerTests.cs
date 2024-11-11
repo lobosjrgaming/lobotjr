@@ -44,6 +44,7 @@ namespace LobotJR.Test.Controllers.Pets
             var user = db.Users.Read().First();
             var stables = db.Stables.Read(x => x.UserId.Equals(user.TwitchId));
             stables.First().IsActive = true;
+            db.Commit();
             var result = PetController.GetActivePet(user);
             Assert.AreEqual(stables.First(), result);
             Assert.IsTrue(result.IsActive);
@@ -56,6 +57,7 @@ namespace LobotJR.Test.Controllers.Pets
             var player = db.PlayerCharacters.Read().First();
             var stables = db.Stables.Read(x => x.UserId.Equals(player.UserId));
             stables.First().IsActive = true;
+            db.Commit();
             var result = PetController.GetActivePet(player);
             Assert.AreEqual(stables.First(), result);
             Assert.IsTrue(result.IsActive);
@@ -68,6 +70,7 @@ namespace LobotJR.Test.Controllers.Pets
             var user = db.Users.Read().First();
             var stables = db.Stables.Read(x => x.UserId.Equals(user.TwitchId));
             stables.First().IsActive = true;
+            db.Commit();
             var result = PetController.ActivatePet(user, stables.Last());
             Assert.AreEqual(stables.First(), result);
             Assert.IsFalse(result.IsActive);
@@ -82,7 +85,9 @@ namespace LobotJR.Test.Controllers.Pets
             var user = db.Users.Read().First();
             var stables = db.Stables.Read(x => x.UserId.Equals(user.TwitchId));
             stables.First().IsActive = true;
+            db.Commit();
             var result = PetController.DeactivatePet(user);
+            db.Commit();
             Assert.AreEqual(stables.First(), result);
             Assert.IsFalse(result.IsActive);
             Assert.AreEqual(0, stables.Where(x => x.IsActive).Count());

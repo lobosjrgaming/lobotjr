@@ -1,4 +1,5 @@
-﻿using LobotJR.Command.Controller.Twitch;
+﻿using LobotJR.Command.Controller.Equipment;
+using LobotJR.Command.Controller.Twitch;
 using LobotJR.Command.Model.Equipment;
 using LobotJR.Command.Model.Pets;
 using LobotJR.Command.Model.Player;
@@ -28,6 +29,7 @@ namespace LobotJR.Command.Controller.Player
         private readonly IConnectionManager ConnectionManager;
         private readonly SettingsManager SettingsManager;
         private readonly UserController UserController;
+        private readonly EquipmentController EquipmentController;
 
         private readonly List<string> PendingRespec = new List<string>();
 
@@ -90,11 +92,12 @@ namespace LobotJR.Command.Controller.Player
         /// </summary>
         public User AwardSetter { get; set; }
 
-        public PlayerController(IConnectionManager connectionManager, SettingsManager settingsManager, UserController userController)
+        public PlayerController(IConnectionManager connectionManager, SettingsManager settingsManager, UserController userController, EquipmentController equipmentController)
         {
             ConnectionManager = connectionManager;
             SettingsManager = settingsManager;
             UserController = userController;
+            EquipmentController = equipmentController;
         }
 
         public static int ExperienceForLevel(int level)
@@ -328,6 +331,7 @@ namespace LobotJR.Command.Controller.Player
             {
                 player.Currency -= cost;
                 PendingRespec.Remove(player.UserId);
+                EquipmentController.ClearInventory(player);
                 SetClass(player, characterClass);
                 return true;
             }

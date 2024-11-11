@@ -379,7 +379,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             var members = PartyController.GetPartyPlayers(party);
             foreach (var member in members)
             {
-                member.CharacterClass.SuccessChance = 1;
+                member.CharacterClass.SuccessChance = 2;
             }
             var message = encounter.Enemy;
             var listener = new Mock<DungeonController.DungeonProgressHandler>();
@@ -565,8 +565,8 @@ namespace LobotJR.Test.Controllers.Dungeons
             var members = PartyController.GetPartyPlayers(party);
             var first = members.First();
             var items = db.ItemData.Read();
-            var filter = db.EquippableData.Read(x => x.CharacterClass.Equals(first.CharacterClass));
-            var itemsToAdd = items.Where(x => filter.Any(y => y.ItemType.Equals(x.Type)));
+            var filter = db.EquippableData.Read(x => x.CharacterClassId.Equals(first.CharacterClass.Id));
+            var itemsToAdd = items.Where(x => filter.Any(y => y.ItemTypeId.Equals(x.Type.Id)));
             foreach (var itemToAdd in itemsToAdd)
             {
                 db.Inventories.Create(new Inventory() { Item = itemToAdd, UserId = first.UserId });

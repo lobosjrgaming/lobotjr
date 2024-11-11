@@ -32,7 +32,8 @@ namespace LobotJR.Test.Mocks
             Mock.Setup(x => x.GetTwitchUsers(It.IsAny<IEnumerable<string>>(), It.IsAny<bool>()))
                 .Returns((IEnumerable<string> users, bool logProgress) =>
                 {
-                    var userObjects = GetUsers(x => users.Contains(x.Username, StringComparer.OrdinalIgnoreCase));
+                    var lowerUsers = users.Select(x => x.ToLower());
+                    var userObjects = GetUsers(x => lowerUsers.Contains(x.Username.ToLower())).ToList();
                     var userResponse = userObjects.Select(x => new UserResponseData() { DisplayName = x.Username, Login = x.Username, Id = x.TwitchId }).ToList();
                     var toCreate = users.Except(userObjects.Select(x => x.Username)).ToList();
                     for (var i = 0; i < toCreate.Count(); i++)

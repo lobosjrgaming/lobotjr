@@ -237,6 +237,7 @@ namespace LobotJR.Test.Views.Pets
                 pet.IsActive = false;
             }
             stable.Last().IsActive = true;
+            AutofacMockSetup.ConnectionManager.CurrentConnection.Commit();
             var response = View.ActivatePet(User, 1);
             Assert.IsTrue(response.Responses.Any(x => x.Contains("summoned") && x.Contains(stable.First().Name)));
             Assert.IsTrue(response.Responses.Any(x => x.Contains("stable") && x.Contains(stable.Last().Name)));
@@ -284,6 +285,7 @@ namespace LobotJR.Test.Views.Pets
                 pet.IsActive = false;
             }
             stable.First().IsActive = true;
+            AutofacMockSetup.ConnectionManager.CurrentConnection.Commit();
             var response = View.DeactivatePet(User);
             Assert.IsTrue(response.Responses.Any(x => x.Contains("dismiss") && x.Contains(stable.First().Name)));
             Assert.IsFalse(stable.First().IsActive);

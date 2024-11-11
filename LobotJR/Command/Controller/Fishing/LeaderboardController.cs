@@ -59,7 +59,7 @@ namespace LobotJR.Command.Controller.Fishing
         /// <returns>A collection of records for the user.</returns>
         public Catch GetUserRecordForFish(User user, Fish fish)
         {
-            return ConnectionManager.CurrentConnection.Catches.Read(x => x.UserId.Equals(user.TwitchId) && x.Fish.Equals(fish)).FirstOrDefault();
+            return ConnectionManager.CurrentConnection.Catches.Read(x => x.UserId.Equals(user.TwitchId) && x.FishId.Equals(fish.Id)).FirstOrDefault();
         }
 
         /// <summary>
@@ -78,7 +78,7 @@ namespace LobotJR.Command.Controller.Fishing
                 return false;
             }
 
-            var record = ConnectionManager.CurrentConnection.Catches.Read(x => x.UserId.Equals(user.TwitchId) && x.Fish.Equals(catchData.Fish)).FirstOrDefault();
+            var record = ConnectionManager.CurrentConnection.Catches.Read(x => x.UserId.Equals(user.TwitchId) && x.FishId.Equals(catchData.Fish.Id)).FirstOrDefault();
             if (record == null || record.Weight < catchData.Weight)
             {
                 Logger.Debug("Catch set a new personal record for user {user}, fish {fish} at {weight} pounds.", user.Username, catchData.Fish?.Name, catchData.Weight);
@@ -135,7 +135,7 @@ namespace LobotJR.Command.Controller.Fishing
                 Weight = catchData.Weight,
                 UserId = catchData.UserId
             };
-            var record = ConnectionManager.CurrentConnection.FishingLeaderboard.Read(x => x.Fish.Equals(catchData.Fish)).FirstOrDefault();
+            var record = ConnectionManager.CurrentConnection.FishingLeaderboard.Read(x => x.FishId.Equals(catchData.Fish.Id)).FirstOrDefault();
             if (record == null || record.Weight < catchData.Weight)
             {
                 Logger.Debug("Catch set a new global record for fish {fish} at {weight} pounds.", catchData.Fish?.Name, catchData.Weight);

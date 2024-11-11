@@ -186,7 +186,7 @@ namespace LobotJR.Test.TournamentSystems.Fishing
         {
             var db = ConnectionManager.CurrentConnection;
             var user = db.Users.Read().First();
-            var expectedResults = db.TournamentResults.Read(x => x.Entries.Any(y => y.UserId.Equals(user.TwitchId)));
+            var expectedResults = db.TournamentResults.Read().Where(x => x.Entries.Any(y => y.UserId.Equals(user.TwitchId)));
             var actualResults = TournamentSystem.GetResultsForUser(user);
             Assert.AreEqual(expectedResults.Count(), actualResults.Count());
         }

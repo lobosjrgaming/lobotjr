@@ -135,6 +135,7 @@ namespace LobotJR.Test.Controllers.Fishing
             var catchData = new Catch()
             {
                 Fish = fish,
+                FishId = fish.Id,
                 UserId = user.TwitchId,
                 Weight = existing.Weight + 1
             };
@@ -172,6 +173,7 @@ namespace LobotJR.Test.Controllers.Fishing
             {
                 UserId = user.TwitchId,
                 Fish = record.Fish,
+                FishId = record.FishId,
                 Weight = record.Weight - 0.01f
             };
             var result = LeaderboardController.UpdatePersonalLeaderboard(user, catchData);

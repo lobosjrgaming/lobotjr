@@ -183,8 +183,8 @@ namespace LobotJR.Test.Controllers.Dungeons
             var player = db.PlayerCharacters.Read().First();
             var player2 = db.PlayerCharacters.Read().ElementAt(2);
             var player3 = db.PlayerCharacters.Read().ElementAt(3);
-            player2.CharacterClass = db.CharacterClassData.Read(x => x.CanPlay && !x.Equals(player.CharacterClass)).First();
-            player3.CharacterClass = db.CharacterClassData.Read(x => x.CanPlay && !x.Equals(player.CharacterClass) && !x.Equals(player2.CharacterClass)).First();
+            player2.CharacterClass = db.CharacterClassData.Read(x => x.CanPlay && !x.Id.Equals(player.CharacterClass.Id)).First();
+            player3.CharacterClass = db.CharacterClassData.Read(x => x.CanPlay && !x.Id.Equals(player.CharacterClass.Id) && !x.Id.Equals(player2.CharacterClass.Id)).First();
             var run = new DungeonRun(db.DungeonData.Read().First(), db.DungeonModeData.Read().First());
             var listener = new Mock<GroupFinderController.DungeonQueueHandler>();
             Controller.PartyFound += listener.Object;
@@ -212,8 +212,8 @@ namespace LobotJR.Test.Controllers.Dungeons
             var player = db.PlayerCharacters.Read().First();
             var player2 = db.PlayerCharacters.Read().ElementAt(2);
             var player3 = db.PlayerCharacters.Read().ElementAt(3);
-            player2.CharacterClass = db.CharacterClassData.Read(x => x.CanPlay && !x.Equals(player.CharacterClass)).First();
-            player3.CharacterClass = db.CharacterClassData.Read(x => x.CanPlay && !x.Equals(player.CharacterClass) && !x.Equals(player2.CharacterClass)).First();
+            player2.CharacterClass = db.CharacterClassData.Read(x => x.CanPlay && !x.Id.Equals(player.CharacterClass.Id)).First();
+            player3.CharacterClass = db.CharacterClassData.Read(x => x.CanPlay && !x.Id.Equals(player.CharacterClass.Id) && !x.Id.Equals(player2.CharacterClass.Id)).First();
             var run = new DungeonRun(db.DungeonData.Read().First(), db.DungeonModeData.Read().First());
             var listener = new Mock<GroupFinderController.DungeonQueueHandler>();
             Controller.PartyFound += listener.Object;
@@ -232,8 +232,8 @@ namespace LobotJR.Test.Controllers.Dungeons
             var player2 = db.PlayerCharacters.Read().ElementAt(2);
             var player3 = db.PlayerCharacters.Read().ElementAt(3);
             var player4 = db.PlayerCharacters.Read().ElementAt(4);
-            player3.CharacterClass = db.CharacterClassData.Read(x => x.CanPlay && !x.Equals(player.CharacterClass)).First();
-            player4.CharacterClass = db.CharacterClassData.Read(x => x.CanPlay && !x.Equals(player.CharacterClass) && !x.Equals(player3.CharacterClass)).First();
+            player3.CharacterClass = db.CharacterClassData.Read(x => x.CanPlay && !x.Id.Equals(player.CharacterClass.Id)).First();
+            player4.CharacterClass = db.CharacterClassData.Read(x => x.CanPlay && !x.Id.Equals(player.CharacterClass.Id) && !x.Id.Equals(player3.CharacterClass.Id)).First();
             var run = new DungeonRun(db.DungeonData.Read().First(), db.DungeonModeData.Read().First());
             var listener = new Mock<GroupFinderController.DungeonQueueHandler>();
             Controller.PartyFound += listener.Object;
@@ -252,7 +252,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             var player = db.PlayerCharacters.Read().First();
             var player2 = db.PlayerCharacters.Read().ElementAt(2);
             var player3 = db.PlayerCharacters.Read().ElementAt(3);
-            player2.CharacterClass = db.CharacterClassData.Read(x => x.CanPlay && !x.Equals(player.CharacterClass)).First();
+            player2.CharacterClass = db.CharacterClassData.Read(x => x.CanPlay && !x.Id.Equals(player.CharacterClass.Id)).First();
             var run = new DungeonRun(db.DungeonData.Read().First(), db.DungeonModeData.Read().First());
             var listener = new Mock<GroupFinderController.DungeonQueueHandler>();
             Controller.PartyFound += listener.Object;
@@ -269,7 +269,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             var player = db.PlayerCharacters.Read().First();
             var player2 = db.PlayerCharacters.Read().ElementAt(2);
             var player3 = db.PlayerCharacters.Read().ElementAt(3);
-            player3.CharacterClass = db.CharacterClassData.Read(x => x.CanPlay && !x.Equals(player.CharacterClass)).First();
+            player3.CharacterClass = db.CharacterClassData.Read(x => x.CanPlay && !x.Id.Equals(player.CharacterClass.Id)).First();
             var run = new DungeonRun(db.DungeonData.Read().First(), db.DungeonModeData.Read().First());
             var listener = new Mock<GroupFinderController.DungeonQueueHandler>();
             Controller.PartyFound += listener.Object;
@@ -297,7 +297,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             var player = db.PlayerCharacters.Read().First();
             var player2 = db.PlayerCharacters.Read().ElementAt(2);
             var player3 = db.PlayerCharacters.Read().ElementAt(3);
-            player3.CharacterClass = db.CharacterClassData.Read(x => x.CanPlay && !x.Equals(player.CharacterClass)).First();
+            player3.CharacterClass = db.CharacterClassData.Read(x => x.CanPlay && !x.Id.Equals(player.CharacterClass.Id)).First();
             var run = new DungeonRun(db.DungeonData.Read().First(), db.DungeonModeData.Read().First());
             Controller.QueuePlayer(player, new List<DungeonRun>() { run });
             Controller.QueuePlayer(player2, new List<DungeonRun>() { run });

@@ -117,6 +117,16 @@ namespace LobotJR.Command.Controller.Equipment
         }
 
         /// <summary>
+        /// Clears a player's inventory.
+        /// </summary>
+        /// <param name="player">The player object to clear.</param>
+        public void ClearInventory(PlayerCharacter player)
+        {
+            var toDelete = GetInventoryByPlayer(player);
+            ConnectionManager.CurrentConnection.Inventories.DeleteRange(toDelete);
+        }
+
+        /// <summary>
         /// Deletes all duplicate inventory entries.
         /// </summary>
         /// <returns>The deleted records.</returns>
@@ -156,7 +166,7 @@ namespace LobotJR.Command.Controller.Equipment
         /// <returns>The records that were updated.</returns>
         public IEnumerable<Inventory> FixCountErrors()
         {
-            var errors = ConnectionManager.CurrentConnection.Inventories.Read(x => x.Count > x.Item.Max).ToList();
+            var errors = ConnectionManager.CurrentConnection.Inventories.Read().Where(x => x.Count > x.Item.Max).ToList();
             foreach (var error in errors)
             {
                 error.Count = error.Item.Max;
