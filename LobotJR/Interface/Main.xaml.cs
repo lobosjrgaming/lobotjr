@@ -86,7 +86,7 @@ namespace LobotJR.Interface
         public bool IsStarted { get; set; }
         public bool IsConnected { get; set; }
 
-        private async Task SetFlag(LogFilter level, bool value)
+        private void SetFlag(LogFilter level, bool value)
         {
             if (value)
             {
@@ -96,20 +96,15 @@ namespace LobotJR.Interface
             {
                 Settings.LogFilter &= ~level;
             }
-            var connectionManager = Bot.Scope.Resolve<IConnectionManager>();
-            var settingsManager = Bot.Scope.Resolve<SettingsManager>();
-            using (await connectionManager.OpenConnection())
-            {
-                settingsManager.GetClientSettings().LogFilter = Settings.LogFilter;
-            }
+            //We don't need to save this on every click. Move all of this to on close
             UpdateLogView();
         }
 
-        public bool ShowDebug { get { return Settings.LogFilter.HasFlag(LogFilter.Debug); } set { SetFlag(LogFilter.Debug, value).Wait(); } }
-        public bool ShowInfo { get { return Settings.LogFilter.HasFlag(LogFilter.Info); } set { SetFlag(LogFilter.Info, value).Wait(); } }
-        public bool ShowWarning { get { return Settings.LogFilter.HasFlag(LogFilter.Warning); } set { SetFlag(LogFilter.Warning, value).Wait(); } }
-        public bool ShowError { get { return Settings.LogFilter.HasFlag(LogFilter.Error); } set { SetFlag(LogFilter.Error, value).Wait(); } }
-        public bool ShowCrash { get { return Settings.LogFilter.HasFlag(LogFilter.Crash); } set { SetFlag(LogFilter.Crash, value).Wait(); } }
+        public bool ShowDebug { get { return Settings.LogFilter.HasFlag(LogFilter.Debug); } set { SetFlag(LogFilter.Debug, value); } }
+        public bool ShowInfo { get { return Settings.LogFilter.HasFlag(LogFilter.Info); } set { SetFlag(LogFilter.Info, value); } }
+        public bool ShowWarning { get { return Settings.LogFilter.HasFlag(LogFilter.Warning); } set { SetFlag(LogFilter.Warning, value); } }
+        public bool ShowError { get { return Settings.LogFilter.HasFlag(LogFilter.Error); } set { SetFlag(LogFilter.Error, value); } }
+        public bool ShowCrash { get { return Settings.LogFilter.HasFlag(LogFilter.Crash); } set { SetFlag(LogFilter.Crash, value); } }
 
         public Main()
         {
@@ -729,6 +724,16 @@ namespace LobotJR.Interface
                 }
                 await LoadSettings(Bot.Scope);
                 UpdateLogView();
+            }
+        }
+
+        private async void Window_Closing(object sender, CancelEventArgs e)
+        {
+            var connectionManager = Bot.Scope.Resolve<IConnectionManager>();
+            var settingsManager = Bot.Scope.Resolve<SettingsManager>();
+            using (await connectionManager.OpenConnection())
+            {
+                settingsManager.GetClientSettings().LogFilter = Settings.LogFilter;
             }
         }
     }
