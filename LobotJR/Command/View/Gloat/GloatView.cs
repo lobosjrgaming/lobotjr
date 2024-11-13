@@ -31,7 +31,7 @@ namespace LobotJR.Command.View.Gloat
             "A fearsome champion of the Wolfpack!",
             "A vicious pack leader!",
             "A famed Wolfpack Captain!",
-            "A brutal commandef of the Wolfpack!",
+            "A brutal commander of the Wolfpack!",
             "Decorated Chieftain of the Wolfpack!",
             "A WarChieftain of the Wolfpack!",
             "A sacred Wolfpack Justicar",

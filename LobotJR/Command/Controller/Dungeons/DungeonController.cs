@@ -321,7 +321,7 @@ namespace LobotJR.Command.Controller.Dungeons
 
         private float PartySuccessChance(IEnumerable<PlayerCharacter> players, Dictionary<CharacterClass, float> classMultipliers)
         {
-            return players.Sum(x => PlayerSuccessChance(x) * classMultipliers[x.CharacterClass]);
+            return players.Sum(x => PlayerSuccessChance(x) * classMultipliers[x.CharacterClass]) * (players.Count() / SettingsManager.GetGameSettings().DungeonPartySize);
         }
 
         private float PlayerDeathChance(PlayerCharacter player)

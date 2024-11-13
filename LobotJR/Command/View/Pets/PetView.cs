@@ -84,7 +84,8 @@ namespace LobotJR.Command.View.Pets
         private void PetController_PetFound(User user, Stable stable)
         {
             var result = new CommandResult(user);
-            var userStable = PetController.GetStableForUser(user);
+            var userStable = PetController.GetStableForUser(user).ToList();
+            userStable.Add(stable);
             string responseString;
             string messageString;
             var petName = GetPetName(stable);
@@ -109,7 +110,10 @@ namespace LobotJR.Command.View.Pets
                 responseString += " WOW! And it's a sparkly version! Lucky you!";
             }
             result.Responses.Add(responseString);
-            if (userStable.Count() == PetController.GetPets().Count())
+            var allPets = PetController.GetPets().Select(x => x.Id).Distinct();
+            var normalPets = userStable.Where(x => !x.IsSparkly).Select(x => x.Id).Distinct();
+            var sparklyPets = userStable.Where(x => x.IsSparkly).Select(x => x.Id).Distinct();
+            if (!allPets.Except(normalPets).Any() && !allPets.Except(sparklyPets).Any())
             {
                 result.Responses.Add("You've collected all of the available pets! Congratulations!");
             }

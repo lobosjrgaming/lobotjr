@@ -186,7 +186,7 @@ namespace LobotJR
                             continue;
                         }
                     }
-                    else if (message.IsChat)
+                    else if (message.IsChat && !message.IsShared)
                     {
                         userController.UpdateUser(chatter, message);
                         var triggerResult = triggerManager.ProcessTrigger(message.Message, chatter);
