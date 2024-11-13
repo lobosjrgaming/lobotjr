@@ -618,7 +618,7 @@ namespace LobotJR.Interface
             };
             dialog.Left = Left + Width / 2 - dialog.Width / 2;
             dialog.Top = Top + Height / 2 - dialog.Height / 2;
-            var result = dialog.ShowDialog();
+            dialog.ShowDialog();
         }
 
         private async void AccessButton_Click(object sender, RoutedEventArgs e)

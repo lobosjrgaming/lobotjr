@@ -84,7 +84,8 @@ namespace LobotJR.Command.View.Pets
         private void PetController_PetFound(User user, Stable stable)
         {
             var result = new CommandResult(user);
-            var userStable = PetController.GetStableForUser(user);
+            var userStable = PetController.GetStableForUser(user).ToList();
+            userStable.Add(stable);
             string responseString;
             string messageString;
             var petName = GetPetName(stable);
