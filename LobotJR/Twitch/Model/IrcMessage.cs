@@ -72,6 +72,11 @@ namespace LobotJR.Twitch.Model
         /// going through Twitch.
         /// </summary>
         public bool IsInternal { get { if (Tags.TryGetValue("internal", out var value)) { return value.Equals(InternalMessageId); } return false; } }
+        /// <summary>
+        /// Indicates whether the message was sent on the local chat channel,
+        /// or if it came across as part of a shared chat channel.
+        /// </summary>
+        public bool IsShared { get; private set; }
 
         public static IrcMessage Parse(string message)
         {
@@ -89,6 +94,10 @@ namespace LobotJR.Twitch.Model
                 output.Tags.TryGetValue("user-id", out string id);
                 output.UserId = id;
                 output.UserName = output.Tags.ContainsKey("display-name") ? output.Tags["display-name"] : content.Groups["user"].Value;
+                if (output.Tags.ContainsKey("source-room-id") && output.Tags.ContainsKey("room-id"))
+                {
+                    output.IsShared = !output.Tags["source-room-id"].Equals(output.Tags["room-id"]);
+                }
                 output.Command = content.Groups["command"].Value;
                 output.Channel = content.Groups["channel"].Value;
                 output.Message = content.Groups["message"].Value;
