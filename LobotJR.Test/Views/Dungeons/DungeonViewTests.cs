@@ -628,9 +628,9 @@ namespace LobotJR.Test.Views.Dungeons
             var result = View.StartDungeon(User, "1");
             Assert.AreEqual(PartyState.Started, party.State);
             listener.Verify(x => x(User, It.Is<CommandResult>(y => y.Responses.First().Contains("initiated"))), Times.Once());
-            listener.Verify(x => x(User, It.Is<CommandResult>(y => y.Responses.First().Contains(otherUser.Username))), Times.Once());
+            listener.Verify(x => x(User, It.Is<CommandResult>(y => y.Responses.Last().Contains(otherUser.Username))), Times.Once());
             listener.Verify(x => x(otherUser, It.Is<CommandResult>(y => y.Responses.First().Contains("initiated"))), Times.Once());
-            listener.Verify(x => x(otherUser, It.Is<CommandResult>(y => y.Responses.First().Contains(User.Username))), Times.Once());
+            listener.Verify(x => x(otherUser, It.Is<CommandResult>(y => y.Responses.Last().Contains(User.Username))), Times.Once());
         }
 
         [TestMethod]
