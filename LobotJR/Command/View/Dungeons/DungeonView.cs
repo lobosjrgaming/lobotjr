@@ -487,9 +487,16 @@ namespace LobotJR.Command.View.Dungeons
                     var success = DungeonController.TryStartDungeon(party, dungeon, mode, out var broke);
                     if (success)
                     {
-                        PushToParty(party, $"Successfully initiated {DungeonController.GetDungeonName(party.DungeonId, party.ModeId)}! Wolfcoins deducted.");
+                        var startMessage = $"Successfully initiated {DungeonController.GetDungeonName(party.DungeonId, party.ModeId)}!";
+                        var settings = SettingsManager.GetGameSettings();
                         var members = party.Members.Select(x => $"{UserController.GetUserById(x).Username} ({DescribeClass(PlayerController.GetPlayerByUserId(x))})");
-                        PushToParty(party, $"Your party consists of: {string.Join(", ", members)}");
+                        var memberMessage = $"Your party consists of: {string.Join(", ", members)}";
+                        foreach (var member in party.Members)
+                        {
+                            var memberPlayer = PlayerController.GetPlayerByUserId(member);
+                            var cost = DungeonController.GetDungeonCost(memberPlayer, settings);
+                            PushNotification?.Invoke(UserController.GetUserById(member), new CommandResult($"{startMessage} {cost} Wolfcoins deducted ({memberPlayer.Currency} remaining).", memberMessage));
+                        }
                         return new CommandResult();
                     }
                     if (broke.Any())
