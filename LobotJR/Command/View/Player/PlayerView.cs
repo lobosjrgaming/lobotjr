@@ -318,7 +318,7 @@ namespace LobotJR.Command.View.Player
                                 PlayerController.FlagForRespec(player);
                                 var classes = PlayerController.GetPlayableClasses();
                                 return new CommandResult(
-                                    $"You've chosen to respec your class! It will cost you {cost} coins to respec and you will lose all your items. Reply 'Nevermind' to cancel or one of the following codes to select your new class: ",
+                                    $"You've chosen to respec your class! It will cost you {cost} coins to respec and you will lose all your items. Reply '!Nevermind' to cancel or one of the following codes to select your new class: ",
                                     string.Join(", ", classes.Select(x => $"!C{x.Id - 1} ({x.Name})")));
                             }
                             return new CommandResult($"It costs {cost} Wolfcoins to respec at your level. You have {player.Currency} coins.");

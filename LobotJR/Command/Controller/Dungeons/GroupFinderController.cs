@@ -202,6 +202,7 @@ namespace LobotJR.Command.Controller.Dungeons
             if (TryCreateParty(out var party))
             {
                 LastGroupFormed = DateTime.Now;
+                party.LastUpdate = DateTime.Now;
                 PartyFound?.Invoke(party);
                 return true;
             }

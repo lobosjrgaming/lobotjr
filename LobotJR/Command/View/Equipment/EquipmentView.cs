@@ -39,7 +39,7 @@ namespace LobotJR.Command.View.Equipment
 
         private string PrintPercent(float value)
         {
-            return $"{(int)Math.Round(value * 100)}%";
+            return $"{(int)Math.Round(value * 100)}";
         }
 
         private IEnumerable<string> DescribeItem(Item item, int index, bool isEquipped)
@@ -48,23 +48,23 @@ namespace LobotJR.Command.View.Equipment
             var output = new List<string>() { $"{index}: {item.Name} ({item.Quality.Name} {item.Slot.Name}) ({equipString})" };
             if (item.SuccessChance > 0)
             {
-                output.Add($"+{PrintPercent(item.SuccessChance)} Success Chance");
+                output.Add($"+{PrintPercent(item.SuccessChance)}% Success Chance");
             }
             if (item.XpBonus > 0)
             {
-                output.Add($"+{PrintPercent(item.XpBonus)} XP Bonus");
+                output.Add($"+{PrintPercent(item.XpBonus)}% XP Bonus");
             }
             if (item.CoinBonus > 0)
             {
-                output.Add($"+{PrintPercent(item.CoinBonus)} Wolfcoin Bonus");
+                output.Add($"+{PrintPercent(item.CoinBonus)}% Wolfcoin Bonus");
             }
             if (item.ItemFind > 0)
             {
-                output.Add($"+{PrintPercent(item.ItemFind)} Item Find");
+                output.Add($"+{PrintPercent(item.ItemFind)}% Item Find");
             }
             if (item.PreventDeathBonus > 0)
             {
-                output.Add($"+{PrintPercent(item.PreventDeathBonus)} to Prevent Death");
+                output.Add($"+{PrintPercent(item.PreventDeathBonus)}% to Prevent Death");
             }
             return output;
         }
@@ -72,7 +72,7 @@ namespace LobotJR.Command.View.Equipment
         public CompactCollection<Inventory> GetInventoryCompact(User user)
         {
             var inventory = EquipmentController.GetInventoryByUser(user);
-            return new CompactCollection<Inventory>(inventory, x => $"{x.Item.Name}|{x.Item.Description}|{(x.IsEquipped ? "E" : "U")}|{PrintPercent(x.Item.SuccessChance)}|{PrintPercent(x.Item.XpBonus)}|{PrintPercent(x.Item.CoinBonus)}|{PrintPercent(x.Item.ItemFind)}|{PrintPercent(x.Item.PreventDeathBonus)};");
+            return new CompactCollection<Inventory>(inventory, x => $"{x.Item.Name}|{x.Item.Description}|{(x.IsEquipped ? "E" : "U")}|{x.Item.Quality.Name}|{x.Item.Slot.Name}|{PrintPercent(x.Item.SuccessChance)}|{PrintPercent(x.Item.XpBonus)}|{PrintPercent(x.Item.CoinBonus)}|{PrintPercent(x.Item.ItemFind)}|{PrintPercent(x.Item.PreventDeathBonus)};");
         }
 
         public CommandResult GetInventory(User user)

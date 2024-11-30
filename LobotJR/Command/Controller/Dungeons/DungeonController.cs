@@ -6,6 +6,7 @@ using LobotJR.Command.Model.Equipment;
 using LobotJR.Command.Model.Pets;
 using LobotJR.Command.Model.Player;
 using LobotJR.Data;
+using LobotJR.Utils;
 using NLog;
 using System;
 using System.Collections.Generic;
@@ -30,6 +31,31 @@ namespace LobotJR.Command.Controller.Dungeons
         private readonly PetController PetController;
 
         private readonly Random Random = new Random();
+
+        /// <summary>
+        /// Event handler for events related to dungeon errors. This is only
+        /// fired if the error prevents the ongoing dungeon from completing,
+        /// and the party will be disbanded after the event is fired.
+        /// </summary>
+        /// <param name="party">The party to send the error message to.</param>
+        public delegate void DungeonErrorHandler(Party party);
+        /// <summary>
+        /// Event fired when an error is encountered during a dungeon run that
+        /// prevents the party from continuing the dungeon.
+        /// </summary>
+        public event DungeonErrorHandler DungeonError;
+
+        /// <summary>
+        /// Event handler for events related to starting a dungeon. This is
+        /// only used when a dungeon run is automatically started, which is
+        /// only done for Group Finder parties.
+        /// </summary>
+        /// <param name="party">The party to send the start messages to.</param>
+        public delegate void DungeonStartHandler(Party party);
+        /// <summary>
+        /// Event fired when a player's group starts a dungeon.
+        /// </summary>
+        public event DungeonStartHandler DungeonStart;
 
         /// <summary>
         /// Event handler for events related to progressing through a dungeon.
@@ -128,8 +154,12 @@ namespace LobotJR.Command.Controller.Dungeons
         {
             var dungeon = ConnectionManager.CurrentConnection.DungeonData.ReadById(dungeonId);
             var mode = ConnectionManager.CurrentConnection.DungeonModeData.ReadById(modeId);
-            var modeName = mode.IsDefault ? "" : $" [{mode.Name}]";
-            return $"{dungeon.Name}{modeName}";
+            if (dungeon != null && mode != null)
+            {
+                var modeName = mode.IsDefault ? "" : $" [{mode.Name}]";
+                return $"{dungeon.Name}{modeName}";
+            }
+            return "Invalid dungeon";
         }
 
         /// <summary>
@@ -290,11 +320,33 @@ namespace LobotJR.Command.Controller.Dungeons
                         party.DungeonId = dungeonId;
                         party.ModeId = modeId;
                         party.State = PartyState.Started;
+                        DungeonStart?.Invoke(party);
                         return true;
                     }
                 }
             }
             return false;
+        }
+
+        /// <summary>
+        /// Selects the dungeon to run for a party.
+        /// </summary>
+        /// <param name="party">The party to get a dungeon for.</param>
+        /// <param name="dungeon">The id of the dungeon to run.</param>
+        /// <param name="mode">The id of the mode to run.</param>
+        public void SelectDungeon(Party party, out int dungeon, out int mode)
+        {
+            if (party.DungeonId > 0)
+            {
+                dungeon = party.DungeonId;
+                mode = party.ModeId;
+            }
+            else
+            {
+                var run = Random.RandomElement(GetEligibleDungeons(party));
+                dungeon = run.DungeonId;
+                mode = run.ModeId;
+            }
         }
 
         private bool CanProcessUpdate(Party party, TimeSpan stepTime)
@@ -563,6 +615,22 @@ namespace LobotJR.Command.Controller.Dungeons
             var settings = SettingsManager.GetGameSettings();
             var stepTime = TimeSpan.FromMilliseconds(settings.DungeonStepTime);
             var groups = PartyController.GetAllGroups();
+            var toStart = groups.Where(x => x.State == PartyState.Full && x.IsQueueGroup && CanProcessUpdate(x, stepTime));
+            foreach (var party in toStart)
+            {
+                SelectDungeon(party, out var dungeon, out var mode);
+                if (!TryStartDungeon(party, dungeon, mode, out var broke))
+                {
+                    DungeonError?.Invoke(party);
+                }
+            }
+            var startFailures = toStart.Where(x => x.State != PartyState.Started).ToList();
+            foreach (var party in startFailures)
+            {
+                Logger.Warn("Party with members {members} failed to start.");
+                PartyController.DisbandParty(party);
+            }
+
             var toUpdate = groups.Where(x => x.State == PartyState.Started && CanProcessUpdate(x, stepTime));
             foreach (var party in toUpdate)
             {

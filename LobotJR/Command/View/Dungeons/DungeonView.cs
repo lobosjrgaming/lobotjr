@@ -20,8 +20,12 @@ namespace LobotJR.Command.View.Dungeons
     /// </summary>
     public class DungeonView : ICommandView, IPushNotifier
     {
+        public static string GetPlayerName(Party party, User player)
+        {
+            return party.Leader.Equals(player.TwitchId) ? $"*{player.Username}*" : player.Username;
+        }
+
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-        private static readonly Random Random = new Random();
         public static readonly Dictionary<PartyState, string> PartyDescriptions = new Dictionary<PartyState, string>()
         {
             { PartyState.Forming, "Party is currently forming. Add members with '!add <username>'" },
@@ -62,6 +66,8 @@ namespace LobotJR.Command.View.Dungeons
             SettingsManager = settingsManager;
             confirmationController.Confirmed += ConfirmationController_Confirmed;
             confirmationController.Canceled += ConfirmationController_Canceled;
+            DungeonController.DungeonError += DungeonController_DungeonError;
+            DungeonController.DungeonStart += DungeonController_DungeonStart;
             DungeonController.DungeonProgress += DungeonController_DungeonProgress;
             DungeonController.DungeonFailure += DungeonController_DungeonFailure;
             DungeonController.PlayerDeath += DungeonController_PlayerDeath;
@@ -82,6 +88,39 @@ namespace LobotJR.Command.View.Dungeons
                 new CommandHandler("Unready", this, CommandMethod.GetInfo(UnsetReady), "unready"),
                 new CommandHandler("Start", this, CommandMethod.GetInfo<string>(StartDungeon), "start"),
             };
+        }
+
+        private void DungeonController_DungeonError(Party party)
+        {
+            if (party.IsQueueGroup)
+            {
+                if (party.State == PartyState.Full)
+                {
+                    PushToParty(party, "One or more members of your party no longer has enough Wolfcoins to start a dungeon. Your party has been disbanded.");
+                }
+                else
+                {
+                    PushToParty(party, "One or more members of your party has left the group. Your party has been disbanded.");
+                }
+            }
+            else
+            {
+                PushToParty(party, "An unspecified error has occurred while processing the dungeon. Your party has been disbanded.");
+            }
+        }
+
+        private void DungeonController_DungeonStart(Party party)
+        {
+            var startMessage = $"Successfully initiated {DungeonController.GetDungeonName(party.DungeonId, party.ModeId)}!";
+            var settings = SettingsManager.GetGameSettings();
+            var members = party.Members.Select(x => $"{GetPlayerName(party, UserController.GetUserById(x))} ({DescribeClass(PlayerController.GetPlayerByUserId(x))})");
+            var memberMessage = $"Your party consists of: {string.Join(", ", members)}";
+            foreach (var member in party.Members)
+            {
+                var memberPlayer = PlayerController.GetPlayerByUserId(member);
+                var cost = DungeonController.GetDungeonCost(memberPlayer, settings);
+                PushNotification?.Invoke(UserController.GetUserById(member), new CommandResult($"{startMessage} {cost} Wolfcoins deducted ({memberPlayer.Currency} remaining).", memberMessage));
+            }
         }
 
         private void DungeonController_DungeonComplete(PlayerCharacter player, int experience, int currency, Item loot, bool wasQueueGroup, bool groupFinderBonus, bool critBonus)
@@ -142,7 +181,7 @@ namespace LobotJR.Command.View.Dungeons
             {
                 if (PartyController.AcceptInvite(party, player))
                 {
-                    var members = party.Members.Where(x => !x.Equals(player)).Select(x => UserController.GetUserById(x).Username);
+                    var members = party.Members.Where(x => !x.Equals(player)).Select(x => GetPlayerName(party, UserController.GetUserById(x)));
                     PushNotification?.Invoke(user, new CommandResult($"You successfully joined a party with the following members: {string.Join(", ", members)}"));
                     var settings = SettingsManager.GetGameSettings();
                     PushToParty(party, $"{user.Username}, level {player.Level} {player.CharacterClass.Name} has joined your party ({party.Members.Count}/{settings.DungeonPartySize})", player.UserId);
@@ -464,17 +503,7 @@ namespace LobotJR.Command.View.Dungeons
                 var mode = -1;
                 if (string.IsNullOrWhiteSpace(dungeonId))
                 {
-                    if (party.DungeonId > 0)
-                    {
-                        dungeon = party.DungeonId;
-                        mode = party.ModeId;
-                    }
-                    else
-                    {
-                        var run = Random.RandomElement(DungeonController.GetEligibleDungeons(party));
-                        dungeon = run.DungeonId;
-                        mode = run.ModeId;
-                    }
+                    DungeonController.SelectDungeon(party, out dungeon, out mode);
                 }
                 else
                 {
@@ -485,23 +514,9 @@ namespace LobotJR.Command.View.Dungeons
                 if (dungeon > 0 && mode > 0)
                 {
                     var success = DungeonController.TryStartDungeon(party, dungeon, mode, out var broke);
-                    if (success)
+                    if (!success && broke.Any())
                     {
-                        var startMessage = $"Successfully initiated {DungeonController.GetDungeonName(party.DungeonId, party.ModeId)}!";
-                        var settings = SettingsManager.GetGameSettings();
-                        var members = party.Members.Select(x => $"{UserController.GetUserById(x).Username} ({DescribeClass(PlayerController.GetPlayerByUserId(x))})");
-                        var memberMessage = $"Your party consists of: {string.Join(", ", members)}";
-                        foreach (var member in party.Members)
-                        {
-                            var memberPlayer = PlayerController.GetPlayerByUserId(member);
-                            var cost = DungeonController.GetDungeonCost(memberPlayer, settings);
-                            PushNotification?.Invoke(UserController.GetUserById(member), new CommandResult($"{startMessage} {cost} Wolfcoins deducted ({memberPlayer.Currency} remaining).", memberMessage));
-                        }
-                        return new CommandResult();
-                    }
-                    if (broke.Any())
-                    {
-                        PushToParty(party, $"The following party members do not have enough money to run a dungeon: {string.Join(", ", broke.Select(x => PlayerController.GetUserByPlayer(x).Username))}");
+                        PushToParty(party, $"The following party members do not have enough money to run a dungeon: {string.Join(", ", broke.Select(x => GetPlayerName(party, PlayerController.GetUserByPlayer(x))))}");
                         return new CommandResult();
                     }
                     return new CommandResult("You don't have enough members to start a dungeon. Use !invite to add players, or !ready to enable dungeons with with a partial party.");
