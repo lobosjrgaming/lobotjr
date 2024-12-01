@@ -13,9 +13,10 @@ namespace LobotJR.Trigger.Responder
         private readonly Random Random = new Random();
         private readonly IEnumerable<string> DevResponses = new List<string>()
         {
-            "Sorry mistress! lobosS",
+            "Sorry ma'am! lobosS",
             "I'm sorry lobosCry",
-            "Uh oh... lobosVanish"
+            "Uh oh... lobosVanish",
+            "It wasn't me AwkwardMonkey"
         };
         private readonly IEnumerable<string> ModResponses = new List<string>()
         {

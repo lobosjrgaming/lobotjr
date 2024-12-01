@@ -90,17 +90,20 @@ namespace LobotJR.Command.View.Dungeons
             };
         }
 
-        private void DungeonController_DungeonError(Party party)
+        private void DungeonController_DungeonError(Party party, IEnumerable<string> requeueIds)
         {
             if (party.IsQueueGroup)
             {
-                if (party.State == PartyState.Full)
+                foreach (var member in party.Members)
                 {
-                    PushToParty(party, "One or more members of your party no longer has enough Wolfcoins to start a dungeon. Your party has been disbanded.");
-                }
-                else
-                {
-                    PushToParty(party, "One or more members of your party has left the group. Your party has been disbanded.");
+                    if (requeueIds.Contains(member))
+                    {
+                        PushNotification?.Invoke(UserController.GetUserById(member), new CommandResult("A member of your party does not have enough Wolfcoins to begin the dungeon. You have been placed back in the queue."));
+                    }
+                    else
+                    {
+                        PushNotification?.Invoke(UserController.GetUserById(member), new CommandResult("You do not have enough Wolfcoins to begin the dungeon. You have been removed from the queue."));
+                    }
                 }
             }
             else
@@ -413,9 +416,18 @@ namespace LobotJR.Command.View.Dungeons
             {
                 if (party.State == PartyState.Forming || party.State == PartyState.Full)
                 {
-                    var wasLeader = party.Leader.Equals(player);
+                    var wasLeader = party.Leader.Equals(player.UserId);
                     PartyController.RemovePlayer(party, player);
-                    if (party.Members.Count > 1)
+                    if (party.IsQueueGroup)
+                    {
+                        var toRequeue = party.QueueEntries.Where(x => !x.UserId.Equals(user.TwitchId));
+                        foreach (var member in toRequeue)
+                        {
+                            PushNotification?.Invoke(UserController.GetUserById(member.UserId), new CommandResult($"{user.Username} has left the party, you have been returned to the queue."));
+                            GroupFinderController.QueuePlayer(member);
+                        }
+                    }
+                    else if (party.Members.Count > 1)
                     {
                         if (wasLeader)
                         {

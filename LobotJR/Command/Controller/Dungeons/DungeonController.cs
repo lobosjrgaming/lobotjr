@@ -38,7 +38,9 @@ namespace LobotJR.Command.Controller.Dungeons
         /// and the party will be disbanded after the event is fired.
         /// </summary>
         /// <param name="party">The party to send the error message to.</param>
-        public delegate void DungeonErrorHandler(Party party);
+        /// <param name="requeueIds">Collection of userids for users that will
+        /// be automatically placed back in the group finder queue.</param>
+        public delegate void DungeonErrorHandler(Party party, IEnumerable<string> requeueIds);
         /// <summary>
         /// Event fired when an error is encountered during a dungeon run that
         /// prevents the party from continuing the dungeon.
@@ -615,20 +617,22 @@ namespace LobotJR.Command.Controller.Dungeons
             var settings = SettingsManager.GetGameSettings();
             var stepTime = TimeSpan.FromMilliseconds(settings.DungeonStepTime);
             var groups = PartyController.GetAllGroups();
-            var toStart = groups.Where(x => x.State == PartyState.Full && x.IsQueueGroup && CanProcessUpdate(x, stepTime));
+            var toStart = groups.Where(x => x.State == PartyState.Full && x.IsQueueGroup && CanProcessUpdate(x, stepTime)).ToList();
             foreach (var party in toStart)
             {
                 SelectDungeon(party, out var dungeon, out var mode);
                 if (!TryStartDungeon(party, dungeon, mode, out var broke))
                 {
-                    DungeonError?.Invoke(party);
+                    DungeonError?.Invoke(party, party.Members.Except(broke.Select(x => x.UserId)));
+                    PartyController.DisbandParty(party);
+                    Logger.Warn("Party with members {members} failed to start.", string.Join(", ", party.Members));
+                    var brokeIds = broke.Select(x => x.UserId);
+                    var toRequeue = party.QueueEntries.Where(x => !brokeIds.Contains(x.UserId)).ToList();
+                    foreach (var member in toRequeue)
+                    {
+                        GroupFinderController.QueuePlayer(member);
+                    }
                 }
-            }
-            var startFailures = toStart.Where(x => x.State != PartyState.Started).ToList();
-            foreach (var party in startFailures)
-            {
-                Logger.Warn("Party with members {members} failed to start.");
-                PartyController.DisbandParty(party);
             }
 
             var toUpdate = groups.Where(x => x.State == PartyState.Started && CanProcessUpdate(x, stepTime));

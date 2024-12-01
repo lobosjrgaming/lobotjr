@@ -58,7 +58,7 @@ namespace LobotJR.Command.View.Dungeons
             foreach (var member in users)
             {
                 var partyNames = string.Join(", ", users.Where(x => !x.TwitchId.Equals(member.TwitchId)).Select(x => DungeonView.GetPlayerName(party, x)));
-                PushNotification?.Invoke(member, new CommandResult($"You've been matched for {DungeonController.GetDungeonName(party.DungeonId, party.ModeId)} with: {partyNames}. {DungeonController.GetDungeonName(party.DungeonId, party.ModeId)} will begin shortly."));
+                PushNotification?.Invoke(member, new CommandResult($"You've been matched for {DungeonController.GetDungeonName(party.DungeonId, party.ModeId)} with: {partyNames}. The dungeon will begin shortly."));
             }
             PushNotification?.Invoke(UserController.GetUserById(party.Leader), new CommandResult("You are the party leader."));
         }

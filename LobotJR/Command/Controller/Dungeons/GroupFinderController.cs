@@ -81,7 +81,7 @@ namespace LobotJR.Command.Controller.Dungeons
                                 if (dungeons.Any())
                                 {
                                     var newParty = PartyController.CreateParty(true, group.Select(x => x.UserId).ToArray());
-                                    newParty.SetQueueTimes(group.ToDictionary(x => x.UserId, x => (int)Math.Floor((DateTime.Now - x.QueueTime).TotalSeconds)));
+                                    newParty.SetQueueEntries(group);
                                     var toRun = random.RandomElement(dungeons);
                                     newParty.DungeonId = toRun.DungeonId;
                                     newParty.ModeId = toRun.ModeId;
@@ -198,7 +198,19 @@ namespace LobotJR.Command.Controller.Dungeons
         /// queued players.</returns>
         public bool QueuePlayer(PlayerCharacter player, IEnumerable<DungeonRun> dungeons)
         {
-            GroupFinderQueue.Add(new QueueEntry(player, dungeons.ToList()));
+            var entry = new QueueEntry(player, dungeons.ToList());
+            return QueuePlayer(entry);
+        }
+
+        /// <summary>
+        /// Adds a player's queue entry to the group finder queue.
+        /// </summary>
+        /// <param name="entry">The queue entry to add.</param>
+        /// <returns>True if the player was placed into a party with other
+        /// queued players.</returns>
+        public bool QueuePlayer(QueueEntry entry)
+        {
+            GroupFinderQueue.Add(entry);
             if (TryCreateParty(out var party))
             {
                 LastGroupFormed = DateTime.Now;
