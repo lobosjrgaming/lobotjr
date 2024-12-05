@@ -92,6 +92,11 @@ namespace LobotJR.Command.Model.Dungeons
         /// </summary>
         public Dictionary<string, int> QueueTimes { get; private set; } = new Dictionary<string, int>();
         /// <summary>
+        /// Queue entries for each player in this party. Used for requeueing
+        /// players in the case of a dungeon start failure.
+        /// </summary>
+        public List<QueueEntry> QueueEntries { get; private set; } = new List<QueueEntry>();
+        /// <summary>
         /// The timestamp the most recent encounter of the dungeon was
         /// completed.
         /// </summary>
@@ -121,14 +126,15 @@ namespace LobotJR.Command.Model.Dungeons
             }
         }
 
-        public void SetQueueTimes(Dictionary<string, int> queueTimes)
+        public void SetQueueEntries(IEnumerable<QueueEntry> entries)
         {
-            if (queueTimes != null && queueTimes.Any())
+            if (entries != null && entries.Any())
             {
-                foreach (var item in queueTimes)
+                foreach (var item in entries)
                 {
-                    QueueTimes.Add(item.Key, item.Value);
+                    QueueTimes.Add(item.UserId, (int)Math.Floor((DateTime.Now - item.QueueTime).TotalSeconds));
                 }
+                QueueEntries = entries.ToList();
             }
         }
 
