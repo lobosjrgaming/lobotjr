@@ -82,6 +82,42 @@ namespace LobotJR.Utils
             return GenerateCommonString(seconds, "second");
         }
 
+        /// <summary>
+        /// Gets the value of a timespan in the way a person would naturally
+        /// express it.
+        /// </summary>
+        /// <param name="current"></param>
+        /// <returns>A string expressing the amount of the greatest unit of
+        /// time that the timespan covers.</returns>
+        public static string ToCommonStringFull(this TimeSpan current)
+        {
+            var output = string.Empty;
+            var parts = new List<string>();
+            var hours = (int)Math.Floor(current.TotalHours);
+            current = current.Add(-TimeSpan.FromHours(hours));
+            var minutes = (int)Math.Floor(current.TotalMinutes);
+            current = current.Add(-TimeSpan.FromMinutes(minutes));
+            var seconds = (int)Math.Floor(current.TotalSeconds);
+
+            if (hours > 0)
+            {
+                parts.Add(GenerateCommonString(hours, "hour"));
+            }
+            if (minutes > 0)
+            {
+                parts.Add(GenerateCommonString(minutes, "minute"));
+            }
+            if (seconds > 0)
+            {
+                parts.Add(GenerateCommonString(seconds, "second"));
+            }
+            if (parts.Any())
+            {
+                return string.Join(", ", parts);
+            }
+            return "0 seconds";
+        }
+
         private static string CapitalizeWord(string word)
         {
             if (word.Length < 2)

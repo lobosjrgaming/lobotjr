@@ -348,20 +348,26 @@ namespace LobotJR.Command.View.Player
                 var histories = DungeonController.GetMetricsData(player);
                 if (histories.Any())
                 {
-                    var total = histories.Count();
-                    var queueCount = histories.Count(x => x.IsQueueGroup);
-                    var winCount = histories.Count(x => x.Success);
+                    var total = (float)histories.Count();
+                    var queueCount = (float)histories.Count(x => x.IsQueueGroup);
+                    var winCount = (float)histories.Count(x => x.Success);
                     var participants = histories.SelectMany(x => x.Participants).Where(x => x.UserId.Equals(player.UserId));
                     var queueTime = participants.Sum(x => x.WaitTime);
                     var xpTotal = participants.Sum(x => x.ExperienceEarned);
                     var currencyTotal = participants.Sum(x => x.CurrencyEarned);
                     var partners = histories.SelectMany(x => x.Participants).GroupBy(x => x.UserId, x => x.UserId, (key, matches) => new { Key = key, Count = matches.Count() });
-                    var bestFriend = partners.OrderBy(x => x.Count).Where(x => !x.Key.Equals(player.UserId)).First();
-                    return new CommandResult(
-                        $"You have run {total} dungeons. You won {winCount} times ({Math.Round((winCount / total) * 100f, 2)}%.",
-                        $"{queueCount} were run through the group finder ({Math.Round((queueCount / total) * 100f, 2)}%, and you spent {TimeSpan.FromSeconds(queueTime).ToCommonString()} in queue.",
+                    var bestFriend = partners.OrderByDescending(x => x.Count).Where(x => !x.Key.Equals(player.UserId)).FirstOrDefault();
+                    var lines = new List<string>()
+                    {
+                        $"You have run {total} dungeons. You won {winCount} times ({Math.Round((winCount / total) * 100f, 2)}%).",
+                        $"{queueCount} were run through the group finder ({Math.Round((queueCount / total) * 100f, 2)}%), and you spent {TimeSpan.FromSeconds(queueTime).ToCommonStringFull()} in queue.",
                         $"You have earned a total of {xpTotal} xp and {currencyTotal} wolfcoins.",
-                        $"Your best friend is {UserController.GetUserById(bestFriend.Key)}, you've run {bestFriend.Count} dungeons with them.");
+                    };
+                    if (bestFriend != null)
+                    {
+                        lines.Add($"Your best friend is {UserController.GetUserById(bestFriend.Key).Username}, you've run {bestFriend.Count} dungeons with them.");
+                    }
+                    return new CommandResult(lines.ToArray());
                 }
                 return new CommandResult("You have not run any dungeons.");
             }

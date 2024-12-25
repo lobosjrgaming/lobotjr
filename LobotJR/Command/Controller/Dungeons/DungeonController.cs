@@ -358,10 +358,6 @@ namespace LobotJR.Command.Controller.Dungeons
         /// <returns>A collection of all dungeon history data for the player.</returns>
         public IEnumerable<DungeonHistory> GetMetricsData(PlayerCharacter player)
         {
-            //var parts = ConnectionManager.CurrentConnection.DungeonParticipants.Read().ToList();
-            //var participation = ConnectionManager.CurrentConnection.DungeonParticipants.Read(x => x.UserId.Equals(player.UserId)).ToList();
-            //var historyIds = participation.Select(x => x.HistoryId).ToList();
-            //return ConnectionManager.CurrentConnection.DungeonHistories.Read(x => historyIds.Contains(x.Id)).ToList();
             return ConnectionManager.CurrentConnection.DungeonHistories.Read(x => x.Participants.Any(y => y.UserId.Equals(player.UserId))).ToList();
         }
 

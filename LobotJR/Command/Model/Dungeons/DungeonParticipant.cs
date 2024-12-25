@@ -48,7 +48,7 @@ namespace LobotJR.Command.Model.Dungeons
         /// <summary>
         /// Foreign key id for the item drop the player earned, if any.
         /// </summary>
-        public int ItemDropId { get; set; }
+        public int? ItemDropId { get; set; }
         /// <summary>
         /// The item drop the player earned from this dungeon, if any.
         /// </summary>
@@ -56,7 +56,7 @@ namespace LobotJR.Command.Model.Dungeons
         /// <summary>
         /// Foreign key id for the pet the player found, if any.
         /// </summary>
-        public int PetDropId { get; set; }
+        public int? PetDropId { get; set; }
         /// <summary>
         /// The pet the player found in this dungeon, if any.
         /// </summary>
