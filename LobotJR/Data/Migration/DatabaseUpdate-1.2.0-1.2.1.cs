@@ -23,8 +23,8 @@ namespace LobotJR.Data.Migration
                 "INSERT INTO \"DungeonParticipants_New\" ([HistoryId], [UserId], [WaitTime], [ExperienceEarned], [CurrencyEarned], [ItemDropId], [PetDropId]) SELECT [HistoryId], [UserId], [WaitTime], [ExperienceEarned], [CurrencyEarned], [ItemDropId], [PetDropId] FROM \"DungeonParticipants\"",
                 "DROP TABLE \"DungeonParticipants\"",
                 "ALTER TABLE \"DungeonParticipants_New\" RENAME TO \"DungeonParticipants\"",
-                "UPDATE \"DungeonParticipants\" SET [ItemDropId] = 0 WHERE [ItemDropId] IS NULL",
-                "UPDATE \"DungeonParticipants\" SET [PetDropId] = 0 WHERE [PetDropId] IS NULL",
+                "UPDATE \"DungeonParticipants\" SET [ItemDropId] = NULL WHERE [ItemDropId] = 0",
+                "UPDATE \"DungeonParticipants\" SET [PetDropId] = NULL WHERE [PetDropId] = 0",
                 // "COMMIT",
                 "PRAGMA foreign_keys=ON",
             };
