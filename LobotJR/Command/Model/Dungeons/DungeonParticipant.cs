@@ -24,9 +24,9 @@ namespace LobotJR.Command.Model.Dungeons
         [Required]
         public string UserId { get; set; }
         /// <summary>
-        /// The amount of time the user waited in the group finder queue. If
-        /// the dungeon history record is not flagged as being a queue group,
-        /// this will be 0.
+        /// The amount of time (in seconds) the user waited in the group finder
+        /// queue. If the dungeon history record is not flagged as being a
+        /// queue group, this will be 0.
         /// </summary>
         public int WaitTime { get; set; }
         /// <summary>

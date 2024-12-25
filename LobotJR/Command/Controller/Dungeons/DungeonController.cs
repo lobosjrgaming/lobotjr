@@ -351,6 +351,20 @@ namespace LobotJR.Command.Controller.Dungeons
             }
         }
 
+        /// <summary>
+        /// Gets the metrics data for all dungeons a player has run.
+        /// </summary>
+        /// <param name="player">The player to get metrics data for.</param>
+        /// <returns>A collection of all dungeon history data for the player.</returns>
+        public IEnumerable<DungeonHistory> GetMetricsData(PlayerCharacter player)
+        {
+            //var parts = ConnectionManager.CurrentConnection.DungeonParticipants.Read().ToList();
+            //var participation = ConnectionManager.CurrentConnection.DungeonParticipants.Read(x => x.UserId.Equals(player.UserId)).ToList();
+            //var historyIds = participation.Select(x => x.HistoryId).ToList();
+            //return ConnectionManager.CurrentConnection.DungeonHistories.Read(x => historyIds.Contains(x.Id)).ToList();
+            return ConnectionManager.CurrentConnection.DungeonHistories.Read(x => x.Participants.Any(y => y.UserId.Equals(player.UserId))).ToList();
+        }
+
         private bool CanProcessUpdate(Party party, TimeSpan stepTime)
         {
             return party.LastUpdate == null || party.LastUpdate + stepTime <= DateTime.Now;
