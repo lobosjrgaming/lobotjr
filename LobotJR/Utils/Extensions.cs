@@ -93,12 +93,18 @@ namespace LobotJR.Utils
         {
             var output = string.Empty;
             var parts = new List<string>();
+            var days = (int)Math.Floor(current.TotalDays);
+            current = current.Add(-TimeSpan.FromDays(days));
             var hours = (int)Math.Floor(current.TotalHours);
             current = current.Add(-TimeSpan.FromHours(hours));
             var minutes = (int)Math.Floor(current.TotalMinutes);
             current = current.Add(-TimeSpan.FromMinutes(minutes));
             var seconds = (int)Math.Floor(current.TotalSeconds);
 
+            if (days > 0)
+            {
+                parts.Add(GenerateCommonString(days, "day"));
+            }
             if (hours > 0)
             {
                 parts.Add(GenerateCommonString(hours, "hour"));
@@ -113,6 +119,12 @@ namespace LobotJR.Utils
             }
             if (parts.Any())
             {
+                if (parts.Count > 1)
+                {
+                    var last = parts.Last();
+                    parts.Remove(last);
+                    parts.Add($"and {last}");
+                }
                 return string.Join(", ", parts);
             }
             return "0 seconds";
