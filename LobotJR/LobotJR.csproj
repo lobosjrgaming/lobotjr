@@ -157,7 +157,7 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Data\Migration\DatabaseUpdate-1.2.0-1.2.1.cs" />
+    <Compile Include="Data\Migration\DatabaseUpdate-1.2.0-1.2.6.cs" />
     <Compile Include="Interface\AccessControlEditor.xaml.cs">
       <DependentUpon>AccessControlEditor.xaml</DependentUpon>
     </Compile>

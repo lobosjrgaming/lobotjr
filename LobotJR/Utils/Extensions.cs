@@ -91,7 +91,6 @@ namespace LobotJR.Utils
         /// time that the timespan covers.</returns>
         public static string ToCommonStringFull(this TimeSpan current)
         {
-            var output = string.Empty;
             var parts = new List<string>();
             var days = (int)Math.Floor(current.TotalDays);
             current = current.Add(-TimeSpan.FromDays(days));

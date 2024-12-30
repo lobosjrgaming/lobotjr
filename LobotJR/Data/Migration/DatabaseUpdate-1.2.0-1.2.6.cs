@@ -5,10 +5,10 @@ using System.Threading.Tasks;
 
 namespace LobotJR.Data.Migration
 {
-    public class DatabaseUpdate_1_2_0_1_2_1 : IDatabaseUpdate
+    public class DatabaseUpdate_1_2_0_1_2_6 : IDatabaseUpdate
     {
         public SemanticVersion FromVersion => new SemanticVersion(1, 2, 0);
-        public SemanticVersion ToVersion => new SemanticVersion(1, 2, 1);
+        public SemanticVersion ToVersion => new SemanticVersion(1, 2, 6);
         public bool UsesMetadata => true;
 
         public Task<DatabaseMigrationResult> Update(DbContext context)
@@ -17,6 +17,8 @@ namespace LobotJR.Data.Migration
             var commands = new string[]
             {
                 //Cleanup database errors from previous versions
+                "ALTER TABLE \"ItemQualities\" ADD COLUMN [Color] nvarchar",
+                "ALTER TABLE \"PetRarities\" ADD COLUMN [Color] nvarchar",
                 "PRAGMA foreign_keys=OFF",
                 // "BEGIN TRANSACTION",
                 "CREATE TABLE \"DungeonParticipants_new\" ([Id] INTEGER PRIMARY KEY, [HistoryId] int NOT NULL, [UserId] nvarchar NOT NULL, [WaitTime] int NOT NULL, [ExperienceEarned] int NOT NULL, [CurrencyEarned] int NOT NULL, [ItemDropId] int, [PetDropId] int, FOREIGN KEY (HistoryId) REFERENCES \"DungeonHistories\"(Id), FOREIGN KEY (ItemDropId) REFERENCES \"Items\"(Id), FOREIGN KEY (PetDropId) REFERENCES \"Pets\"(Id))",

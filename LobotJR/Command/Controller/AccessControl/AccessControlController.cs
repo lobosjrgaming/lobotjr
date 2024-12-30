@@ -1,6 +1,7 @@
 ﻿using LobotJR.Command.Model.AccessControl;
 using LobotJR.Data;
 using LobotJR.Twitch.Model;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -204,6 +205,35 @@ namespace LobotJR.Command.Controller.AccessControl
         public IEnumerable<string> GetAllCommands()
         {
             return CommandManager.Commands;
+        }
+
+        /// <summary>
+        /// Gets the groups a user is enrolled in, whether directly or through
+        /// a user flag.
+        /// </summary>
+        /// <param name="user">The user to get groups for.</param>
+        /// <returns>A collection of groups the user is enrolled in.</returns>
+        public IEnumerable<AccessGroup> GetEnrolledGroups(User user)
+        {
+            var groupIds = ConnectionManager.CurrentConnection.Enrollments.Read(x => x.UserId.Equals(user.TwitchId, StringComparison.OrdinalIgnoreCase)).Select(x => x.GroupId).ToList();
+            var groups = ConnectionManager.CurrentConnection.AccessGroups.Read(x => groupIds.Contains(x.Id));
+            if (user.IsSub)
+            {
+                groups = groups.Concat(ConnectionManager.CurrentConnection.AccessGroups.Read(x => x.IncludeSubs));
+            }
+            if (user.IsVip)
+            {
+                groups = groups.Concat(ConnectionManager.CurrentConnection.AccessGroups.Read(x => x.IncludeVips));
+            }
+            if (user.IsMod)
+            {
+                groups = groups.Concat(ConnectionManager.CurrentConnection.AccessGroups.Read(x => x.IncludeMods));
+            }
+            if (user.IsAdmin)
+            {
+                groups = groups.Concat(ConnectionManager.CurrentConnection.AccessGroups.Read(x => x.IncludeAdmins));
+            }
+            return groups;
         }
     }
 }

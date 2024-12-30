@@ -68,6 +68,21 @@ namespace LobotJR.Command.Controller.Fishing
             CastTimeMaximum = settings.FishingCastMaximum;
         }
 
+        public IEnumerable<FishRarity> GetRarities()
+        {
+            return ConnectionManager.CurrentConnection.FishRarityData.Read().ToList();
+        }
+
+        public IEnumerable<FishSize> GetSizes()
+        {
+            return ConnectionManager.CurrentConnection.FishSizeData.Read().ToList();
+        }
+
+        public IEnumerable<Fish> GetAllFish()
+        {
+            return ConnectionManager.CurrentConnection.FishData.Read().ToList();
+        }
+
         /// <summary>
         /// Gets or creates a fisher object for a given user id.
         /// </summary>

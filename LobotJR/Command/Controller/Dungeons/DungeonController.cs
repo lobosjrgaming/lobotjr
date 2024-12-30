@@ -126,11 +126,24 @@ namespace LobotJR.Command.Controller.Dungeons
             PetController = petController;
         }
 
+        /// <summary>
+        /// Gets a dungeon by its database id.
+        /// </summary>
+        /// <param name="dungeonId">The id of the dungeon to get.</param>
+        /// <returns>A dungeon object with the matching id, or null if none
+        /// exists.</returns>
         public Dungeon GetDungeonById(int dungeonId)
         {
             return ConnectionManager.CurrentConnection.DungeonData.ReadById(dungeonId);
         }
 
+        /// <summary>
+        /// Gets the level range for a dungeon in a given mode.
+        /// </summary>
+        /// <param name="dungeonId">The id of the dungeon.</param>
+        /// <param name="modeId">The id of the mode.</param>
+        /// <returns>The level range for the given mode of the given dungeon,
+        /// or null if none exists.</returns>
         public LevelRange GetDungeonLevel(int dungeonId, int modeId)
         {
             return ConnectionManager.CurrentConnection.LevelRangeData.Read(x => x.DungeonId == dungeonId && x.ModeId == modeId).FirstOrDefault();
