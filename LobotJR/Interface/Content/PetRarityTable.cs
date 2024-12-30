@@ -24,6 +24,7 @@ namespace LobotJR.Interface.Content
                 InterfaceUtils.CreateColumn(nameof(PetRarity.Id), true),
                 InterfaceUtils.CreateColumn(nameof(PetRarity.Name)),
                 InterfaceUtils.CreateColumn(nameof(PetRarity.DropRate)),
+                InterfaceUtils.CreateColumn(nameof(PetRarity.Color)),
             };
         }
 
@@ -36,6 +37,7 @@ namespace LobotJR.Interface.Content
                 {
                     dest.Name = source.Name;
                     dest.DropRate = source.DropRate;
+                    dest.Color = source.Color;
                 });
             }
         }

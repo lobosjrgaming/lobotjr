@@ -24,6 +24,7 @@ namespace LobotJR.Interface.Content
                 InterfaceUtils.CreateColumn(nameof(ItemQuality.Id), true),
                 InterfaceUtils.CreateColumn(nameof(ItemQuality.Name)),
                 InterfaceUtils.CreateColumn(nameof(ItemQuality.DropRatePenalty)),
+                InterfaceUtils.CreateColumn(nameof(ItemQuality.Color)),
             };
         }
 
@@ -36,6 +37,7 @@ namespace LobotJR.Interface.Content
                 {
                     dest.Name = source.Name;
                     dest.DropRatePenalty = source.DropRatePenalty;
+                    dest.Color = source.Color;
                 });
             }
         }

@@ -72,7 +72,7 @@ namespace LobotJR.Command.View.Equipment
         public CompactCollection<Inventory> GetInventoryCompact(User user)
         {
             var inventory = EquipmentController.GetInventoryByUser(user);
-            return new CompactCollection<Inventory>(inventory, x => $"{x.Item.Name}|{x.Item.Description}|{(x.IsEquipped ? "E" : "U")}|{x.Item.Quality.Name}|{x.Item.Slot.Name}|{PrintPercent(x.Item.SuccessChance)}|{PrintPercent(x.Item.XpBonus)}|{PrintPercent(x.Item.CoinBonus)}|{PrintPercent(x.Item.ItemFind)}|{PrintPercent(x.Item.PreventDeathBonus)};");
+            return new CompactCollection<Inventory>(inventory, x => $"{x.Item.Id}|{x.Count}|{x.Item.Max}|{x.Item.Name}|{x.Item.Description}|{(x.IsEquipped ? "E" : "")}|{x.Item.QualityId}|{x.Item.SlotId}|{x.Item.SlotId}|{PrintPercent(x.Item.SuccessChance)}|{PrintPercent(x.Item.XpBonus)}|{PrintPercent(x.Item.CoinBonus)}|{PrintPercent(x.Item.ItemFind)}|{PrintPercent(x.Item.PreventDeathBonus)};");
         }
 
         public CommandResult GetInventory(User user)
