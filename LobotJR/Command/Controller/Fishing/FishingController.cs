@@ -68,16 +68,10 @@ namespace LobotJR.Command.Controller.Fishing
             CastTimeMaximum = settings.FishingCastMaximum;
         }
 
-        public IEnumerable<FishRarity> GetRarities()
-        {
-            return ConnectionManager.CurrentConnection.FishRarityData.Read().ToList();
-        }
-
-        public IEnumerable<FishSize> GetSizes()
-        {
-            return ConnectionManager.CurrentConnection.FishSizeData.Read().ToList();
-        }
-
+        /// <summary>
+        /// Gets all of the fish in the database.
+        /// </summary>
+        /// <returns>A collection of fish.</returns>
         public IEnumerable<Fish> GetAllFish()
         {
             return ConnectionManager.CurrentConnection.FishData.Read().ToList();
