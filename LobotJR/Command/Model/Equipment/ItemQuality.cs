@@ -15,6 +15,11 @@ namespace LobotJR.Command.Model.Equipment
         /// The base drop rate for items of this quality.
         /// </summary>
         public int DropRatePenalty { get; set; }
+        /// <summary>
+        /// An HTML color string used to represent this item quality on the
+        /// controller page.
+        /// </summary>
+        public string Color { get; set; }
 
         public override string ToString()
         {

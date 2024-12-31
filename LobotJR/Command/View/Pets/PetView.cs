@@ -58,7 +58,7 @@ namespace LobotJR.Command.View.Pets
             SettingsManager = settingsManager;
             Commands = new List<CommandHandler>()
             {
-                new CommandHandler("ListPets", this, CommandMethod.GetInfo(ListPets), "pets", "stable"),
+                new CommandHandler("ListPets", this, CommandMethod.GetInfo(ListPets), CommandMethod.GetInfo(ListPetsCompact), "pets", "stable"),
                 new CommandHandler("DetailPet", this, CommandMethod.GetInfo<int>(DescribePet), "pet"),
                 new CommandHandler("RenamePet", this, CommandMethod.GetInfo<int, string>(RenamePet), "rename"),
                 new CommandHandler("FeedPet", this, CommandMethod.GetInfo<int>(FeedPet), "feed"),
@@ -165,6 +165,12 @@ namespace LobotJR.Command.View.Pets
                 output.Add($"Status: {(stable.IsActive ? "Active" : "Stabled")} | Sparkly?: {(stable.IsSparkly ? "Yes!" : "No")}");
             }
             return output;
+        }
+
+        public CompactCollection<Stable> ListPetsCompact(User user)
+        {
+            var stable = PetController.GetStableForUser(user);
+            return new CompactCollection<Stable>(stable, x => $"{x.PetId}|{x.Pet.Name}|{x.Pet.Description}|{x.Pet.RarityId}|{x.Name}|{(x.IsSparkly ? "S" : "")}|{x.Level}|{x.Experience}|{x.Affection}|{x.Hunger}|{(x.IsActive ? "A" : "")};");
         }
 
         public CommandResult ListPets(User user)

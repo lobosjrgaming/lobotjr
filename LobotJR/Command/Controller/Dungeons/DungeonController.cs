@@ -126,11 +126,24 @@ namespace LobotJR.Command.Controller.Dungeons
             PetController = petController;
         }
 
+        /// <summary>
+        /// Gets a dungeon by its database id.
+        /// </summary>
+        /// <param name="dungeonId">The id of the dungeon to get.</param>
+        /// <returns>A dungeon object with the matching id, or null if none
+        /// exists.</returns>
         public Dungeon GetDungeonById(int dungeonId)
         {
             return ConnectionManager.CurrentConnection.DungeonData.ReadById(dungeonId);
         }
 
+        /// <summary>
+        /// Gets the level range for a dungeon in a given mode.
+        /// </summary>
+        /// <param name="dungeonId">The id of the dungeon.</param>
+        /// <param name="modeId">The id of the mode.</param>
+        /// <returns>The level range for the given mode of the given dungeon,
+        /// or null if none exists.</returns>
         public LevelRange GetDungeonLevel(int dungeonId, int modeId)
         {
             return ConnectionManager.CurrentConnection.LevelRangeData.Read(x => x.DungeonId == dungeonId && x.ModeId == modeId).FirstOrDefault();
@@ -349,6 +362,16 @@ namespace LobotJR.Command.Controller.Dungeons
                 dungeon = run.DungeonId;
                 mode = run.ModeId;
             }
+        }
+
+        /// <summary>
+        /// Gets the metrics data for all dungeons a player has run.
+        /// </summary>
+        /// <param name="player">The player to get metrics data for.</param>
+        /// <returns>A collection of all dungeon history data for the player.</returns>
+        public IEnumerable<DungeonHistory> GetMetricsData(PlayerCharacter player)
+        {
+            return ConnectionManager.CurrentConnection.DungeonHistories.Read(x => x.Participants.Any(y => y.UserId.Equals(player.UserId))).ToList();
         }
 
         private bool CanProcessUpdate(Party party, TimeSpan stepTime)

@@ -24,9 +24,9 @@ namespace LobotJR.Command.Model.Dungeons
         [Required]
         public string UserId { get; set; }
         /// <summary>
-        /// The amount of time the user waited in the group finder queue. If
-        /// the dungeon history record is not flagged as being a queue group,
-        /// this will be 0.
+        /// The amount of time (in seconds) the user waited in the group finder
+        /// queue. If the dungeon history record is not flagged as being a
+        /// queue group, this will be 0.
         /// </summary>
         public int WaitTime { get; set; }
         /// <summary>
@@ -48,7 +48,7 @@ namespace LobotJR.Command.Model.Dungeons
         /// <summary>
         /// Foreign key id for the item drop the player earned, if any.
         /// </summary>
-        public int ItemDropId { get; set; }
+        public int? ItemDropId { get; set; }
         /// <summary>
         /// The item drop the player earned from this dungeon, if any.
         /// </summary>
@@ -56,7 +56,7 @@ namespace LobotJR.Command.Model.Dungeons
         /// <summary>
         /// Foreign key id for the pet the player found, if any.
         /// </summary>
-        public int PetDropId { get; set; }
+        public int? PetDropId { get; set; }
         /// <summary>
         /// The pet the player found in this dungeon, if any.
         /// </summary>

@@ -15,6 +15,11 @@ namespace LobotJR.Command.Model.Pets
         /// The base droprate for pets with this rarity.
         /// </summary>
         public float DropRate { get; set; }
+        /// <summary>
+        /// An HTML color string used to represent this pet rarity on the
+        /// controller page.
+        /// </summary>
+        public string Color { get; set; }
 
         public override string ToString()
         {

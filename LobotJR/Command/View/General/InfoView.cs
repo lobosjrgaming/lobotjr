@@ -1,9 +1,17 @@
-﻿using LobotJR.Command.Controller.General;
+﻿using LobotJR.Command.Controller.AccessControl;
+using LobotJR.Command.Controller.Dungeons;
+using LobotJR.Command.Controller.Equipment;
+using LobotJR.Command.Controller.Fishing;
+using LobotJR.Command.Controller.General;
+using LobotJR.Command.Controller.Pets;
+using LobotJR.Command.Controller.Player;
 using LobotJR.Data;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using NLog;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace LobotJR.Command.View.General
 {
@@ -15,6 +23,14 @@ namespace LobotJR.Command.View.General
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         private readonly BugReportController BugController;
+        private readonly EquipmentController EquipmentController;
+        private readonly PlayerController PlayerController;
+        private readonly PetController PetController;
+        private readonly FishingController FishingController;
+        private readonly AccessControlController AccessControlController;
+        private readonly LeaderboardController LeaderboardController;
+        private readonly TournamentController TournamentController;
+        private readonly GroupFinderController GroupFinderController;
         private readonly SettingsManager SettingsManager;
 
         /// <summary>
@@ -26,9 +42,17 @@ namespace LobotJR.Command.View.General
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public InfoView(BugReportController bugController, SettingsManager settingsManager)
+        public InfoView(BugReportController bugController, EquipmentController equipmentController, PlayerController playerController, PetController petController, FishingController fishingController, AccessControlController accessControlController, LeaderboardController leaderboardController, TournamentController tournamentController, GroupFinderController groupFinderController, SettingsManager settingsManager)
         {
             SettingsManager = settingsManager;
+            EquipmentController = equipmentController;
+            PlayerController = playerController;
+            PetController = petController;
+            FishingController = fishingController;
+            AccessControlController = accessControlController;
+            LeaderboardController = leaderboardController;
+            TournamentController = tournamentController;
+            GroupFinderController = groupFinderController;
             BugController = bugController;
             Commands = new List<CommandHandler>()
             {
@@ -37,7 +61,8 @@ namespace LobotJR.Command.View.General
                 new CommandHandler("LevelInfo", this, CommandMethod.GetInfo(LevelInfo), "2"),
                 new CommandHandler("PetInfo", this, CommandMethod.GetInfo(PetInfo), "3", "pethelp"),
                 new CommandHandler("ShopInfo", this, CommandMethod.GetInfo(ShopInfo), "shop"),
-                new CommandHandler("BugReport", new CommandExecutor(this,CommandMethod.GetInfo<string>(ReportBug), true), "bug")
+                new CommandHandler("BugReport", new CommandExecutor(this,CommandMethod.GetInfo<string>(ReportBug), true), "bug"),
+                new CommandHandler("ClientData", this, CommandMethod.GetInfo(FetchClientData), "fetch-client-data")
             };
         }
 
@@ -78,6 +103,89 @@ namespace LobotJR.Command.View.General
             BugController.SubmitReport(user, message);
             Logger.Warn(">>{user}: A bug has been reported. {message}", user.Username, message);
             return new CommandResult("Bug report submitted");
+        }
+
+        private string Escape(string s)
+        {
+            return s.Replace("\\", "\\\\").Replace("|", "\\p").Replace(";", "\\s").Replace("&", "\\a").Trim();
+        }
+
+        private string Format(double number, double multiply = 100)
+        {
+            number *= multiply;
+            if (number == 0)
+            {
+                return "";
+            }
+            if (number == Math.Floor(number))
+            {
+                return ((int)number).ToString("D");
+            }
+            var rounded = number.ToString("N2");
+            if (rounded.EndsWith(".00"))
+            {
+                return ((int)number).ToString("D");
+            }
+            return number.ToString("N2");
+        }
+
+        public CommandResult FetchClientData(User user)
+        {
+            var limit = 10000;
+            var player = PlayerController.GetPlayerByUser(user);
+            var stats = new string[] { string.Join("|", player.Level, player.Prestige, player.Experience, player.Currency, player.CharacterClassId) };
+            var qualities = EquipmentController.GetItemQualities().Select(x => $"{x.Id}|{Escape(x.Name)}|{x.Color}");
+            var types = EquipmentController.GetItemTypes().Select(x => $"{x.Id}|{Escape(x.Name)}");
+            var slots = EquipmentController.GetItemSlots().Select(x => $"{x.Id}|{Escape(x.Name)}|{x.MaxEquipped}");
+            var inventory = EquipmentController.GetInventoryByUser(user).Select((x, i) => $"{i + 1}|{x.ItemId}|{(x.Count > 1 ? x.Count.ToString() : "")}|{(x.IsEquipped ? "E" : "")}|{x.Item.Name}|{x.Item.Description}|{x.Item.QualityId}|{x.Item.TypeId}|{x.Item.SlotId}|{x.Item.Max}|{Format(x.Item.SuccessChance)}|{Format(x.Item.XpBonus)}|{Format(x.Item.CoinBonus)}|{Format(x.Item.ItemFind)}|{Format(x.Item.PreventDeathBonus)}");
+            var classes = PlayerController.GetPlayableClasses().Select(x => $"{x.Id - 1}|{x.Name}|{Format(x.SuccessChance)}|{Format(x.XpBonus)}|{Format(x.CoinBonus)}|{Format(x.ItemFind)}|{Format(x.PreventDeathBonus)}");
+            var equips = new string[] { string.Join("|", PlayerController.GetClassEquippables().Select(x => $"{x.Key}:{string.Join(",", x.Value)}")) };
+            var rarities = PetController.GetRarities().Select(x => $"{x.Id}|{Escape(x.Name)}|{x.Color}");
+            var playerStable = PetController.GetStableForUser(user);
+            var pets = playerStable.Select(x => x.Pet).Distinct().Select(x => $"{x.Id}|{x.Name}|{x.Description}|{x.RarityId}");
+            var stable = playerStable.Select((x, i) => $"{i + 1}|{x.PetId}|{x.Name}|{(x.IsSparkly ? "S" : "")}|{x.Level}|{x.Experience}|{x.Affection}|{x.Hunger}|{(x.IsActive ? "A" : "")}");
+            var fish = FishingController.GetAllFish().Select(x => $"{x.Id}|{Escape(x.Name)}|{Escape(x.FlavorText)}");
+            var personal = LeaderboardController.GetPersonalLeaderboard(user).Select(x => $"{x.FishId}|{x.Weight:N}|{x.Length:N}");
+            var global = LeaderboardController.GetLeaderboard().Select(x => $"{x.FishId}|{x.Weight:N}|{x.Length:N}");
+            var roles = AccessControlController.GetEnrolledGroups(user).Select(x => $"{Escape(x.Name)}");
+            var tournamentTime = TournamentController.NextTournament == null ? "-" : Format((TournamentController.NextTournament.Value - DateTime.Now).TotalSeconds, 1);
+            var settings = SettingsManager.GetGameSettings();
+            var tournamentData = new string[] { tournamentTime, settings.FishingTournamentInterval.ToString("D") };
+            var timerData = new string[] { Format(GroupFinderController.GetLockoutTime(player).TotalSeconds, 1) };
+            var toAdd = new List<IEnumerable<string>>() { stats, qualities, types, slots, inventory, classes, equips, rarities, stable, fish, personal, global, roles, tournamentData, timerData };
+            var output = new CommandResult(true);
+            var message = "cd: ";
+            foreach (var group in toAdd)
+            {
+                if (message.Length != 4)
+                {
+                    message += "&";
+                }
+                var startLength = message.Length;
+                foreach (var item in group)
+                {
+                    if (message.Length + item.Length > limit)
+                    {
+                        output.Responses.Add(message);
+                        message = "cd: ";
+                        startLength = message.Length;
+                    }
+                    if (message.Length != startLength)
+                    {
+                        message += ";";
+                    }
+                    message += item;
+                }
+            }
+            if (message.Length > 4)
+            {
+                output.Responses.Add(message);
+            }
+            if (player.Level < 2)   // This might be the first whisper we've sent this user, so send a short message first to increase the character limit.
+            {
+                output.Responses.Insert(0, "Welcome to the Wolfpack RPG!");
+            }
+            return output;
         }
     }
 }

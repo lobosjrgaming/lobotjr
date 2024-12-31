@@ -69,6 +69,15 @@ namespace LobotJR.Command.Controller.Fishing
         }
 
         /// <summary>
+        /// Gets all of the fish in the database.
+        /// </summary>
+        /// <returns>A collection of fish.</returns>
+        public IEnumerable<Fish> GetAllFish()
+        {
+            return ConnectionManager.CurrentConnection.FishData.Read().ToList();
+        }
+
+        /// <summary>
         /// Gets or creates a fisher object for a given user id.
         /// </summary>
         /// <param name="user">The Twitch user object for the user.</param>

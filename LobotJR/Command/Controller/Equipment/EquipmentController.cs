@@ -195,5 +195,41 @@ namespace LobotJR.Command.Controller.Equipment
         {
             return ConnectionManager.CurrentConnection.ItemData.FirstOrDefault(x => x.Name.Equals(name));
         }
+
+        /// <summary>
+        /// Gets all of the item types in the database.
+        /// </summary>
+        /// <returns>A collection of item types.</returns>
+        public IEnumerable<ItemType> GetItemTypes()
+        {
+            return ConnectionManager.CurrentConnection.ItemTypeData.Read().ToList();
+        }
+
+        /// <summary>
+        /// Gets all of the item slots in the database.
+        /// </summary>
+        /// <returns>A collection of item slots.</returns>
+        public IEnumerable<ItemSlot> GetItemSlots()
+        {
+            return ConnectionManager.CurrentConnection.ItemSlotData.Read().ToList();
+        }
+
+        /// <summary>
+        /// Gets all of the item qualities in the database.
+        /// </summary>
+        /// <returns>A collection of item qualities.</returns>
+        public IEnumerable<ItemQuality> GetItemQualities()
+        {
+            return ConnectionManager.CurrentConnection.ItemQualityData.Read().ToList();
+        }
+
+        /// <summary>
+        /// Gets all of the items in the database.
+        /// </summary>
+        /// <returns>A collection of items.</returns>
+        public IEnumerable<Item> GetAllItems()
+        {
+            return ConnectionManager.CurrentConnection.ItemData.Read().ToList();
+        }
     }
 }

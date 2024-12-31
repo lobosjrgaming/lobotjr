@@ -62,6 +62,18 @@ namespace LobotJR.Test.Views.Pets
         }
 
         [TestMethod]
+        public void ListPetsCompactGetsUserPets()
+        {
+            var inventory = Controller.GetStableForUser(User);
+            var response = View.ListPetsCompact(User);
+            Assert.AreEqual(inventory.Count(), response.Items.Count());
+            foreach (var item in inventory)
+            {
+                Assert.IsTrue(response.Items.Any(x => x.Equals(item)));
+            }
+        }
+
+        [TestMethod]
         public void ListPetsReturnsEmptyStableMessage()
         {
             ClearPets();

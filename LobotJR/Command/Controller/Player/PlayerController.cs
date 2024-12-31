@@ -260,6 +260,16 @@ namespace LobotJR.Command.Controller.Player
         }
 
         /// <summary>
+        /// Gets a map of all classes to the collection of item types they can
+        /// equip.
+        /// </summary>
+        /// <returns>A map of class ids to a collection of item type ids.</returns>
+        public Dictionary<int, IEnumerable<int>> GetClassEquippables()
+        {
+            return ConnectionManager.CurrentConnection.EquippableData.Read().GroupBy(x => x.CharacterClassId).ToDictionary(x => x.Key, x => x.Select(y => y.ItemTypeId));
+        }
+
+        /// <summary>
         /// Gets metrics for the distribution of selected classes.
         /// </summary>
         /// <returns>A map of all playable classes and how many players have

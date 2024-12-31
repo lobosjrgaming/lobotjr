@@ -526,7 +526,12 @@ namespace LobotJR.Command.View.Dungeons
                 if (dungeon > 0 && mode > 0)
                 {
                     var success = DungeonController.TryStartDungeon(party, dungeon, mode, out var broke);
-                    if (!success && broke.Any())
+                    if (success)
+                    {
+                        // No need to send a response, the dungeon starting kicks those messages off automatically
+                        return new CommandResult();
+                    }
+                    if (broke.Any())
                     {
                         PushToParty(party, $"The following party members do not have enough money to run a dungeon: {string.Join(", ", broke.Select(x => GetPlayerName(party, PlayerController.GetUserByPlayer(x))))}");
                         return new CommandResult();

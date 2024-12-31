@@ -48,6 +48,7 @@ namespace LobotJR.Utils
             builder.RegisterType<DatabaseUpdate_1_0_7_1_1_0>().As<IDatabaseUpdate>().InstancePerLifetimeScope();
             builder.RegisterType<DatabaseUpdate_1_1_0_1_1_6>().As<IDatabaseUpdate>().InstancePerLifetimeScope();
             builder.RegisterType<DatabaseUpdate_1_1_6_1_2_0>().As<IDatabaseUpdate>().InstancePerLifetimeScope();
+            builder.RegisterType<DatabaseUpdate_1_2_0_1_2_6>().As<IDatabaseUpdate>().InstancePerLifetimeScope();
 
             builder.RegisterType<SqliteDatabaseUpdater>().AsSelf().InstancePerLifetimeScope();
 
