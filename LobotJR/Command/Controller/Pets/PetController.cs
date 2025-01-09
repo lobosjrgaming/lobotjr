@@ -220,8 +220,8 @@ namespace LobotJR.Command.Controller.Pets
 
             if (stable.Hunger <= 0)
             {
-                DeletePet(stable);
                 PetDeath?.Invoke(PlayerController.GetUserByPlayer(player), stable);
+                DeletePet(stable);
             }
             else if (stable.Hunger <= settings.PetHungerMax * 0.25f)
             {
