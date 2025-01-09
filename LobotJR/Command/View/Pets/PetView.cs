@@ -27,6 +27,18 @@ namespace LobotJR.Command.View.Pets
             return stable.IsSparkly ? $"✨{stable.Pet.Name}✨" : stable.Pet.Name;
         }
 
+        /// <summary>
+        /// Gets the display to use for a pet when sending updates about a pet.
+        /// This includes all information needed to identify a specific pet in
+        /// case of duplicate names.
+        /// </summary>
+        /// <param name="stable">The stable record to get the pet display for.</param>
+        /// <returns>The name and type of pet in a formatted string.</returns>
+        public static string GetPetDisplay(Stable stable)
+        {
+            return $"{stable.Name} the {(stable.IsSparkly ? "sparkly " : "")}{stable.Pet.Name}";
+        }
+
         private readonly PetController PetController;
         private readonly PlayerController PlayerController;
         private readonly SettingsManager SettingsManager;
@@ -70,14 +82,14 @@ namespace LobotJR.Command.View.Pets
 
         private void PetController_PetDeath(User user, Stable stable)
         {
-            PushNotification?.Invoke(user, new CommandResult($"{stable.Name} starved to death."));
+            PushNotification?.Invoke(user, new CommandResult($"{GetPetDisplay(stable)} starved to death."));
         }
 
         private void PetController_PetWarning(User user, Stable stable)
         {
             var message = stable.Hunger <= 10
-                ? $"{stable.Name} is very hungry and will die if you don't feed it soon!"
-                : $"{stable.Name} is hungry! Be sure to !feed them!";
+                ? $"{GetPetDisplay(stable)} is very hungry and will die if you don't feed it soon!"
+                : $"{GetPetDisplay(stable)} is hungry! Be sure to !feed them!";
             PushNotification?.Invoke(user, new CommandResult(message));
         }
 
@@ -127,8 +139,9 @@ namespace LobotJR.Command.View.Pets
             if (toRelease != null)
             {
                 var name = toRelease.Name;
+                var display = GetPetDisplay(toRelease);
                 PetController.DeletePet(toRelease);
-                PushNotification?.Invoke(user, new CommandResult($"You released {name}. Goodbye, {name}!"));
+                PushNotification?.Invoke(user, new CommandResult($"You released {display}. Goodbye, {name}!"));
             }
         }
 
@@ -214,7 +227,7 @@ namespace LobotJR.Command.View.Pets
                 {
                     if (name.Length <= 16)
                     {
-                        var response = $"{pet.Name} was renamed to {name}!";
+                        var response = $"{GetPetDisplay(pet)} was renamed to {name}!";
                         pet.Name = name;
                         return new CommandResult(response);
                     }
@@ -240,7 +253,7 @@ namespace LobotJR.Command.View.Pets
                         var player = PlayerController.GetPlayerByUser(user);
                         if (PetController.Feed(player, pet))
                         {
-                            var output = new List<string>() { $"You were charged {settings.PetFeedingCost} wolfcoins to feed {pet.Name}. They feel refreshed!" };
+                            var output = new List<string>() { $"You were charged {settings.PetFeedingCost} wolfcoins to feed {GetPetDisplay(pet)}. They feel refreshed!" };
                             if (pet.Level > petLevel)
                             {
                                 output.Add($"{pet.Name} leveled up! They are now level {pet.Level}.");
@@ -249,7 +262,7 @@ namespace LobotJR.Command.View.Pets
                         }
                         return new CommandResult($"You lack the {settings.PetFeedingCost} wolfcoins to feed your pet! Hop in a Lobos stream soon!");
                     }
-                    return new CommandResult($"{pet.Name} is full and doesn't need to eat!");
+                    return new CommandResult($"{GetPetDisplay(pet)} is full and doesn't need to eat!");
                 }
                 return new CommandResult($"Invalid index, please specify a number between 1 and {stable.Count()}.");
             }
@@ -270,9 +283,9 @@ namespace LobotJR.Command.View.Pets
                         var dismissMessage = "";
                         if (active != null)
                         {
-                            dismissMessage = $" and sent {active.Name} back to the stable";
+                            dismissMessage = $" and sent {GetPetDisplay(active)} back to the stable";
                         }
-                        return new CommandResult($"You summoned {pet.Name}{dismissMessage}.");
+                        return new CommandResult($"You summoned {GetPetDisplay(pet)}{dismissMessage}.");
                     }
                     return new CommandResult($"{pet.Name} is already summoned.");
                 }
@@ -286,7 +299,7 @@ namespace LobotJR.Command.View.Pets
             var active = PetController.DeactivatePet(user);
             if (active != null)
             {
-                return new CommandResult($"You dismissed {active.Name}.");
+                return new CommandResult($"You dismissed {GetPetDisplay(active)}.");
             }
             return new CommandResult("You do not have a pet summoned.");
         }
@@ -301,10 +314,10 @@ namespace LobotJR.Command.View.Pets
                 {
                     if (PetController.FlagForDelete(user, pet))
                     {
-                        return new CommandResult($"If you release {pet.Name}, they will be gone forever. Are you sure you want to release them? (!y/!n)");
+                        return new CommandResult($"If you release {GetPetDisplay(pet)}, they will be gone forever. Are you sure you want to release them? (!y/!n)");
                     }
                     var flagged = PetController.IsFlaggedForDelete(user);
-                    return new CommandResult($"You are already trying to release {flagged.Name}. Are you sure you want to release them? (!y/!n)");
+                    return new CommandResult($"You are already trying to release {GetPetDisplay(flagged)}. Are you sure you want to release them? (!y/!n)");
                 }
                 return new CommandResult($"Invalid index, please specify a number between 1 and {stable.Count()}.");
             }

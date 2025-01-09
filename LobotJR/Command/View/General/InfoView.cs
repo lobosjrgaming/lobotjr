@@ -1,7 +1,4 @@
-﻿using LobotJR.Command.Controller.AccessControl;
-using LobotJR.Command.Controller.Dungeons;
-using LobotJR.Command.Controller.Equipment;
-using LobotJR.Command.Controller.Fishing;
+﻿using LobotJR.Command.Controller.Equipment;
 using LobotJR.Command.Controller.General;
 using LobotJR.Command.Controller.Pets;
 using LobotJR.Command.Controller.Player;
@@ -26,11 +23,6 @@ namespace LobotJR.Command.View.General
         private readonly EquipmentController EquipmentController;
         private readonly PlayerController PlayerController;
         private readonly PetController PetController;
-        private readonly FishingController FishingController;
-        private readonly AccessControlController AccessControlController;
-        private readonly LeaderboardController LeaderboardController;
-        private readonly TournamentController TournamentController;
-        private readonly GroupFinderController GroupFinderController;
         private readonly SettingsManager SettingsManager;
 
         /// <summary>
@@ -42,17 +34,12 @@ namespace LobotJR.Command.View.General
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public InfoView(BugReportController bugController, EquipmentController equipmentController, PlayerController playerController, PetController petController, FishingController fishingController, AccessControlController accessControlController, LeaderboardController leaderboardController, TournamentController tournamentController, GroupFinderController groupFinderController, SettingsManager settingsManager)
+        public InfoView(BugReportController bugController, EquipmentController equipmentController, PlayerController playerController, PetController petController, SettingsManager settingsManager)
         {
             SettingsManager = settingsManager;
             EquipmentController = equipmentController;
             PlayerController = playerController;
             PetController = petController;
-            FishingController = fishingController;
-            AccessControlController = accessControlController;
-            LeaderboardController = leaderboardController;
-            TournamentController = tournamentController;
-            GroupFinderController = groupFinderController;
             BugController = bugController;
             Commands = new List<CommandHandler>()
             {
@@ -129,30 +116,17 @@ namespace LobotJR.Command.View.General
             return number.ToString("N2");
         }
 
-        public CommandResult FetchClientData(User user)
+        public CommandResult FetchClientData()
         {
-            var limit = 10000;
-            var player = PlayerController.GetPlayerByUser(user);
-            var stats = new string[] { string.Join("|", player.Level, player.Prestige, player.Experience, player.Currency, player.CharacterClassId) };
+            var limit = 500;
+            var settings = SettingsManager.GetGameSettings();
             var qualities = EquipmentController.GetItemQualities().Select(x => $"{x.Id}|{Escape(x.Name)}|{x.Color}");
             var types = EquipmentController.GetItemTypes().Select(x => $"{x.Id}|{Escape(x.Name)}");
             var slots = EquipmentController.GetItemSlots().Select(x => $"{x.Id}|{Escape(x.Name)}|{x.MaxEquipped}");
-            var inventory = EquipmentController.GetInventoryByUser(user).Select((x, i) => $"{i + 1}|{x.ItemId}|{(x.Count > 1 ? x.Count.ToString() : "")}|{(x.IsEquipped ? "E" : "")}|{x.Item.Name}|{x.Item.Description}|{x.Item.QualityId}|{x.Item.TypeId}|{x.Item.SlotId}|{x.Item.Max}|{Format(x.Item.SuccessChance)}|{Format(x.Item.XpBonus)}|{Format(x.Item.CoinBonus)}|{Format(x.Item.ItemFind)}|{Format(x.Item.PreventDeathBonus)}");
             var classes = PlayerController.GetPlayableClasses().Select(x => $"{x.Id - 1}|{x.Name}|{Format(x.SuccessChance)}|{Format(x.XpBonus)}|{Format(x.CoinBonus)}|{Format(x.ItemFind)}|{Format(x.PreventDeathBonus)}");
             var equips = new string[] { string.Join("|", PlayerController.GetClassEquippables().Select(x => $"{x.Key}:{string.Join(",", x.Value)}")) };
             var rarities = PetController.GetRarities().Select(x => $"{x.Id}|{Escape(x.Name)}|{x.Color}");
-            var playerStable = PetController.GetStableForUser(user);
-            var pets = playerStable.Select(x => x.Pet).Distinct().Select(x => $"{x.Id}|{x.Name}|{x.Description}|{x.RarityId}");
-            var stable = playerStable.Select((x, i) => $"{i + 1}|{x.PetId}|{x.Name}|{(x.IsSparkly ? "S" : "")}|{x.Level}|{x.Experience}|{x.Affection}|{x.Hunger}|{(x.IsActive ? "A" : "")}");
-            var fish = FishingController.GetAllFish().Select(x => $"{x.Id}|{Escape(x.Name)}|{Escape(x.FlavorText)}");
-            var personal = LeaderboardController.GetPersonalLeaderboard(user).Select(x => $"{x.FishId}|{x.Weight:N}|{x.Length:N}");
-            var global = LeaderboardController.GetLeaderboard().Select(x => $"{x.FishId}|{x.Weight:N}|{x.Length:N}");
-            var roles = AccessControlController.GetEnrolledGroups(user).Select(x => $"{Escape(x.Name)}");
-            var tournamentTime = TournamentController.NextTournament == null ? "-" : Format((TournamentController.NextTournament.Value - DateTime.Now).TotalSeconds, 1);
-            var settings = SettingsManager.GetGameSettings();
-            var tournamentData = new string[] { tournamentTime, settings.FishingTournamentInterval.ToString("D") };
-            var timerData = new string[] { Format(GroupFinderController.GetLockoutTime(player).TotalSeconds, 1) };
-            var toAdd = new List<IEnumerable<string>>() { stats, qualities, types, slots, inventory, classes, equips, rarities, stable, fish, personal, global, roles, tournamentData, timerData };
+            var toAdd = new List<IEnumerable<string>>() { qualities, types, slots, classes, equips, rarities };
             var output = new CommandResult(true);
             var message = "cd: ";
             foreach (var group in toAdd)
@@ -180,10 +154,6 @@ namespace LobotJR.Command.View.General
             if (message.Length > 4)
             {
                 output.Responses.Add(message);
-            }
-            if (player.Level < 2)   // This might be the first whisper we've sent this user, so send a short message first to increase the character limit.
-            {
-                output.Responses.Insert(0, "Welcome to the Wolfpack RPG!");
             }
             return output;
         }
