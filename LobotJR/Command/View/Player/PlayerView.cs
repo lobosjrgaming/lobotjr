@@ -167,7 +167,7 @@ namespace LobotJR.Command.View.Player
         public CompactCollection<PlayerCharacter> GetStatsCompact(User user)
         {
             var player = PlayerController.GetPlayerByUser(user);
-            return new CompactCollection<PlayerCharacter>(new List<PlayerCharacter>() { player }, x => $"{x.Level}|{x.CharacterClass.Name}|{x.Experience}|{PlayerController.GetExperienceToNextLevel(x.Experience)}|{x.Currency};");
+            return new CompactCollection<PlayerCharacter>(new List<PlayerCharacter>() { player }, x => $"{(user.IsSub ? "S" : "")}|{x.Level}|{x.Prestige}|{x.CharacterClass.Name}|{x.Experience}|{PlayerController.GetExperienceToNextLevel(x.Experience)}|{x.Currency};");
         }
 
         public CommandResult GetStats(User user, string target = null)
