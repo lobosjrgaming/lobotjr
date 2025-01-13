@@ -139,7 +139,7 @@ namespace LobotJR.Command.View.Gloat
                         var record = GloatController.FishingGloat(user, index - 1);
                         if (record != null)
                         {
-                            return new CommandResult($"You spent {cost} wolfcoins to brag about your biggest {record.Fish.Name}.")
+                            return new CommandResult($"You spent {cost} Wolfcoins to brag about your biggest {record.Fish.Name}.")
                             {
                                 Messages = new string[] { $"{user.Username} gloats about the time they caught a {record.Length} in. long, {record.Weight} pound {record.Fish.Name} lobosSmug" }
                             };

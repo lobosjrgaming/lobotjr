@@ -138,6 +138,27 @@ namespace LobotJR.Command.Controller.Dungeons
         }
 
         /// <summary>
+        /// Gets a dungeon mode by its database id.
+        /// </summary>
+        /// <param name="modeId">The id of the dungeon mode to get.</param>
+        /// <returns>A dungeon mode object with the matching id, or null if
+        /// none exists.</returns>
+        public DungeonMode GetModeById(int modeId)
+        {
+            return ConnectionManager.CurrentConnection.DungeonModeData.ReadById(modeId);
+        }
+
+        /// <summary>
+        /// Gets a collection of all dungeon modes
+        /// </summary>
+        /// <returns>A dungeon mode object with the matching id, or null if
+        /// none exists.</returns>
+        public IEnumerable<DungeonMode> GetAllModes()
+        {
+            return ConnectionManager.CurrentConnection.DungeonModeData.Read();
+        }
+
+        /// <summary>
         /// Gets the level range for a dungeon in a given mode.
         /// </summary>
         /// <param name="dungeonId">The id of the dungeon.</param>

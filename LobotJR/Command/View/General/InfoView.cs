@@ -1,4 +1,5 @@
-﻿using LobotJR.Command.Controller.Equipment;
+﻿using LobotJR.Command.Controller.Dungeons;
+using LobotJR.Command.Controller.Equipment;
 using LobotJR.Command.Controller.General;
 using LobotJR.Command.Controller.Pets;
 using LobotJR.Command.Controller.Player;
@@ -23,6 +24,7 @@ namespace LobotJR.Command.View.General
         private readonly EquipmentController EquipmentController;
         private readonly PlayerController PlayerController;
         private readonly PetController PetController;
+        private readonly DungeonController DungeonController;
         private readonly SettingsManager SettingsManager;
 
         /// <summary>
@@ -34,12 +36,13 @@ namespace LobotJR.Command.View.General
         /// </summary>
         public IEnumerable<CommandHandler> Commands { get; private set; }
 
-        public InfoView(BugReportController bugController, EquipmentController equipmentController, PlayerController playerController, PetController petController, SettingsManager settingsManager)
+        public InfoView(BugReportController bugController, EquipmentController equipmentController, PlayerController playerController, PetController petController, DungeonController dungeonController, SettingsManager settingsManager)
         {
             SettingsManager = settingsManager;
             EquipmentController = equipmentController;
             PlayerController = playerController;
             PetController = petController;
+            DungeonController = dungeonController;
             BugController = bugController;
             Commands = new List<CommandHandler>()
             {
@@ -126,7 +129,8 @@ namespace LobotJR.Command.View.General
             var classes = PlayerController.GetPlayableClasses().Select(x => $"{x.Id - 1}|{x.Name}|{Format(x.SuccessChance)}|{Format(x.XpBonus)}|{Format(x.CoinBonus)}|{Format(x.ItemFind)}|{Format(x.PreventDeathBonus)}");
             var equips = new string[] { string.Join("|", PlayerController.GetClassEquippables().Select(x => $"{x.Key}:{string.Join(",", x.Value)}")) };
             var rarities = PetController.GetRarities().Select(x => $"{x.Id}|{Escape(x.Name)}|{x.Color}");
-            var toAdd = new List<IEnumerable<string>>() { qualities, types, slots, classes, equips, rarities };
+            var modes = DungeonController.GetAllModes().Select(x => $"{(x.IsDefault ? "" : x.Flag)}|{x.Name}");
+            var toAdd = new List<IEnumerable<string>>() { qualities, types, slots, classes, equips, rarities, modes };
             var output = new CommandResult(true);
             var message = "cd: ";
             foreach (var group in toAdd)
