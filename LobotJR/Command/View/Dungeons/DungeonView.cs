@@ -74,7 +74,7 @@ namespace LobotJR.Command.View.Dungeons
             DungeonController.DungeonComplete += DungeonController_DungeonComplete;
             Commands = new List<CommandHandler>()
             {
-                new CommandHandler("DungeonList", this, CommandMethod.GetInfo(ListDungeons), "dungeonlist"),
+                new CommandHandler("DungeonList", this, CommandMethod.GetInfo(ListDungeons), CommandMethod.GetInfo(ListDungeonsCompact), "dungeonlist"),
                 new CommandHandler("DungeonDetails", this, CommandMethod.GetInfo<string>(DungeonDetails), "dungeon"),
 
                 new CommandHandler("CreateParty", this, CommandMethod.GetInfo(CreateParty), "createparty"),
@@ -244,6 +244,12 @@ namespace LobotJR.Command.View.Dungeons
         public CommandResult ListDungeons()
         {
             return new CommandResult("List of Wolfpack RPG Adventures: http://tinyurl.com/WolfpackAdventureList");
+        }
+
+        public CompactCollection<string> ListDungeonsCompact()
+        {
+            var runs = DungeonController.GetAllDungeons().GroupBy(x => x.DungeonId, x => x.ModeId, (key, group) => $"{DungeonController.GetDungeonById(key).Name}|{key}|{string.Join(",", group.Select(y => DungeonController.GetModeById(y)).Select(y => y.IsDefault ? "" : y.Flag))};");
+            return new CompactCollection<string>(runs, x => x);
         }
 
         public CommandResult DungeonDetails(string id)
