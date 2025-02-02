@@ -83,6 +83,7 @@ namespace LobotJR.Command.View.Dungeons
                 new CommandHandler("SetLeader", this, CommandMethod.GetInfo<string>(PromotePlayer), "promote"),
                 new CommandHandler("LeaveParty", this, CommandMethod.GetInfo(LeaveParty), "leaveparty", "exitparty"),
                 new CommandHandler("PartyChat", new CommandExecutor(this, CommandMethod.GetInfo<string>(PartyChat), true), "p", "party"),
+                new CommandHandler("Members", this, CommandMethod.GetInfo(PartyMembers), "members"),
 
                 new CommandHandler("Ready", this, CommandMethod.GetInfo(SetReady), "ready"),
                 new CommandHandler("Unready", this, CommandMethod.GetInfo(UnsetReady), "unready"),
@@ -469,6 +470,17 @@ namespace LobotJR.Command.View.Dungeons
                     return new CommandResult($"You whisper: \"{message}\"");
                 }
                 return new CommandResult();
+            }
+            return new CommandResult(errorMessage);
+        }
+
+        public CommandResult PartyMembers(User user)
+        {
+            var canExecute = CanExecuteCommand(user, false, out var _, out var party, out var errorMessage);
+            if (canExecute)
+            {
+                var names = party.Members.Where(x => !x.Equals(user.TwitchId)).Select(x => UserController.GetUserById(x).Username);
+                return new CommandResult($"You are in a party with {string.Join(", ", names)}");
             }
             return new CommandResult(errorMessage);
         }
