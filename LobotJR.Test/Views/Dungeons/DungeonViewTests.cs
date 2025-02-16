@@ -517,6 +517,36 @@ namespace LobotJR.Test.Views.Dungeons
         }
 
         [TestMethod]
+        public void PartyMembersGetsMemberNames()
+        {
+            var firstUser = OtherUsers.ElementAt(1);
+            var secondUser = OtherUsers.ElementAt(2);
+            var firstMember = OtherPlayers.First(x => x.UserId.Equals(firstUser.TwitchId));
+            var secondMember = OtherPlayers.First(x => x.UserId.Equals(secondUser.TwitchId));
+            var party = PartyController.CreateParty(false, Player, firstMember, secondMember);
+            var result = View.PartyMembers(User);
+            var response = result.Responses.First();
+            Assert.IsTrue(response.Contains(firstUser.Username));
+            Assert.IsTrue(response.Contains(secondUser.Username));
+        }
+
+        [TestMethod]
+        public void PartyMembersGivesSpecialMessageWhenInSoloParty()
+        {
+            var party = PartyController.CreateParty(false, Player);
+            var result = View.PartyMembers(User);
+            var response = result.Responses.First();
+            Assert.IsTrue(response.Contains("by yourself"));
+        }
+
+        public void PartyMembersReturnsErrorIfUserIsNotInParty()
+        {
+            var result = View.PartyMembers(User);
+            var response = result.Responses.First();
+            Assert.IsTrue(response.Contains($"not in a party"));
+        }
+
+        [TestMethod]
         public void PartyChatReturnsErrorIfUserIsNotInParty()
         {
             var result = View.PartyChat(User, "Test message");
