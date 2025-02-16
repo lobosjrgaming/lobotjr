@@ -480,7 +480,11 @@ namespace LobotJR.Command.View.Dungeons
             if (canExecute)
             {
                 var names = party.Members.Where(x => !x.Equals(user.TwitchId)).Select(x => UserController.GetUserById(x).Username);
-                return new CommandResult($"You are in a party with {string.Join(", ", names)}");
+                if (names.Any())
+                {
+                    return new CommandResult($"You are in a party with {string.Join(", ", names)}.");
+                }
+                return new CommandResult("You are in a party by yourself.");
             }
             return new CommandResult(errorMessage);
         }

@@ -530,6 +530,15 @@ namespace LobotJR.Test.Views.Dungeons
             Assert.IsTrue(response.Contains(secondUser.Username));
         }
 
+        [TestMethod]
+        public void PartyMembersGivesSpecialMessageWhenInSoloParty()
+        {
+            var party = PartyController.CreateParty(false, Player);
+            var result = View.PartyMembers(User);
+            var response = result.Responses.First();
+            Assert.IsTrue(response.Contains("by yourself"));
+        }
+
         public void PartyMembersReturnsErrorIfUserIsNotInParty()
         {
             var result = View.PartyMembers(User);
