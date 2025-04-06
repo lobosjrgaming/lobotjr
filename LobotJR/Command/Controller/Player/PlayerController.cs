@@ -664,13 +664,20 @@ namespace LobotJR.Command.Controller.Player
                     GainExperience(player, oldUser.xp);
                     player.Currency += oldUser.coins;
                     player.Prestige += oldUser.prestige;
-                    player.CharacterClassId = classMap[oldUser.classType]?.Id ?? 0;
-                    foreach (var item in oldUser.myItems)
+                    var oldClass = classMap[oldUser.classType];
+                    if (!player.CharacterClass.CanPlay)
                     {
-                        var newItem = EquipmentController.AddInventoryRecord(GetUserByPlayer(player), itemMap[item.itemID]);
-                        if (newItem != null)
+                        player.CharacterClassId = oldClass.Id;
+                    }
+                    if (player.CharacterClassId == oldClass.Id)
+                    {
+                        foreach (var item in oldUser.myItems)
                         {
-                            newItem.IsEquipped = item.isActive;
+                            var newItem = EquipmentController.AddInventoryRecord(GetUserByPlayer(player), itemMap[item.itemID]);
+                            if (newItem != null)
+                            {
+                                newItem.IsEquipped = item.isActive;
+                            }
                         }
                     }
                     var pets = ConnectionManager.CurrentConnection.Stables.Read(x => x.UserId.Equals(player.UserId));
