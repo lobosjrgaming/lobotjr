@@ -642,6 +642,65 @@ namespace LobotJR.Command.Controller.Player
             return 0;
         }
 
+        public bool Transfer(PlayerCharacter player, string oldUsername)
+        {
+            Logger.Info("Loading backup data.");
+            var xpBackupFile = Directory.GetFiles(".", $"{PlayerDataImport.ExperienceDataPath}.*.backup").OrderByDescending(x => x).FirstOrDefault();
+            var coinBackupFile = Directory.GetFiles(".", $"{PlayerDataImport.CoinDataPath}.*.backup").OrderByDescending(x => x).FirstOrDefault();
+            var classBackupFile = Directory.GetFiles(".", $"{PlayerDataImport.ClassDataPath}.*.backup").OrderByDescending(x => x).FirstOrDefault();
+
+            if (!string.IsNullOrWhiteSpace(xpBackupFile) && !string.IsNullOrWhiteSpace(coinBackupFile) && !string.IsNullOrWhiteSpace(classBackupFile))
+            {
+                var classMap = BuildClassMap();
+                var itemMap = BuildItemMap();
+                var petMap = BuildPetMap();
+
+                var fileData = PlayerDataImport.LoadLegacyData(coinBackupFile, xpBackupFile, classBackupFile);
+                var fileNames = fileData.Keys.Distinct(StringComparer.OrdinalIgnoreCase);
+
+                if (fileData.TryGetValue(oldUsername, out var oldUser))
+                {
+                    Logger.Info("Found legacy record for {user}", oldUsername);
+                    GainExperience(player, oldUser.xp);
+                    player.Currency += oldUser.coins;
+                    player.Prestige += oldUser.prestige;
+                    player.CharacterClassId = classMap[oldUser.classType]?.Id ?? 0;
+                    foreach (var item in oldUser.myItems)
+                    {
+                        var newItem = EquipmentController.AddInventoryRecord(GetUserByPlayer(player), itemMap[item.itemID]);
+                        if (newItem != null)
+                        {
+                            newItem.IsEquipped = item.isActive;
+                        }
+                    }
+                    var pets = ConnectionManager.CurrentConnection.Stables.Read(x => x.UserId.Equals(player.UserId));
+                    var petsToAdd = oldUser.myPets.Where(x => !pets.Any(y => y.PetId == x.ID && y.IsSparkly == x.isSparkly)).Select(pet => new Stable()
+                    {
+                        UserId = player.UserId,
+                        PetId = petMap[pet.ID].Id,
+                        Name = pet.name,
+                        Level = pet.level,
+                        Experience = pet.xp,
+                        Affection = pet.affection,
+                        Hunger = pet.hunger,
+                        IsSparkly = pet.isSparkly,
+                        IsActive = pet.isActive,
+                    });
+                    ConnectionManager.CurrentConnection.Stables.BatchCreate(petsToAdd, petsToAdd.Count(), Logger, "stable");
+                    return true;
+                }
+                else
+                {
+                    Logger.Warn("Unable to find legacy user record for user {user}", oldUsername);
+                }
+            }
+            else
+            {
+                Logger.Warn("Unable to find legacy data files.");
+            }
+            return false;
+        }
+
         public async Task Process()
         {
             var settings = SettingsManager.GetGameSettings();
