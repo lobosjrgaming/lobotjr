@@ -61,6 +61,7 @@ namespace LobotJR.Command.View.Player
                 new CommandHandler("PrintInfo", this, CommandMethod.GetInfo<string>(PrintUserInfo), "printinfo"),
 
                 new CommandHandler("ImportFix", this, CommandMethod.GetInfo(ImportFix), "importfix", "import-fix"),
+                new CommandHandler("Transfer", this, CommandMethod.GetInfo<string, string>(Transfer), "transfer")
             };
         }
 
@@ -261,6 +262,21 @@ namespace LobotJR.Command.View.Player
         {
             var recordCount = PlayerController.ImportFix().GetAwaiter().GetResult();
             return new CommandResult($"{recordCount} user records updated");
+        }
+
+        public CommandResult Transfer(string target, string oldUsername)
+        {
+            var targetUser = UserController.GetUserByName(target);
+            if (targetUser != null)
+            {
+                var targetPlayer = PlayerController.GetPlayerByUser(targetUser);
+                if (PlayerController.Transfer(targetPlayer, oldUsername))
+                {
+                    return new CommandResult($"Legacy data for {oldUsername} merged with {targetUser.Username}");
+                }
+                return new CommandResult("Legacy import failed! Check the logs for details.");
+            }
+            return CreateDefaultResult(target);
         }
     }
 }
