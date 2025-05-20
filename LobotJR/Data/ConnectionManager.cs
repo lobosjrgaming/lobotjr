@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -27,8 +26,8 @@ namespace LobotJR.Data
         public async Task<IDatabase> OpenConnection()
         {
             await Semaphore.WaitAsync();
-            var options = new DbContextOptionsBuilder<SqliteContext>().UseSqlite().Options;
-            var context = new SqliteContext(options);
+            //var options = new DbContextOptionsBuilder<SqliteContext>().UseSqlite().Options;
+            var context = new SqliteContext();
             context.Initialize();
             CurrentConnection = new SqliteRepositoryManager(context, Semaphore);
             return CurrentConnection;

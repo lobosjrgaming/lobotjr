@@ -45,23 +45,26 @@ namespace LobotJR.Data
         public DbSet<TournamentResult> FishingTournaments { get; set; }
 
         /** Content data */
-        public DbSet<Fish> FishData { get; set; }
-        public DbSet<FishRarity> FishRarityData { get; set; }
-        public DbSet<FishSize> FishSizeData { get; set; }
-        public DbSet<Item> ItemData { get; set; }
-        public DbSet<ItemType> ItemTypeData { get; set; }
-        public DbSet<ItemSlot> ItemSlotData { get; set; }
-        public DbSet<ItemQuality> ItemQualityData { get; set; }
-        public DbSet<Pet> PetData { get; set; }
-        public DbSet<PetRarity> PetRarityData { get; set; }
-        public DbSet<Dungeon> DungeonData { get; set; }
-        public DbSet<Loot> LootData { get; set; }
-        public DbSet<Encounter> EncounterData { get; set; }
-        public DbSet<DungeonTimer> DungeonTimerData { get; set; }
-        public DbSet<CharacterClass> ClassData { get; set; }
-        public DbSet<Equippables> EquippableData { get; set; }
+        public DbSet<Fish> Fish { get; set; }
+        public DbSet<FishRarity> FishRarities { get; set; }
+        public DbSet<FishSize> FishSizes { get; set; }
+        public DbSet<Item> Items { get; set; }
+        public DbSet<ItemType> ItemTypes { get; set; }
+        public DbSet<ItemSlot> ItemSlots { get; set; }
+        public DbSet<ItemQuality> ItemQualities { get; set; }
+        public DbSet<Pet> Pets { get; set; }
+        public DbSet<PetRarity> PetRarities { get; set; }
+        public DbSet<Dungeon> Dungeons { get; set; }
+        public DbSet<DungeonMode> DungeonModes { get; set; }
+        public DbSet<Loot> Loot { get; set; }
+        public DbSet<Encounter> Encounters { get; set; }
+        public DbSet<EncounterLevel> EncounterLevels { get; set; }
+        public DbSet<LevelRange> LevelRanges { get; set; }
+        public DbSet<DungeonTimer> DungeonTimers { get; set; }
+        public DbSet<CharacterClass> CharacterClasses { get; set; }
+        public DbSet<Equippables> Equippables { get; set; }
 
-        public SqliteContext(DbContextOptions<SqliteContext> options) : base(options)
+        public SqliteContext()
         {
             Database.EnsureCreated();
         }
@@ -83,7 +86,9 @@ namespace LobotJR.Data
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseSqlite("Data source=.\\data.sqlite");
+            optionsBuilder
+                .UseLazyLoadingProxies()
+                .UseSqlite("Data source=.\\data.sqlite");
             base.OnConfiguring(optionsBuilder);
         }
 

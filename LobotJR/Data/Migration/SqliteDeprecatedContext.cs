@@ -9,6 +9,15 @@ namespace LobotJR.Data.Migration
     {
         public DbSet<DeprecatedAppSettings> AppSettings { get; set; }
 
-        public SqliteDeprecatedContext() { }
+        public SqliteDeprecatedContext()
+        {
+            Database.EnsureCreated();
+        }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder.UseSqlite("Data source=.\\data.sqlite");
+            base.OnConfiguring(optionsBuilder);
+        }
     }
 }

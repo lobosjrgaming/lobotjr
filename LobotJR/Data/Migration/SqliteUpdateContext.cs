@@ -9,6 +9,15 @@ namespace LobotJR.Data.Migration
     {
         public DbSet<Metadata> Metadata { get; set; }
 
-        public SqliteUpdateContext() { }
+        public SqliteUpdateContext()
+        {
+            Database.EnsureCreated();
+        }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder.UseSqlite("Data source=.\\data.sqlite");
+            base.OnConfiguring(optionsBuilder);
+        }
     }
 }

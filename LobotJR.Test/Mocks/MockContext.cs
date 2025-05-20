@@ -1,4 +1,5 @@
 ﻿using LobotJR.Data;
+using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Data.Entity;
@@ -41,6 +42,13 @@ namespace LobotJR.Test.Mocks
 
         private MockContext(DbConnection connection) : base(connection)
         {
+        }
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder
+                .UseLazyLoadingProxies()
+                .UseSqlite("DataSource=:memory:");
+            base.OnConfiguring(optionsBuilder);
         }
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)

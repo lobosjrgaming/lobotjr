@@ -71,8 +71,8 @@ namespace LobotJR.Data
         {
             Semaphore = new SemaphoreSlim(1, 1);
             Semaphore.Wait();
-            var options = new DbContextOptionsBuilder<SqliteContext>().UseSqlite().Options;
-            SetContext(new SqliteContext(options));
+            //var options = new DbContextOptionsBuilder<SqliteContext>().UseSqlite().Options;
+            SetContext(new SqliteContext());
         }
 
         private void SetContext(DbContext context)
