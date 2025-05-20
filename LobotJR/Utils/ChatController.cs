@@ -91,12 +91,12 @@ namespace LobotJR.Utils
 
         public KeyPress(params char[] keys)
         {
-            Keys = keys.Select(x => CharToScan(x)).ToArray();
+            Keys = [.. keys.Select(x => CharToScan(x))];
         }
 
         public KeyPress(char key, int duration)
         {
-            Keys = new short[] { CharToScan(key) };
+            Keys = [CharToScan(key)];
             Duration = duration;
         }
 

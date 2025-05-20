@@ -9,7 +9,7 @@ namespace LobotJR.Data
     {
         void BeginTransaction();
         TEntity Create(TEntity entry);
-        IEnumerable<TEntity> Create(IEnumerable<TEntity> entries);
+        void Create(IEnumerable<TEntity> entries);
         IEnumerable<TEntity> BatchCreate(IEnumerable<TEntity> entries, int batchSize, Logger logger, string name);
         IEnumerable<TEntity> Read();
         IEnumerable<TEntity> Read(Expression<Func<TEntity, bool>> filter);
@@ -30,11 +30,11 @@ namespace LobotJR.Data
         /// <param name="entry">The object to update.</param>
         /// <returns>The updated object.</returns>
         TEntity Update(TEntity entry);
-        IEnumerable<TEntity> Delete();
+        void Delete();
         TEntity Delete(TEntity entry);
         TEntity DeleteById(int id);
-        IEnumerable<TEntity> DeleteRange(IEnumerable<TEntity> entries);
-        IEnumerable<TEntity> DeleteAll();
+        void DeleteRange(IEnumerable<TEntity> entries);
+        void DeleteAll();
         void Commit();
     }
 }

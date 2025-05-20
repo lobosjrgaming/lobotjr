@@ -45,7 +45,7 @@ namespace LobotJR.Interface
     public partial class Main : Window, INotifyPropertyChanged
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-        private static readonly Dictionary<ColorKeys, Brush> Colors = new Dictionary<ColorKeys, Brush>()
+        private static readonly Dictionary<ColorKeys, Brush> Colors = new()
         {
             { ColorKeys.Background, new SolidColorBrush(Color.FromArgb(255, 0, 0, 0)) },
             { ColorKeys.Info, new SolidColorBrush(Color.FromArgb(255, 255, 255, 255)) },
@@ -54,7 +54,7 @@ namespace LobotJR.Interface
             { ColorKeys.Error, new SolidColorBrush(Color.FromArgb(255, 255, 0, 0)) },
             { ColorKeys.Crash, new SolidColorBrush(Color.FromArgb(255, 255, 0, 255)) },
         };
-        private static readonly Dictionary<int, ColorKeys> LogColors = new Dictionary<int, ColorKeys>()
+        private static readonly Dictionary<int, ColorKeys> LogColors = new()
         {
             { LogLevel.Debug.Ordinal, ColorKeys.Debug },
             { LogLevel.Info.Ordinal, ColorKeys.Info },
@@ -62,17 +62,17 @@ namespace LobotJR.Interface
             { LogLevel.Error.Ordinal, ColorKeys.Error },
             { LogLevel.Fatal.Ordinal, ColorKeys.Crash },
         };
-        private readonly ClientSettings Settings = new ClientSettings();
-        private readonly AuthCallback AuthCallback = new AuthCallback();
-        private readonly GameSettings GameSettings = new GameSettings();
+        private readonly ClientSettings Settings = new();
+        private readonly AuthCallback AuthCallback = new();
+        private readonly GameSettings GameSettings = new();
         private PlayerController PlayerController;
 
-        private readonly List<LogEventInfo> LogHistory = new List<LogEventInfo>();
-        private readonly List<string> CommandHistory = new List<string>();
+        private readonly List<LogEventInfo> LogHistory = [];
+        private readonly List<string> CommandHistory = [];
         private int CommandIndex = 0;
 
-        private readonly SemaphoreSlim LogSemaphore = new SemaphoreSlim(1, 1);
-        private readonly Bot Bot = new Bot();
+        private readonly SemaphoreSlim LogSemaphore = new(1, 1);
+        private readonly Bot Bot = new();
 
         private ClientData ClientData;
         private TokenData TokenData;
@@ -387,7 +387,7 @@ namespace LobotJR.Interface
 
         private void SetTooltip(string value)
         {
-            if (!(CommandInput.ToolTip is ToolTip tt))
+            if (CommandInput.ToolTip is not ToolTip tt)
             {
                 tt = new ToolTip()
                 {
@@ -450,7 +450,7 @@ namespace LobotJR.Interface
                 {
                     var commandManager = Bot.Scope.Resolve<ICommandManager>();
                     var hasBang = CommandInput.Text[0] == '!';
-                    var tabString = hasBang ? CommandInput.Text.Substring(1) : CommandInput.Text;
+                    var tabString = hasBang ? CommandInput.Text[1..] : CommandInput.Text;
                     var commandString = commandManager.CommandStrings.FirstOrDefault(x => x.StartsWith(tabString));
                     if (commandString != null)
                     {
@@ -482,9 +482,9 @@ namespace LobotJR.Interface
             {
                 var commandManager = Bot.Scope.Resolve<ICommandManager>();
                 var hasBang = CommandInput.Text[0] == '!';
-                var commandName = hasBang ? CommandInput.Text.Substring(1) : CommandInput.Text;
+                var commandName = hasBang ? CommandInput.Text[1..] : CommandInput.Text;
                 var spaceIndex = commandName.IndexOf(' ');
-                commandName = spaceIndex >= 0 ? commandName.Substring(0, spaceIndex) : commandName;
+                commandName = spaceIndex >= 0 ? commandName[..spaceIndex] : commandName;
                 var possibleCommands = commandManager.CommandStrings.Where(x => spaceIndex >= 0 ? x.Equals(commandName) : x.StartsWith(commandName));
                 if (possibleCommands.Any())
                 {
@@ -498,7 +498,7 @@ namespace LobotJR.Interface
                         if (possibleCommands.Count() > 10)
                         {
                             var final = $"and {possibleCommands.Count() - 9} others";
-                            possibleCommands = possibleCommands.Take(9).Concat(new string[] { final });
+                            possibleCommands = possibleCommands.Take(9).Concat([final]);
                         }
                         SetTooltip(string.Join("\n", possibleCommands));
                     }

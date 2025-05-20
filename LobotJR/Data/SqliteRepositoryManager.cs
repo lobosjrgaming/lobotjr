@@ -8,7 +8,7 @@ using LobotJR.Command.Model.Pets;
 using LobotJR.Command.Model.Player;
 using LobotJR.Twitch;
 using LobotJR.Twitch.Model;
-using System.Data.Entity;
+using Microsoft.EntityFrameworkCore;
 using System.Threading;
 
 namespace LobotJR.Data
@@ -71,7 +71,8 @@ namespace LobotJR.Data
         {
             Semaphore = new SemaphoreSlim(1, 1);
             Semaphore.Wait();
-            SetContext(new SqliteContext());
+            var options = new DbContextOptionsBuilder<SqliteContext>().UseSqlite().Options;
+            SetContext(new SqliteContext(options));
         }
 
         private void SetContext(DbContext context)
@@ -126,7 +127,7 @@ namespace LobotJR.Data
         public void Dispose()
         {
             context.SaveChanges();
-            context.Database.Connection.Close();
+            context.Database.CloseConnection();
             context.Dispose();
             Semaphore.Release();
         }

@@ -1,5 +1,5 @@
 ﻿using LobotJR.Data;
-using SQLite.CodeFirst;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace LobotJR.Command.Model.Dungeons
 {
@@ -15,7 +15,7 @@ namespace LobotJR.Command.Model.Dungeons
         /// <summary>
         /// The flag used to indicate this mode when referencing dungeon ids.
         /// </summary>
-        [Unique]
+        [Index(IsUnique = true)]
         public string Flag { get; set; }
         /// <summary>
         /// Whether this mode is the default mode, and will be used if no flag

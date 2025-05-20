@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using Microsoft.EntityFrameworkCore;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -9,7 +10,7 @@ namespace LobotJR.Data
     /// </summary>
     public class ConnectionManager : IConnectionManager
     {
-        private readonly SemaphoreSlim Semaphore = new SemaphoreSlim(1, 1);
+        private readonly SemaphoreSlim Semaphore = new(1, 1);
 
         /// <summary>
         /// The current active connection to the database. If no connection has
@@ -26,7 +27,8 @@ namespace LobotJR.Data
         public async Task<IDatabase> OpenConnection()
         {
             await Semaphore.WaitAsync();
-            var context = new SqliteContext();
+            var options = new DbContextOptionsBuilder<SqliteContext>().UseSqlite().Options;
+            var context = new SqliteContext(options);
             context.Initialize();
             CurrentConnection = new SqliteRepositoryManager(context, Semaphore);
             return CurrentConnection;

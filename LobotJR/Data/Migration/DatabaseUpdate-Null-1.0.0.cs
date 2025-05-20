@@ -1,10 +1,10 @@
 ﻿using LobotJR.Twitch.Api.Authentication;
 using LobotJR.Twitch.Api.Client;
 using LobotJR.Twitch.Api.User;
+using Microsoft.EntityFrameworkCore;
 using NuGet.Versioning;
 using System;
 using System.Collections.Generic;
-using System.Data.Entity;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -51,7 +51,7 @@ namespace LobotJR.Data.Migration
                 result.DebugOutput.Add(command);
                 try
                 {
-                    context.Database.ExecuteSqlCommand(command);
+                    context.Database.ExecuteSqlRaw(command);
                 }
                 catch (Exception e)
                 {
@@ -60,9 +60,9 @@ namespace LobotJR.Data.Migration
                 }
             }
 
-            var tournamentNames = context.Database.SqlQuery<string>("SELECT [UserId] from \"TournamentEntries\"");
-            var roleNameLists = context.Database.SqlQuery<string>("SELECT [UserList] from \"UserRoles\"");
-            var roleNames = roleNameLists.SelectMany(x => x.Split(','));
+            var tournamentNames = context.Database.SqlQueryRaw<string>("SELECT [UserId] from \"TournamentEntries\"");
+            var roleNameLists = context.Database.SqlQueryRaw<string>("SELECT [UserList] from \"UserRoles\"");
+            var roleNames = roleNameLists.SelectMany(x => x.Split(',', StringSplitOptions.None));
             var allNames = new List<string>(tournamentNames);
             allNames.AddRange(roleNames);
             var ids = await Users.Get(TokenData.BroadcastToken, ClientData, allNames.Distinct());
@@ -86,20 +86,20 @@ namespace LobotJR.Data.Migration
             {
                 if (idMap.ContainsKey(tournamentName))
                 {
-                    context.Database.ExecuteSqlCommand($"UPDATE \"TournamentEntries\" SET [UserId] = '{idMap[tournamentName]}' WHERE [UserId] = '{tournamentName}'");
+                    context.Database.ExecuteSql($"UPDATE \"TournamentEntries\" SET [UserId] = '{idMap[tournamentName]}' WHERE [UserId] = '{tournamentName}'");
                 }
                 else
                 {
-                    context.Database.ExecuteSqlCommand($"DELETE FROM \"TournamentEntries\" WHERE [UserId] = '{tournamentName}'");
+                    context.Database.ExecuteSql($"DELETE FROM \"TournamentEntries\" WHERE [UserId] = '{tournamentName}'");
                 }
             }
-            context.Database.ExecuteSqlCommand($"DELETE FROM \"TournamentResults\" AS R WHERE R.[Id] in (SELECT [ResultId] FROM \"TournamentEntries\" WHERE [Id] IS NULL)");
+            context.Database.ExecuteSqlRaw($"DELETE FROM \"TournamentResults\" AS R WHERE R.[Id] in (SELECT [ResultId] FROM \"TournamentEntries\" WHERE [Id] IS NULL)");
 
             foreach (var roleNameList in roleNameLists)
             {
                 var list = roleNameList.Split(',');
-                list.Select(x => idMap.ContainsKey(x) ? idMap[x] : null).Where(x => x != null);
-                context.Database.ExecuteSqlCommand($"UPDATE \"UserRoles\" SET [UserList] = '{string.Join(",", list)}' where [UserList] = '{roleNameList}'");
+                list = [.. list.Select(x => idMap.ContainsKey(x) ? idMap[x] : null).Where(x => x != null)];
+                context.Database.ExecuteSql($"UPDATE \"UserRoles\" SET [UserList] = '{string.Join(",", list)}' where [UserList] = '{roleNameList}'");
             }
 
             return result;

@@ -1,6 +1,6 @@
-﻿using NuGet.Versioning;
+﻿using Microsoft.EntityFrameworkCore;
+using NuGet.Versioning;
 using System;
-using System.Data.Entity;
 using System.Threading.Tasks;
 
 namespace LobotJR.Data.Migration
@@ -123,7 +123,7 @@ namespace LobotJR.Data.Migration
                 result.DebugOutput.Add(command);
                 try
                 {
-                    context.Database.ExecuteSqlCommand(command);
+                    context.Database.ExecuteSqlRaw(command);
                 }
                 catch (Exception e)
                 {

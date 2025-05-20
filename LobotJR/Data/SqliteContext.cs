@@ -8,8 +8,7 @@ using LobotJR.Command.Model.Pets;
 using LobotJR.Command.Model.Player;
 using LobotJR.Twitch;
 using LobotJR.Twitch.Model;
-using System.Data.Common;
-using System.Data.Entity;
+using Microsoft.EntityFrameworkCore;
 
 namespace LobotJR.Data
 {
@@ -62,19 +61,35 @@ namespace LobotJR.Data
         public DbSet<CharacterClass> ClassData { get; set; }
         public DbSet<Equippables> EquippableData { get; set; }
 
-        public SqliteContext() { }
-
-        public SqliteContext(DbConnection connection) : base(connection, true) { }
-
-        protected override void OnModelCreating(DbModelBuilder modelBuilder)
+        public SqliteContext(DbContextOptions<SqliteContext> options) : base(options)
         {
-            var sqliteConnectionInitializer = new SqliteInitializer(modelBuilder);
-            Database.SetInitializer(sqliteConnectionInitializer);
+            Database.EnsureCreated();
+        }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+            //context.AccessGroups.Add(new AccessGroup() { Id = 1, Name = "Admin", IncludeAdmins = true });
+            //context.AccessGroups.Add(new AccessGroup() { Id = 2, Name = "UIDev" });
+            //context.Enrollments.Add(new Enrollment() { GroupId = 2, UserId = "26374083" });
+            //context.Metadata?.Add(new Metadata());
+            //context.AppSettings.Add(new AppSettings());
+        }
+        //protected override void OnModelCreating()
+        //{
+        //    //var sqliteConnectionInitializer = new SqliteInitializer(modelBuilder);
+        //    //Database.SetInitializer(sqliteConnectionInitializer);
+        //}
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder.UseSqlite("Data source=.\\data.sqlite");
+            base.OnConfiguring(optionsBuilder);
         }
 
         public void Initialize()
         {
-            this.Database.Initialize(false);
+            //this.Database.Initialize(false);
         }
     }
 }

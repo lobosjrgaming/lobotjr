@@ -1,5 +1,5 @@
-﻿using NuGet.Versioning;
-using System.Data.Entity;
+﻿using Microsoft.EntityFrameworkCore;
+using NuGet.Versioning;
 using System.Threading.Tasks;
 
 namespace LobotJR.Data.Migration

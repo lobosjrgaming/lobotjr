@@ -1,7 +1,7 @@
-﻿using NuGet.Versioning;
+﻿using Microsoft.EntityFrameworkCore;
+using NuGet.Versioning;
 using System;
 using System.Collections.Generic;
-using System.Data.Entity;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -53,7 +53,7 @@ namespace LobotJR.Data.Migration
                 result.DebugOutput.Add(command);
                 try
                 {
-                    context.Database.ExecuteSqlCommand(command);
+                    context.Database.ExecuteSqlRaw(command);
                 }
                 catch (Exception e)
                 {
@@ -63,7 +63,7 @@ namespace LobotJR.Data.Migration
             }
 
             var migrationCommands = new List<string>();
-            var enrollments = context.Database.SqlQuery<TempEnrollment>("SELECT [Id], [UserList] FROM \"AccessGroups\"");
+            var enrollments = context.Database.SqlQueryRaw<TempEnrollment>("SELECT [Id], [UserList] FROM \"AccessGroups\"");
             foreach (var enrollment in enrollments)
             {
                 var users = StringToList(enrollment.UserList);
@@ -72,7 +72,7 @@ namespace LobotJR.Data.Migration
                     migrationCommands.Add($"INSERT INTO \"Enrollments\" ([GroupId], [UserId]) VALUES ('{enrollment.Id}', '{user}')");
                 }
             }
-            var restrictions = context.Database.SqlQuery<TempRestriction>("SELECT [Id], [CommandList] FROM \"AccessGroups\"");
+            var restrictions = context.Database.SqlQueryRaw<TempRestriction>("SELECT [Id], [CommandList] FROM \"AccessGroups\"");
             foreach (var restriction in restrictions)
             {
                 var restrictedCommands = StringToList(restriction.CommandList);
@@ -89,7 +89,7 @@ namespace LobotJR.Data.Migration
                 result.DebugOutput.Add(command);
                 try
                 {
-                    context.Database.ExecuteSqlCommand(command);
+                    context.Database.ExecuteSqlRaw(command);
                 }
                 catch (Exception e)
                 {

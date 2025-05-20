@@ -1,8 +1,6 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\packages\EntityFramework.6.5.1\build\EntityFramework.props" Condition="Exists('..\packages\EntityFramework.6.5.1\build\EntityFramework.props')" />
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <ContentSQLiteInteropFiles>true</ContentSQLiteInteropFiles>
     <CopySQLiteInteropFiles>false</CopySQLiteInteropFiles>
     <CleanSQLiteInteropFiles>false</CleanSQLiteInteropFiles>
@@ -18,417 +16,38 @@
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>true</MapFileExtensions>
     <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>1.0.0.0</ApplicationVersion>
+    <ApplicationVersion>1.3.0.0</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
-  </PropertyGroup>
-  <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{F4168867-9FAA-467E-8C2C-DA4516ED7F27}</ProjectGuid>
+    <UseWindowsForms>true</UseWindowsForms>
+    <UseWPF>true</UseWPF>
+    <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
+    <PlatformTarget>x64</PlatformTarget>
     <OutputType>WinExe</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>LobotJR</RootNamespace>
-    <AssemblyName>LobotJR</AssemblyName>
-    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <IsWebBootstrapper>false</IsWebBootstrapper>
-    <TargetFrameworkProfile />
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>x64</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>x64</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-  </PropertyGroup>
-  <PropertyGroup>
     <StartupObject>LobotJR.App</StartupObject>
-  </PropertyGroup>
-  <PropertyGroup>
     <ApplicationIcon>Resources\Lobot.ico</ApplicationIcon>
+    <AssemblyVersion>1.3.0</AssemblyVersion>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Autofac, Version=6.5.0.0, Culture=neutral, PublicKeyToken=17863af14b0044da, processorArchitecture=MSIL">
-      <HintPath>..\packages\Autofac.6.5.0\lib\netstandard2.0\Autofac.dll</HintPath>
-    </Reference>
-    <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
-      <HintPath>..\packages\EntityFramework.6.5.1\lib\net45\EntityFramework.dll</HintPath>
-    </Reference>
-    <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
-      <HintPath>..\packages\EntityFramework.6.5.1\lib\net45\EntityFramework.SqlServer.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.Bcl.AsyncInterfaces, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Bcl.AsyncInterfaces.8.0.0\lib\net462\Microsoft.Bcl.AsyncInterfaces.dll</HintPath>
-    </Reference>
-    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="NLog, Version=5.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
-      <HintPath>..\packages\NLog.5.1.2\lib\net46\NLog.dll</HintPath>
-    </Reference>
-    <Reference Include="NuGet.Versioning, Version=6.0.0.280, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\NuGet.Versioning.6.0.0\lib\net45\NuGet.Versioning.dll</HintPath>
-    </Reference>
-    <Reference Include="PresentationCore" />
-    <Reference Include="PresentationFramework" />
-    <Reference Include="RestSharp, Version=112.1.0.0, Culture=neutral, PublicKeyToken=598062e77f915f75, processorArchitecture=MSIL">
-      <HintPath>..\packages\RestSharp.112.1.0\lib\netstandard2.0\RestSharp.dll</HintPath>
-    </Reference>
-    <Reference Include="RestSharp.Serializers.NewtonsoftJson, Version=112.1.0.0, Culture=neutral, PublicKeyToken=598062e77f915f75, processorArchitecture=MSIL">
-      <HintPath>..\packages\RestSharp.Serializers.NewtonsoftJson.112.1.0\lib\netstandard2.0\RestSharp.Serializers.NewtonsoftJson.dll</HintPath>
-    </Reference>
-    <Reference Include="SQLite.CodeFirst, Version=1.7.0.34, Culture=neutral, PublicKeyToken=eb96ba0a78d831a7, processorArchitecture=MSIL">
-      <HintPath>..\packages\SQLite.CodeFirst.1.7.0.34\lib\net45\SQLite.CodeFirst.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll</HintPath>
-    </Reference>
-    <Reference Include="System.ComponentModel.DataAnnotations" />
-    <Reference Include="System.Configuration" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Data.SQLite, Version=1.0.115.5, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=MSIL">
-      <HintPath>..\packages\Stub.System.Data.SQLite.Core.NetFramework.1.0.115.5\lib\net46\System.Data.SQLite.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Data.SQLite.EF6, Version=1.0.115.5, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Data.SQLite.EF6.1.0.115.5\lib\net46\System.Data.SQLite.EF6.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Data.SQLite.Linq, Version=1.0.115.5, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Data.SQLite.Linq.1.0.115.5\lib\net46\System.Data.SQLite.Linq.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Diagnostics.DiagnosticSource, Version=4.0.5.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Diagnostics.DiagnosticSource.4.7.1\lib\net46\System.Diagnostics.DiagnosticSource.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.IO.Compression, Version=4.2.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL" />
-    <Reference Include="System.IO.Compression.FileSystem" />
-    <Reference Include="System.Memory, Version=4.0.1.2, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Memory.4.5.5\lib\net461\System.Memory.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Numerics" />
-    <Reference Include="System.Numerics.Vectors, Version=4.1.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Numerics.Vectors.4.5.0\lib\net46\System.Numerics.Vectors.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.6.0.0\lib\net461\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Text.Encodings.Web, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Text.Encodings.Web.8.0.0\lib\net462\System.Text.Encodings.Web.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Text.Json, Version=8.0.0.5, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Text.Json.8.0.5\lib\net462\System.Text.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Threading.Tasks.Extensions, Version=4.2.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Threading.Tasks.Extensions.4.5.4\lib\net461\System.Threading.Tasks.Extensions.dll</HintPath>
-    </Reference>
-    <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.ValueTuple.4.5.0\lib\net461\System.ValueTuple.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xaml" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
-    <Reference Include="WindowsBase" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="App.xaml.cs">
-      <DependentUpon>App.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Data\Migration\DatabaseUpdate-1.2.0-1.2.6.cs" />
-    <Compile Include="Interface\AccessControlEditor.xaml.cs">
-      <DependentUpon>AccessControlEditor.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\CommandExplorer.xaml.cs">
-      <DependentUpon>CommandExplorer.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Content\CharacterClassTable.cs" />
-    <Compile Include="Interface\Content\DungeonModeTable.cs" />
-    <Compile Include="Interface\Content\DungeonTable.cs" />
-    <Compile Include="Interface\Content\EncounterLevelTable.cs" />
-    <Compile Include="Interface\Content\EncounterTable.cs" />
-    <Compile Include="Interface\Content\EquippablesTable.cs" />
-    <Compile Include="Interface\Content\FishRarityTable.cs" />
-    <Compile Include="Interface\Content\FishSizeTable.cs" />
-    <Compile Include="Interface\Content\ItemQualityTable.cs" />
-    <Compile Include="Interface\Content\ItemSlotTable.cs" />
-    <Compile Include="Interface\Content\ItemTable.cs" />
-    <Compile Include="Interface\Content\ItemTypeTable.cs" />
-    <Compile Include="Interface\Content\LevelRangeTable.cs" />
-    <Compile Include="Interface\Content\LootTable.cs" />
-    <Compile Include="Interface\Content\PetRarityTable.cs" />
-    <Compile Include="Interface\Content\PetTable.cs" />
-    <Compile Include="Interface\Content\PreviewTreeView.xaml.cs">
-      <DependentUpon>PreviewTreeView.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Content\ContentEditor.xaml.cs">
-      <DependentUpon>ContentEditor.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Content\FishTable.cs" />
-    <Compile Include="Interface\Content\IContentTable.cs" />
-    <Compile Include="Interface\InverseBooleanConverter.cs" />
-    <Compile Include="Interface\InverseVisibilityConverter.cs" />
-    <Compile Include="Interface\PlayerEditor.xaml.cs">
-      <DependentUpon>PlayerEditor.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Twitch\Api\Channel\ChannelUserResponse.cs" />
-    <Compile Include="Twitch\Api\Channel\Moderators.cs" />
-    <Compile Include="Twitch\Api\Channel\SubscriptionResponse.cs" />
-    <Compile Include="Twitch\Api\Channel\Subscriptions.cs" />
-    <Compile Include="Twitch\Api\Channel\VIPs.cs" />
-    <Compile Include="Twitch\Api\Chat\Chatters.cs" />
-    <Compile Include="Twitch\Api\Chat\ChattersResponse.cs" />
-    <Compile Include="Twitch\Api\Chat\Whisper.cs" />
-    <Compile Include="Twitch\Api\Chat\WhisperRequest.cs" />
-    <Compile Include="Twitch\Api\Client\ClientData.cs" />
-    <Compile Include="Twitch\Api\User\BanRequest.cs" />
-    <Compile Include="Twitch\Api\User\BanUser.cs" />
-    <Compile Include="Twitch\Api\User\TwitchUserData.cs" />
-    <Compile Include="Twitch\Api\User\UserResponse.cs" />
-    <Compile Include="Twitch\Api\User\Users.cs" />
-    <Compile Include="Twitch\AuthCallback.cs" />
-    <Compile Include="Command\Controller\AccessControl\AccessControlController.cs" />
-    <Compile Include="Command\GenericExecutor.cs" />
-    <Compile Include="Command\Model\AccessControl\Enrollment.cs" />
-    <Compile Include="Command\CommandHandler.cs" />
-    <Compile Include="Command\CommandManager.cs" />
-    <Compile Include="Command\CommandRequest.cs" />
-    <Compile Include="Command\CommandResult.cs" />
-    <Compile Include="Command\CompactCollection.cs" />
-    <Compile Include="Command\ICommandManager.cs" />
-    <Compile Include="Command\ICompactResponse.cs" />
-    <Compile Include="Command\IMetaController.cs" />
-    <Compile Include="Command\Model\AccessControl\GroupFlags.cs" />
-    <Compile Include="Command\Model\Dungeons\DungeonHistory.cs" />
-    <Compile Include="Command\Model\Dungeons\DungeonParticipant.cs" />
-    <Compile Include="Command\Model\Dungeons\QueueEntry.cs" />
-    <Compile Include="Command\Model\Dungeons\DungeonRun.cs" />
-    <Compile Include="Command\Model\Dungeons\Dungeon.cs" />
-    <Compile Include="Command\Model\Dungeons\DungeonLockout.cs" />
-    <Compile Include="Command\Model\Dungeons\DungeonMode.cs" />
-    <Compile Include="Command\Model\Dungeons\DungeonTimer.cs" />
-    <Compile Include="Command\Model\Dungeons\Encounter.cs" />
-    <Compile Include="Command\Model\Dungeons\EncounterLevel.cs" />
-    <Compile Include="Command\Model\Dungeons\LevelRange.cs" />
-    <Compile Include="Command\Model\Dungeons\Loot.cs" />
-    <Compile Include="Command\Model\Dungeons\Party.cs" />
-    <Compile Include="Command\Model\Equipment\Inventory.cs" />
-    <Compile Include="Command\Model\Equipment\Item.cs" />
-    <Compile Include="Command\Model\Equipment\ItemQuality.cs" />
-    <Compile Include="Command\Model\Equipment\ItemSlot.cs" />
-    <Compile Include="Command\Model\Equipment\ItemType.cs" />
-    <Compile Include="Command\Model\General\Bet.cs" />
-    <Compile Include="Command\Model\General\BugReport.cs" />
-    <Compile Include="Command\Model\Player\CharacterClass.cs" />
-    <Compile Include="Command\Model\Player\Equippables.cs" />
-    <Compile Include="Command\Model\Player\PlayerCharacter.cs" />
-    <Compile Include="Command\Model\Player\IPlayerStats.cs" />
-    <Compile Include="Command\Model\Fishing\Catch.cs" />
-    <Compile Include="Command\Model\Fishing\Fish.cs" />
-    <Compile Include="Command\Model\Fishing\Fisher.cs" />
-    <Compile Include="Command\Model\Fishing\LeaderboardEntry.cs" />
-    <Compile Include="Command\Model\Fishing\TournamentEntry.cs" />
-    <Compile Include="Command\Model\Fishing\TournamentResult.cs" />
-    <Compile Include="Command\Model\Pets\Pet.cs" />
-    <Compile Include="Command\Model\Pets\PetRarity.cs" />
-    <Compile Include="Command\Model\Pets\Stable.cs" />
-    <Compile Include="Command\Model\Twitch\LookupRequest.cs" />
-    <Compile Include="Command\View\Dungeons\DungeonView.cs" />
-    <Compile Include="Command\View\Dungeons\GroupFinderAdmin.cs" />
-    <Compile Include="Command\View\Dungeons\GroupFinderView.cs" />
-    <Compile Include="Command\View\Equipment\EquipmentAdmin.cs" />
-    <Compile Include="Command\View\Equipment\EquipmentView.cs" />
-    <Compile Include="Command\View\General\BettingView.cs" />
-    <Compile Include="Command\View\General\ConfirmationView.cs" />
-    <Compile Include="Command\View\General\InfoView.cs" />
-    <Compile Include="Command\View\Pets\PetAdmin.cs" />
-    <Compile Include="Command\View\Pets\PetView.cs" />
-    <Compile Include="Command\View\Player\PlayerAdmin.cs" />
-    <Compile Include="Command\View\Player\PlayerView.cs" />
-    <Compile Include="Command\View\Gloat\GloatView.cs" />
-    <Compile Include="Command\View\Twitch\UserAdmin.cs" />
-    <Compile Include="Command\Model\AccessControl\Restriction.cs" />
-    <Compile Include="Command\Controller\Dungeons\GroupFinderController.cs" />
-    <Compile Include="Command\Controller\Dungeons\DungeonController.cs" />
-    <Compile Include="Command\Controller\Dungeons\PartyController.cs" />
-    <Compile Include="Command\Controller\Equipment\EquipmentController.cs" />
-    <Compile Include="Command\Controller\General\BettingController.cs" />
-    <Compile Include="Command\Controller\General\BugReportController.cs" />
-    <Compile Include="Command\Controller\General\ConfirmationController.cs" />
-    <Compile Include="Command\Controller\IDatabaseInitialize.cs" />
-    <Compile Include="Command\Controller\Pets\PetController.cs" />
-    <Compile Include="Command\Controller\Player\PlayerController.cs" />
-    <Compile Include="Command\Controller\Fishing\TournamentController.cs" />
-    <Compile Include="Command\Controller\Twitch\UserController.cs" />
-    <Compile Include="Command\Model\AccessControl\AccessGroup.cs" />
-    <Compile Include="Data\ClientSettings.cs" />
-    <Compile Include="Data\IDatabase.cs" />
-    <Compile Include="Data\IConnectionManager.cs" />
-    <Compile Include="Data\ConnectionManager.cs" />
-    <Compile Include="Data\GameSettings.cs" />
-    <Compile Include="Data\AppSettings.cs" />
-    <Compile Include="Data\Import\DataImporter.cs" />
-    <Compile Include="Data\Import\DungeonDataImport.cs" />
-    <Compile Include="Data\Import\FileSystem.cs" />
-    <Compile Include="Data\Import\IFileSystem.cs" />
-    <Compile Include="Data\Import\ItemDataImport.cs" />
-    <Compile Include="Data\Import\PetDataImport.cs" />
-    <Compile Include="Data\Import\PlayerDataImport.cs" />
-    <Compile Include="Data\Migration\DatabaseUpdate-1.1.6-1.2.0.cs" />
-    <Compile Include="Interface\HexConverter.cs" />
-    <Compile Include="Interface\Main.xaml.cs">
-      <DependentUpon>Main.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\NumericInputValidator.cs" />
-    <Compile Include="Interface\Settings\DungeonSettings.xaml.cs">
-      <DependentUpon>DungeonSettings.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Settings\LogSettings.xaml.cs">
-      <DependentUpon>LogSettings.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Settings\TournamentSettings.xaml.cs">
-      <DependentUpon>TournamentSettings.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Settings\PetSettings.xaml.cs">
-      <DependentUpon>PetSettings.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Settings\FishingSettings.xaml.cs">
-      <DependentUpon>FishingSettings.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Settings\PriceSettings.xaml.cs">
-      <DependentUpon>PriceSettings.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Settings\AwardSettings.xaml.cs">
-      <DependentUpon>AwardSettings.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Settings\BehaviorSettings.xaml.cs">
-      <DependentUpon>BehaviorSettings.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Settings\ISettingsPage.cs" />
-    <Compile Include="Interface\Settings\SettingsEditor.xaml.cs">
-      <DependentUpon>SettingsEditor.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Settings\TwitchClientSettings.xaml.cs">
-      <DependentUpon>TwitchClientSettings.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Properties\Resources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
-    <Compile Include="Data\Migration\DatabaseUpdate-1.1.0-1.1.6.cs" />
-    <Compile Include="Twitch\Api\Authentication\AuthToken.cs" />
-    <Compile Include="Twitch\Api\Authentication\RefreshRequest.cs" />
-    <Compile Include="Twitch\Api\Authentication\TokenData.cs" />
-    <Compile Include="Twitch\Api\Authentication\TokenResponse.cs" />
-    <Compile Include="Twitch\Api\Authentication\ValidationResponse.cs" />
-    <Compile Include="Utils\DataUtils.cs" />
-    <Compile Include="Utils\FileUtils.cs" />
-    <Compile Include="Utils\InterfaceUtils.cs" />
-    <Compile Include="Utils\Api\NewtonsoftDeserializer.cs" />
-    <Compile Include="Utils\Api\Pagination.cs" />
-    <Compile Include="Utils\Api\RestLogger.cs" />
-    <Compile Include="Utils\Api\RestUtils.cs" />
-    <Compile Include="Utils\Api\SerializerSettings.cs" />
-    <Compile Include="Utils\UserEqualityComparers.cs" />
-    <Compile Include="Data\Metadata.cs" />
-    <Compile Include="Data\Migration\DatabaseUpdate-1.0.7-1.1.0.cs" />
-    <Compile Include="Data\Migration\DatabaseUpdate-1.0.6-1.0.7.cs" />
-    <Compile Include="Data\Migration\DatabaseUpdate-1.0.5-1.0.6.cs" />
-    <Compile Include="Data\Migration\DatabaseUpdate-1.0.4-1.0.5.cs" />
-    <Compile Include="Data\Migration\DatabaseUpdate-1.0.3-1.0.4.cs" />
-    <Compile Include="Data\Migration\DatabaseUpdate-1.0.2-1.0.3.cs" />
-    <Compile Include="Data\Migration\DatabaseUpdate-1.0.1-1.0.2.cs" />
-    <Compile Include="Data\Migration\DatabaseUpdate-Null-1.0.0.cs" />
-    <Compile Include="Data\Migration\DatabaseUpdate-1.0.0-1.0.1.cs" />
-    <Compile Include="Data\Migration\DatabaseMigrationResult.cs" />
-    <Compile Include="Data\Migration\DeprecatedAppSettings.cs" />
-    <Compile Include="Data\Migration\IDatabaseUpdate.cs" />
-    <Compile Include="Data\Migration\SqliteDatabaseUpdater.cs" />
-    <Compile Include="Data\Migration\SqliteDeprecatedContext.cs" />
-    <Compile Include="Data\Migration\SqliteUpdateContext.cs" />
-    <Compile Include="Data\SettingsManager.cs" />
-    <Compile Include="Data\TableObject.cs" />
-    <Compile Include="Data\SqliteRepositoryManager.cs" />
-    <Compile Include="Data\SqliteInitializer.cs" />
-    <Compile Include="Data\SqliteRepository.cs" />
-    <Compile Include="Data\IRepository.cs" />
-    <Compile Include="Data\SqliteContext.cs" />
-    <Compile Include="Twitch\Model\User.cs" />
-    <Compile Include="Data\Import\FisherDataImport.cs" />
-    <Compile Include="Data\Import\FishDataImport.cs" />
-    <Compile Include="Command\View\AccessControl\AccessControlAdmin.cs" />
-    <Compile Include="Command\View\Fishing\FishingAdmin.cs" />
-    <Compile Include="Command\View\Fishing\FishingView.cs" />
-    <Compile Include="Command\Controller\Fishing\FishingController.cs" />
-    <Compile Include="Command\View\Fishing\LeaderboardView.cs" />
-    <Compile Include="Command\View\Fishing\TournamentView.cs" />
-    <Compile Include="Command\View\AccessControl\AccessControlView.cs" />
-    <Compile Include="Command\Controller\Fishing\LeaderboardController.cs" />
-    <Compile Include="Command\Controller\Gloat\GloatController.cs" />
-    <Compile Include="Command\View\ICommandView.cs" />
-    <Compile Include="Command\Controller\IProcessor.cs" />
-    <Compile Include="Command\Controller\IControllerManager.cs" />
-    <Compile Include="Command\Controller\ControllerManager.cs" />
-    <Compile Include="Bot.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Properties\Settings.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTimeSharedInput>True</DesignTimeSharedInput>
-      <DependentUpon>Settings.settings</DependentUpon>
-    </Compile>
-    <Compile Include="Trigger\ITriggerResponder.cs" />
-    <Compile Include="Trigger\Responder\BadLobot.cs" />
-    <Compile Include="Trigger\Responder\BlockLinks.cs" />
-    <Compile Include="Trigger\Responder\NoceanMan.cs" />
-    <Compile Include="Trigger\TriggerManager.cs" />
-    <Compile Include="Trigger\TriggerResult.cs" />
-    <Compile Include="Twitch\DataTimer.cs" />
-    <Compile Include="Twitch\Model\IrcMessage.cs" />
-    <Compile Include="Twitch\ITwitchClient.cs" />
-    <Compile Include="Twitch\ITwitchIrcClient.cs" />
-    <Compile Include="Twitch\TwitchIrcClient.cs" />
-    <Compile Include="Twitch\TwitchClient.cs" />
-    <Compile Include="Twitch\WhisperQueue.cs" />
-    <Compile Include="Twitch\Model\WhisperRecord.cs" />
-    <Compile Include="Utils\AutofacSetup.cs" />
-    <Compile Include="Utils\ChatController.cs" />
-    <Compile Include="Utils\Extensions.cs" />
-    <Compile Include="Utils\KeyComparer.cs" />
-    <Compile Include="Utils\CommandMethod.cs" />
-    <Compile Include="Utils\RollingTimer.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="App.config">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="packages.config" />
-    <None Include="Properties\Settings.settings">
-      <Generator>SettingsSingleFileGenerator</Generator>
-      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
-    </None>
+    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.5" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="9.0.5" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.5" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.5" />
+    <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
+    <PackageReference Include="Autofac" Version="8.3.0" />
+    <PackageReference Include="EntityFramework" Version="6.5.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="NLog" Version="5.4.0" />
+    <PackageReference Include="NuGet.Versioning" Version="6.14.0" />
+    <PackageReference Include="RestSharp" Version="112.1.0" />
+    <PackageReference Include="RestSharp.Serializers.NewtonsoftJson" Version="112.1.0" />
+    <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="9.0.5" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
+    <PackageReference Include="System.Text.Encodings.Web" Version="9.0.5" />
+    <PackageReference Include="System.Text.Json" Version="9.0.5" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.5" />
   </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Service References\" />
@@ -449,12 +68,6 @@
       <ProductName>.NET Framework 3.5 SP1</ProductName>
       <Install>false</Install>
     </BootstrapperPackage>
-  </ItemGroup>
-  <ItemGroup>
-    <ApplicationDefinition Include="App.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </ApplicationDefinition>
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Resources\CommandDisabled.png">
@@ -561,98 +174,8 @@
     </Resource>
   </ItemGroup>
   <ItemGroup>
-    <Page Include="Interface\AccessControlEditor.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Interface\CommandExplorer.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Interface\Content\PreviewTreeView.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Interface\Content\ContentEditor.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Interface\Main.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Interface\PlayerEditor.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Interface\Settings\DungeonSettings.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Interface\Settings\LogSettings.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Interface\Settings\TournamentSettings.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Interface\Settings\PetSettings.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Interface\Settings\FishingSettings.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Interface\Settings\PriceSettings.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Interface\Settings\AwardSettings.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Interface\Settings\BehaviorSettings.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Interface\Settings\SettingsEditor.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Interface\Settings\TwitchClientSettings.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup />
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PostBuildEvent>
-    </PostBuildEvent>
-  </PropertyGroup>
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('..\packages\Stub.System.Data.SQLite.Core.NetFramework.1.0.115.5\build\net46\Stub.System.Data.SQLite.Core.NetFramework.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Stub.System.Data.SQLite.Core.NetFramework.1.0.115.5\build\net46\Stub.System.Data.SQLite.Core.NetFramework.targets'))" />
-    <Error Condition="!Exists('..\packages\EntityFramework.6.5.1\build\EntityFramework.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\EntityFramework.6.5.1\build\EntityFramework.props'))" />
-    <Error Condition="!Exists('..\packages\EntityFramework.6.5.1\build\EntityFramework.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\EntityFramework.6.5.1\build\EntityFramework.targets'))" />
-  </Target>
-  <Import Project="..\packages\Stub.System.Data.SQLite.Core.NetFramework.1.0.115.5\build\net46\Stub.System.Data.SQLite.Core.NetFramework.targets" Condition="Exists('..\packages\Stub.System.Data.SQLite.Core.NetFramework.1.0.115.5\build\net46\Stub.System.Data.SQLite.Core.NetFramework.targets')" />
-  <Import Project="..\packages\EntityFramework.6.5.1\build\EntityFramework.targets" Condition="Exists('..\packages\EntityFramework.6.5.1\build\EntityFramework.targets')" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
 </Project>

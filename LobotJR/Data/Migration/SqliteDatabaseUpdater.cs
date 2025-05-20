@@ -1,8 +1,8 @@
-﻿using NuGet.Versioning;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using NuGet.Versioning;
 using System;
 using System.Collections.Generic;
-using System.Configuration;
-using System.Data.Entity;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -64,7 +64,7 @@ namespace LobotJR.Data.Migration
 
         private string GetDatabaseFile()
         {
-            var connectionString = ConfigurationManager.ConnectionStrings["SqliteContext"].ConnectionString;
+            var connectionString = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetConnectionString("SqliteContext");
             return connectionString.Split('=')[1];
         }
 
@@ -79,8 +79,7 @@ namespace LobotJR.Data.Migration
         {
             try
             {
-                Context.Database.Connection.Close();
-                Context.Database.Connection.Dispose();
+                Context.Database.CloseConnection();
                 Context.Dispose();
                 GC.Collect();
                 File.Delete(databaseFile);

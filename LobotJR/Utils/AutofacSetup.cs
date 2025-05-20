@@ -1,5 +1,4 @@
 ﻿using Autofac;
-using Autofac.Core;
 using LobotJR.Command;
 using LobotJR.Command.Controller;
 using LobotJR.Command.Controller.AccessControl;
@@ -37,7 +36,7 @@ namespace LobotJR.Utils
             var builder = new ContainerBuilder();
 
             builder.RegisterType<DatabaseUpdate_Null_1_0_0>().As<IDatabaseUpdate>().InstancePerLifetimeScope()
-                .WithParameters(new Parameter[] { new TypedParameter(typeof(ClientData), clientData), new TypedParameter(typeof(TokenData), tokenData) });
+                .WithParameters([new TypedParameter(typeof(ClientData), clientData), new TypedParameter(typeof(TokenData), tokenData)]);
             builder.RegisterType<DatabaseUpdate_1_0_0_1_0_1>().As<IDatabaseUpdate>().InstancePerLifetimeScope();
             builder.RegisterType<DatabaseUpdate_1_0_1_1_0_2>().As<IDatabaseUpdate>().InstancePerLifetimeScope();
             builder.RegisterType<DatabaseUpdate_1_0_2_1_0_3>().As<IDatabaseUpdate>().InstancePerLifetimeScope();
@@ -128,9 +127,9 @@ namespace LobotJR.Utils
         private static void RegisterManagers(ContainerBuilder builder, ClientData clientData, TokenData tokenData)
         {
             builder.RegisterType<TwitchClient>().AsSelf().As<ITwitchClient>().InstancePerLifetimeScope()
-                .WithParameters(new Parameter[] { new TypedParameter(typeof(ClientData), clientData), new TypedParameter(typeof(TokenData), tokenData) });
+                .WithParameters([new TypedParameter(typeof(ClientData), clientData), new TypedParameter(typeof(TokenData), tokenData)]);
             builder.RegisterType<TwitchIrcClient>().AsSelf().As<ITwitchIrcClient>().InstancePerLifetimeScope()
-                .WithParameters(new Parameter[] { new TypedParameter(typeof(TokenData), tokenData) });
+                .WithParameters([new TypedParameter(typeof(TokenData), tokenData)]);
             builder.RegisterType<ControllerManager>().AsSelf().As<IControllerManager>().InstancePerLifetimeScope();
             builder.RegisterType<CommandManager>().AsSelf().As<ICommandManager>().InstancePerLifetimeScope();
             builder.RegisterType<TriggerManager>().AsSelf().InstancePerLifetimeScope();

@@ -1,7 +1,8 @@
-﻿using NLog;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using NLog;
 using System;
 using System.Collections.Generic;
-using System.Data.Entity;
 using System.Linq;
 using System.Linq.Expressions;
 
@@ -11,7 +12,7 @@ namespace LobotJR.Data
     {
         private readonly DbContext context;
         private readonly DbSet<TEntity> dbSet;
-        private DbContextTransaction transaction;
+        private IDbContextTransaction transaction;
 
         public SqliteRepository(DbContext context)
         {
@@ -21,7 +22,7 @@ namespace LobotJR.Data
 
         public void BeginTransaction()
         {
-            context.Configuration.AutoDetectChangesEnabled = false;
+            context.ChangeTracker.AutoDetectChangesEnabled = false;
             transaction = context.Database.BeginTransaction();
         }
 
@@ -32,19 +33,19 @@ namespace LobotJR.Data
                 transaction.Commit();
                 transaction.Dispose();
                 transaction = null;
-                context.Configuration.AutoDetectChangesEnabled = true;
+                context.ChangeTracker.AutoDetectChangesEnabled = true;
             }
             context.SaveChanges();
         }
 
         public TEntity Create(TEntity entry)
         {
-            return dbSet.Add(entry);
+            return dbSet.Add(entry).Entity;
         }
 
-        public IEnumerable<TEntity> Create(IEnumerable<TEntity> entries)
+        public void Create(IEnumerable<TEntity> entries)
         {
-            return dbSet.AddRange(entries);
+            dbSet.AddRange(entries);
         }
 
         public IEnumerable<TEntity> BatchCreate(IEnumerable<TEntity> entries, int batchSize, Logger logger, string name)
@@ -76,14 +77,14 @@ namespace LobotJR.Data
             return entryList;
         }
 
-        public IEnumerable<TEntity> Delete()
+        public void Delete()
         {
-            return dbSet.RemoveRange(dbSet);
+            dbSet.RemoveRange(dbSet);
         }
 
         public TEntity Delete(TEntity entry)
         {
-            return dbSet.Remove(entry);
+            return dbSet.Remove(entry).Entity;
         }
 
         public TEntity DeleteById(int id)
@@ -91,21 +92,20 @@ namespace LobotJR.Data
             var toRemove = dbSet.Find(id);
             if (toRemove != null)
             {
-                return dbSet.Remove(toRemove);
+                return dbSet.Remove(toRemove).Entity;
             }
             return null;
         }
 
-        public IEnumerable<TEntity> DeleteRange(IEnumerable<TEntity> entries)
+        public void DeleteRange(IEnumerable<TEntity> entries)
         {
-            return dbSet.RemoveRange(entries);
+            dbSet.RemoveRange(entries);
         }
 
-        public IEnumerable<TEntity> DeleteAll()
+        public void DeleteAll()
         {
-            var removed = dbSet.RemoveRange(dbSet);
+            dbSet.RemoveRange(dbSet);
             Commit();
-            return removed;
         }
 
         public IEnumerable<TEntity> Read()
@@ -170,7 +170,7 @@ namespace LobotJR.Data
         {
             var output = dbSet.Attach(entry);
             context.Entry(entry).State = EntityState.Modified;
-            return output;
+            return output.Entity;
         }
     }
 }
