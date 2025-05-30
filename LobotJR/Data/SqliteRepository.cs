@@ -79,7 +79,10 @@ namespace LobotJR.Data
 
         public void Delete()
         {
+            //context.Database.ExecuteSqlRaw($"DELETE FROM [{typeof(TEntity).Name}]");
+            //context.Database.ExecuteSql($"DELETE FROM [{typeof(TEntity).Name}]");
             dbSet.RemoveRange(dbSet);
+            //dbSet.ExecuteDelete();
         }
 
         public TEntity Delete(TEntity entry)
@@ -104,7 +107,7 @@ namespace LobotJR.Data
 
         public void DeleteAll()
         {
-            dbSet.RemoveRange(dbSet);
+            dbSet.ExecuteDelete();
             Commit();
         }
 

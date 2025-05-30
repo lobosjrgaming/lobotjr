@@ -1,7 +1,6 @@
 ﻿using LobotJR.Command.Model.AccessControl;
 using LobotJR.Data;
 using LobotJR.Twitch.Model;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -215,7 +214,7 @@ namespace LobotJR.Command.Controller.AccessControl
         /// <returns>A collection of groups the user is enrolled in.</returns>
         public IEnumerable<AccessGroup> GetEnrolledGroups(User user)
         {
-            var groupIds = ConnectionManager.CurrentConnection.Enrollments.Read(x => x.UserId.Equals(user.TwitchId, StringComparison.OrdinalIgnoreCase)).Select(x => x.GroupId).ToList();
+            var groupIds = ConnectionManager.CurrentConnection.Enrollments.Read(x => x.UserId == user.TwitchId).Select(x => x.GroupId).ToList();
             var groups = ConnectionManager.CurrentConnection.AccessGroups.Read(x => groupIds.Contains(x.Id));
             if (user.IsSub)
             {

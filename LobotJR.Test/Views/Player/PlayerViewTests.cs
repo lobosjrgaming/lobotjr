@@ -37,15 +37,21 @@ namespace LobotJR.Test.Views.Player
             var db = AutofacMockSetup.ConnectionManager.CurrentConnection;
             User = db.Users.Read().First();
             Other = db.Users.Read().ElementAt(2);
-            Classes = db.CharacterClassData.Read().ToList();
+            Classes = [.. db.CharacterClassData.Read()];
             SettingsManager = AutofacMockSetup.Container.Resolve<SettingsManager>();
             GroupFinderController = AutofacMockSetup.Container.Resolve<GroupFinderController>();
             PartyController = AutofacMockSetup.Container.Resolve<PartyController>();
             PlayerController = AutofacMockSetup.Container.Resolve<PlayerController>();
             View = AutofacMockSetup.Container.Resolve<PlayerView>();
+            var player = PlayerController.GetPlayerByUser(User);
+            Console.WriteLine(player.CharacterClass.Name);
+            Console.WriteLine(User.IsSub);
             AutofacMockSetup.ResetPlayers();
             PlayerController.ClearRespecs();
             GroupFinderController.ResetQueue();
+            player = PlayerController.GetPlayerByUser(User);
+            Console.WriteLine(player.CharacterClass.Name);
+            Console.WriteLine(User.IsSub);
         }
 
         [TestMethod]
@@ -433,8 +439,14 @@ namespace LobotJR.Test.Views.Player
             var listener = new Mock<PushNotificationHandler>();
             player.Level = 2;
             player.Experience = 150;
+            Console.WriteLine(player.CharacterClass.Name);
             View.PushNotification += listener.Object;
             PlayerController.GainExperience(player, PlayerController.GetExperienceToNextLevel(player.Experience));
+            var result = listener.Invocations[0].Arguments.ElementAt(1) as CommandResult;
+            foreach (var response in result.Responses)
+            {
+                Console.WriteLine(response);
+            }
             listener.Verify(x => x(User, It.Is<CommandResult>(
                 y => y.Responses.Any(z => z.Contains("choose a class"))
             )));

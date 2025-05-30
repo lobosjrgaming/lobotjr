@@ -141,7 +141,7 @@ namespace LobotJR.Command
 
         private async Task View_PushNotification(User user, CommandResult commandResult)
         {
-            await PushNotifications?.Invoke(user, commandResult);
+            await (PushNotifications?.Invoke(user, commandResult) ?? Task.CompletedTask);
         }
 
         private bool CanUserExecute(string commandId, User user)

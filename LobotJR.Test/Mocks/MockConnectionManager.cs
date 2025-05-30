@@ -339,6 +339,7 @@ namespace LobotJR.Test.Mocks
 
             var dungeon = new Dungeon()
             {
+                CommandId = 1,
                 Description = "A dungeon.",
                 Name = "Dungeon",
                 FailureText = "You died!",
@@ -418,6 +419,7 @@ namespace LobotJR.Test.Mocks
             context.DungeonData.Create(dungeon);
             var dungeon2 = new Dungeon()
             {
+                CommandId = 2,
                 Name = "Dungeon 2",
                 Description = "A different dungeon.",
                 FailureText = "You died!",
@@ -429,6 +431,7 @@ namespace LobotJR.Test.Mocks
 
         public void SeedData()
         {
+            CurrentConnection.Commit();
             InitializeSettings(CurrentConnection);
             InitializeUsers(CurrentConnection);
             CurrentConnection.Commit();
@@ -486,6 +489,7 @@ namespace LobotJR.Test.Mocks
 
         public void ResetDungeons()
         {
+            CurrentConnection.Commit();
             CurrentConnection.DungeonData.Delete();
             CurrentConnection.EncounterData.Delete();
             CurrentConnection.LevelRangeData.Delete();
@@ -498,6 +502,7 @@ namespace LobotJR.Test.Mocks
 
         public void ResetPlayers()
         {
+            CurrentConnection.Commit();
             CurrentConnection.PlayerCharacters.Delete();
             CurrentConnection.Inventories.Delete();
             CurrentConnection.Stables.Delete();

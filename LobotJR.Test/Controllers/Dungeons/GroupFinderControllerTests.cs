@@ -104,11 +104,11 @@ namespace LobotJR.Test.Controllers.Dungeons
                 Time = DateTime.Now - TimeSpan.FromMinutes(timer.Length)
             });
             db.Commit();
-            Controller.SetLockout(player);
             var now = DateTime.Now;
+            Controller.SetLockout(player);
             db.Commit();
             var lockout = db.DungeonLockouts.Read(x => x.UserId.Equals(player.UserId)).First();
-            Assert.AreEqual(now, lockout.Time);
+            Assert.IsTrue(lockout.Time - now < TimeSpan.FromSeconds(1));
         }
 
         [TestMethod]

@@ -8,7 +8,6 @@ using LobotJR.Command.View;
 using LobotJR.Command.View.Fishing;
 using LobotJR.Data;
 using LobotJR.Test.Mocks;
-using LobotJR.Utils;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using System;

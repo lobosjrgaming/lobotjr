@@ -6,7 +6,6 @@ using LobotJR.Data;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
 using System.Collections.Generic;
-using System.Data.Entity.Core.Common.CommandTrees.ExpressionBuilder;
 using System.Linq;
 
 namespace LobotJR.Command.View.Pets

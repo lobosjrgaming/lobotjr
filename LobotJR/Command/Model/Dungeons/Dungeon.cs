@@ -9,6 +9,10 @@ namespace LobotJR.Command.Model.Dungeons
     public class Dungeon : TableObject
     {
         /// <summary>
+        /// The numeric id used to identify this dungeon in user commands.
+        /// </summary>
+        public int CommandId { get; set; }
+        /// <summary>
         /// The name of the dungeon as shown in the dungeon list.
         /// </summary>
         public string Name { get; set; }

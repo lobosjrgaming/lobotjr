@@ -122,6 +122,7 @@ namespace LobotJR.Test.TournamentSystems.Fishing
             fisher.IsFishing = false;
             TournamentSystem.CurrentTournament = null;
             TournamentSystem.StartTournament();
+            db.Commit();
             FishingSystem.Cast(fisher.User);
             Assert.IsTrue(fisher.IsFishing);
             Assert.IsTrue(fisher.HookedTime >= DateTime.Now.AddSeconds(settings.FishingTournamentCastMinimum));

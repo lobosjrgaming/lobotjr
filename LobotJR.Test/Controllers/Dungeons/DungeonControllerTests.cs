@@ -312,7 +312,7 @@ namespace LobotJR.Test.Controllers.Dungeons
             player2.Currency = DungeonController.GetDungeonCost(player2);
             player3.Currency = DungeonController.GetDungeonCost(player3);
             var dungeon = db.DungeonData.Read().First();
-            var mode = db.DungeonModeData.Read().Last();
+            var mode = db.DungeonModeData.Read().First();
             var party = PartyController.CreateParty(false, player1, player2, player3);
             party.State = PartyState.Started;
             party.DungeonId = dungeon.Id;
@@ -527,11 +527,13 @@ namespace LobotJR.Test.Controllers.Dungeons
             DungeonController.DungeonComplete += listener.Object;
             var petListener = new Mock<PetController.PetFoundHandler>();
             PetController.PetFound += petListener.Object;
+            db.Commit();
             await DungeonController.Process();
             foreach (var item in db.DungeonData.Read().First().Loot)
             {
                 item.DropChance = 0;
             }
+            db.Commit();
             var members = PartyController.GetPartyPlayers(party);
             foreach (var member in members)
             {

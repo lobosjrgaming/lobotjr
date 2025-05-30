@@ -161,6 +161,7 @@ namespace LobotJR.Test.Controllers.Equipment
             var user = db.Users.Read().First();
             var items = db.ItemData.Read();
             var record = Controller.AddInventoryRecord(user, items.First());
+            db.Commit();
             Controller.RemoveInventoryRecord(record);
             db.Commit();
             var result = Controller.GetInventoryRecord(user, items.First());

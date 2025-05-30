@@ -22,6 +22,7 @@ namespace LobotJR.Interface.Content
             return new List<DataGridColumn>()
             {
                 InterfaceUtils.CreateColumn(nameof(Dungeon.Id), true),
+                InterfaceUtils.CreateColumn(nameof(Dungeon.CommandId)),
                 InterfaceUtils.CreateColumn(nameof(Dungeon.Name)),
                 InterfaceUtils.CreateColumn(nameof(Dungeon.Description)),
                 InterfaceUtils.CreateColumn(nameof(Dungeon.Introduction)),
@@ -36,6 +37,7 @@ namespace LobotJR.Interface.Content
             {
                 DataUtils.SyncTable(database.DungeonData, typedData, (source, dest) =>
                 {
+                    dest.CommandId = source.CommandId;
                     dest.Name = source.Name;
                     dest.Description = source.Description;
                     dest.Introduction = source.Introduction;

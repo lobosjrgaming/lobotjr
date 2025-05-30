@@ -173,7 +173,8 @@ namespace LobotJR.Command.Controller.Dungeons
         /// <summary>
         /// Gets the formatted display name of a dungeon and mode.
         /// </summary>
-        /// <param name="run">The dungeon run, or paired dungeon plus mode.</param>
+        /// <param name="dungeon">The dungeon object for this run.</param>
+        /// <param name="mode">The dungeon mode object for this run.</param>
         /// <returns>The formatted display name.</returns>
         public string GetDungeonName(Dungeon dungeon, DungeonMode mode)
         {
@@ -184,7 +185,8 @@ namespace LobotJR.Command.Controller.Dungeons
         /// <summary>
         /// Gets the formatted display name of a dungeon and mode.
         /// </summary>
-        /// <param name="run">The dungeon run, or paired dungeon plus mode.</param>
+        /// <param name="dungeonId">The database id for the dungeon (not the command id).</param>
+        /// <param name="modeId">The database id for the dungeon mode.</param>
         /// <returns>The formatted display name.</returns>
         public string GetDungeonName(int dungeonId, int modeId)
         {
@@ -204,7 +206,8 @@ namespace LobotJR.Command.Controller.Dungeons
         /// <param name="dungeonId">The dungeon id string. This should be in
         /// the format of "{id}{modeFlag}". For example "1h" would get the heroic
         /// mode of the dugneon with id 1. If no flag is provided, for example
-        /// "1", then the default dungeon mode will be used.</param>
+        /// "1", then the default dungeon mode will be used. The dungeon id
+        /// should be the command id, not the database id.</param>
         /// <returns>A dungeon run object containing the dungeon and mode.</returns>
         public DungeonRun ParseDungeonId(string dungeonId)
         {
@@ -219,7 +222,7 @@ namespace LobotJR.Command.Controller.Dungeons
             }
             if (int.TryParse(id, out var idNumber) && mode != null)
             {
-                var dungeon = ConnectionManager.CurrentConnection.DungeonData.ReadById(idNumber);
+                var dungeon = ConnectionManager.CurrentConnection.DungeonData.Read(x => x.CommandId == idNumber).FirstOrDefault();
                 if (dungeon != null)
                 {
                     return new DungeonRun(dungeon, mode);

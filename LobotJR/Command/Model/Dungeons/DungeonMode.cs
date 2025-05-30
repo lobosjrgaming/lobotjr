@@ -1,11 +1,12 @@
 ﻿using LobotJR.Data;
-using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace LobotJR.Command.Model.Dungeons
 {
     /// <summary>
     /// Table that holds data for the various dungeon modes.
     /// </summary>
+    [Index(nameof(Flag), IsUnique = true)]
     public class DungeonMode : TableObject
     {
         /// <summary>
@@ -15,7 +16,6 @@ namespace LobotJR.Command.Model.Dungeons
         /// <summary>
         /// The flag used to indicate this mode when referencing dungeon ids.
         /// </summary>
-        [Index(IsUnique = true)]
         public string Flag { get; set; }
         /// <summary>
         /// Whether this mode is the default mode, and will be used if no flag

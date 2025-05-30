@@ -79,14 +79,18 @@ namespace LobotJR.Test.Views.Dungeons
         [TestMethod]
         public void QueueAddsUserToGroupFinderQueueForSpecificDungeons()
         {
+            var dungeon = ConnectionManager.CurrentConnection.DungeonData.FirstOrDefault(x => x.CommandId == 1);
+            var modes = ConnectionManager.CurrentConnection.DungeonModeData.Read();
+            var mode1 = modes.First();
+            var mode2 = modes.Last();
             var response = View.QueueForDungeonFinder(User, "1, 1h");
             Assert.IsTrue(response.Responses.First().Contains("have been placed"));
             var entry = Controller.GetPlayerQueueEntry(Player);
             Assert.IsTrue(Controller.IsPlayerQueued(Player));
             Assert.AreEqual(2, entry.Dungeons.Count());
-            Assert.IsTrue(entry.Dungeons.All(x => x.DungeonId.Equals(1)));
-            Assert.IsTrue(entry.Dungeons.Any(x => x.ModeId == 1));
-            Assert.IsTrue(entry.Dungeons.Any(x => x.ModeId == 2));
+            Assert.IsTrue(entry.Dungeons.All(x => x.DungeonId == dungeon.Id));
+            Assert.IsTrue(entry.Dungeons.Any(x => x.ModeId == mode1.Id));
+            Assert.IsTrue(entry.Dungeons.Any(x => x.ModeId == mode2.Id));
         }
 
         [TestMethod]

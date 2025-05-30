@@ -71,7 +71,7 @@ namespace LobotJR.Test.Views.Dungeons
         public void DungeonDetailsReturnsDungeonData()
         {
             var dungeon = ConnectionManager.CurrentConnection.DungeonData.Read().First();
-            var result = View.DungeonDetails(dungeon.Id.ToString());
+            var result = View.DungeonDetails(dungeon.CommandId.ToString());
             var response = result.Responses.First();
             Assert.IsTrue(response.Contains(dungeon.Name));
             Assert.IsTrue(response.Contains(dungeon.LevelRanges.First(x => x.Mode.IsDefault).Minimum.ToString()));
@@ -85,7 +85,7 @@ namespace LobotJR.Test.Views.Dungeons
             var dungeon = ConnectionManager.CurrentConnection.DungeonData.Read().First();
             ConnectionManager.CurrentConnection.LevelRangeData.Delete();
             ConnectionManager.CurrentConnection.Commit();
-            var result = View.DungeonDetails(dungeon.Id.ToString());
+            var result = View.DungeonDetails(dungeon.CommandId.ToString());
             var response = result.Responses.First();
             Assert.IsTrue(response.Contains("missing level range data"));
         }

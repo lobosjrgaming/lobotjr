@@ -15,7 +15,6 @@
     <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
     <PackageReference Include="Autofac" Version="8.3.0" />
     <PackageReference Include="Castle.Core" Version="5.2.1" />
-    <PackageReference Include="EntityFramework" Version="6.5.1" />
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.5" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.0" />
     <PackageReference Include="Moq" Version="4.20.72" />

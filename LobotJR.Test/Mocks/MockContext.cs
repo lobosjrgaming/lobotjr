@@ -1,8 +1,5 @@
 ﻿using LobotJR.Data;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
-using System.Data.Common;
-using System.Data.Entity;
 
 namespace LobotJR.Test.Mocks
 {
@@ -17,44 +14,23 @@ namespace LobotJR.Test.Mocks
     /// </summary>
     public class MockContext : SqliteContext
     {
-        private readonly List<ContextInitializer> initializers = new List<ContextInitializer>();
-
-        public static MockContext CreateAndSeed(params ContextInitializer[] initializers)
-        {
-            var conn = new SQLiteConnection("DataSource=:memory:");
-            conn.Open();
-            return new MockContext(conn, initializers);
-        }
-
         public static MockContext Create()
         {
-            var conn = new SQLiteConnection("DataSource=:memory:");
-            conn.Open();
-            var context = new MockContext(conn);
-            context.Database.Initialize(true);
-            return context;
+            return new MockContext();
         }
 
-        private MockContext(DbConnection connection, IEnumerable<ContextInitializer> initializers) : base(connection)
+        public MockContext()
         {
-            this.initializers = new List<ContextInitializer>(initializers);
+            var deleted = Database.EnsureDeleted();
+            var created = Database.EnsureCreated();
         }
 
-        private MockContext(DbConnection connection) : base(connection)
-        {
-        }
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             optionsBuilder
                 .UseLazyLoadingProxies()
                 .UseSqlite("DataSource=:memory:");
             base.OnConfiguring(optionsBuilder);
-        }
-
-        protected override void OnModelCreating(DbModelBuilder modelBuilder)
-        {
-            var sqliteConnectionInitializer = new MockInitializer(modelBuilder, initializers);
-            Database.SetInitializer(sqliteConnectionInitializer);
         }
     }
 }

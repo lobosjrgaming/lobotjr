@@ -5,6 +5,7 @@ using LobotJR.Twitch.Api.Channel;
 using LobotJR.Twitch.Api.User;
 using LobotJR.Twitch.Model;
 using LobotJR.Utils;
+using Microsoft.EntityFrameworkCore;
 using NLog;
 using System;
 using System.Collections.Generic;
@@ -59,7 +60,7 @@ namespace LobotJR.Command.Controller.Twitch
         /// none exists.</returns>
         public User GetUserByName(string username)
         {
-            return ConnectionManager.CurrentConnection.Users.FirstOrDefault(x => x.Username.ToLower().Equals(username.ToLower()));
+            return ConnectionManager.CurrentConnection.Users.FirstOrDefault(x => EF.Functions.Collate(x.Username, "NOCASE").Equals(username));
         }
 
         /// <summary>
@@ -113,7 +114,7 @@ namespace LobotJR.Command.Controller.Twitch
         /// user lookup call.</param>
         public void GetUserByNameAsync(string username, Action<User> callback)
         {
-            var user = ConnectionManager.CurrentConnection.Users.Read(x => x.Username.Equals(username, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            var user = ConnectionManager.CurrentConnection.Users.Read(x => EF.Functions.Collate(x.Username, "NOCASE").Equals(username)).FirstOrDefault();
             if (user != null)
             {
                 callback(user);
